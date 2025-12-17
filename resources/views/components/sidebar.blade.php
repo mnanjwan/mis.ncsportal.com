@@ -75,7 +75,7 @@
                 ['icon' => 'ki-filled ki-user', 'title' => 'Officer Onboarding', 'href' => route('hrd.onboarding')],
                 [
                     'title' => 'User Management',
-                    'icon' => 'ki-filled ki-profile-user',
+                    'icon' => 'ki-filled ki-user',
                     'submenu' => [
                         ['title' => 'Role Assignments', 'href' => route('hrd.role-assignments')],
                     ]
@@ -297,7 +297,7 @@
                                                     <span class="bullet bullet-dot"></span>
                                                 </span>
                                                 <span class="kt-menu-title text-sm text-foreground font-medium">
-                                                    {{ $subItem['title'] }}
+                                                    - {{ $subItem['title'] }}
                                                 </span>
                                             </a>
                                         </div>
