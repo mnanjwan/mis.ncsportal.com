@@ -1,0 +1,146 @@
+<!--
+NCS Employee Portal - Service Numbers
+Based on Metronic v9.3.8
+-->
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+<head>
+    <title>NCS Employee Portal - Service Numbers</title>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+    <link href="../dist/assets/media/app/favicon.ico" rel="shortcut icon"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="../dist/assets/vendors/apexcharts/apexcharts.css" rel="stylesheet"/>
+    <link href="../dist/assets/vendors/keenicons/styles.bundle.css" rel="stylesheet"/>
+    <link href="../dist/assets/css/styles.css" rel="stylesheet"/>
+</head>
+<body class="antialiased flex h-full text-base text-foreground bg-background [--header-height:60px] [--sidebar-width:270px] lg:overflow-hidden bg-mono dark:bg-background">
+    <!-- Theme Mode -->
+    <script>
+        const defaultThemeMode = 'light';
+        let themeMode;
+        if (document.documentElement) {
+            if (localStorage.getItem('kt-theme')) {
+                themeMode = localStorage.getItem('kt-theme');
+            } else if (document.documentElement.hasAttribute('data-kt-theme-mode')) {
+                themeMode = document.documentElement.getAttribute('data-kt-theme-mode');
+            } else {
+                themeMode = defaultThemeMode;
+            }
+            if (themeMode === 'system') {
+                themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.classList.add(themeMode);
+        }
+    </script>
+    
+    <!-- Page -->
+    <div class="flex grow">
+        <!-- Header -->
+        <header class="flex lg:hidden items-center fixed z-10 top-0 start-0 end-0 shrink-0 bg-mono dark:bg-background h-(--header-height)" id="header">
+            <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+                <a href="#" id="dashboard-link">
+                    <img class="size-[34px]" src="../dist/assets/media/app/mini-logo-circle-success.svg"/>
+                </a>
+                <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white -me-2" data-kt-drawer-toggle="#sidebar">
+                    <i class="ki-filled ki-menu"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Wrapper -->
+        <div class="flex flex-col lg:flex-row grow pt-(--header-height) lg:pt-0">
+            <!-- Sidebar Container -->
+            <div id="sidebar-container"></div>
+            
+            <!-- Main -->
+            <div class="flex flex-col grow lg:rounded-l-xl bg-background border border-input lg:ms-(--sidebar-width)">
+                <div class="flex flex-col grow kt-scrollable-y-auto lg:[--kt-scrollbar-width:auto] pt-5" id="scrollable_content">
+                    <main class="grow" role="content">
+                        <!-- Toolbar -->
+                        <div class="pb-5">
+                            <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+                                <div class="flex flex-col flex-wrap gap-1">
+                                    <h1 class="font-medium text-lg text-mono">Service Numbers</h1>
+                                    <div class="flex items-center gap-1 text-sm font-normal">
+                                        <a class="text-secondary-foreground hover:text-primary" href="#" id="home-link">Home</a>
+                                        <span>/</span>
+                                        <span class="text-mono">Service Numbers</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Container -->
+                        <div class="kt-container-fixed">
+                            <div id="page-content">
+                                <!-- Content will be loaded here -->
+                                <div class="kt-card">
+                                    <div class="kt-card-content p-5">
+                                        <p class="text-secondary-foreground">Page content will be loaded here...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="../dist/assets/js/core.bundle.js"></script>
+    <script src="../dist/assets/vendors/ktui/ktui.min.js"></script>
+    <script src="../dist/assets/vendors/apexcharts/apexcharts.min.js"></script>
+    <script src="../config/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/layout.js"></script>
+    <script>
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize auth
+            const authenticated = await authManager.init();
+            if (!authenticated) return;
+            
+            // Get user and role
+            const user = authManager.getUser();
+            const role = user.roles && user.roles.length > 0 ? user.roles[0] : 'Establishment';
+            
+            // Check role access
+            if (!authManager.hasRole('Establishment') && role !== 'HRD') {
+                Utils.showError('You do not have access to this page');
+                setTimeout(() => {
+                    const layout = new LayoutComponent('', '');
+                    window.location.href = layout.getDashboardPath();
+                }, 2000);
+                return;
+            }
+            
+            // Initialize sidebar
+            const sidebar = new SidebarComponent(user, role);
+            sidebar.mount('sidebar-container');
+            
+            // Set dashboard link
+            const layout = new LayoutComponent('Service Numbers', '');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const homeLink = document.getElementById('home-link');
+            if (dashboardLink) dashboardLink.href = layout.getDashboardPath();
+            if (homeLink) homeLink.href = layout.getDashboardPath();
+            
+            // Load page content
+            loadPageContent();
+        });
+        
+        // Load page-specific content
+        async function loadPageContent() {
+            // This will be customized per page type
+            const container = document.getElementById('page-content');
+            if (container) {
+                container.innerHTML = '<div class="kt-card"><div class="kt-card-content p-5"><p>Loading...</p></div></div>';
+            }
+        }
+    </script>
+</body>
+</html>

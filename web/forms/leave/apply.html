@@ -1,0 +1,252 @@
+<!--
+NCS Employee Portal - Apply for Leave
+Based on Metronic v9.3.8
+-->
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+ <head>
+  <title>
+   NCS Employee Portal - Apply for Leave
+  </title>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+  <link href="../../dist/assets/media/app/favicon.ico" rel="shortcut icon"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/apexcharts/apexcharts.css" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/keenicons/styles.bundle.css" rel="stylesheet"/>
+  <link href="../../dist/assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body class="antialiased flex h-full text-base text-foreground bg-background [--header-height:60px] [--sidebar-width:270px] lg:overflow-hidden bg-mono dark:bg-background">
+  <!-- Theme Mode -->
+  <script>
+   const defaultThemeMode = 'light';
+			let themeMode;
+
+			if (document.documentElement) {
+				if (localStorage.getItem('kt-theme')) {
+					themeMode = localStorage.getItem('kt-theme');
+				} else if (
+					document.documentElement.hasAttribute('data-kt-theme-mode')
+				) {
+					themeMode =
+						document.documentElement.getAttribute('data-kt-theme-mode');
+				} else {
+					themeMode = defaultThemeMode;
+				}
+
+				if (themeMode === 'system') {
+					themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+				}
+
+				document.documentElement.classList.add(themeMode);
+			}
+  </script>
+  <!-- End of Theme Mode -->
+  <!-- Page -->
+  <div class="flex grow">
+   <div class="flex flex-col grow lg:rounded-l-xl bg-background border border-input">
+    <div class="flex flex-col grow kt-scrollable-y-auto lg:[--kt-scrollbar-width:auto] pt-5" id="scrollable_content">
+     <main class="grow" role="content">
+      <!-- Toolbar -->
+      <div class="pb-5">
+       <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+        <div class="flex flex-col flex-wrap gap-1">
+         <h1 class="font-medium text-lg text-mono">
+          Apply for Leave
+         </h1>
+         <div class="flex items-center gap-1 text-sm font-normal">
+          <a class="text-secondary-foreground hover:text-primary" href="../../dashboards/officer/dashboard.html">
+           Home
+          </a>
+          <span class="text-secondary-foreground">
+           /
+          </span>
+          <span class="text-secondary-foreground">
+           Apply for Leave
+          </span>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of Toolbar -->
+      <!-- Container -->
+      <div class="kt-container-fixed">
+       <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 lg:gap-9 mb-5 lg:mb-10">
+        <div class="xl:col-span-2 space-y-5">
+         <div class="kt-card bg-success/10 border border-success/20">
+          <div class="kt-card-content p-5">
+           <div class="flex items-center gap-3">
+            <i class="ki-filled ki-information text-2xl text-success">
+            </i>
+            <div class="flex flex-col gap-1">
+             <span class="text-sm font-semibold text-mono">
+              Leave Balance Available
+             </span>
+             <span class="text-xs text-secondary-foreground">
+              Annual Leave: 28 days remaining (GL 07 and Below: 28 days, Level 08 and above: 30 days)
+             </span>
+             <span class="text-xs text-secondary-foreground">
+              Annual leave can be applied for a maximum of 2 times per year
+             </span>
+            </div>
+           </div>
+          </div>
+         </div>
+         <form class="kt-card" id="leave_form">
+          <div class="kt-card-header">
+           <h3 class="kt-card-title">
+            Leave Application Form
+           </h3>
+          </div>
+          <div class="kt-card-content space-y-5">
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Leave Type
+            </label>
+            <select class="kt-input" name="leave_type" required>
+             <option value="">Select Leave Type</option>
+             <option value="Annual Leave">Annual Leave</option>
+             <option value="Leave on Permanent invalidation">Leave on Permanent invalidation</option>
+             <option value="Deferred Leave">Deferred Leave</option>
+             <option value="Casual Leave">Casual Leave</option>
+             <option value="Sick Leave">Sick Leave</option>
+             <option value="Maternity Leave">Maternity Leave</option>
+             <option value="Maternity Leave on adoption of Child Under 4 months">Maternity Leave on adoption of Child Under 4 months</option>
+             <option value="Paternity Leave">Paternity Leave</option>
+             <option value="Paternity Leave on adoption of Child Under 4 months">Paternity Leave on adoption of Child Under 4 months</option>
+             <option value="Examination Leave">Examination Leave</option>
+             <option value="Leave for Compulsory Examination">Leave for Compulsory Examination</option>
+             <option value="Leave for non compulsory examination">Leave for non compulsory examination</option>
+             <option value="Sabbatical Leave">Sabbatical Leave</option>
+             <option value="Study Leave without pay">Study Leave without pay</option>
+             <option value="Study Leave with pay">Study Leave with pay</option>
+             <option value="Leave on compassionate grounds">Leave on compassionate grounds</option>
+             <option value="Pre-retirement leave">Pre-retirement leave</option>
+             <option value="Leave of absence">Leave of absence</option>
+             <option value="Leave on grounds on urgent private affairs">Leave on grounds on urgent private affairs</option>
+             <option value="Leave for cultural and sporting activities">Leave for cultural and sporting activities</option>
+             <option value="Leave to take part in trade Union activities">Leave to take part in trade Union activities</option>
+             <option value="Leave for in-service training">Leave for in-service training</option>
+             <option value="Leave of absence to Join Spouse on course of instruction abroad">Leave of absence to Join Spouse on course of instruction abroad</option>
+             <option value="Special leave to join spouse on ground of public policy">Special leave to join spouse on ground of public policy</option>
+             <option value="Leave of absence on grounds of public policy for technical aid program">Leave of absence on grounds of public policy for technical aid program</option>
+             <option value="Leave of absence for Special or Personal assistants on ground of public policy">Leave of absence for Special or Personal assistants on ground of public policy</option>
+             <option value="Leave of absence for Spouse of President, Vice President, Governor and Deputy Governor">Leave of absence for Spouse of President, Vice President, Governor and Deputy Governor</option>
+            </select>
+           </div>
+           <div class="grid sm:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              Start Date
+             </label>
+             <input class="kt-input" type="date" name="start_date" required/>
+            </div>
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              End Date
+             </label>
+             <input class="kt-input" type="date" name="end_date" required/>
+            </div>
+           </div>
+           <div class="flex flex-col gap-1" id="edd_field" style="display: none;">
+            <label class="kt-form-label font-normal text-mono">
+             Expected Date of Delivery (EDD)
+            </label>
+            <input class="kt-input" type="date" name="edd"/>
+            <span class="text-xs text-secondary-foreground">
+             Required for Maternity Leave
+            </span>
+           </div>
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Reason for Leave
+            </label>
+            <textarea class="kt-input" placeholder="Enter reason for leave" name="reason" rows="4" required></textarea>
+           </div>
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Supporting Documents
+            </label>
+            <input class="kt-input" type="file" name="supporting_documents" accept="image/jpeg,application/pdf" multiple/>
+            <span class="text-xs text-secondary-foreground">
+             Upload supporting documents (JPEG or PDF format)
+            </span>
+           </div>
+          </div>
+          <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">
+           <a class="kt-btn kt-btn-outline" href="../../dashboards/officer/dashboard.html">
+            Cancel
+           </a>
+           <button class="kt-btn kt-btn-primary" type="submit">
+            Submit Application
+            <i class="ki-filled ki-check text-base">
+            </i>
+           </button>
+          </div>
+         </form>
+        </div>
+        <div class="xl:col-span-1">
+         <div class="kt-card bg-accent/50">
+          <div class="kt-card-header">
+           <h3 class="kt-card-title">
+            Leave Rules
+           </h3>
+          </div>
+          <div class="kt-card-content">
+           <div class="flex flex-col gap-3 text-sm">
+            <div class="kt-card shadow-none bg-info/10 border border-info/20">
+             <div class="kt-card-content p-4">
+              <p class="text-xs text-secondary-foreground">
+               <strong class="text-mono">Annual Leave:</strong>
+              </p>
+              <ul class="text-xs text-secondary-foreground mt-2 list-disc list-inside space-y-1">
+               <li>GL 07 and Below: 28 Days</li>
+               <li>Level 08 and above: 30 days</li>
+               <li>Maximum 2 times per year</li>
+              </ul>
+             </div>
+            </div>
+            <p class="text-xs text-secondary-foreground">
+             Your application will be reviewed by Staff Officer, then minuted to DC Admin for approval.
+            </p>
+            <p class="text-xs text-secondary-foreground">
+             You will receive a notification once your leave is approved.
+            </p>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of Container -->
+     </main>
+    </div>
+   </div>
+  </div>
+  <!-- End of Page -->
+  <!-- Scripts -->
+  <script src="../../dist/assets/js/core.bundle.js">
+  </script>
+  <script src="../../dist/assets/vendors/ktui/ktui.min.js">
+  </script>
+  <script src="../../dist/assets/vendors/apexcharts/apexcharts.min.js">
+  </script>
+  <script>
+   // Show EDD field for Maternity Leave
+   document.querySelector('select[name="leave_type"]').addEventListener('change', function() {
+    const eddField = document.getElementById('edd_field');
+    if (this.value === 'Maternity Leave') {
+     eddField.style.display = 'block';
+     eddField.querySelector('input').required = true;
+    } else {
+     eddField.style.display = 'none';
+     eddField.querySelector('input').required = false;
+    }
+   });
+  </script>
+  <!-- End of Scripts -->
+ </body>
+</html>
+

@@ -1,0 +1,14 @@
+<svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Portal Icon with circle background -->
+  <circle cx="17" cy="17" r="16.5" fill="#088a56" stroke="#066c43" stroke-width="1"/>
+  
+  <!-- Portal door/gateway symbol -->
+  <path d="M11 14C11 13.4477 11.4477 13 12 13H22C22.5523 13 23 13.4477 23 14V24C23 24.5523 22.5523 25 22 25H12C11.4477 25 11 24.5523 11 24V14Z" fill="white"/>
+  
+  <!-- Portal center/handle -->
+  <circle cx="17" cy="19" r="2" fill="#088a56"/>
+  
+  <!-- Portal frame accent lines -->
+  <path d="M11 14L17 9.5L23 14" stroke="#088a56" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M11 24L17 28.5L23 24" stroke="#088a56" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+</svg>

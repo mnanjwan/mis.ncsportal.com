@@ -1,0 +1,270 @@
+<!--
+NCS Employee Portal - Raise Emolument Form
+Based on Metronic v9.3.8
+-->
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+ <head>
+  <title>
+   NCS Employee Portal - Raise Emolument
+  </title>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+  <link href="../../dist/assets/media/app/favicon.ico" rel="shortcut icon"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/apexcharts/apexcharts.css" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/keenicons/styles.bundle.css" rel="stylesheet"/>
+  <link href="../../dist/assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body class="antialiased flex h-full text-base text-foreground bg-background [--header-height:60px] [--sidebar-width:270px] lg:overflow-hidden bg-mono dark:bg-background">
+  <!-- Theme Mode -->
+  <script>
+   const defaultThemeMode = 'light';
+			let themeMode;
+
+			if (document.documentElement) {
+				if (localStorage.getItem('kt-theme')) {
+					themeMode = localStorage.getItem('kt-theme');
+				} else if (
+					document.documentElement.hasAttribute('data-kt-theme-mode')
+				) {
+					themeMode =
+						document.documentElement.getAttribute('data-kt-theme-mode');
+				} else {
+					themeMode = defaultThemeMode;
+				}
+
+				if (themeMode === 'system') {
+					themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+				}
+
+				document.documentElement.classList.add(themeMode);
+			}
+  </script>
+  <!-- End of Theme Mode -->
+  <!-- Page -->
+  <div class="flex grow">
+   <div class="flex flex-col grow lg:rounded-l-xl bg-background border border-input">
+    <div class="flex flex-col grow kt-scrollable-y-auto lg:[--kt-scrollbar-width:auto] pt-5" id="scrollable_content">
+     <main class="grow" role="content">
+      <!-- Toolbar -->
+      <div class="pb-5">
+       <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+        <div class="flex flex-col flex-wrap gap-1">
+         <h1 class="font-medium text-lg text-mono">
+          Raise Emolument
+         </h1>
+         <div class="flex items-center gap-1 text-sm font-normal">
+          <a class="text-secondary-foreground hover:text-primary" href="../../dashboards/officer/dashboard.html">
+           Home
+          </a>
+          <span class="text-secondary-foreground">
+           /
+          </span>
+          <span class="text-secondary-foreground">
+           Raise Emolument
+          </span>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of Toolbar -->
+      <!-- Container -->
+      <div class="kt-container-fixed">
+       <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 lg:gap-9 mb-5 lg:mb-10">
+        <div class="xl:col-span-2 space-y-5">
+         <div class="kt-card bg-primary/10 border border-primary/20">
+          <div class="kt-card-content p-5">
+           <div class="flex items-center gap-3">
+            <i class="ki-filled ki-information text-2xl text-primary">
+            </i>
+            <div class="flex flex-col gap-1">
+             <span class="text-sm font-semibold text-mono">
+              Emolument Timeline Active
+             </span>
+             <span class="text-xs text-secondary-foreground">
+              Timeline: January 1, 2025 - January 31, 2025
+             </span>
+            </div>
+           </div>
+          </div>
+         </div>
+         <form class="kt-card" id="emolument_form">
+          <div class="kt-card-header">
+           <h3 class="kt-card-title">
+            Emolument Form
+           </h3>
+           <span class="text-xs text-secondary-foreground">
+            You can edit the following fields during emolument
+           </span>
+          </div>
+          <div class="kt-card-content space-y-5">
+           <div class="grid sm:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              Bank Name
+             </label>
+             <select class="kt-input" name="bank_name" required>
+              <option value="">Select Bank</option>
+              <option value="Access Bank">Access Bank</option>
+              <option value="First Bank">First Bank</option>
+              <option value="GTBank">GTBank</option>
+              <option value="UBA">UBA</option>
+              <option value="Zenith Bank">Zenith Bank</option>
+              <option value="Fidelity Bank">Fidelity Bank</option>
+              <option value="Union Bank">Union Bank</option>
+              <option value="Stanbic IBTC">Stanbic IBTC</option>
+              <option value="Ecobank">Ecobank</option>
+              <option value="Sterling Bank">Sterling Bank</option>
+              <option value="Wema Bank">Wema Bank</option>
+              <option value="FCMB">FCMB</option>
+              <option value="Other">Other</option>
+             </select>
+            </div>
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              Bank Account Number
+             </label>
+             <input class="kt-input" placeholder="Enter account number" type="text" name="account_number" required maxlength="10"/>
+            </div>
+           </div>
+           <div class="grid sm:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              Name of PFA (Pension Fund Administrator)
+             </label>
+             <select class="kt-input" name="pfa_name" required>
+              <option value="">Select PFA</option>
+              <option value="Tangerine">Tangerine</option>
+              <option value="Stanbic IBTC Pensions">Stanbic IBTC Pensions</option>
+              <option value="ARM Pension">ARM Pension</option>
+              <option value="Leadway Pensure">Leadway Pensure</option>
+              <option value="Premium Pension">Premium Pension</option>
+              <option value="AIICO Pension">AIICO Pension</option>
+              <option value="Fidelity Pension">Fidelity Pension</option>
+              <option value="Other">Other</option>
+             </select>
+            </div>
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              RSA PIN
+             </label>
+             <input class="kt-input" placeholder="Enter RSA PIN (PEN + 12 digits)" type="text" name="rsa_pin" required pattern="PEN[0-9]{12}" maxlength="15"/>
+             <span class="text-xs text-secondary-foreground">
+              Format: PEN followed by 12 digits
+             </span>
+            </div>
+           </div>
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Name(s) of Next of KIN
+            </label>
+            <input class="kt-input" placeholder="Enter full name of next of kin" type="text" name="next_of_kin_name" required/>
+           </div>
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Relationship
+            </label>
+            <select class="kt-input" name="relationship" required>
+             <option value="">Select Relationship</option>
+             <option value="Spouse">Spouse</option>
+             <option value="Parent">Parent</option>
+             <option value="Sibling">Sibling</option>
+             <option value="Child">Child</option>
+             <option value="Other">Other</option>
+            </select>
+           </div>
+           <div class="kt-card shadow-none bg-muted/50">
+            <div class="kt-card-content p-4">
+             <div class="flex flex-col gap-2 text-sm">
+              <span class="font-semibold text-mono">
+               Previous Year's Data (For Reference)
+              </span>
+              <div class="grid sm:grid-cols-2 gap-3 text-xs">
+               <div>
+                <span class="text-secondary-foreground">Bank:</span>
+                <span class="text-mono ms-2">GTBank</span>
+               </div>
+               <div>
+                <span class="text-secondary-foreground">Account:</span>
+                <span class="text-mono ms-2">1234567890</span>
+               </div>
+               <div>
+                <span class="text-secondary-foreground">PFA:</span>
+                <span class="text-mono ms-2">Tangerine</span>
+               </div>
+               <div>
+                <span class="text-secondary-foreground">RSA PIN:</span>
+                <span class="text-mono ms-2">PEN123456789012</span>
+               </div>
+              </div>
+             </div>
+            </div>
+           </div>
+          </div>
+          <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">
+           <a class="kt-btn kt-btn-outline" href="../../dashboards/officer/dashboard.html">
+            Cancel
+           </a>
+           <button class="kt-btn kt-btn-primary" type="submit">
+            Submit Emolument
+            <i class="ki-filled ki-check text-base">
+            </i>
+           </button>
+          </div>
+         </form>
+        </div>
+        <div class="xl:col-span-1">
+         <div class="kt-card bg-accent/50">
+          <div class="kt-card-header">
+           <h3 class="kt-card-title">
+            Important Information
+           </h3>
+          </div>
+          <div class="kt-card-content">
+           <div class="flex flex-col gap-3 text-sm">
+            <p class="text-secondary-foreground">
+             Emolument is done once a year during the timeline period set by HRD.
+            </p>
+            <div class="kt-card shadow-none bg-warning/10 border border-warning/20">
+             <div class="kt-card-content p-4">
+              <p class="text-xs text-secondary-foreground">
+               <strong class="text-mono">Note:</strong> You can only edit the following fields:
+              </p>
+              <ul class="text-xs text-secondary-foreground mt-2 list-disc list-inside space-y-1">
+               <li>Bank Name</li>
+               <li>Account Number</li>
+               <li>PFA</li>
+               <li>RSA PIN</li>
+               <li>Next of Kin</li>
+              </ul>
+             </div>
+            </div>
+            <p class="text-xs text-secondary-foreground">
+             After submission, your emolument will be reviewed by your Assessor, then validated before payment processing.
+            </p>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of Container -->
+     </main>
+    </div>
+   </div>
+  </div>
+  <!-- End of Page -->
+  <!-- Scripts -->
+  <script src="../../dist/assets/js/core.bundle.js">
+  </script>
+  <script src="../../dist/assets/vendors/ktui/ktui.min.js">
+  </script>
+  <script src="../../dist/assets/vendors/apexcharts/apexcharts.min.js">
+  </script>
+  <!-- End of Scripts -->
+ </body>
+</html>
+

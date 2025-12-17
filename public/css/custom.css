@@ -1,0 +1,161 @@
+/* Custom Active Color: #088a56 */
+:root {
+    --kt-active-color: #088a56;
+    --kt-active-color-rgb: 8, 138, 86;
+}
+
+/* All icons on the body use the active color */
+body i,
+body [class*="ki-"],
+body .kt-menu-icon,
+body .kt-menu-icon i,
+body .kt-icon,
+body .icon,
+body [class^="ki-"],
+body [class*=" ki-"],
+body .ki-filled,
+body .ki-outline {
+    color: var(--kt-active-color) !important;
+}
+
+/* Specific icon selectors */
+body .kt-menu-icon i,
+body .kt-card-content i,
+body .kt-btn i,
+body .kt-badge i,
+body .kt-avatar i,
+body [class*="icon"] i {
+    color: var(--kt-active-color) !important;
+}
+
+/* Override any text color classes on icons */
+body i.text-primary,
+body i.text-secondary,
+body i.text-mono,
+body i.text-foreground,
+body i.text-secondary-foreground {
+    color: var(--kt-active-color) !important;
+}
+
+/* Active menu items */
+.kt-menu-item-active,
+.kt-menu-link.kt-menu-item-active {
+    background-color: rgba(var(--kt-active-color-rgb), 0.1) !important;
+    color: var(--kt-active-color) !important;
+}
+
+.kt-menu-item-active .kt-menu-icon,
+.kt-menu-link.kt-menu-item-active .kt-menu-icon {
+    color: var(--kt-active-color) !important;
+}
+
+.kt-menu-item-active .kt-menu-title,
+.kt-menu-link.kt-menu-item-active .kt-menu-title {
+    color: var(--kt-active-color) !important;
+}
+
+/* Active tabs */
+.kt-tab-active,
+.kt-tab-item.kt-tab-active,
+[data-kt-tab="true"].kt-tab-active {
+    color: var(--kt-active-color) !important;
+    border-bottom-color: var(--kt-active-color) !important;
+}
+
+.kt-tab-active::after {
+    background-color: var(--kt-active-color) !important;
+}
+
+/* Active buttons */
+.kt-btn-active,
+.kt-btn.kt-btn-active {
+    background-color: var(--kt-active-color) !important;
+    border-color: var(--kt-active-color) !important;
+    color: white !important;
+}
+
+/* Active badges */
+.kt-badge-active {
+    background-color: var(--kt-active-color) !important;
+    color: white !important;
+}
+
+/* Hover states for active color */
+.kt-menu-link:hover:not(.kt-menu-item-active) {
+    background-color: rgba(var(--kt-active-color-rgb), 0.05) !important;
+}
+
+.kt-menu-link:hover:not(.kt-menu-item-active) .kt-menu-icon,
+.kt-menu-link:hover:not(.kt-menu-item-active) .kt-menu-title {
+    color: var(--kt-active-color) !important;
+}
+
+/* Active state for sidebar menu items */
+#sidebar_primary_menu .kt-menu-item-active,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active {
+    background-color: rgba(var(--kt-active-color-rgb), 0.1) !important;
+    color: var(--kt-active-color) !important;
+}
+
+#sidebar_primary_menu .kt-menu-item-active .kt-menu-icon,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-icon,
+#sidebar_primary_menu .kt-menu-item-active .kt-menu-title,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-title {
+    color: var(--kt-active-color) !important;
+}
+
+/* Tab navigation active states */
+.kt-tabs .kt-tab-item.kt-tab-active,
+.kt-tabs [data-kt-tab-target].kt-tab-active {
+    color: var(--kt-active-color) !important;
+    border-bottom: 2px solid var(--kt-active-color) !important;
+}
+
+/* Leave & Pass Management tabs specifically */
+.leave-pass-tabs .kt-tab-item.kt-tab-active,
+.leave-pass-tabs [data-kt-tab-target].kt-tab-active,
+[data-kt-tabs="true"] .kt-tab-item.kt-tab-active,
+[data-kt-tabs="true"] [data-kt-tab-target].kt-tab-active {
+    color: var(--kt-active-color) !important;
+    border-bottom-color: var(--kt-active-color) !important;
+}
+
+/* Custom tab styling for Leave & Pass Management */
+#tabs [data-tab].border-primary,
+#tabs [data-tab].text-primary,
+[data-tab].border-primary,
+[data-tab].text-primary {
+    color: var(--kt-active-color) !important;
+    border-bottom-color: var(--kt-active-color) !important;
+}
+
+/* Override border-primary and text-primary for tabs */
+.border-primary {
+    border-color: var(--kt-active-color) !important;
+}
+
+.text-primary {
+    color: var(--kt-active-color) !important;
+}
+
+/* Any element with active class */
+.active,
+[class*="active"] {
+    color: var(--kt-active-color) !important;
+}
+
+/* Tab content active states */
+.kt-tab-pane.active,
+[data-kt-tab-content].active {
+    border-color: var(--kt-active-color) !important;
+}
+
+/* Sidebar Footer Icons */
+#sidebar_footer .kt-btn-icon i {
+    color: var(--kt-active-color) !important;
+    transition: color 0.2s ease;
+}
+
+#sidebar_footer .kt-btn-icon:hover i {
+    color: #ffffff !important;
+}

@@ -1,0 +1,185 @@
+<!--
+NCS Employee Portal - Login Page
+Based on Metronic v9.3.8
+-->
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+ <head>
+  <title>
+   NCS Employee Portal - Sign In
+  </title>
+  <meta charset="utf-8"/>
+  <meta content="follow, index" name="robots"/>
+  <link href="login.html" rel="canonical"/>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+  <meta content="NCS Employee Portal Sign In" name="description"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/apexcharts/apexcharts.css" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/keenicons/styles.bundle.css" rel="stylesheet"/>
+  <link href="../../dist/assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body class="antialiased flex h-full text-base text-foreground bg-background">
+  <!-- Theme Mode -->
+  <script>
+   const defaultThemeMode = 'light';
+			let themeMode;
+
+			if (document.documentElement) {
+				if (localStorage.getItem('kt-theme')) {
+					themeMode = localStorage.getItem('kt-theme');
+				} else if (
+					document.documentElement.hasAttribute('data-kt-theme-mode')
+				) {
+					themeMode =
+						document.documentElement.getAttribute('data-kt-theme-mode');
+				} else {
+					themeMode = defaultThemeMode;
+				}
+
+				if (themeMode === 'system') {
+					themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+				}
+
+				document.documentElement.classList.add(themeMode);
+			}
+  </script>
+  <!-- End of Theme Mode -->
+  <!-- Page -->
+  <style>
+   .page-bg {
+			background-image: url('../../dist/assets/media/images/2600x1200/bg-10.png');
+		}
+		.dark .page-bg {
+			background-image: url('../../dist/assets/media/images/2600x1200/bg-10-dark.png');
+		}
+  </style>
+  <div class="flex items-center justify-center grow bg-center bg-no-repeat page-bg">
+   <div class="kt-card max-w-[400px] w-full">
+    <form action="#" class="kt-card-content flex flex-col gap-5 p-10" id="sign_in_form" method="post">
+     <div class="text-center mb-2.5">
+      <div class="flex justify-center mb-4">
+       <img class="size-[60px]" src="../../dist/assets/media/app/mini-logo-circle-success.svg" alt="NCS Logo"/>
+      </div>
+      <h3 class="text-xl font-semibold text-mono leading-none mb-1">
+       NCS Employee Portal
+      </h3>
+      <p class="text-sm text-secondary-foreground mb-2.5">
+       Sign in to access your account
+      </p>
+     </div>
+     <div class="flex flex-col gap-1">
+      <label class="kt-form-label font-normal text-mono">
+       Service Number or Email
+      </label>
+      <input class="kt-input" placeholder="Enter service number or email" type="text" name="username" required/>
+     </div>
+     <div class="flex flex-col gap-1">
+      <div class="flex items-center justify-between gap-1">
+       <label class="kt-form-label font-normal text-mono">
+        Password
+       </label>
+       <a class="text-sm kt-link shrink-0" href="#">
+        Forgot Password?
+       </a>
+      </div>
+      <div class="kt-input" data-kt-toggle-password="true">
+       <input name="password" placeholder="Enter Password" type="password" required/>
+       <button class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon bg-transparent! -me-1.5" data-kt-toggle-password-trigger="true" type="button">
+        <span class="kt-toggle-password-active:hidden">
+         <i class="ki-filled ki-eye text-muted-foreground">
+         </i>
+        </span>
+        <span class="hidden kt-toggle-password-active:block">
+         <i class="ki-filled ki-eye-slash text-muted-foreground">
+         </i>
+        </span>
+       </button>
+      </div>
+     </div>
+     <label class="kt-label">
+      <input class="kt-checkbox kt-checkbox-sm" name="remember" type="checkbox" value="1"/>
+      <span class="kt-checkbox-label">
+       Remember me
+      </span>
+     </label>
+     <button class="kt-btn kt-btn-primary flex justify-center grow" type="submit">
+      Sign In
+     </button>
+     <div class="text-center text-sm text-secondary-foreground">
+      <p>New officer? Contact HRD for onboarding access</p>
+     </div>
+    </form>
+   </div>
+  </div>
+  <!-- End of Page -->
+  <!-- Scripts -->
+  <script src="../../dist/assets/js/core.bundle.js"></script>
+  <script src="../../dist/assets/vendors/ktui/ktui.min.js"></script>
+  <script src="../../dist/assets/vendors/apexcharts/apexcharts.min.js"></script>
+  <script src="../../config/api.js"></script>
+  <script>
+    // Login Handler
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('sign_in_form');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = form.querySelector('[name="username"]').value.trim();
+        const password = form.querySelector('[name="password"]').value;
+        const remember = form.querySelector('[name="remember"]').checked;
+        
+        if (!username || !password) {
+          alert('Please enter both username and password');
+          return;
+        }
+        
+        try {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="ki-filled ki-loading"></i> Signing in...';
+          
+          const response = await apiService.login(username, password);
+          
+          if (response.data && response.data.token) {
+            // Store user data
+            if (remember) {
+              localStorage.setItem('remember_me', 'true');
+            }
+            
+            // Redirect based on role
+            const user = response.data.user;
+            const role = user.roles && user.roles.length > 0 ? user.roles[0] : 'Officer';
+            
+            const roleDashboards = {
+              'Officer': '../dashboards/officer/dashboard.html',
+              'HRD': '../dashboards/hrd/dashboard.html',
+              'Staff Officer': '../dashboards/staff-officer/dashboard.html',
+              'Assessor': '../dashboards/assessor/dashboard.html',
+              'Validator': '../dashboards/validator/dashboard.html',
+              'Area Controller': '../dashboards/area-controller/dashboard.html',
+              'DC Admin': '../dashboards/dc-admin/dashboard.html',
+              'Accounts': '../dashboards/accounts/dashboard.html',
+              'Board': '../dashboards/board/dashboard.html',
+              'Building Unit': '../dashboards/building/dashboard.html',
+              'Establishment': '../dashboards/establishment/dashboard.html',
+              'Welfare': '../dashboards/welfare/dashboard.html'
+            };
+            
+            window.location.href = roleDashboards[role] || roleDashboards['Officer'];
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          alert('Login failed: ' + (error.message || 'Invalid credentials'));
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Sign In';
+        }
+      });
+    });
+  </script>
+  <!-- End of Scripts -->
+ </body>
+</html>
+

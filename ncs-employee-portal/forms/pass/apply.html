@@ -1,0 +1,229 @@
+<!--
+NCS Employee Portal - Apply for Pass
+Based on Metronic v9.3.8
+-->
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+ <head>
+  <title>
+   NCS Employee Portal - Apply for Pass
+  </title>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+  <link href="../../dist/assets/media/app/favicon.ico" rel="shortcut icon"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/apexcharts/apexcharts.css" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/keenicons/styles.bundle.css" rel="stylesheet"/>
+  <link href="../../dist/assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body class="antialiased flex h-full text-base text-foreground bg-background [--header-height:60px] [--sidebar-width:270px] lg:overflow-hidden bg-mono dark:bg-background">
+  <!-- Theme Mode -->
+  <script>
+   const defaultThemeMode = 'light';
+			let themeMode;
+
+			if (document.documentElement) {
+				if (localStorage.getItem('kt-theme')) {
+					themeMode = localStorage.getItem('kt-theme');
+				} else if (
+					document.documentElement.hasAttribute('data-kt-theme-mode')
+				) {
+					themeMode =
+						document.documentElement.getAttribute('data-kt-theme-mode');
+				} else {
+					themeMode = defaultThemeMode;
+				}
+
+				if (themeMode === 'system') {
+					themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+				}
+
+				document.documentElement.classList.add(themeMode);
+			}
+  </script>
+  <!-- End of Theme Mode -->
+  <!-- Page -->
+  <div id="sidebar-container"></div><div class="flex grow">
+   <div id="sidebar-container"></div><div class="flex flex-col grow lg:rounded-l-xl bg-background border border-input">
+    <div id="sidebar-container"></div><div class="flex flex-col grow kt-scrollable-y-auto lg:[--kt-scrollbar-width:auto] pt-5" id="scrollable_content">
+     <main class="grow" role="content">
+      <!-- Toolbar -->
+      <div class="pb-5">
+       <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+        <div class="flex flex-col flex-wrap gap-1">
+         <h1 class="font-medium text-lg text-mono">
+          Apply for Pass
+         </h1>
+         <div class="flex items-center gap-1 text-sm font-normal">
+          <a class="text-secondary-foreground hover:text-primary" href="../../dashboards/officer/dashboard.html">
+           Home
+          </a>
+          <span class="text-secondary-foreground">
+           /
+          </span>
+          <span class="text-secondary-foreground">
+           Apply for Pass
+          </span>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of Toolbar -->
+      <!-- Container -->
+      <div class="kt-container-fixed">
+       <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 lg:gap-9 mb-5 lg:mb-10">
+        <div class="xl:col-span-2 space-y-5">
+         <div class="kt-card bg-warning/10 border border-warning/20">
+          <div class="kt-card-content p-5">
+           <div class="flex items-center gap-3">
+            <i class="ki-filled ki-information text-2xl text-warning">
+            </i>
+            <div class="flex flex-col gap-1">
+             <span class="text-sm font-semibold text-mono">
+              Pass Eligibility Requirements
+             </span>
+             <span class="text-xs text-secondary-foreground">
+              Pass can only be applied if and only if you have exhausted your Annual Leave
+             </span>
+             <span class="text-xs text-secondary-foreground">
+              Maximum number of days: 5 days per application
+             </span>
+            </div>
+           </div>
+          </div>
+         </div>
+         <form class="kt-card" id="pass_form">
+          <div class="kt-card-header">
+           <h3 class="kt-card-title">
+            Pass Application Form
+           </h3>
+          </div>
+          <div class="kt-card-content space-y-5">
+           <div class="grid sm:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              Start Date
+             </label>
+             <input class="kt-input" type="date" name="start_date" required/>
+            </div>
+            <div class="flex flex-col gap-1">
+             <label class="kt-form-label font-normal text-mono">
+              End Date
+             </label>
+             <input class="kt-input" type="date" name="end_date" required/>
+             <span class="text-xs text-secondary-foreground">
+              Maximum 5 days
+             </span>
+            </div>
+           </div>
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Reason for Pass
+            </label>
+            <textarea class="kt-input" placeholder="Enter reason for pass" name="reason" rows="4" required></textarea>
+           </div>
+           <div class="flex flex-col gap-1">
+            <label class="kt-form-label font-normal text-mono">
+             Supporting Documents
+            </label>
+            <input class="kt-input" type="file" name="supporting_documents" accept="image/jpeg,application/pdf" multiple/>
+            <span class="text-xs text-secondary-foreground">
+             Upload supporting documents (JPEG or PDF format)
+            </span>
+           </div>
+          </div>
+          <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">
+           <a class="kt-btn kt-btn-outline" href="../../dashboards/officer/dashboard.html">
+            Cancel
+           </a>
+           <button class="kt-btn kt-btn-primary" type="submit">
+            Submit Application
+            <i class="ki-filled ki-check text-base">
+            </i>
+           </button>
+          </div>
+         </form>
+        </div>
+        <div class="xl:col-span-1">
+         <div class="kt-card bg-accent/50">
+          <div class="kt-card-header">
+           <h3 class="kt-card-title">
+            Pass Rules
+           </h3>
+          </div>
+          <div class="kt-card-content">
+           <div class="flex flex-col gap-3 text-sm">
+            <div class="kt-card shadow-none bg-warning/10 border border-warning/20">
+             <div class="kt-card-content p-4">
+              <p class="text-xs text-secondary-foreground">
+               <strong class="text-mono">Important Rules:</strong>
+              </p>
+              <ul class="text-xs text-secondary-foreground mt-2 list-disc list-inside space-y-1">
+               <li>Maximum 5 days per application</li>
+               <li>Annual leave must be exhausted first</li>
+               <li>Maximum 2 passes per year</li>
+              </ul>
+             </div>
+            </div>
+            <p class="text-xs text-secondary-foreground">
+             Your application will be reviewed by Staff Officer, then minuted to DC Admin for approval.
+            </p>
+            <p class="text-xs text-secondary-foreground">
+             You will receive a notification once your pass is approved.
+            </p>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of Container -->
+     </main>
+    </div>
+   </div>
+  </div>
+  <!-- End of Page -->
+  <!-- Scripts -->
+  <script src="../../dist/assets/js/core.bundle.js">
+  </script>
+  <script src="../../dist/assets/vendors/ktui/ktui.min.js">
+  </script>
+  <script src="../../dist/assets/vendors/apexcharts/apexcharts.min.js">
+  </script>
+  <script>
+   // Validate pass duration (max 5 days)
+   document.querySelector('input[name="end_date"]').addEventListener('change', function() {
+    const startDate = new Date(document.querySelector('input[name="start_date"]').value);
+    const endDate = new Date(this.value);
+    const diffTime = Math.abs(endDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 5) {
+     alert('Pass cannot exceed 5 days. Please select a valid end date.');
+     this.value = '';
+    }
+   });
+  </script>
+  <!-- End of Scripts -->
+     <script src="../config/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/layout.js"></script>
+    <script>
+        // Initialize sidebar
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authenticated = await authManager.init();
+            if (!authenticated) return;
+            
+            const user = authManager.getUser();
+            const role = user.roles && user.roles.length > 0 ? user.roles[0] : 'Officer';
+            
+            const sidebar = new SidebarComponent(user, role);
+            sidebar.mount('sidebar-container');
+        });
+    </script></body>
+</html>
+

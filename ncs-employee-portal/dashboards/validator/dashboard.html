@@ -1,0 +1,609 @@
+<!--
+NCS Employee Portal - Validator Dashboard
+Based on Metronic v9.3.8
+-->
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+ <head>
+  <title>
+   NCS Employee Portal - Validator Dashboard
+  </title>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+  <link href="../../dist/assets/media/app/favicon.ico" rel="shortcut icon"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/apexcharts/apexcharts.css" rel="stylesheet"/>
+  <link href="../../dist/assets/vendors/keenicons/styles.bundle.css" rel="stylesheet"/>
+  <link href="../../dist/assets/css/styles.css" rel="stylesheet"/>
+ </head>
+ <body class="antialiased flex h-full text-base text-foreground bg-background [--header-height:60px] [--sidebar-width:270px] lg:overflow-hidden bg-mono dark:bg-background">
+  <!-- Theme Mode -->
+  <script>
+   const defaultThemeMode = 'light';
+			let themeMode;
+
+			if (document.documentElement) {
+				if (localStorage.getItem('kt-theme')) {
+					themeMode = localStorage.getItem('kt-theme');
+				} else if (
+					document.documentElement.hasAttribute('data-kt-theme-mode')
+				) {
+					themeMode =
+						document.documentElement.getAttribute('data-kt-theme-mode');
+				} else {
+					themeMode = defaultThemeMode;
+				}
+
+				if (themeMode === 'system') {
+					themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+				}
+
+				document.documentElement.classList.add(themeMode);
+			}
+  </script>
+  <!-- End of Theme Mode -->
+  <!-- Page -->
+  <!-- Base -->
+  <div class="flex grow">
+   <!-- Header -->
+   <header class="flex lg:hidden items-center fixed z-10 top-0 start-0 end-0 shrink-0 bg-mono dark:bg-background h-(--header-height)" id="header">
+    <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+     <a href="dashboard.html">
+      <img class="size-[34px]" src="../../dist/assets/media/app/mini-logo-circle-success.svg"/>
+     </a>
+     <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white -me-2" data-kt-drawer-toggle="#sidebar">
+      <i class="ki-filled ki-menu">
+      </i>
+     </button>
+    </div>
+   </header>
+   <!-- End of Header -->
+   <!-- Wrapper -->
+   <div class="flex flex-col lg:flex-row grow pt-(--header-height) lg:pt-0">
+    <!-- Sidebar -->
+    <div class="flex-col fixed top-0 bottom-0 z-20 hidden lg:flex items-stretch shrink-0 w-(--sidebar-width) dark [--kt-drawer-enable:true] lg:[--kt-drawer-enable:false]" data-kt-drawer="true" data-kt-drawer-class="kt-drawer kt-drawer-start flex top-0 bottom-0" id="sidebar" id="sidebar-container">
+     <!-- Sidebar Header -->
+     <div class="flex flex-col gap-2.5" id="sidebar_header">
+      <div class="flex items-center gap-2.5 px-3.5 h-[70px]">
+       <a href="dashboard.html">
+        <img class="size-[34px]" src="../../dist/assets/media/app/mini-logo-circle-success.svg"/>
+       </a>
+       <div class="kt-menu kt-menu-default grow" data-kt-menu="true">
+        <div class="kt-menu-item grow" data-kt-menu-item-offset="0, 15px" data-kt-menu-item-placement="bottom-start" data-kt-menu-item-toggle="dropdown" data-kt-menu-item-trigger="hover">
+         <div class="kt-menu-label cursor-pointer text-mono font-medium grow justify-between">
+          <span class="text-lg font-medium text-inverse grow">
+           NCS Portal
+          </span>
+          <div class="flex flex-col text-mono font-medium">
+           <span class="kt-menu-arrow">
+            <i class="ki-filled ki-up">
+            </i>
+           </span>
+           <span class="kt-menu-arrow">
+            <i class="ki-filled ki-down">
+            </i>
+           </span>
+          </div>
+         </div>
+         <div class="kt-menu-dropdown w-48 py-2">
+          <div class="kt-menu-item">
+           <a class="kt-menu-link" href="dashboard.html" tabindex="0">
+            <span class="kt-menu-icon">
+             <i class="ki-filled ki-profile-circle">
+             </i>
+            </span>
+            <span class="kt-menu-title">
+             My Profile
+            </span>
+           </a>
+          </div>
+          <div class="kt-menu-item">
+           <a class="kt-menu-link" href="../authentication/login.html" tabindex="0">
+            <span class="kt-menu-icon">
+             <i class="ki-filled ki-exit-right">
+             </i>
+            </span>
+            <span class="kt-menu-title">
+             Sign Out
+            </span>
+           </a>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+      <div class="flex items-center gap-2.5 px-3.5">
+       <!-- Input -->
+       <button class="kt-btn kt-btn-icon kt-btn-secondary [&amp;_i]:text-white" data-kt-modal-toggle="#search_modal">
+        <i class="ki-filled ki-magnifier">
+        </i>
+       </button>
+       <!-- End of Input -->
+      </div>
+     </div>
+     <!-- End of Sidebar Header -->
+     <!-- Sidebar menu -->
+     <div class="flex items-stretch grow shrink-0 justify-center my-5" id="sidebar_menu">
+      <div class="kt-scrollable-y-auto grow" data-kt-scrollable="true" data-kt-scrollable-dependencies="#sidebar_header, #sidebar_footer" data-kt-scrollable-height="auto" data-kt-scrollable-offset="0px" data-kt-scrollable-wrappers="#sidebar_menu">
+       <!-- Primary Menu -->
+       <div class="mb-5">
+        <h3 class="text-sm text-muted-foreground uppercase ps-5 inline-block mb-3">
+         Menu
+        </h3>
+        <div class="kt-menu flex flex-col w-full gap-1.5 px-3.5" data-kt-menu="true" data-kt-menu-accordion-expand-all="false" id="sidebar_primary_menu">
+         <div class="kt-menu-item">
+          <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md kt-menu-item-active:bg-accent/60 kt-menu-link-hover:bg-accent/60 !menu-item-here:bg-transparent" href="dashboard.html">
+           <span class="kt-menu-icon items-start text-lg text-secondary-foreground kt-menu-item-active:text-mono kt-menu-item-here:text-mono">
+            <i class="ki-filled ki-home-3">
+            </i>
+           </span>
+           <span class="kt-menu-title text-sm text-foreground font-medium kt-menu-item-here:text-mono kt-menu-item-active:text-mono kt-menu-link-hover:text-mono">
+            Dashboard
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md kt-menu-item-active:bg-accent/60 kt-menu-link-hover:bg-accent/60" href="../../forms/emolument/raise.html">
+           <span class="kt-menu-icon items-start text-lg text-secondary-foreground kt-menu-item-active:text-mono">
+            <i class="ki-filled ki-wallet">
+            </i>
+           </span>
+           <span class="kt-menu-title text-sm text-foreground font-medium kt-menu-item-active:text-mono kt-menu-link-hover:text-mono">
+            Raise Emolument
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md kt-menu-item-active:bg-accent/60 kt-menu-link-hover:bg-accent/60" href="../../forms/leave/apply.html">
+           <span class="kt-menu-icon items-start text-lg text-secondary-foreground kt-menu-item-active:text-mono">
+            <i class="ki-filled ki-calendar">
+            </i>
+           </span>
+           <span class="kt-menu-title text-sm text-foreground font-medium kt-menu-item-active:text-mono kt-menu-link-hover:text-mono">
+            Apply for Leave
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md kt-menu-item-active:bg-accent/60 kt-menu-link-hover:bg-accent/60" href="../../forms/pass/apply.html">
+           <span class="kt-menu-icon items-start text-lg text-secondary-foreground kt-menu-item-active:text-mono">
+            <i class="ki-filled ki-calendar-tick">
+            </i>
+           </span>
+           <span class="kt-menu-title text-sm text-foreground font-medium kt-menu-item-active:text-mono kt-menu-link-hover:text-mono">
+            Apply for Pass
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md kt-menu-item-active:bg-accent/60 kt-menu-link-hover:bg-accent/60" href="profile.html">
+           <span class="kt-menu-icon items-start text-lg text-secondary-foreground kt-menu-item-active:text-mono">
+            <i class="ki-filled ki-profile-circle">
+            </i>
+           </span>
+           <span class="kt-menu-title text-sm text-foreground font-medium kt-menu-item-active:text-mono kt-menu-link-hover:text-mono">
+            My Profile
+           </span>
+          </a>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+     <!-- End of Sidebar menu -->
+     <!-- Sidebar Footer -->
+     <div class="flex flex-center justify-between shrink-0 ps-4 pe-3.5 mb-3.5" id="sidebar_footer">
+      <!-- User -->
+      <div class="kt-card shadow-none bg-muted/70">
+       <div class="kt-card-content flex flex-col gap-3 p-4">
+        <div class="flex items-center gap-2.5">
+         <div class="kt-avatar size-10">
+          <div class="kt-avatar-image">
+           <img alt="avatar" src="../../dist/assets/media/avatars/300-1.png"/>
+          </div>
+         </div>
+         <div class="flex flex-col gap-0.5 grow">
+          <span class="text-sm font-semibold text-mono">
+           John Doe
+          </span>
+          <span class="text-xs text-secondary-foreground">
+           SVC: 57616
+          </span>
+         </div>
+        </div>
+       </div>
+      </div>
+      <!-- End of User -->
+      <div class="flex items-center gap-1.5">
+       <!-- Notifications -->
+       <button class="kt-btn kt-btn-ghost kt-btn-icon size-8 hover:bg-background hover:[&amp;_i]:text-primary" data-kt-drawer-toggle="#notifications_drawer">
+        <i class="ki-filled ki-notification-status text-lg">
+        </i>
+       </button>
+       <!-- End of Notifications -->
+       <a class="kt-btn kt-btn-ghost kt-btn-icon size-8 hover:bg-background hover:[&amp;_i]:text-primary" href="../authentication/login.html">
+        <i class="ki-filled ki-exit-right">
+        </i>
+       </a>
+      </div>
+     </div>
+     <!-- End of Sidebar Footer -->
+    </div>
+    <!-- End of Sidebar -->
+    <!-- Main -->
+    <div class="flex flex-col grow lg:rounded-l-xl bg-background border border-input lg:ms-(--sidebar-width)" id="sidebar-container">
+     <div class="flex flex-col grow kt-scrollable-y-auto lg:[--kt-scrollbar-width:auto] pt-5" id="scrollable_content">
+      <main class="grow" role="content">
+       <!-- Toolbar -->
+       <div class="pb-5">
+        <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
+         <div class="flex flex-col flex-wrap gap-1">
+          <h1 class="font-medium text-lg text-mono">
+           Validator Dashboard
+          </h1>
+          <div class="flex items-center gap-1 text-sm font-normal">
+           <a class="text-secondary-foreground hover:text-primary" href="dashboard.html">
+            Home
+           </a>
+          </div>
+         </div>
+        </div>
+       </div>
+       <!-- End of Toolbar -->
+       <!-- Container -->
+       <div class="kt-container-fixed">
+        <div class="grid gap-5 lg:gap-7.5">
+         <!-- Quick Actions Cards -->
+         <div class="grid lg:grid-cols-3 gap-5 lg:gap-7.5">
+          <div class="kt-card">
+           <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+            <div class="flex items-center justify-between">
+             <div class="flex flex-col gap-1">
+              <span class="text-sm font-normal text-secondary-foreground">
+               Emolument Status
+              </span>
+              <span class="text-2xl font-semibold text-mono">
+               Not Raised
+              </span>
+             </div>
+             <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+              <i class="ki-filled ki-wallet text-2xl text-primary">
+              </i>
+             </div>
+            </div>
+            <div class="flex flex-col gap-2">
+             <span class="text-xs text-secondary-foreground">
+              Timeline: Jan 1 - Jan 31, 2025
+             </span>
+             <a class="kt-btn kt-btn-primary justify-center" href="../../forms/emolument/raise.html">
+              Raise Emolument
+             </a>
+            </div>
+           </div>
+          </div>
+          <div class="kt-card">
+           <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+            <div class="flex items-center justify-between">
+             <div class="flex flex-col gap-1">
+              <span class="text-sm font-normal text-secondary-foreground">
+               Leave Balance
+              </span>
+              <span class="text-2xl font-semibold text-mono">
+               28 Days
+              </span>
+             </div>
+             <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
+              <i class="ki-filled ki-calendar text-2xl text-success">
+              </i>
+             </div>
+            </div>
+            <div class="flex flex-col gap-2">
+             <span class="text-xs text-secondary-foreground">
+              Annual Leave Available
+             </span>
+             <a class="kt-btn kt-btn-success justify-center" href="../../forms/leave/apply.html">
+              Apply for Leave
+             </a>
+            </div>
+           </div>
+          </div>
+          <div class="kt-card">
+           <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+            <div class="flex items-center justify-between">
+             <div class="flex flex-col gap-1">
+              <span class="text-sm font-normal text-secondary-foreground">
+               Pass Eligibility
+              </span>
+              <span class="text-2xl font-semibold text-mono">
+               Available
+              </span>
+             </div>
+             <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
+              <i class="ki-filled ki-calendar-tick text-2xl text-info">
+              </i>
+             </div>
+            </div>
+            <div class="flex flex-col gap-2">
+             <span class="text-xs text-secondary-foreground">
+              Max 5 days per application
+             </span>
+             <a class="kt-btn kt-btn-info justify-center" href="../../forms/pass/apply.html">
+              Apply for Pass
+             </a>
+            </div>
+           </div>
+          </div>
+         </div>
+         <!-- End of Quick Actions -->
+         <!-- Recent Activities -->
+         <div class="grid lg:grid-cols-2 gap-5 lg:gap-7.5">
+          <div class="kt-card">
+           <div class="kt-card-header">
+            <h3 class="kt-card-title">
+             Recent Applications
+            </h3>
+           </div>
+           <div class="kt-card-content">
+            <div class="flex flex-col gap-4">
+             <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div class="flex items-center gap-3">
+               <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                <i class="ki-filled ki-calendar text-primary">
+                </i>
+               </div>
+               <div class="flex flex-col gap-0.5">
+                <span class="text-sm font-medium text-mono">
+                 Leave Application
+                </span>
+                <span class="text-xs text-secondary-foreground">
+                 Submitted: Dec 15, 2024
+                </span>
+               </div>
+              </div>
+              <span class="kt-badge kt-badge-success kt-badge-sm">
+               Approved
+              </span>
+             </div>
+             <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div class="flex items-center gap-3">
+               <div class="flex items-center justify-center size-10 rounded-full bg-info/10">
+                <i class="ki-filled ki-calendar-tick text-info">
+                </i>
+               </div>
+               <div class="flex flex-col gap-0.5">
+                <span class="text-sm font-medium text-mono">
+                 Pass Application
+                </span>
+                <span class="text-xs text-secondary-foreground">
+                 Submitted: Dec 10, 2024
+                </span>
+               </div>
+              </div>
+              <span class="kt-badge kt-badge-warning kt-badge-sm">
+               Pending
+              </span>
+             </div>
+            </div>
+           </div>
+          </div>
+          <div class="kt-card">
+           <div class="kt-card-header">
+            <h3 class="kt-card-title">
+             Service Information
+            </h3>
+           </div>
+           <div class="kt-card-content">
+            <div class="flex flex-col gap-4">
+             <div class="flex items-center justify-between">
+              <span class="text-sm text-secondary-foreground">
+               Service Number
+              </span>
+              <span class="text-sm font-semibold text-mono">
+               57616
+              </span>
+             </div>
+             <div class="flex items-center justify-between">
+              <span class="text-sm text-secondary-foreground">
+               Rank
+              </span>
+              <span class="text-sm font-semibold text-mono">
+               Assistant Comptroller
+              </span>
+             </div>
+             <div class="flex items-center justify-between">
+              <span class="text-sm text-secondary-foreground">
+               Present Station
+              </span>
+              <span class="text-sm font-semibold text-mono">
+               Lagos Command
+              </span>
+             </div>
+             <div class="flex items-center justify-between">
+              <span class="text-sm text-secondary-foreground">
+               Date Posted
+              </span>
+              <span class="text-sm font-semibold text-mono">
+               Jan 1, 2024
+              </span>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <!-- End of Recent Activities -->
+        </div>
+       </div>
+       <!-- End of Container -->
+      </main>
+     </div>
+    </div>
+    <!-- End of Main -->
+   </div>
+   <!-- End of Wrapper -->
+  </div>
+  <!-- End of Base -->
+  <!-- Notifications Drawer -->
+  <div class="kt-drawer kt-drawer-end" data-kt-drawer="true" data-kt-drawer-name="notifications" id="notifications_drawer">
+   <div class="kt-drawer-content flex flex-col w-full lg:w-[400px]">
+    <div class="kt-drawer-header">
+     <h3 class="kt-drawer-title">
+      Notifications
+     </h3>
+     <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-ghost shrink-0" data-kt-drawer-dismiss="true">
+      <i class="ki-filled ki-cross">
+      </i>
+     </button>
+    </div>
+    <div class="kt-drawer-body flex flex-col gap-5 p-5">
+     <div class="flex grow gap-2.5">
+      <div class="kt-avatar size-8">
+       <div class="kt-avatar-image">
+        <img alt="avatar" src="../../dist/assets/media/avatars/300-1.png"/>
+       </div>
+      </div>
+      <div class="flex flex-col gap-1 grow">
+       <div class="text-sm font-medium">
+        <span class="text-mono font-semibold">
+         Leave Application Approved
+        </span>
+       </div>
+       <span class="text-xs text-muted-foreground">
+        2 hours ago
+       </span>
+      </div>
+     </div>
+     <div class="flex grow gap-2.5">
+      <div class="kt-avatar size-8">
+       <div class="kt-avatar-image">
+        <img alt="avatar" src="../../dist/assets/media/avatars/300-2.png"/>
+       </div>
+      </div>
+      <div class="flex flex-col gap-1 grow">
+       <div class="text-sm font-medium">
+        <span class="text-mono font-semibold">
+         Emolument Timeline Active
+        </span>
+       </div>
+       <span class="text-xs text-muted-foreground">
+        1 day ago
+       </span>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <!-- End of Notifications Drawer -->
+  <!-- Search Modal -->
+  <div class="kt-modal" data-kt-modal="true" id="search_modal">
+   <div class="kt-modal-content max-w-[600px] top-[15%]">
+    <div class="kt-modal-header py-4 px-5">
+     <i class="ki-filled ki-magnifier text-muted-foreground text-xl">
+     </i>
+     <input class="kt-input kt-input-ghost" name="query" placeholder="Tap to start search" type="text" value=""/>
+     <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+      <i class="ki-filled ki-cross">
+      </i>
+     </button>
+    </div>
+    <div class="kt-modal-body p-0 pb-5">
+     <div class="kt-scrollable-y-auto" data-kt-scrollable="true" data-kt-scrollable-max-height="auto" data-kt-scrollable-offset="300px">
+      <div class="flex flex-col gap-2.5">
+       <div>
+        <div class="text-xs text-secondary-foreground font-medium pt-2.5 pb-1.5 ps-5">
+         Quick Links
+        </div>
+        <div class="kt-menu kt-menu-default px-0.5 flex-col">
+         <div class="kt-menu-item">
+          <a class="kt-menu-link" href="dashboard.html">
+           <span class="kt-menu-icon">
+            <i class="ki-filled ki-home-3">
+            </i>
+           </span>
+           <span class="kt-menu-title">
+            Dashboard
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link" href="../../forms/emolument/raise.html">
+           <span class="kt-menu-icon">
+            <i class="ki-filled ki-wallet">
+            </i>
+           </span>
+           <span class="kt-menu-title">
+            Raise Emolument
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link" href="../../forms/leave/apply.html">
+           <span class="kt-menu-icon">
+            <i class="ki-filled ki-calendar">
+            </i>
+           </span>
+           <span class="kt-menu-title">
+            Apply for Leave
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link" href="../../forms/pass/apply.html">
+           <span class="kt-menu-icon">
+            <i class="ki-filled ki-calendar-tick">
+            </i>
+           </span>
+           <span class="kt-menu-title">
+            Apply for Pass
+           </span>
+          </a>
+         </div>
+         <div class="kt-menu-item">
+          <a class="kt-menu-link" href="profile.html">
+           <span class="kt-menu-icon">
+            <i class="ki-filled ki-profile-circle">
+            </i>
+           </span>
+           <span class="kt-menu-title">
+            My Profile
+           </span>
+          </a>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <!-- End of Search Modal -->
+  <!-- End of Page -->
+  <!-- Scripts -->
+  <script src="../../dist/assets/js/core.bundle.js">
+  </script>
+  <script src="../../dist/assets/vendors/ktui/ktui.min.js">
+  </script>
+  <script src="../../dist/assets/vendors/apexcharts/apexcharts.min.js">
+  </script>
+  <!-- End of Scripts -->
+     <script src="../config/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../components/sidebar.js"></script>
+    <script src="../components/layout.js"></script>
+    <script>
+        // Initialize sidebar
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authenticated = await authManager.init();
+            if (!authenticated) return;
+            
+            const user = authManager.getUser();
+            const role = user.roles && user.roles.length > 0 ? user.roles[0] : 'Officer';
+            
+            const sidebar = new SidebarComponent(user, role);
+            sidebar.mount('sidebar-container');
+        });
+    </script></body>
+</html>
+
