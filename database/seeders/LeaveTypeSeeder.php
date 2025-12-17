@@ -164,7 +164,10 @@ class LeaveTypeSeeder extends Seeder
         ];
 
         foreach ($leaveTypes as $leaveType) {
-            LeaveType::create($leaveType);
+            LeaveType::firstOrCreate(
+                ['code' => $leaveType['code']],
+                $leaveType
+            );
         }
     }
 }
