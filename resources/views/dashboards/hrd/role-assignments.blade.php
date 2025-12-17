@@ -160,10 +160,10 @@
                                         </a>
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'email', 'sort_order' => request('sort_by') === 'email' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Email
-                                            @if(request('sort_by') === 'email')
+                                            Service Number
+                                            @if(request('sort_by') === 'service_number')
                                                 <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
                                             @else
                                                 <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
@@ -241,20 +241,18 @@
                                             <td class="py-3 px-4">
                                                 <div class="flex items-center gap-3">
                                                     <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                                        {{ $avatarInitials ?: 'N/A' }}
+                                                        {{ $avatarInitials }}
                                                     </div>
                                                     <div>
-                                                        <div class="text-sm font-medium text-foreground">
-                                                            {{ $fullName ?: 'N/A' }}
-                                                        </div>
-                                                        <div class="text-xs text-secondary-foreground">
-                                                            SVC: {{ $officer->service_number ?? 'N/A' }}
-                                                        </div>
+                                                        <div class="text-sm font-medium text-foreground">{{ $fullName }}</div>
+                                                        <div class="text-xs text-secondary-foreground">{{ $user->email ?? '' }}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td class="py-3 px-4">
-                                                <span class="text-sm text-foreground">{{ $user->email }}</span>
+                                                <span class="text-sm font-mono text-foreground">
+                                                    {{ $officer->service_number ?? 'N/A' }}
+                                                </span>
                                             </td>
                                             <td class="py-3 px-4">
                                                 <span class="kt-badge kt-badge-primary kt-badge-sm">
@@ -263,10 +261,7 @@
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 @if($command)
-                                                    <div class="flex flex-col">
-                                                        <span class="text-foreground">{{ $command->name }}</span>
-                                                        <span class="text-xs">{{ $command->code }}</span>
-                                                    </div>
+                                                    <span class="text-foreground">{{ $command->name }}</span>
                                                 @else
                                                     <span class="text-secondary-foreground italic">—</span>
                                                 @endif
@@ -319,7 +314,13 @@
                 <div class="lg:hidden">
                     <div class="flex flex-col gap-4">
                         @forelse($users as $user)
-                            @foreach($user->roles as $role)
+                            @php
+                                // Filter out "Officer" role from display
+                                $displayRoles = $user->roles->filter(function($role) {
+                                    return $role->name !== 'Officer';
+                                });
+                            @endphp
+                            @foreach($displayRoles as $role)
                                 @php
                                     $pivot = $role->pivot;
                                     $command = $pivot->command_id ? \App\Models\Command::find($pivot->command_id) : null;
@@ -332,15 +333,12 @@
                                 <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input hover:bg-muted transition-colors">
                                     <div class="flex items-center gap-4">
                                         <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                            {{ $avatarInitials ?: 'N/A' }}
+                                            {{ $avatarInitials }}
                                         </div>
                                         <div class="flex flex-col gap-1">
-                                            <span class="text-sm font-semibold text-foreground">{{ $fullName ?: 'N/A' }}</span>
+                                            <span class="text-sm font-semibold text-foreground">{{ $fullName }}</span>
                                             <span class="text-xs text-secondary-foreground">
-                                                SVC: {{ $officer->service_number ?? 'N/A' }}
-                                            </span>
-                                            <span class="text-xs text-secondary-foreground">
-                                                {{ $user->email }}
+                                                {{ $user->email ?? '' }}
                                             </span>
                                             <span class="text-xs">
                                                 <span class="kt-badge kt-badge-primary kt-badge-sm">{{ $role->name }}</span>

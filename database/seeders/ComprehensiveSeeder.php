@@ -48,6 +48,9 @@ class ComprehensiveSeeder extends Seeder
         // 2. Create Users for each Role
         $roles = Role::all();
         $roleUsers = [];
+        
+        // Get or create a system admin user for created_by (first role user becomes the system admin)
+        $systemAdmin = null;
 
         foreach ($roles as $role) {
             $email = strtolower(str_replace(' ', '.', $role->name)) . '@ncs.gov.ng';
@@ -59,14 +62,29 @@ class ComprehensiveSeeder extends Seeder
             if ($role->code === 'HRD')
                 $email = 'hrd@ncs.gov.ng';
 
-            $user = User::firstOrCreate(
-                ['email' => $email],
-                [
-                    'password' => Hash::make('password123'),
-                    'is_active' => true,
-                    'email_verified_at' => now(),
-                ]
-            );
+            // Use first user as system admin for created_by field
+            if (!$systemAdmin && $role->code === 'HRD') {
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'password' => Hash::make('password123'),
+                        'is_active' => true,
+                        'email_verified_at' => now(),
+                        'created_by' => null, // First user has no creator
+                    ]
+                );
+                $systemAdmin = $user;
+            } else {
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'password' => Hash::make('password123'),
+                        'is_active' => true,
+                        'email_verified_at' => now(),
+                        'created_by' => $systemAdmin->id ?? null,
+                    ]
+                );
+            }
 
             if (!$user->roles->contains($role->id)) {
                 $user->roles()->attach($role->id, ['is_active' => true, 'assigned_at' => now()]);
@@ -102,11 +120,14 @@ class ComprehensiveSeeder extends Seeder
             $command = $commands->random();
             $rank = $ranks[array_rand($ranks)];
             
-            // Generate unique service number
+            // Generate unique service number (format: NCS + 5 digits)
             do {
-                $serviceNumber = rand(10000, 99999);
+                $serviceNumber = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
             } while (in_array($serviceNumber, $usedServiceNumbers));
             $usedServiceNumbers[] = $serviceNumber;
+
+            // Get HRD user for created_by field
+            $hrdUser = $roleUsers['HRD'] ?? User::where('email', 'hrd@ncs.gov.ng')->first();
 
             // Create User for Officer
             $user = User::create([
@@ -114,6 +135,7 @@ class ComprehensiveSeeder extends Seeder
                 'password' => Hash::make('password123'),
                 'is_active' => true,
                 'email_verified_at' => now(),
+                'created_by' => $hrdUser->id ?? null,
             ]);
 
             // Attach Officer Role
@@ -138,14 +160,19 @@ class ComprehensiveSeeder extends Seeder
             $phoneNumber = '080' . rand(10000000, 99999999);
             $bankName = $banks[array_rand($banks)];
             $bankAccountNumber = str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT);
+            $sortCode = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
             $pfaName = $pfas[array_rand($pfas)];
             $rsaNumber = 'PEN' . str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
             $unit = 'Unit ' . rand(1, 10);
+            
+            // Additional qualification (optional, set for some officers)
+            $additionalQualifications = ['M.Sc', 'M.B.A', 'LLM', 'Ph.D', 'PGD', null, null, null];
+            $additionalQualification = $additionalQualifications[array_rand($additionalQualifications)];
 
-            // Create Officer Profile
+            // Create Officer Profile with ALL fields
             $officer = Officer::create([
                 'user_id' => $user->id,
-                'service_number' => $serviceNumber,
+                'service_number' => $serviceNumber, // Mutator will add NCS prefix automatically
                 'initials' => $initials,
                 'surname' => $surname,
                 'sex' => $sex,
@@ -160,6 +187,7 @@ class ComprehensiveSeeder extends Seeder
                 'marital_status' => $maritalStatus,
                 'entry_qualification' => 'B.Sc',
                 'discipline' => $discipline,
+                'additional_qualification' => $additionalQualification,
                 'residential_address' => $address,
                 'permanent_home_address' => $address,
                 'present_station' => $command->id,
@@ -168,10 +196,17 @@ class ComprehensiveSeeder extends Seeder
                 'email' => $user->email,
                 'bank_name' => $bankName,
                 'bank_account_number' => $bankAccountNumber,
+                'sort_code' => $sortCode,
                 'pfa_name' => $pfaName,
                 'rsa_number' => $rsaNumber,
                 'unit' => $unit,
+                'interdicted' => false,
+                'suspended' => false,
+                'dismissed' => false,
+                'quartered' => false,
+                'is_deceased' => false,
                 'is_active' => true,
+                'created_by' => $hrdUser->id ?? null,
             ]);
 
             $officers[] = $officer;
@@ -404,12 +439,16 @@ class ComprehensiveSeeder extends Seeder
                 // Create users for each command for command-level roles
                 foreach ($commands->take(5) as $command) {
                     $email = strtolower($role->code) . '.' . strtolower($command->code) . '@ncs.gov.ng';
+                    // Get HRD user for created_by
+                    $hrdUser = $roleUsers['HRD'] ?? User::where('email', 'hrd@ncs.gov.ng')->first();
+                    
                     $user = User::firstOrCreate(
                         ['email' => $email],
                         [
                             'password' => Hash::make('password123'),
                             'is_active' => true,
                             'email_verified_at' => now(),
+                            'created_by' => $hrdUser->id ?? null,
                         ]
                     );
                     
@@ -469,12 +508,17 @@ class ComprehensiveSeeder extends Seeder
     private function getOrCreateRoleUser($roleCode, $command, $role)
     {
         $email = strtolower($roleCode) . '.' . strtolower($command->code) . '@ncs.gov.ng';
+        
+        // Get HRD user for created_by
+        $hrdUser = User::where('email', 'hrd@ncs.gov.ng')->first();
+        
         $user = User::firstOrCreate(
             ['email' => $email],
             [
                 'password' => Hash::make('password123'),
                 'is_active' => true,
                 'email_verified_at' => now(),
+                'created_by' => $hrdUser->id ?? null,
             ]
         );
         
