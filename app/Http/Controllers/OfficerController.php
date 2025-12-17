@@ -310,7 +310,7 @@ class OfficerController extends Controller
         $usedLeave = LeaveApplication::where('officer_id', $officer->id)
             ->where('status', 'APPROVED')
             ->whereYear('start_date', now()->year)
-            ->sum('duration');
+            ->sum('number_of_days');
         $leaveBalance = 30 - $usedLeave;
 
         // 4. Pass Eligibility
