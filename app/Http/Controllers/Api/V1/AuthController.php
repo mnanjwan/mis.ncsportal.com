@@ -115,24 +115,54 @@ class AuthController extends BaseController
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load(['officer.presentStation', 'roles']);
+        $user->load([
+            'officer.presentStation.zone',
+            'officer.nextOfKin' => function($query) {
+                $query->where('is_primary', true);
+            },
+            'roles'
+        ]);
+
+        $officerData = null;
+        if ($user->officer) {
+            $nextOfKin = $user->officer->nextOfKin->first();
+            $officerData = [
+                'id' => $user->officer->id,
+                'service_number' => $user->officer->service_number,
+                'initials' => $user->officer->initials,
+                'surname' => $user->officer->surname,
+                'substantive_rank' => $user->officer->substantive_rank,
+                'date_of_birth' => $user->officer->date_of_birth?->format('Y-m-d'),
+                'sex' => $user->officer->sex,
+                'phone_number' => $user->officer->phone_number,
+                'email' => $user->officer->email,
+                'residential_address' => $user->officer->residential_address,
+                'permanent_home_address' => $user->officer->permanent_home_address,
+                'date_of_first_appointment' => $user->officer->date_of_first_appointment?->format('Y-m-d'),
+                'rsa_number' => $user->officer->rsa_number,
+                'quartered' => $user->officer->quartered,
+                'bank_name' => $user->officer->bank_name,
+                'bank_account_number' => $user->officer->bank_account_number,
+                'profile_picture_url' => $user->officer->profile_picture_url ? asset('storage/' . $user->officer->profile_picture_url) : null,
+                'command' => $user->officer->presentStation ? [
+                    'id' => $user->officer->presentStation->id,
+                    'name' => $user->officer->presentStation->name,
+                ] : null,
+                'next_of_kin' => $nextOfKin ? [
+                    'name' => $nextOfKin->name,
+                    'relationship' => $nextOfKin->relationship,
+                    'phone_number' => $nextOfKin->phone_number,
+                    'address' => $nextOfKin->address,
+                ] : null,
+            ];
+        }
 
         return $this->successResponse([
             'user' => [
                 'id' => $user->id,
                 'email' => $user->email,
                 'roles' => $user->roles->pluck('name')->toArray(),
-                'officer' => $user->officer ? [
-                    'id' => $user->officer->id,
-                    'service_number' => $user->officer->service_number,
-                    'initials' => $user->officer->initials,
-                    'surname' => $user->officer->surname,
-                    'rank' => $user->officer->substantive_rank,
-                    'command' => $user->officer->presentStation ? [
-                        'id' => $user->officer->presentStation->id,
-                        'name' => $user->officer->presentStation->name,
-                    ] : null,
-                ] : null,
+                'officer' => $officerData,
             ],
         ]);
     }

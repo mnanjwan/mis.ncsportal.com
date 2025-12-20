@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AccountChangeRequestController;
+use App\Http\Controllers\NextOfKinChangeRequestController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeceasedOfficerController;
@@ -22,6 +24,9 @@ use App\Http\Controllers\RetirementController;
 use App\Http\Controllers\StaffOrderController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\CommandController;
+use App\Http\Controllers\TRADOCController;
+use App\Http\Controllers\ICTController;
+use App\Http\Controllers\EstablishmentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,21 +47,34 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Protected Routes
 Route::middleware('auth')->group(function () {
-    // Dashboard Routes
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    // Dashboard Routes (with onboarding check)
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('onboarding.complete');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('onboarding.complete');
 
     // Officer Routes
-    Route::prefix('officer')->name('officer.')->group(function () {
+    Route::prefix('officer')->name('officer.')->middleware('onboarding.complete')->group(function () {
         Route::get('/dashboard', [OfficerController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [OfficerController::class, 'profile'])->name('profile');
+        Route::post('/profile/update-picture', [OfficerController::class, 'updateProfilePicture'])->name('profile.update-picture');
+        Route::get('/settings', [OfficerController::class, 'settings'])->name('settings');
+        Route::post('/settings/change-password', [OfficerController::class, 'changePassword'])->name('settings.change-password');
         Route::get('/emoluments', [EmolumentController::class, 'index'])->name('emoluments');
         Route::get('/emoluments/{id}', [EmolumentController::class, 'show'])->name('emoluments.show');
+        Route::get('/account-change', [AccountChangeRequestController::class, 'index'])->name('account-change.index');
+        Route::get('/account-change/create', [AccountChangeRequestController::class, 'create'])->name('account-change.create');
+        Route::post('/account-change', [AccountChangeRequestController::class, 'store'])->name('account-change.store');
         Route::get('/leave-applications', [LeaveApplicationController::class, 'index'])->name('leave-applications');
         Route::get('/leave-applications/{id}', [LeaveApplicationController::class, 'show'])->name('leave-applications.show');
         Route::get('/pass-applications', [PassApplicationController::class, 'index'])->name('pass-applications');
         Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show'])->name('pass-applications.show');
         Route::get('/application-history', [OfficerController::class, 'applicationHistory'])->name('application-history');
+        Route::get('/next-of-kin', [NextOfKinChangeRequestController::class, 'index'])->name('next-of-kin.index');
+        Route::get('/next-of-kin/create', [NextOfKinChangeRequestController::class, 'create'])->name('next-of-kin.create');
+        Route::post('/next-of-kin', [NextOfKinChangeRequestController::class, 'store'])->name('next-of-kin.store');
+        Route::get('/next-of-kin/{id}/edit', [NextOfKinChangeRequestController::class, 'edit'])->name('next-of-kin.edit');
+        Route::put('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'update'])->name('next-of-kin.update');
+        Route::delete('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'destroy'])->name('next-of-kin.destroy');
+        Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
     });
 
     // HRD Routes
@@ -65,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
+        Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');
 
         Route::get('/emolument-timeline', [EmolumentTimelineController::class, 'index'])->name('emolument-timeline');
         Route::get('/emolument-timeline/create', [EmolumentTimelineController::class, 'create'])->name('emolument-timeline.create');
@@ -180,6 +199,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-level/{id}/edit', [ManningRequestController::class, 'edit'])->name('manning-level.edit');
         Route::put('/manning-level/{id}', [ManningRequestController::class, 'update'])->name('manning-level.update');
         Route::post('/manning-level/{id}/submit', [ManningRequestController::class, 'submit'])->name('manning-level.submit');
+        Route::get('/deceased-officers/create', [DeceasedOfficerController::class, 'create'])->name('deceased-officers.create');
+        Route::post('/deceased-officers', [DeceasedOfficerController::class, 'store'])->name('deceased-officers.store');
 
         Route::get('/roster', [DutyRosterController::class, 'index'])->name('roster');
         Route::get('/roster/create', [DutyRosterController::class, 'create'])->name('roster.create');
@@ -225,6 +246,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-level', [ManningRequestController::class, 'areaControllerIndex'])->name('manning-level');
         Route::get('/manning-level/{id}', [ManningRequestController::class, 'areaControllerShow'])->name('manning-level.show');
         Route::post('/manning-level/{id}/approve', [ManningRequestController::class, 'areaControllerApprove'])->name('manning-level.approve');
+        Route::get('/deceased-officers/create', [DeceasedOfficerController::class, 'create'])->name('deceased-officers.create');
+        Route::post('/deceased-officers', [DeceasedOfficerController::class, 'store'])->name('deceased-officers.store');
+        Route::get('/deceased-officers/create', [DeceasedOfficerController::class, 'create'])->name('deceased-officers.create');
+        Route::post('/deceased-officers', [DeceasedOfficerController::class, 'store'])->name('deceased-officers.store');
         Route::post('/manning-level/{id}/reject', [ManningRequestController::class, 'areaControllerReject'])->name('manning-level.reject');
         Route::get('/roster', [DutyRosterController::class, 'areaControllerIndex'])->name('roster');
         Route::get('/roster/{id}', [DutyRosterController::class, 'areaControllerShow'])->name('roster.show');
@@ -266,6 +291,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/emoluments/bulk-process', [EmolumentController::class, 'bulkProcess'])->name('emoluments.bulk-process');
         Route::get('/deceased-officers', [DeceasedOfficerController::class, 'index'])->name('deceased-officers');
         Route::get('/deceased-officers/{id}', [DeceasedOfficerController::class, 'show'])->name('deceased-officers.show');
+        Route::get('/account-change-requests', [AccountChangeRequestController::class, 'pending'])->name('account-change.pending');
+        Route::get('/account-change-requests/{id}', [AccountChangeRequestController::class, 'show'])->name('account-change.show');
+        Route::post('/account-change-requests/{id}/approve', [AccountChangeRequestController::class, 'approve'])->name('account-change.approve');
+        Route::post('/account-change-requests/{id}/reject', [AccountChangeRequestController::class, 'reject'])->name('account-change.reject');
     });
 
     // Board Routes
@@ -289,27 +318,66 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'establishment'])->name('dashboard');
         Route::get('/service-numbers', [DashboardController::class, 'serviceNumbers'])->name('service-numbers');
         Route::get('/new-recruits', [DashboardController::class, 'newRecruits'])->name('new-recruits');
+        Route::get('/new-recruits/create', [EstablishmentController::class, 'createRecruit'])->name('new-recruits.create');
+        Route::post('/new-recruits', [EstablishmentController::class, 'storeRecruit'])->name('new-recruits.store');
+        Route::delete('/new-recruits/{id}', [EstablishmentController::class, 'deleteRecruit'])->name('new-recruits.delete');
+        Route::delete('/new-recruits/bulk/delete', [EstablishmentController::class, 'bulkDeleteRecruits'])->name('new-recruits.bulk-delete');
+        Route::get('/service-numbers/allocate-batch', [EstablishmentController::class, 'allocateBatch'])->name('service-numbers.allocate-batch');
+        Route::post('/service-numbers/allocate-batch', [EstablishmentController::class, 'processBatchAllocation'])->name('service-numbers.process-batch');
+        Route::get('/training-results', [EstablishmentController::class, 'trainingResults'])->name('training-results');
+        Route::post('/assign-service-numbers', [EstablishmentController::class, 'assignServiceNumbers'])->name('assign-service-numbers');
+        Route::post('/assign-appointment-numbers', [EstablishmentController::class, 'assignAppointmentNumbers'])->name('assign-appointment-numbers');
+    });
+
+    // TRADOC Routes
+    Route::prefix('tradoc')->name('tradoc.')->middleware('role:TRADOC')->group(function () {
+        Route::get('/dashboard', [TRADOCController::class, 'index'])->name('dashboard');
+        Route::get('/download-template', [TRADOCController::class, 'downloadNewRecruitsTemplate'])->name('download-template');
+        Route::get('/upload', [TRADOCController::class, 'create'])->name('upload');
+        Route::post('/upload', [TRADOCController::class, 'store'])->name('upload.store');
+        Route::get('/sorted-results', [TRADOCController::class, 'sortedResults'])->name('sorted-results');
+        Route::get('/export-sorted', [TRADOCController::class, 'exportSortedResults'])->name('export-sorted');
+        Route::get('/results/{id}', [TRADOCController::class, 'show'])->name('results.show');
+        Route::delete('/results/{id}', [TRADOCController::class, 'destroy'])->name('results.destroy');
+    });
+
+    // ICT Routes
+    Route::prefix('ict')->name('ict.')->middleware('role:ICT')->group(function () {
+        Route::get('/dashboard', [ICTController::class, 'index'])->name('dashboard');
+        Route::post('/create-emails', [ICTController::class, 'createEmails'])->name('create-emails');
+        Route::post('/delete-personal-emails', [ICTController::class, 'deletePersonalEmails'])->name('delete-personal-emails');
+        Route::post('/bulk-create-emails', [ICTController::class, 'bulkCreateEmails'])->name('bulk-create-emails');
     });
 
     // Welfare Routes
     Route::prefix('welfare')->name('welfare.')->middleware('role:Welfare')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'welfare'])->name('dashboard');
+        Route::get('/next-of-kin-requests', [NextOfKinChangeRequestController::class, 'pending'])->name('next-of-kin.pending');
+        Route::get('/next-of-kin-requests/{id}', [NextOfKinChangeRequestController::class, 'show'])->name('next-of-kin.show');
+        Route::post('/next-of-kin-requests/{id}/approve', [NextOfKinChangeRequestController::class, 'approve'])->name('next-of-kin.approve');
+        Route::post('/next-of-kin-requests/{id}/reject', [NextOfKinChangeRequestController::class, 'reject'])->name('next-of-kin.reject');
         Route::get('/deceased-officers', [DeceasedOfficerController::class, 'index'])->name('deceased-officers');
-        Route::get('/deceased-officers/create', [DeceasedOfficerController::class, 'create'])->name('deceased-officers.create');
         Route::get('/deceased-officers/{id}', [DeceasedOfficerController::class, 'show'])->name('deceased-officers.show');
+        Route::post('/deceased-officers/{id}/validate', [DeceasedOfficerController::class, 'validate'])->name('deceased-officers.validate');
+        Route::get('/deceased-officers/{id}/report', [DeceasedOfficerController::class, 'generateReport'])->name('deceased-officers.report');
+        Route::get('/deceased-officers/{id}/export', [DeceasedOfficerController::class, 'export'])->name('deceased-officers.export');
+        Route::post('/deceased-officers/{id}/mark-benefits-processed', [DeceasedOfficerController::class, 'markBenefitsProcessed'])->name('deceased-officers.mark-benefits-processed');
     });
 
     // Form Routes (Public within auth)
+    Route::middleware('onboarding.complete')->group(function () {
     Route::get('/emolument/raise', [EmolumentController::class, 'create'])->name('emolument.raise');
     Route::post('/emolument/raise', [EmolumentController::class, 'store'])->name('emolument.store');
+        Route::get('/leave/apply', [LeaveApplicationController::class, 'create'])->name('leave.apply');
+        Route::post('/leave/apply', [LeaveApplicationController::class, 'store'])->name('leave.store');
+        Route::get('/pass/apply', [PassApplicationController::class, 'create'])->name('pass.apply');
+        Route::post('/pass/apply', [PassApplicationController::class, 'store'])->name('pass.store');
+    });
+    
+    // These routes don't require onboarding completion (admin/HRD functions)
     Route::post('/emolument/{id}/assess', [EmolumentController::class, 'processAssessment'])->name('emolument.process-assessment');
     Route::post('/emolument/{id}/validate', [EmolumentController::class, 'processValidation'])->name('emolument.process-validation');
     Route::post('/emolument/{id}/process-payment', [EmolumentController::class, 'processPayment'])->name('emolument.process-payment');
-
-    Route::get('/leave/apply', [LeaveApplicationController::class, 'create'])->name('leave.apply');
-    Route::post('/leave/apply', [LeaveApplicationController::class, 'store'])->name('leave.store');
-    Route::get('/pass/apply', [PassApplicationController::class, 'create'])->name('pass.apply');
-    Route::post('/pass/apply', [PassApplicationController::class, 'store'])->name('pass.store');
 });
 
 // Onboarding Routes (token-based authentication, no auth middleware required)
@@ -323,4 +391,6 @@ Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::get('/step4', [DashboardController::class, 'onboardingStep4'])->name('step4');
     Route::post('/step4', [DashboardController::class, 'saveOnboardingStep4'])->name('step4.save');
     Route::post('/submit', [DashboardController::class, 'submitOnboarding'])->name('submit');
+    Route::get('/preview', [DashboardController::class, 'onboardingPreview'])->name('preview');
+    Route::post('/final-submit', [DashboardController::class, 'finalSubmitOnboarding'])->name('final-submit');
 });

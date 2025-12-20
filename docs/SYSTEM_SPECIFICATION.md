@@ -88,15 +88,18 @@
 **Access Level:** New recruitment and service numbers
 
 **Core Functions:**
-1. Onboard new officers
-2. Allocate Service Number to new officers (starts from the last service number of an officer, e.g., if the last service number is 57616, new officers will be 57617, 57618, etc.)
-3. Maintain service number registry
-4. Process new recruit documentation
-5. Create initial officer records
-6. Coordinate recruitment exercises
-7. Process appointment letters
-8. Assign initial ranks to new officers
-9. Ensure unique identification for all officers
+1. Assign New Appointment Numbers to new recruits
+2. Receive sorted training results from TRADOC
+3. Enter last available service number in system
+4. Allocate Service Number to new officers based on training performance (highest scorer gets first available number, next scorer gets next number, etc.)
+5. Maintain service number registry
+6. Process new recruit documentation
+7. Create initial officer records
+8. Coordinate recruitment exercises
+9. Process appointment letters
+10. Assign initial ranks to new officers
+11. Ensure unique identification for all officers
+12. Generate service number assignment reports
 
 ### Accounts - Financial Processor
 **Primary Role:** Payment processing and financial management
@@ -118,6 +121,8 @@
 8. Maintain financial audit trails
 9. Handle payment exceptions and corrections
 10. Generate payroll and financial statistics
+11. Verify and approve account number changes submitted by officers
+12. Verify and approve RSA PIN number changes submitted by officers (RSA PIN has the prefix PEN)
 
 ### Board (Promotion Board) - Career Progression Manager
 **Primary Role:** Management of promotions and rank changes
@@ -193,6 +198,11 @@
 17. Upload and maintain personal documents (JPEG format)
 18. Track application statuses (leave, pass, emolument)
 19. Receive system notifications and alerts
+20. Send new account number to Accounts Section for verification
+21. Send new RSA PIN number to Accounts Section for verification (RSA PIN has the prefix PEN)
+22. Add, edit, or delete Next of KIN details (Name, Relationship, Phone Number, Address, Email) for Welfare verification
+23. View retirement information including calculated retirement date, retirement type (AGE or SVC), and countdown to retirement
+24. Receive and view retirement alerts (3 months before retirement date)
 
 ### Area Controller (Comptroller) - Senior Validator
 **Primary Role:** Command oversight and final validation authority
@@ -255,6 +265,61 @@
 8. Handle compassionate cases
 9. Process emergency support requests
 10. Generate welfare reports
+11. Verify and approve Next of KIN changes submitted by officers (Name, Relationship, Phone Number, Address, Email)
+
+### TRADOC - Training Command
+**Primary Role:** Training administration and results management
+
+**Access Level:** Training records and results
+
+**Core Functions:**
+1. Upload training results in CSV format
+2. View and manage training results
+3. Sort results by performance (highest to lowest)
+4. Submit sorted results to Establishment unit
+5. Track training completion status
+6. Generate training reports
+7. Manage training batches and cohorts
+
+### ICT - Information and Communication Technology
+**Primary Role:** Email and system account management
+
+**Access Level:** Email management and account administration
+
+**Core Functions:**
+1. Create new email addresses on customs.gov.ng domain
+2. Delete former personal email addresses
+3. Manage officer email accounts
+4. Assign email addresses based on service numbers
+5. Track email creation and deletion status
+6. Generate email account reports
+7. Manage system user accounts
+
+### TRADOC - Training Command
+**Primary Role:** Training results management and performance tracking
+
+**Access Level:** Training results and officer performance data
+
+**Core Functions:**
+1. Upload training results in CSV format
+2. View and manage training results
+3. Sort officers by performance (highest to lowest)
+4. Generate training performance reports
+5. Track officer training completion status
+6. Export training results for Establishment processing
+
+### ICT - Information and Communication Technology
+**Primary Role:** Email account management and IT infrastructure
+
+**Access Level:** Email account management and officer IT accounts
+
+**Core Functions:**
+1. Create new email addresses on customs.gov.ng domain
+2. Delete former personal email addresses
+3. Manage officer email account lifecycle
+4. Track email account status
+5. Generate email account reports
+6. Coordinate email creation with service number assignment
 
 ### Zone Coordinator - Zonal Posting Manager
 **Primary Role:** Zonal-level officer posting management
@@ -346,19 +411,11 @@ The system is organized into the following zones:
 ### 2. Officers Onboarding Workflow
 
 **For New Recruits:**
-1. **Establishment allocates** - Establishment allocates service number
-2. **Establishment creates record** - Establishment creates initial record
-3. **System generates link** - System generates onboarding link
-4. **Email sent** - Email sent to new officer
-
-**For Existing Officers:**
-1. **HRD initiates** - HRD initiates onboarding
-2. **HRD enters email** - HRD enters officer email
-3. **System sends link** - System sends unique onboarding link
-
-**Officer Completion:**
-1. **Officer receives email** - Officer receives email and clicks link
-2. **Officer fills information** - Officers will fill the following information in multi-step form:
+1. **Unit assigns Appointment Number** - The Unit gives the officers a New Appointment Number (not service number yet)
+2. **System generates link** - System generates onboarding link
+3. **Email sent** - An email is sent to the officer for onboarding (At this point the Officer uses his personal email)
+4. **Officer receives email** - Officer receives email and clicks link
+5. **Officer fills information** - Officers will fill the following information in multi-step form:
    - Step 1: Personal Information
    - Step 2: Employment Details
    - Step 3: Banking and Pension
@@ -398,11 +455,24 @@ The system is organized into the following zones:
    - Interdicted
    - Suspended
    - Quartered
-3. **Officer accepts disclaimer** - Officer accepts disclaimer about false information
-4. **Upload documents** - Officers must upload documents preferably in JPEG to save space
+3. **Officer accepts disclaimer** - Officer accepts disclaimer about false information with caveat: "Any false information provided by you shall be subject to severe disciplinary actions which may include and not be limited to dismissal"
+4. **Upload documents** - Officers must upload credentials and documents preferably in JPEG to save space
 5. **Caveat displayed** - System displays caveat: "Any false information provided by you can lead to Dismissal for Forgery under the PSR Rules"
-6. **System creates account** - System creates account and assigns to command chat
-7. **Establishment processes** - Establishment unit processes the onboarding and allocates Service Number
+6. **Training Phase** - Officers undergo training
+7. **TRADOC uploads results** - After training, TRADOC uploads officers results in CSV format where they will sort highest to lowest according to new appointment number
+8. **Establishment receives sorted list** - This is sent to establishment unit again
+9. **Establishment enters last service number** - Establishment will enter the last available service number
+10. **Service number generation** - The service numbers will be generated from +1 based on sorted performance (highest scorer gets first available number, next scorer gets next number, etc.)
+11. **ICT creates email** - ICT will create new email addresses for them on the customs.gov.ng domain
+12. **ICT deletes personal email** - ICT deletes the former personal email address
+13. **System creates account** - System creates account and assigns to command chat
+
+**For Existing Officers:**
+1. **HRD initiates** - HRD initiates onboarding
+2. **HRD enters email** - HRD enters officer email
+3. **System sends link** - System sends unique onboarding link
+4. **Officer receives email** - Officer receives email and clicks link
+5. **Officer fills information** - Officers will fill the following information in multi-step form:
 
 ### 3. Pass and Leave Workflow
 
@@ -557,6 +627,17 @@ The Eligibility List carries the following fields:
    - Officers completing 35 years service
 2. **System generates list** - System generates retirement list
 
+**Retirement Alert System:**
+1. **System calculates retirement date** - For each officer, system calculates:
+   - Age-based retirement: Date of Birth + 60 years
+   - Service-based retirement: Date of First Appointment + 35 years
+   - Actual retirement date: Whichever comes earlier (AGE or SVC)
+2. **3-Month Alert** - System alerts the officer 3 months before retirement date:
+   - Alert notification sent to officer
+   - Officer dashboard displays retirement countdown
+   - Retirement information visible to officer
+   - System tracks alert sent status
+
 **Processing:**
 1. **HRD reviews** - HRD reviews retirement list
 2. **HRD generates list** - The list is generated by HRD and contains the following fields:
@@ -572,18 +653,86 @@ The Eligibility List carries the following fields:
 3. **System calculates** - System calculates pre-retirement leave (3 months prior)
 4. **System activates status** - System activates pre-retirement status
 5. **Notifications sent** - Notifications sent to:
-   - Retiring officer
+   - Retiring officer (3 months before retirement)
    - Accounts (for benefits processing)
    - Welfare (for transition support)
 6. **Officer informed** - The officer will be informed
 
 ### 9. Service Number Allocation Workflow
 
+**For New Recruits (Performance-Based):**
+1. **TRADOC uploads results** - After training, TRADOC uploads results in CSV format sorted by performance (highest to lowest by appointment number)
+2. **Establishment receives sorted list** - Establishment receives the sorted list from TRADOC
+3. **Establishment enters last service number** - Establishment enters the last available service number in the system
+4. **Performance-based assignment** - System assigns service numbers based on sorted performance:
+   - Highest scorer (100%) gets first available service number (e.g., NCS10001)
+   - Next scorer (99%) gets next service number (e.g., NCS10002)
+   - And so on sequentially
+5. **Pattern precedence** - This performance-based flow takes precedence for new recruits
+
+**For Existing Officers (Sequential):**
 1. **Establishment allocates** - This is done by establishment unit
 2. **Sequential numbering** - Any new officer documented will start from the last service number of an officer (e.g., if the last service number is 57616, new officers will be 57617, 57618, etc.)
-3. **Pattern precedence** - This is the flow that will take precedence on any new recruitment, so officers newly recruited will be built in this pattern
 
-### 10. NCS Employee App (Social Media Application) Workflow
+### 10. Account Number and RSA PIN Number Changing Workflow
+
+**Officer Submission Phase:**
+1. **Officer sends new account number** - The officer sends the new account number to the Accounts Section
+2. **Officer sends new RSA PIN** - The officer sends the new RSA PIN number to the Accounts Section (RSA PIN has the prefix PEN)
+3. **System receives request** - System receives the change request from the officer
+
+**Verification Phase:**
+1. **Account Officer receives** - Account Officer receives the change request
+2. **Account Officer verifies** - The Account Officer verifies the new account number and RSA PIN number
+3. **Account Officer approves/rejects** - Account Officer approves or rejects the change request
+4. **System updates records** - If approved, system updates the officer's account number and RSA PIN records
+5. **Officer notified** - Officer receives notification of approval or rejection
+
+### 11. TRADOC Training Results Upload Workflow
+
+1. **Training completion** - Officers complete training after onboarding
+2. **TRADOC prepares CSV** - TRADOC prepares training results in CSV format
+3. **CSV format requirements** - CSV must contain:
+   - Appointment Number
+   - Officer Name
+   - Training Score/Percentage
+   - Training Status (Pass/Fail)
+4. **TRADOC uploads CSV** - TRADOC uploads the CSV file to the system
+5. **System validates** - System validates CSV format and data
+6. **System sorts by performance** - System automatically sorts officers by performance (highest to lowest) according to appointment number
+7. **System sends to Establishment** - Sorted list is sent to Establishment unit for service number assignment
+
+### 12. ICT Email Management Workflow
+
+1. **Service numbers assigned** - After Establishment assigns service numbers based on training performance
+2. **ICT receives notification** - ICT receives notification of new officers with assigned service numbers
+3. **ICT creates email addresses** - ICT creates new email addresses on customs.gov.ng domain for each officer
+4. **Email format** - Email format follows: [service_number]@customs.gov.ng or similar pattern
+5. **ICT deletes personal email** - ICT deletes the former personal email address from the system
+6. **System updates officer record** - System updates officer record with new customs.gov.ng email
+7. **Officer notified** - Officer is notified of their new email address
+
+### 13. Next of KIN Details Changing Workflow
+
+**Officer Management Phase:**
+1. **Officer can add** - The officer can add new Next of KIN with the following details:
+   - Name
+   - Relationship
+   - Phone Number
+   - Address
+   - Email
+2. **Officer can edit** - The officer can edit existing Next of KIN details
+3. **Officer can delete** - The officer can delete Next of KIN records
+4. **System receives request** - System receives the change request from the officer
+
+**Verification Phase:**
+1. **Welfare Officer receives** - Welfare Officer receives the change request
+2. **Welfare Officer verifies** - The Welfare Officer verifies the Next of KIN details
+3. **Welfare Officer approves/rejects** - Welfare Officer approves or rejects the change request
+4. **System updates records** - If approved, system updates the officer's Next of KIN records
+5. **Officer notified** - Officer receives notification of approval or rejection
+
+### 12. NCS Employee App (Social Media Application) Workflow
 
 **Automatic Room Assignment:**
 1. **HRD onboards** - Onboarding is done by HRD
@@ -688,10 +837,20 @@ The Eligibility List carries the following fields:
 ### FLOW 4: OFFICER ONBOARDING PROCESS
 
 **For New Recruits:**
-1. Establishment allocates service number
-2. Establishment creates initial record
-3. System generates onboarding link
-4. Email sent to new officer
+1. Unit assigns New Appointment Number
+2. System generates onboarding link
+3. Email sent to new officer (personal email)
+4. Officer receives email and clicks link
+5. Officer fills onboarding form and uploads credentials
+6. Officer accepts disclaimer about false information
+7. Officers undergo training
+8. TRADOC uploads training results (CSV format, sorted highest to lowest)
+9. Establishment receives sorted list
+10. Establishment enters last available service number
+11. System generates service numbers based on performance (highest scorer gets first number)
+12. ICT creates new email addresses on customs.gov.ng
+13. ICT deletes former personal email addresses
+14. System creates account and assigns to command chat
 
 **For Existing Officers:**
 1. HRD initiates onboarding
@@ -776,12 +935,24 @@ The Eligibility List carries the following fields:
    - Officers completing 35 years service
 2. System generates retirement list
 
+**Retirement Date Calculation:**
+1. System calculates for each officer:
+   - Age-based retirement: Date of Birth + 60 years
+   - Service-based retirement: Date of First Appointment + 35 years
+   - Actual retirement date: Whichever comes earlier (AGE or SVC)
+
+**3-Month Alert System:**
+1. System checks daily for officers approaching retirement (3 months before)
+2. System sends alert notification to officer
+3. Officer dashboard displays retirement information and countdown
+4. System tracks alert status to prevent duplicate notifications
+
 **Processing:**
 1. HRD reviews retirement list
 2. System calculates pre-retirement leave (3 months prior)
 3. System activates pre-retirement status
 4. Notifications sent to:
-   - Retiring officer
+   - Retiring officer (3 months before retirement date)
    - Accounts (for benefits processing)
    - Welfare (for transition support)
 
@@ -842,6 +1013,37 @@ The Eligibility List carries the following fields:
 
 ---
 
+### FLOW 11: ACCOUNT NUMBER AND RSA PIN CHANGE PROCESS
+
+**Officer Submission Phase:**
+1. Officer submits new account number to Accounts Section
+2. Officer submits new RSA PIN number to Accounts Section (RSA PIN has the prefix PEN)
+3. System receives change request
+
+**Verification Phase:**
+1. Account Officer receives change request
+2. Account Officer verifies the new account number and RSA PIN number
+3. Account Officer approves or rejects the change request
+4. If approved, system updates officer's records
+5. Officer receives notification of approval or rejection
+
+---
+
+### FLOW 12: NEXT OF KIN DETAILS CHANGE PROCESS
+
+**Officer Management Phase:**
+1. Officer adds, edits, or deletes Next of KIN details (Name, Relationship, Phone Number, Address, Email)
+2. System receives change request
+
+**Verification Phase:**
+1. Welfare Officer receives change request
+2. Welfare Officer verifies the Next of KIN details
+3. Welfare Officer approves or rejects the change request
+4. If approved, system updates officer's Next of KIN records
+5. Officer receives notification of approval or rejection
+
+---
+
 ## Critical Interaction Points
 
 ### Emolument Chain of Command:
@@ -858,6 +1060,12 @@ HRD (Initiates) → Officers (Notified) → Staff Officer (Documents) → System
 
 ### Deceased Benefits Chain:
 Reporter (Indicates) → Welfare (Validates) → Accounts (Calculates) → Next of Kin (Receives)
+
+### Account Number and RSA PIN Change Chain:
+Officer (Submits) → Accounts (Verifies) → System (Updates) → Officer (Notified)
+
+### Next of KIN Change Chain:
+Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notified)
 
 ---
 
@@ -985,9 +1193,17 @@ Reporter (Indicates) → Welfare (Validates) → Accounts (Calculates) → Next 
 
 1. **Retirement Criteria**
    - An officer is due for retirement when he reaches the age of 60 years or 35 years in service, whichever comes first
+   - Retirement date is calculated as: min(Date of Birth + 60 years, Date of First Appointment + 35 years)
 
-2. **Pre-Retirement Leave**
+2. **3-Month Alert System**
+   - System automatically alerts officers 3 months before their retirement date
+   - Alert is sent once when officer reaches 3 months before retirement
+   - Officer dashboard displays retirement countdown and information
+   - Officers can view their calculated retirement date and retirement type (AGE or SVC)
+
+3. **Pre-Retirement Leave**
    - Pre-Retirement Leave is 3 months before retirement date
+   - Date of Pre Retirement Leave (DOPR) = Retirement Date - 3 months
 
 ### Promotion Rules
 

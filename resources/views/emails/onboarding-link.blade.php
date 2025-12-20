@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .header {
-            background-color: #088a56;
+            background-color: #068b57;
             color: white;
             padding: 20px;
             text-align: center;
@@ -29,7 +29,7 @@
         .button {
             display: inline-block;
             padding: 12px 30px;
-            background-color: #088a56;
+            background-color: #068b57;
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -38,12 +38,12 @@
         .credentials {
             background-color: #fff;
             padding: 15px;
-            border-left: 4px solid #088a56;
+            border-left: 4px solid #068b57;
             margin: 20px 0;
         }
         .footer {
             text-align: center;
-            color: #666;
+            color: #333333;
             font-size: 12px;
             margin-top: 30px;
             padding-top: 20px;

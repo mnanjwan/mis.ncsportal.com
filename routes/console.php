@@ -17,6 +17,11 @@ Schedule::call(function () {
     CheckRetirementJob::dispatch();
 })->daily();
 
+// Check and send retirement alerts (3 months before retirement)
+Schedule::command('retirement:check-alerts')
+    ->daily()
+    ->at('08:00');
+
 // Check and activate pre-retirement status
 Schedule::call(function () {
     $retirementService = new RetirementService();

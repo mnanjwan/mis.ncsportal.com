@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\StaffOrder;
 use App\Services\PostingWorkflowService;
+use App\Services\NotificationService;
 
 class StaffOrderController extends Controller
 {
@@ -258,6 +259,10 @@ class StaffOrderController extends Controller
         
         try {
             $order = StaffOrder::create($validated);
+            
+            // Notify officer about staff order creation
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyStaffOrderCreated($order);
             
             // Process workflow automation if order is published
             if ($validated['status'] === 'PUBLISHED') {

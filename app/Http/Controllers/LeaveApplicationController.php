@@ -8,6 +8,7 @@ use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class LeaveApplicationController extends Controller
 {
@@ -18,7 +19,19 @@ class LeaveApplicationController extends Controller
 
     public function index()
     {
-        return view('dashboards.officer.leave-applications-list');
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $applications = LeaveApplication::where('officer_id', $officer->id)
+            ->with('leaveType')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('dashboards.officer.leave-applications-list', compact('applications'));
     }
 
     public function create()
@@ -93,7 +106,11 @@ class LeaveApplicationController extends Controller
 
             DB::commit();
 
-            return redirect()->route('officer.dashboard')->with('success', 'Leave application submitted successfully.');
+            // Notify Staff Officers about the new leave application
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyLeaveApplicationSubmitted($application);
+
+            return redirect()->route('officer.leave-applications')->with('success', 'Leave application submitted successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -227,6 +244,10 @@ class LeaveApplicationController extends Controller
             $application->approved_at = now();
             $application->save();
             
+            // Notify officer about approval
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyLeaveApplicationApproved($application);
+            
             return redirect()->route('dc-admin.leave-pass', ['type' => 'leave'])
                 ->with('success', 'Leave application approved successfully.');
         } catch (\Exception $e) {
@@ -267,6 +288,10 @@ class LeaveApplicationController extends Controller
             $application->rejected_at = now();
             $application->rejection_reason = $request->rejection_reason;
             $application->save();
+            
+            // Notify officer about rejection
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyLeaveApplicationRejected($application, $request->rejection_reason);
             
             return redirect()->route('dc-admin.leave-pass', ['type' => 'leave'])
                 ->with('success', 'Leave application rejected.');

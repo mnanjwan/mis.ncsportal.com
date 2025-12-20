@@ -12,7 +12,7 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Movement Orders List Card -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Movement Orders</h3>
                 <div class="kt-card-toolbar">
@@ -21,11 +21,18 @@
                     </a>
                 </div>
             </div>
-            <div class="kt-card-content">
-                <!-- Desktop Table View -->
-                <div class="hidden lg:block">
-                    <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <!-- Mobile scroll hint -->
+                <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
+                    <div class="flex items-center gap-2 text-xs text-secondary-foreground">
+                        <i class="ki-filled ki-arrow-left-right"></i>
+                        <span>Swipe left to view more columns</span>
+                    </div>
+                </div>
+
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 900px; width: 100%;">
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
@@ -129,12 +136,11 @@
                                 @endforelse
                             </tbody>
                         </table>
-                    </div>
                 </div>
 
-                <!-- Mobile Card View -->
-                <div class="lg:hidden">
-                    <div class="flex flex-col gap-4">
+                <!-- Pagination -->
+                @if($orders->hasPages())
+                    <div class="mt-6 pt-4 border-t border-border px-4">
                         @forelse($orders as $order)
                             @php
                                 $statusClass = match($order->status ?? 'DRAFT') {
@@ -183,18 +189,49 @@
                                     Create First Movement Order
                                 </a>
                             </div>
-                        @endforelse
-                    </div>
-                </div>
-
-                <!-- Pagination -->
-                @if($orders->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border">
                         {{ $orders->withQueryString()->links() }}
                     </div>
                 @endif
             </div>
         </div>
     </div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection
 

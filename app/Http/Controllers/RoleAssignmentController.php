@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Services\NotificationService;
 
 class RoleAssignmentController extends Controller
 {
@@ -340,6 +341,12 @@ class RoleAssignmentController extends Controller
             $user->load(['roles' => function($query) {
                 $query->wherePivot('is_active', true);
             }]);
+            
+            // Notify user about role assignment
+            $command = $validated['command_id'] ? Command::find($validated['command_id']) : null;
+            $commandName = $command ? $command->name : null;
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyRoleAssigned($user, $role->name, $commandName);
             
             // If this is the current logged-in user, log them out for security
             if (auth()->id() == $user->id) {

@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\QuarterController;
 use App\Http\Controllers\Api\V1\RetirementController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\StaffOrderController;
+use App\Http\Controllers\Api\V1\ZoneController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -80,6 +81,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/leave-applications/{id}/minute', [LeaveApplicationController::class, 'minute']);
     Route::post('/leave-applications/{id}/approve', [LeaveApplicationController::class, 'approve']);
     Route::post('/leave-applications/{id}/print', [LeaveApplicationController::class, 'print']);
+
+    // Zones
+    Route::get('/zones', [ZoneController::class, 'index']);
+    Route::get('/zones/{id}', [ZoneController::class, 'show']);
 
     // Commands
     Route::get('/commands', [CommandController::class, 'index']);

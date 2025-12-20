@@ -6,13 +6,13 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
             <div class="kt-card">
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
                             <span class="text-sm font-normal text-secondary-foreground">Deceased Officers</span>
-                            <span class="text-2xl font-semibold text-mono" id="deceased-officers">Loading...</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $deceasedOfficersCount ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-secondary/10">
                             <i class="ki-filled ki-heart text-2xl text-secondary"></i>
@@ -25,11 +25,11 @@
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Pending Settlements</span>
-                            <span class="text-2xl font-semibold text-mono" id="pending-settlements">Loading...</span>
+                            <span class="text-sm font-normal text-secondary-foreground">Pending Validation</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $pendingValidationCount ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
-                            <i class="ki-filled ki-file-up text-2xl text-warning"></i>
+                            <i class="ki-filled ki-time text-2xl text-warning"></i>
                         </div>
                     </div>
                 </div>
@@ -39,11 +39,25 @@
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Settled This Year</span>
-                            <span class="text-2xl font-semibold text-mono" id="settled-year">Loading...</span>
+                            <span class="text-sm font-normal text-secondary-foreground">Validated</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $validatedCount ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
                             <i class="ki-filled ki-check text-2xl text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Pending Next of KIN Requests</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $pendingNextOfKinRequests ?? 0 }}</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                            <i class="ki-filled ki-people text-2xl text-warning"></i>
                         </div>
                     </div>
                 </div>
@@ -60,33 +74,151 @@
                     <a href="{{ route('welfare.deceased-officers') }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-heart"></i> View Deceased Officers
                     </a>
-                    <a href="#"
-                        class="inline-flex items-center justify-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all shadow-sm">
-                        <i class="ki-filled ki-plus mr-2"></i> Record Deceased Officer
+                    <a href="{{ route('welfare.next-of-kin.pending') }}" class="kt-btn kt-btn-warning">
+                        <i class="ki-filled ki-people"></i> Next of KIN Requests
+                        @if($pendingNextOfKinRequests > 0)
+                            <span class="kt-badge kt-badge-danger kt-badge-sm ms-2">{{ $pendingNextOfKinRequests }}</span>
+                        @endif
                     </a>
                 </div>
             </div>
         </div>
+
+        <!-- Recent Deceased Officers Pending Validation -->
+        @if(isset($recentDeceasedOfficers) && $recentDeceasedOfficers->count() > 0)
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Recent Deceased Officers Pending Validation</h3>
+                    <div class="kt-card-toolbar">
+                        <a href="{{ route('welfare.deceased-officers') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                            View All
+                        </a>
+                    </div>
+                </div>
+                <div class="kt-card-content">
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Reported Date</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Date of Death</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Reported By</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recentDeceasedOfficers as $deceased)
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <td class="py-3 px-4 text-sm text-foreground">
+                                            {{ $deceased->created_at->format('d/m/Y H:i') }}
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-medium text-foreground">
+                                                    {{ ($deceased->officer->initials ?? '') . ' ' . ($deceased->officer->surname ?? '') }}
+                                                </span>
+                                                <span class="text-xs text-secondary-foreground">
+                                                    {{ $deceased->officer->presentStation->name ?? 'N/A' }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="text-sm font-mono text-foreground">
+                                                {{ $deceased->officer->service_number ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            {{ $deceased->date_of_death->format('d/m/Y') }}
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            {{ $deceased->reportedBy->name ?? 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4 text-right">
+                                            <a href="{{ route('welfare.deceased-officers.show', $deceased->id) }}" 
+                                               class="kt-btn kt-btn-sm kt-btn-ghost"
+                                               title="View Details">
+                                                <i class="ki-filled ki-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Recent Next of KIN Change Requests -->
+        @if(isset($recentNextOfKinRequests) && $recentNextOfKinRequests->count() > 0)
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Recent Next of KIN Change Requests</h3>
+                    <div class="kt-card-toolbar">
+                        <a href="{{ route('welfare.next-of-kin.pending') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                            View All
+                        </a>
+                    </div>
+                </div>
+                <div class="kt-card-content">
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Request Date</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Action</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Name</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recentNextOfKinRequests as $request)
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <td class="py-3 px-4 text-sm text-foreground">
+                                            {{ $request->created_at->format('d/m/Y H:i') }}
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-medium text-foreground">
+                                                    {{ ($request->officer->initials ?? '') . ' ' . ($request->officer->surname ?? '') }}
+                                                </span>
+                                                <span class="text-xs text-secondary-foreground">
+                                                    {{ $request->officer->presentStation->name ?? 'N/A' }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="text-sm font-mono text-foreground">
+                                                {{ $request->officer->service_number ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="kt-badge kt-badge-{{ $request->action_type === 'add' ? 'success' : ($request->action_type === 'edit' ? 'info' : 'danger') }} kt-badge-sm">
+                                                {{ strtoupper($request->action_type) }}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-foreground">
+                                            {{ $request->name }}
+                                        </td>
+                                        <td class="py-3 px-4 text-right">
+                                            <a href="{{ route('welfare.next-of-kin.show', $request->id) }}" 
+                                               class="kt-btn kt-btn-sm kt-btn-ghost"
+                                               title="View Details">
+                                                <i class="ki-filled ki-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', async () => {
-                const token = window.API_CONFIG.token;
-
-                try {
-                    const res = await fetch('/api/v1/deceased-officers?per_page=1', {
-                        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-                    });
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        document.getElementById('deceased-officers').textContent = data.meta?.total || 0;
-                    }
-                } catch (error) {
-                    console.error('Error loading dashboard data:', error);
-                }
-            });
-        </script>
-    @endpush
 @endsection

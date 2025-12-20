@@ -16,6 +16,8 @@
         'Accounts',
         'Welfare',
         'Establishment',
+        'TRADOC',
+        'ICT',
         'Building Unit',
         'Area Controller',
         'DC Admin',
@@ -41,12 +43,20 @@
         $officer = $user->officer()->first();
     }
 
+    // Check if onboarding is complete for Officer role
+    $onboardingComplete = true;
+    if ($primaryRole === 'Officer' && $officer) {
+        $onboardingComplete = $officer->hasCompletedOnboarding();
+    }
+
     // Get menu items based on role
     $menuItems = [];
     $dashboardPath = route('dashboard');
 
     switch ($primaryRole) {
         case 'Officer':
+            if ($onboardingComplete) {
+                // Show full menu for completed onboarding
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('officer.dashboard')],
                 [
@@ -61,12 +71,27 @@
                     'title' => 'Applications',
                     'icon' => 'ki-filled ki-calendar',
                     'submenu' => [
-                        ['title' => 'Apply for Leave', 'href' => route('leave.apply')],
-                        ['title' => 'Apply for Pass', 'href' => route('pass.apply')],
+                        ['title' => 'Leave Applications', 'href' => route('officer.leave-applications')],
+                        ['title' => 'Pass Applications', 'href' => route('officer.pass-applications')],
+                        ['title' => 'Account Changes', 'href' => route('officer.account-change.index')],
+                        ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
                     ]
                 ],
                 ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
+                [
+                    'title' => 'Settings',
+                    'icon' => 'ki-filled ki-setting-2',
+                    'submenu' => [
+                        ['title' => 'Change Password', 'href' => route('officer.settings')],
+                    ]
+                ],
             ];
+            } else {
+                // Show only onboarding link for incomplete onboarding
+                $menuItems = [
+                    ['icon' => 'ki-filled ki-user', 'title' => 'Complete Onboarding', 'href' => route('onboarding.step1')],
+                ];
+            }
             break;
         case 'HRD':
             $menuItems = [
@@ -134,6 +159,7 @@
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
                 ['icon' => 'ki-filled ki-profile-circle', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
+                ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
             ];
             break;
         case 'Assessor':
@@ -155,6 +181,7 @@
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('area-controller.leave-pass')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('area-controller.manning-level')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('area-controller.roster')],
+                ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('area-controller.deceased-officers.create')],
             ];
             break;
         case 'DC Admin':
@@ -167,6 +194,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('accounts.dashboard')],
                 ['icon' => 'ki-filled ki-wallet', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
+                ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Account Change Requests', 'href' => route('accounts.account-change.pending')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
             ];
             break;
@@ -187,12 +215,26 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('establishment.dashboard')],
                 ['icon' => 'ki-filled ki-abstract-26', 'title' => 'Service Numbers', 'href' => route('establishment.service-numbers')],
                 ['icon' => 'ki-filled ki-user-plus', 'title' => 'New Recruits', 'href' => route('establishment.new-recruits')],
+                ['icon' => 'ki-filled ki-file', 'title' => 'Training Results', 'href' => route('establishment.training-results')],
             ];
             break;
         case 'Welfare':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('welfare.dashboard')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Next of KIN Requests', 'href' => route('welfare.next-of-kin.pending')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Deceased Officers', 'href' => route('welfare.deceased-officers')],
+            ];
+            break;
+        case 'TRADOC':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('tradoc.dashboard')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Upload Training Results', 'href' => route('tradoc.upload')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Sorted Results', 'href' => route('tradoc.sorted-results')],
+            ];
+            break;
+        case 'ICT':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('ict.dashboard')],
             ];
             break;
         default:
@@ -238,6 +280,12 @@
                             </a>
                         </div>
                         <div class="kt-menu-item">
+                            <a class="kt-menu-link" href="{{ route('officer.settings') }}">
+                                <span class="kt-menu-icon"><i class="ki-filled ki-setting-2"></i></span>
+                                <span class="kt-menu-title">Change Password</span>
+                            </a>
+                        </div>
+                        <div class="kt-menu-item">
                             <a class="kt-menu-link" href="#"
                                 data-kt-modal-toggle="#logout-confirm-modal">
                                 <span class="kt-menu-icon"><i class="ki-filled ki-exit-right"></i></span>
@@ -276,7 +324,7 @@
                                 onclick="this.classList.toggle('show'); this.classList.toggle('here');">
                                 <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md" href="javascript:void(0)">
                                     <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
-                                        <i class="{{ $item['icon'] }}"></i>
+                                        <i class="{{ $item['icon'] ?? 'ki-filled ki-menu' }}"></i>
                                     </span>
                                     <span class="kt-menu-title text-sm text-foreground font-medium">
                                         {{ $item['title'] }}
@@ -312,7 +360,7 @@
                                 <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isActive ? 'kt-menu-item-active' : '' }}"
                                     href="{{ $item['href'] }}">
                                     <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
-                                        <i class="{{ $item['icon'] }}"></i>
+                                        <i class="{{ $item['icon'] ?? 'ki-filled ki-menu' }}"></i>
                                     </span>
                                     <span class="kt-menu-title text-sm text-foreground font-medium">
                                         {{ $item['title'] }}
@@ -334,8 +382,8 @@
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="kt-avatar size-10 shrink-0">
                         <div class="kt-avatar-image">
-                            <img alt="avatar"
-                                src="{{ asset('ncs-employee-portal/dist/assets/media/avatars/300-1.png') }}" />
+                            <img id="sidebar-profile-picture" alt="avatar"
+                                src="{{ ($officer && $officer->profile_picture_url) ? asset('storage/' . $officer->profile_picture_url) : asset('ncs-employee-portal/dist/assets/media/avatars/300-1.png') }}" />
                         </div>
                     </div>
                     <div class="flex flex-col gap-0.5 grow min-w-0 overflow-hidden">

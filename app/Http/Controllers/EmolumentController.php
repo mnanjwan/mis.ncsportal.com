@@ -330,6 +330,10 @@ class EmolumentController extends Controller
 
             DB::commit();
 
+            // Notify Assessors about the new emolument
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->notifyEmolumentRaised($emolument);
+
             return redirect()->route('officer.emoluments')
                 ->with('success', 'Emolument raised successfully');
 

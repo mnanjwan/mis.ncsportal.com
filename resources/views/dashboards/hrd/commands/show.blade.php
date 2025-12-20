@@ -68,7 +68,7 @@ Command Details: {{ $command->name }}
         </div>
 
         <!-- Officers Card -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">
                     Officers in {{ $command->name }}
@@ -77,10 +77,19 @@ Command Details: {{ $command->name }}
                     @endif
                 </h3>
             </div>
-            <div class="kt-card-content">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 @if($officers->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+                <!-- Mobile scroll hint -->
+                <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
+                    <div class="flex items-center gap-2 text-xs text-secondary-foreground">
+                        <i class="ki-filled ki-arrow-left-right"></i>
+                        <span>Swipe left to view more columns</span>
+                    </div>
+                </div>
+
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 900px; width: 100%;">
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
@@ -152,7 +161,7 @@ Command Details: {{ $command->name }}
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
+                </div>
                     @if($officers->count() > 20)
                         <p class="text-sm text-secondary-foreground mt-4 text-center">
                             Showing 20 of {{ $officers->count() }} officers. 
@@ -170,5 +179,43 @@ Command Details: {{ $command->name }}
             </div>
         </div>
     </div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection
 

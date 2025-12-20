@@ -88,6 +88,18 @@ class RoleSeeder extends Seeder
                 'description' => 'Zone Coordinator - Zonal Posting Manager',
                 'access_level' => 'zone_level',
             ],
+            [
+                'name' => 'TRADOC',
+                'code' => 'TRADOC',
+                'description' => 'TRADOC - Training Command',
+                'access_level' => 'system_wide',
+            ],
+            [
+                'name' => 'ICT',
+                'code' => 'ICT',
+                'description' => 'ICT - Information and Communication Technology',
+                'access_level' => 'system_wide',
+            ],
         ];
 
         foreach ($roles as $role) {

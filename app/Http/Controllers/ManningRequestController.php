@@ -9,6 +9,7 @@ use App\Models\ManningRequest;
 use App\Models\ManningRequestItem;
 use App\Models\Officer;
 use App\Models\MovementOrder;
+use App\Services\NotificationService;
 
 class ManningRequestController extends Controller
 {
@@ -671,6 +672,10 @@ class ManningRequestController extends Controller
             }
             $manningRequest->save();
             
+            // Notify Staff Officer about approval
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyManningRequestApproved($manningRequest);
+            
             return redirect()->route('area-controller.manning-level')
                 ->with('success', 'Manning request approved successfully.');
         } catch (\Exception $e) {
@@ -705,6 +710,10 @@ class ManningRequestController extends Controller
             $manningRequest->status = 'REJECTED';
             $manningRequest->rejection_reason = $request->rejection_reason;
             $manningRequest->save();
+            
+            // Notify Staff Officer about rejection
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyManningRequestRejected($manningRequest, $request->rejection_reason);
             
             return redirect()->route('area-controller.manning-level')
                 ->with('success', 'Manning request rejected.');

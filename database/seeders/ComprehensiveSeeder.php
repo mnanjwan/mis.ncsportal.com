@@ -121,9 +121,11 @@ class ComprehensiveSeeder extends Seeder
             $rank = $ranks[array_rand($ranks)];
             
             // Generate unique service number (format: NCS + 5 digits)
+            // Check both the array and the database to ensure uniqueness
             do {
                 $serviceNumber = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
-            } while (in_array($serviceNumber, $usedServiceNumbers));
+                $fullServiceNumber = 'NCS' . $serviceNumber;
+            } while (in_array($serviceNumber, $usedServiceNumbers) || Officer::where('service_number', $fullServiceNumber)->exists());
             $usedServiceNumbers[] = $serviceNumber;
 
             // Get HRD user for created_by field

@@ -10,6 +10,29 @@
 @endsection
 
 @section('content')
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="kt-card bg-success/10 border border-success/20 mb-5">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                    <p class="text-sm font-medium text-success">{{ session('success') }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-information text-danger text-xl"></i>
+                    <p class="text-sm font-medium text-danger">{{ session('error') }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
 <div class="grid gap-5 lg:gap-7.5">
     <!-- Pass Applications List Card -->
     <div class="kt-card">
@@ -70,12 +93,13 @@
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                        {{ $pass->created_at->format('d/m/Y') }}
+                                        {{ $pass->created_at->format('d/m/Y H:i') }}
                                     </td>
                                     <td class="py-3 px-4 text-right">
                                         <a href="{{ route('officer.pass-applications.show', $pass->id) }}" 
-                                           class="kt-btn kt-btn-sm kt-btn-ghost">
-                                            View
+                                           class="kt-btn kt-btn-sm kt-btn-ghost"
+                                           title="View Details">
+                                            <i class="ki-filled ki-eye"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -127,8 +151,9 @@
                                     {{ $pass->status }}
                                 </span>
                                 <a href="{{ route('officer.pass-applications.show', $pass->id) }}" 
-                                   class="kt-btn kt-btn-sm kt-btn-ghost">
-                                    View
+                                   class="kt-btn kt-btn-sm kt-btn-ghost"
+                                   title="View Details">
+                                    <i class="ki-filled ki-eye"></i>
                                 </a>
                             </div>
                         </div>

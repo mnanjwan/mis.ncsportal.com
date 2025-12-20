@@ -24,3 +24,4 @@ echo "Option B - Use rsync (recommended):"
 echo "  rsync -avz --delete public/build/ user@srv877042:/home/mis.ncsportal.com/public_html/public/build/"
 echo ""
 echo "Replace 'user' with your actual SSH username"
+

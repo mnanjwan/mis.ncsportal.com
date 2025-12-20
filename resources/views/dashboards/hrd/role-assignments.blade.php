@@ -125,14 +125,12 @@
                         <input type="hidden" name="sort_by" value="{{ request('sort_by') }}">
                         <input type="hidden" name="sort_order" value="{{ request('sort_order') }}">
                     @endif
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>
 
         <!-- Role Assignments Table -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">All Role Assignments</h3>
                 <div class="kt-card-toolbar">
@@ -141,251 +139,184 @@
                     </a>
                 </div>
             </div>
-            <div class="kt-card-content">
-                <!-- Desktop Table View -->
-                <div class="hidden lg:block">
-                    <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
-                            <thead>
-                                <tr class="border-b border-border">
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_order' => request('sort_by') === 'name' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
-                                           class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Officer Details
-                                            @if(request('sort_by') === 'name')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
-                                            @else
-                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
-                                            @endif
-                                        </a>
-                                    </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
-                                           class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Service Number
-                                            @if(request('sort_by') === 'service_number')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
-                                            @else
-                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
-                                            @endif
-                                        </a>
-                                    </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'role', 'sort_order' => request('sort_by') === 'role' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
-                                           class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Role
-                                            @if(request('sort_by') === 'role')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
-                                            @else
-                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
-                                            @endif
-                                        </a>
-                                    </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'command', 'sort_order' => request('sort_by') === 'command' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
-                                           class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Command
-                                            @if(request('sort_by') === 'command')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
-                                            @else
-                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
-                                            @endif
-                                        </a>
-                                    </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'status', 'sort_order' => request('sort_by') === 'status' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
-                                           class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Status
-                                            @if(request('sort_by') === 'status')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
-                                            @else
-                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
-                                            @endif
-                                        </a>
-                                    </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'assigned_at', 'sort_order' => request('sort_by') === 'assigned_at' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
-                                           class="flex items-center gap-1 hover:text-primary transition-colors">
-                                            Assigned
-                                            @if(request('sort_by') === 'assigned_at')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
-                                            @else
-                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
-                                            @endif
-                                        </a>
-                                    </th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($users as $user)
-                                    @php
-                                        // Filter out "Officer" role from display
-                                        $displayRoles = $user->roles->filter(function($role) {
-                                            return $role->name !== 'Officer';
-                                        });
-                                    @endphp
-                                    @foreach($displayRoles as $role)
-                                        @php
-                                            $pivot = $role->pivot;
-                                            $command = $pivot->command_id ? \App\Models\Command::find($pivot->command_id) : null;
-                                            $officer = $user->officer;
-                                            $initials = $officer->initials ?? '';
-                                            $surname = $officer->surname ?? '';
-                                            $fullName = trim("{$initials} {$surname}");
-                                            $avatarInitials = strtoupper(($initials[0] ?? '') . ($surname[0] ?? ''));
-                                        @endphp
-                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                            <td class="py-3 px-4">
-                                                <div class="flex items-center gap-3">
-                                                    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                                        {{ $avatarInitials }}
-                                                    </div>
-                                                    <div>
-                                                        <div class="text-sm font-medium text-foreground">{{ $fullName }}</div>
-                                                        <div class="text-xs text-secondary-foreground">{{ $user->email ?? '' }}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="py-3 px-4">
-                                                <span class="text-sm font-mono text-foreground">
-                                                    {{ $officer->service_number ?? 'N/A' }}
-                                                </span>
-                                            </td>
-                                            <td class="py-3 px-4">
-                                                <span class="kt-badge kt-badge-primary kt-badge-sm">
-                                                    {{ $role->name }}
-                                                </span>
-                                            </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                @if($command)
-                                                    <span class="text-foreground">{{ $command->name }}</span>
-                                                @else
-                                                    <span class="text-secondary-foreground italic">—</span>
-                                                @endif
-                                            </td>
-                                            <td class="py-3 px-4">
-                                                <span class="kt-badge kt-badge-{{ $pivot->is_active ? 'success' : 'danger' }} kt-badge-sm">
-                                                    {{ $pivot->is_active ? 'Active' : 'Inactive' }}
-                                                </span>
-                                            </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $pivot->assigned_at ? \Carbon\Carbon::parse($pivot->assigned_at)->format('d/m/Y') : 'N/A' }}
-                                            </td>
-                                            <td class="py-3 px-4 text-right">
-                                                <div class="flex items-center justify-end gap-2">
-                                                    <button 
-                                                        onclick="editAssignment({{ $user->id }}, {{ $role->id }}, '{{ $role->name }}', {{ $pivot->command_id ?? 'null' }}, {{ $pivot->is_active ? 'true' : 'false' }}, {{ in_array($role->name, $commandBasedRoles) ? 'true' : 'false' }}, {{ $officer->present_station ?? 'null' }})"
-                                                        class="kt-btn kt-btn-sm kt-btn-ghost"
-                                                        title="Edit Assignment">
-                                                        <i class="ki-filled ki-notepad-edit"></i>
-                                                    </button>
-                                                    <form 
-                                                        action="{{ route('hrd.role-assignments.destroy', [$user->id, $role->id]) }}" 
-                                                        method="POST"
-                                                        onsubmit="return confirm('Are you sure you want to remove this role assignment?')"
-                                                        class="inline">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost text-danger" title="Remove Role">
-                                                            <i class="ki-filled ki-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="py-12 text-center">
-                                            <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
-                                            <p class="text-secondary-foreground">No role assignments found</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <!-- Mobile scroll hint -->
+                <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
+                    <div class="flex items-center gap-2 text-xs text-secondary-foreground">
+                        <i class="ki-filled ki-arrow-left-right"></i>
+                        <span>Swipe left to view more columns</span>
                     </div>
                 </div>
 
-                <!-- Mobile Card View -->
-                <div class="lg:hidden">
-                    <div class="flex flex-col gap-4">
-                        @forelse($users as $user)
-                            @php
-                                // Filter out "Officer" role from display
-                                $displayRoles = $user->roles->filter(function($role) {
-                                    return $role->name !== 'Officer';
-                                });
-                            @endphp
-                            @foreach($displayRoles as $role)
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 900px; width: 100%;">
+                        <thead>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_order' => request('sort_by') === 'name' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Officer Details
+                                        @if(request('sort_by') === 'name')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Service Number
+                                        @if(request('sort_by') === 'service_number')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'role', 'sort_order' => request('sort_by') === 'role' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Role
+                                        @if(request('sort_by') === 'role')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'command', 'sort_order' => request('sort_by') === 'command' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Command
+                                        @if(request('sort_by') === 'command')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'status', 'sort_order' => request('sort_by') === 'status' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Status
+                                        @if(request('sort_by') === 'status')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'assigned_at', 'sort_order' => request('sort_by') === 'assigned_at' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Assigned
+                                        @if(request('sort_by') === 'assigned_at')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($users as $user)
                                 @php
-                                    $pivot = $role->pivot;
-                                    $command = $pivot->command_id ? \App\Models\Command::find($pivot->command_id) : null;
-                                    $officer = $user->officer;
-                                    $initials = $officer->initials ?? '';
-                                    $surname = $officer->surname ?? '';
-                                    $fullName = trim("{$initials} {$surname}");
-                                    $avatarInitials = strtoupper(($initials[0] ?? '') . ($surname[0] ?? ''));
+                                    // Filter out "Officer" role from display
+                                    $displayRoles = $user->roles->filter(function($role) {
+                                        return $role->name !== 'Officer';
+                                    });
                                 @endphp
-                                <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input hover:bg-muted transition-colors">
-                                    <div class="flex items-center gap-4">
-                                        <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                            {{ $avatarInitials }}
-                                        </div>
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-sm font-semibold text-foreground">{{ $fullName }}</span>
-                                            <span class="text-xs text-secondary-foreground">
-                                                {{ $user->email ?? '' }}
+                                @foreach($displayRoles as $role)
+                                    @php
+                                        $pivot = $role->pivot;
+                                        $command = $pivot->command_id ? \App\Models\Command::find($pivot->command_id) : null;
+                                        $officer = $user->officer;
+                                        $initials = $officer->initials ?? '';
+                                        $surname = $officer->surname ?? '';
+                                        $fullName = trim("{$initials} {$surname}");
+                                        $avatarInitials = strtoupper(($initials[0] ?? '') . ($surname[0] ?? ''));
+                                    @endphp
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm" style="flex-shrink: 0;">
+                                                    {{ $avatarInitials }}
+                                                </div>
+                                                <div>
+                                                    <div class="text-sm font-medium text-foreground">{{ $fullName }}</div>
+                                                    <div class="text-xs text-secondary-foreground">{{ $user->email ?? '' }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <span class="text-sm font-mono text-foreground">
+                                                {{ $officer->service_number ?? 'N/A' }}
                                             </span>
-                                            <span class="text-xs">
-                                                <span class="kt-badge kt-badge-primary kt-badge-sm">{{ $role->name }}</span>
-                                                @if($command)
-                                                    | {{ $command->name }}
-                                                @endif
+                                        </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <span class="kt-badge kt-badge-primary kt-badge-sm">
+                                                {{ $role->name }}
                                             </span>
-                                        </div>
-                                    </div>
-                                    <div class="flex flex-col items-end gap-2">
-                                        <span class="kt-badge kt-badge-{{ $pivot->is_active ? 'success' : 'danger' }} kt-badge-sm">
-                                            {{ $pivot->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                        <div class="flex gap-2">
-                                            <button 
-                                                onclick="editAssignment({{ $user->id }}, {{ $role->id }}, '{{ $role->name }}', {{ $pivot->command_id ?? 'null' }}, {{ $pivot->is_active ? 'true' : 'false' }}, {{ in_array($role->name, $commandBasedRoles) ? 'true' : 'false' }}, {{ $officer->present_station ?? 'null' }})"
-                                                class="kt-btn kt-btn-sm kt-btn-ghost"
-                                                title="Edit">
-                                                <i class="ki-filled ki-notepad-edit"></i>
-                                            </button>
-                                            <form 
-                                                action="{{ route('hrd.role-assignments.destroy', [$user->id, $role->id]) }}" 
-                                                method="POST"
-                                                onsubmit="return confirm('Are you sure?')"
-                                                class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost text-danger" title="Remove">
-                                                    <i class="ki-filled ki-trash"></i>
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                            @if($command)
+                                                <span class="text-foreground">{{ $command->name }}</span>
+                                            @else
+                                                <span class="text-secondary-foreground italic">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <span class="kt-badge kt-badge-{{ $pivot->is_active ? 'success' : 'danger' }} kt-badge-sm">
+                                                {{ $pivot->is_active ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                            {{ $pivot->assigned_at ? \Carbon\Carbon::parse($pivot->assigned_at)->format('d/m/Y') : 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <button 
+                                                    onclick="editAssignment({{ $user->id }}, {{ $role->id }}, '{{ $role->name }}', {{ $pivot->command_id ?? 'null' }}, {{ $pivot->is_active ? 'true' : 'false' }}, {{ in_array($role->name, $commandBasedRoles) ? 'true' : 'false' }}, {{ $officer->present_station ?? 'null' }})"
+                                                    class="kt-btn kt-btn-sm kt-btn-ghost"
+                                                    title="Edit Assignment">
+                                                    <i class="ki-filled ki-notepad-edit"></i>
                                                 </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        @empty
-                            <div class="text-center py-12">
-                                <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
-                                <p class="text-secondary-foreground">No role assignments found</p>
-                            </div>
-                        @endforelse
-                    </div>
+                                                <form 
+                                                    action="{{ route('hrd.role-assignments.destroy', [$user->id, $role->id]) }}" 
+                                                    method="POST"
+                                                    onsubmit="return confirm('Are you sure you want to remove this role assignment?')"
+                                                    class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost text-danger" title="Remove Role">
+                                                        <i class="ki-filled ki-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="py-12 text-center">
+                                        <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                                        <p class="text-secondary-foreground">No role assignments found</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Pagination -->
                 @if($users->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border">
+                    <div class="mt-6 pt-4 border-t border-border px-4">
                         {{ $users->withQueryString()->links() }}
                     </div>
                 @endif
@@ -446,6 +377,44 @@
             </form>
         </div>
     </div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 
     <script>
         function editAssignment(userId, roleId, roleName, commandId, isActive, requiresCommand, officerCommandId) {
@@ -511,4 +480,3 @@
         document.getElementById('editRoleId')?.addEventListener('change', toggleEditCommandRequirement);
     </script>
 @endsection
-

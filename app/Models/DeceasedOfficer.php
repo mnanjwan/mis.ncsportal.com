@@ -12,7 +12,9 @@ class DeceasedOfficer extends Model
     protected $fillable = [
         'officer_id',
         'reported_by',
+        'reported_at',
         'validated_by',
+        'validated_at',
         'death_certificate_url',
         'date_of_death',
         'next_of_kin_data',
@@ -20,6 +22,7 @@ class DeceasedOfficer extends Model
         'bank_account_number',
         'rsa_administrator',
         'benefits_processed',
+        'benefits_processed_at',
         'notes',
     ];
 

@@ -7,23 +7,23 @@
 <div class="grid gap-5 lg:gap-7.5">
     <!-- Progress Indicator -->
     <div class="kt-card">
-        <div class="kt-card-content p-5">
-            <div class="flex items-center justify-between">
+        <div class="kt-card-content p-4 lg:p-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-success text-white flex items-center justify-center font-semibold">✓</div>
-                    <span class="text-sm text-success">Personal Information</span>
+                    <div class="size-8 rounded-full bg-success text-white flex items-center justify-center font-semibold text-sm">✓</div>
+                    <span class="text-xs sm:text-sm text-success">Personal Information</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-success text-white flex items-center justify-center font-semibold">✓</div>
-                    <span class="text-sm text-success">Employment Details</span>
+                    <div class="size-8 rounded-full bg-success text-white flex items-center justify-center font-semibold text-sm">✓</div>
+                    <span class="text-xs sm:text-sm text-success">Employment Details</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">3</div>
-                    <span class="text-sm font-medium">Banking Information</span>
+                    <div class="size-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">3</div>
+                    <span class="text-xs sm:text-sm font-medium">Banking Information</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-muted text-secondary-foreground flex items-center justify-center font-semibold">4</div>
-                    <span class="text-sm text-secondary-foreground">Next of Kin</span>
+                    <div class="size-8 rounded-full bg-muted text-secondary-foreground flex items-center justify-center font-semibold text-sm">4</div>
+                    <span class="text-xs sm:text-sm text-secondary-foreground">Next of Kin</span>
                 </div>
             </div>
         </div>
@@ -38,10 +38,10 @@
             @if($errors->any())
             <div class="kt-alert kt-alert-danger mb-5">
                 <div class="kt-alert-content">
-                    <strong>Please fix the following errors:</strong>
+                    <strong class="text-danger">Please fix the following errors:</strong>
                     <ul class="mt-2 list-disc list-inside">
                         @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                        <li class="text-danger">{{ $error }}</li>
                         @endforeach
                     </ul>
                 </div>
@@ -56,18 +56,31 @@
                         <label class="kt-form-label">Bank Name <span class="text-danger">*</span></label>
                         <select name="bank_name" class="kt-input" required>
                             <option value="">Select Bank...</option>
-                            <option value="Access Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Access Bank' ? 'selected' : '' }}>Access Bank</option>
-                            <option value="First Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'First Bank' ? 'selected' : '' }}>First Bank</option>
-                            <option value="GTBank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'GTBank' ? 'selected' : '' }}>GTBank</option>
-                            <option value="UBA" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'UBA' ? 'selected' : '' }}>UBA</option>
-                            <option value="Zenith Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Zenith Bank' ? 'selected' : '' }}>Zenith Bank</option>
-                            <option value="Fidelity Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Fidelity Bank' ? 'selected' : '' }}>Fidelity Bank</option>
-                            <option value="Union Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Union Bank' ? 'selected' : '' }}>Union Bank</option>
-                            <option value="Stanbic IBTC" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Stanbic IBTC' ? 'selected' : '' }}>Stanbic IBTC</option>
-                            <option value="Ecobank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Ecobank' ? 'selected' : '' }}>Ecobank</option>
-                            <option value="Sterling Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Sterling Bank' ? 'selected' : '' }}>Sterling Bank</option>
-                            <option value="Wema Bank" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Wema Bank' ? 'selected' : '' }}>Wema Bank</option>
-                            <option value="FCMB" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'FCMB' ? 'selected' : '' }}>FCMB</option>
+                            <option value="Access Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Access Bank Limited' ? 'selected' : '' }}>Access Bank Limited</option>
+                            <option value="Citibank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Citibank Nigeria Limited' ? 'selected' : '' }}>Citibank Nigeria Limited</option>
+                            <option value="Ecobank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Ecobank Nigeria Limited' ? 'selected' : '' }}>Ecobank Nigeria Limited</option>
+                            <option value="Fidelity Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Fidelity Bank Plc' ? 'selected' : '' }}>Fidelity Bank Plc</option>
+                            <option value="First Bank of Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'First Bank of Nigeria Limited' ? 'selected' : '' }}>First Bank of Nigeria Limited</option>
+                            <option value="First City Monument Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'First City Monument Bank Limited' ? 'selected' : '' }}>First City Monument Bank Limited (FCMB)</option>
+                            <option value="Globus Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Globus Bank Limited' ? 'selected' : '' }}>Globus Bank Limited</option>
+                            <option value="Guaranty Trust Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Guaranty Trust Bank Limited' ? 'selected' : '' }}>Guaranty Trust Bank Limited (GTBank)</option>
+                            <option value="Heritage Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Heritage Bank Plc' ? 'selected' : '' }}>Heritage Bank Plc</option>
+                            <option value="Keystone Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Keystone Bank Limited' ? 'selected' : '' }}>Keystone Bank Limited</option>
+                            <option value="Optimus Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Optimus Bank Limited' ? 'selected' : '' }}>Optimus Bank Limited</option>
+                            <option value="Parallex Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Parallex Bank Limited' ? 'selected' : '' }}>Parallex Bank Limited</option>
+                            <option value="Polaris Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Polaris Bank Limited' ? 'selected' : '' }}>Polaris Bank Limited</option>
+                            <option value="Premium Trust Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Premium Trust Bank Limited' ? 'selected' : '' }}>Premium Trust Bank Limited</option>
+                            <option value="Providus Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Providus Bank Limited' ? 'selected' : '' }}>Providus Bank Limited</option>
+                            <option value="Stanbic IBTC Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Stanbic IBTC Bank Limited' ? 'selected' : '' }}>Stanbic IBTC Bank Limited</option>
+                            <option value="Standard Chartered Bank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Standard Chartered Bank Nigeria Limited' ? 'selected' : '' }}>Standard Chartered Bank Nigeria Limited</option>
+                            <option value="Sterling Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Sterling Bank Limited' ? 'selected' : '' }}>Sterling Bank Limited</option>
+                            <option value="SunTrust Bank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'SunTrust Bank Nigeria Limited' ? 'selected' : '' }}>SunTrust Bank Nigeria Limited</option>
+                            <option value="Titan Trust Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Titan Trust Bank Limited' ? 'selected' : '' }}>Titan Trust Bank Limited</option>
+                            <option value="Union Bank of Nigeria Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Union Bank of Nigeria Plc' ? 'selected' : '' }}>Union Bank of Nigeria Plc</option>
+                            <option value="United Bank for Africa Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'United Bank for Africa Plc' ? 'selected' : '' }}>United Bank for Africa Plc (UBA)</option>
+                            <option value="Unity Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Unity Bank Plc' ? 'selected' : '' }}>Unity Bank Plc</option>
+                            <option value="Wema Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Wema Bank Plc' ? 'selected' : '' }}>Wema Bank Plc</option>
+                            <option value="Zenith Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Zenith Bank Plc' ? 'selected' : '' }}>Zenith Bank Plc</option>
                         </select>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
@@ -116,9 +129,9 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-end gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('onboarding.step2') }}'" class="kt-btn kt-btn-secondary">Previous</button>
-                    <button type="submit" class="kt-btn kt-btn-primary">Next: Next of Kin</button>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-5 border-t border-input">
+                    <button type="button" onclick="window.location.href='{{ route('onboarding.step2') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto">Previous</button>
+                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto">Next: Next of Kin</button>
                 </div>
             </form>
         </div>

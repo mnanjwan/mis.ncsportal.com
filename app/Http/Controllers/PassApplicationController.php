@@ -8,6 +8,7 @@ use App\Models\PassApplication;
 use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class PassApplicationController extends Controller
 {
@@ -102,7 +103,11 @@ class PassApplicationController extends Controller
 
             DB::commit();
 
-            return redirect()->route('officer.dashboard')->with('success', 'Pass application submitted successfully.');
+            // Notify Staff Officers about the new pass application
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyPassApplicationSubmitted($application);
+
+            return redirect()->route('officer.pass-applications')->with('success', 'Pass application submitted successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -236,6 +241,10 @@ class PassApplicationController extends Controller
             $application->approved_at = now();
             $application->save();
             
+            // Notify officer about approval
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyPassApplicationApproved($application);
+            
             return redirect()->route('dc-admin.leave-pass', ['type' => 'pass'])
                 ->with('success', 'Pass application approved successfully.');
         } catch (\Exception $e) {
@@ -276,6 +285,10 @@ class PassApplicationController extends Controller
             $application->rejected_at = now();
             $application->rejection_reason = $request->rejection_reason;
             $application->save();
+            
+            // Notify officer about rejection
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyPassApplicationRejected($application, $request->rejection_reason);
             
             return redirect()->route('dc-admin.leave-pass', ['type' => 'pass'])
                 ->with('success', 'Pass application rejected.');

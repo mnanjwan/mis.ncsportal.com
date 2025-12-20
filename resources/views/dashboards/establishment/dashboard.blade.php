@@ -12,7 +12,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
                         <span class="text-sm font-normal text-secondary-foreground">Total Officers</span>
-                        <span class="text-2xl font-semibold text-mono" id="total-officers">Loading...</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $totalOfficers ?? 0 }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
                         <i class="ki-filled ki-people text-2xl text-primary"></i>
@@ -26,7 +26,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
                         <span class="text-sm font-normal text-secondary-foreground">Last Service Number</span>
-                        <span class="text-2xl font-semibold text-mono" id="last-service-number">Loading...</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $lastServiceNumber ?? 'N/A' }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
                         <i class="ki-filled ki-abstract-26 text-2xl text-success"></i>
@@ -40,7 +40,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
                         <span class="text-sm font-normal text-secondary-foreground">Pending New Recruits</span>
-                        <span class="text-2xl font-semibold text-mono" id="pending-recruits">Loading...</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $pendingRecruits ?? 0 }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
                         <i class="ki-filled ki-user-plus text-2xl text-warning"></i>
@@ -68,28 +68,6 @@
     </div>
 </div>
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-    const token = window.API_CONFIG.token;
-    
-    try {
-        const res = await fetch('/api/v1/officers?per_page=1&sort=service_number,desc', {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            if (data.data && data.data.length > 0) {
-                document.getElementById('last-service-number').textContent = data.data[0].service_number || 'N/A';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
-    }
-});
-</script>
-@endpush
 @endsection
 
 

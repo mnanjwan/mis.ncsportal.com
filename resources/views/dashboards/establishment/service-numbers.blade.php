@@ -3,50 +3,83 @@
 @section('title', 'Service Number Allocation')
 @section('page-title', 'Service Number Allocation')
 
+@section('breadcrumbs')
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.dashboard') }}">Establishment</a>
+    <span>/</span>
+    <span class="text-primary">Service Numbers</span>
+@endsection
+
 @section('content')
+    @if(session('success'))
+        <div class="kt-card bg-success/10 border border-success/20 mb-5">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                    <p class="text-sm font-medium text-success">{{ session('success') }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-information text-danger text-xl"></i>
+                    <p class="text-sm font-medium text-danger">{{ session('error') }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Actions -->
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-mono">Service Number Allocation</h2>
             <div class="flex items-center gap-3">
-                <button class="kt-btn kt-btn-primary">
+                <a href="{{ route('establishment.service-numbers.allocate-batch') }}" class="kt-btn kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Allocate New Batch
-                </button>
+                </a>
             </div>
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="kt-card p-6">
-                <div class="flex items-center gap-4">
-                    <div class="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                        <i class="ki-filled ki-user-tick text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground">Last Allocated</p>
-                        <h3 class="text-2xl font-bold text-foreground">57616</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="kt-card p-6">
-                <div class="flex items-center gap-4">
-                    <div class="h-12 w-12 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
-                        <i class="ki-filled ki-chart-line-up text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground">Next Available</p>
-                        <h3 class="text-2xl font-bold text-foreground">57617</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-7.5">
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Last Allocated</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $lastServiceNumber ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+                            <i class="ki-filled ki-user-tick text-2xl text-primary"></i>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="kt-card p-6">
-                <div class="flex items-center gap-4">
-                    <div class="h-12 w-12 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-                        <i class="ki-filled ki-calendar text-2xl"></i>
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Next Available</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $nextAvailable ?? 'N/A' }}</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
+                            <i class="ki-filled ki-chart-line-up text-2xl text-success"></i>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground">Allocated Today</p>
-                        <h3 class="text-2xl font-bold text-foreground">0</h3>
+                </div>
+            </div>
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Allocated Today</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $allocatedToday ?? 0 }}</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
+                            <i class="ki-filled ki-calendar text-2xl text-info"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -54,39 +87,69 @@
 
         <!-- Table Card -->
         <div class="kt-card">
-            <div class="kt-card-header border-b border-input p-6 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-mono">Recent Allocations</h3>
-                <div class="relative">
-                    <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" class="kt-input pl-10" placeholder="Search service number..." style="width: 250px;">
-                </div>
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Recent Allocations</h3>
             </div>
-            <div class="kt-card-content p-0">
+            <div class="kt-card-content">
                 <div class="overflow-x-auto">
-                    <table class="w-full">
+                    <table class="kt-table w-full">
                         <thead>
-                            <tr class="border-b border-input bg-muted/20">
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Service No</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Officer Name</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Rank</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Date Allocated</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Allocated By</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono text-right">Actions</th>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service No</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer Name</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Date Allocated</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Allocated By</th>
+                                <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-input">
-                            <tr>
-                                <td colspan="6" class="text-center p-8 text-muted-foreground">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <div
-                                            class="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-                                            <i class="ki-filled ki-search-list text-xl text-muted-foreground"></i>
+                        <tbody>
+                            @forelse($recentAllocations as $officer)
+                                @php
+                                    $initials = $officer->initials ?? '';
+                                    $surname = $officer->surname ?? '';
+                                    $fullName = trim("{$initials} {$surname}");
+                                    $avatarInitials = strtoupper(($initials[0] ?? '') . ($surname[0] ?? ''));
+                                @endphp
+                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                    <td class="py-3 px-4">
+                                        <span class="text-sm font-mono text-foreground">{{ $officer->service_number }}</span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                                {{ $avatarInitials }}
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-medium text-foreground">{{ $fullName }}</div>
+                                                <div class="text-xs text-secondary-foreground">{{ $officer->email ?? 'N/A' }}</div>
+                                            </div>
                                         </div>
-                                        <p class="text-base font-medium">No recent allocations</p>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        {{ $officer->substantive_rank ?? 'N/A' }}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        {{ $officer->updated_at->format('d/m/Y') }}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        {{ $officer->createdBy->name ?? 'N/A' }}
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        <a href="{{ route('hrd.officers.show', $officer->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                                            <i class="ki-filled ki-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="py-12 text-center">
+                                        <i class="ki-filled ki-search-list text-4xl text-muted-foreground mb-4"></i>
+                                        <p class="text-secondary-foreground">No recent allocations</p>
                                         <p class="text-sm text-muted-foreground mt-1">Start by allocating a new batch</p>
-                                    </div>
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

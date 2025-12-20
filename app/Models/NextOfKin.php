@@ -17,6 +17,7 @@ class NextOfKin extends Model
         'relationship',
         'phone_number',
         'address',
+        'email',
         'is_primary',
     ];
 

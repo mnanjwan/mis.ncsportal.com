@@ -13,7 +13,7 @@ class CommandController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Command::where('is_active', true);
+        $query = Command::where('is_active', true)->with('zone');
 
         $commands = $query->get();
 

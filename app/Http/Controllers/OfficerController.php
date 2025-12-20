@@ -261,7 +261,7 @@ class OfficerController extends Controller
 
     public function show($id)
     {
-        $officer = \App\Models\Officer::with(['presentStation', 'user', 'nextOfKin', 'documents'])
+        $officer = \App\Models\Officer::with(['presentStation.zone', 'user', 'nextOfKin', 'documents'])
             ->findOrFail($id);
         
         return view('dashboards.hrd.officer-show', compact('officer'));
@@ -269,7 +269,134 @@ class OfficerController extends Controller
 
     public function edit($id)
     {
-        return view('forms.officer.edit', compact('id'));
+        $officer = \App\Models\Officer::with(['presentStation.zone', 'nextOfKin', 'user'])->findOrFail($id);
+        
+        // Load related data for dropdowns
+        $commands = \App\Models\Command::where('is_active', true)->with('zone')->orderBy('name')->get();
+        $zones = \App\Models\Zone::where('is_active', true)->orderBy('name')->get();
+        
+        // Nigerian states and LGAs (same as onboarding)
+        $nigerianStates = [
+            'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+            'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe',
+            'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+            'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
+            'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+        ];
+        
+        $geopoliticalZones = [
+            'North Central', 'North East', 'North West', 'South East', 'South South', 'South West'
+        ];
+        
+        $ranks = [
+            'Assistant Superintendent', 'Deputy Superintendent', 'Superintendent', 'Chief Superintendent',
+            'Assistant Comptroller', 'Deputy Comptroller', 'Comptroller',
+            'Assistant Comptroller General', 'Deputy Comptroller General'
+        ];
+        
+        $gradeLevels = ['GL 01', 'GL 02', 'GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08',
+                       'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17'];
+        
+        // Prepare education data from officer
+        $educationData = [];
+        
+        // First, try to get all education entries from additional_qualification JSON
+        if ($officer->additional_qualification) {
+            $allEducation = json_decode($officer->additional_qualification, true);
+            if (is_array($allEducation) && count($allEducation) > 0) {
+                // Check if first entry in JSON matches entry_qualification (new format with all entries)
+                $firstEntryMatches = isset($allEducation[0]) && 
+                    isset($allEducation[0]['qualification']) && 
+                    $allEducation[0]['qualification'] === $officer->entry_qualification;
+                
+                if ($firstEntryMatches) {
+                    // New format: All entries (including first) are in JSON with universities
+                    $educationData = $allEducation;
+                } else {
+                    // Old format: JSON only has entries from index 1, need to prepend first entry
+                    // Try to get university from first entry in JSON if it exists and matches
+                    $firstEntryUniversity = '';
+                    if (isset($allEducation[0]) && isset($allEducation[0]['qualification']) && 
+                        $allEducation[0]['qualification'] === $officer->entry_qualification) {
+                        // First entry in JSON might be the same as our first entry, use its university
+                        $firstEntryUniversity = $allEducation[0]['university'] ?? '';
+                        // Remove it from the array since we're using it as the first entry
+                        array_shift($allEducation);
+                    }
+                    
+                    $firstEntry = [
+                        'university' => $firstEntryUniversity, // Try to get from JSON if available
+                        'qualification' => $officer->entry_qualification,
+                        'discipline' => $officer->discipline ?? ''
+                    ];
+                    $educationData = array_merge([$firstEntry], $allEducation);
+                }
+            }
+        }
+        
+        // Fallback: If no JSON data, reconstruct from legacy fields only
+        if (empty($educationData) && $officer->entry_qualification) {
+            // First education entry from entry_qualification and discipline (no university available)
+            $educationData[] = [
+                'university' => '', // Not stored in legacy format
+                'qualification' => $officer->entry_qualification,
+                'discipline' => $officer->discipline ?? ''
+            ];
+        }
+        
+        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData'));
+    }
+    
+    public function update(Request $request, $id)
+    {
+        $officer = \App\Models\Officer::findOrFail($id);
+        
+        $validated = $request->validate([
+            'initials' => 'required|string|max:50',
+            'surname' => 'required|string|max:255',
+            'sex' => 'required|in:M,F',
+            'date_of_birth' => 'required|date',
+            'date_of_first_appointment' => 'required|date',
+            'date_of_present_appointment' => 'nullable|date',
+            'substantive_rank' => 'required|string|max:255',
+            'salary_grade_level' => 'required|string|max:10',
+            'state_of_origin' => 'required|string|max:255',
+            'lga' => 'required|string|max:255',
+            'geopolitical_zone' => 'required|string|max:255',
+            'marital_status' => 'required|string|max:50',
+            'present_station' => 'required|exists:commands,id',
+            'date_posted_to_station' => 'nullable|date',
+            'residential_address' => 'required|string',
+            'permanent_home_address' => 'required|string',
+            'phone_number' => 'required|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'unit' => 'nullable|string|max:255',
+            'education' => 'required|array|min:1',
+            'education.*.university' => 'required|string|max:255',
+            'education.*.qualification' => 'required|string|max:255',
+            'education.*.discipline' => 'nullable|string|max:255',
+            'interdicted' => 'nullable|boolean',
+            'suspended' => 'nullable|boolean',
+            'quartered' => 'nullable|boolean',
+        ]);
+        
+        // Process education data
+        $education = $validated['education'];
+        $validated['entry_qualification'] = isset($education[0]) ? $education[0]['qualification'] : null;
+        $validated['discipline'] = isset($education[0]) ? ($education[0]['discipline'] ?? null) : null;
+        $validated['additional_qualification'] = count($education) > 0 ? json_encode($education) : null; // Store ALL entries including first one
+        unset($validated['education']);
+        
+        // Convert checkbox values
+        $validated['interdicted'] = $request->has('interdicted');
+        $validated['suspended'] = $request->has('suspended');
+        $validated['quartered'] = $request->has('quartered');
+        
+        // Update officer
+        $officer->update($validated);
+        
+        return redirect()->route('hrd.officers.show', $officer->id)
+            ->with('success', 'Officer information updated successfully.');
     }
 
     // Officer Dashboard Methods
@@ -356,7 +483,160 @@ class OfficerController extends Controller
 
     public function profile()
     {
-        return view('dashboards.officer.profile');
+        $user = auth()->user();
+        $officer = $user->officer;
+        
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
+        }
+        
+        // Load all necessary relationships
+        $officer->load([
+            'presentStation.zone',
+            'nextOfKin',
+            'user'
+        ]);
+        
+        // Check if officer has completed onboarding
+        // An officer is considered onboarded if they have essential fields filled
+        $isOnboarded = $officer->date_of_birth && 
+                      $officer->phone_number && 
+                      $officer->date_of_first_appointment &&
+                      $officer->nextOfKin()->where('is_primary', true)->exists();
+        
+        return view('dashboards.officer.profile', compact('officer', 'isOnboarded'));
+    }
+
+    public function updateProfilePicture(Request $request)
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+        
+        if (!$officer) {
+            return response()->json(['message' => 'Officer record not found.'], 404);
+        }
+        
+        // Check if officer has completed onboarding
+        $isOnboarded = $officer->date_of_birth && 
+                      $officer->phone_number && 
+                      $officer->date_of_first_appointment &&
+                      $officer->nextOfKin()->where('is_primary', true)->exists();
+        
+        if (!$isOnboarded) {
+            return response()->json(['message' => 'You can only change your profile picture after completing onboarding.'], 403);
+        }
+        
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+        
+        try {
+            // Delete old profile picture if exists
+            if ($officer->profile_picture_url) {
+                $oldPath = storage_path('app/public/' . $officer->profile_picture_url);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
+            }
+            
+            // Store new profile picture
+            $path = $request->file('profile_picture')->store('profiles', 'public');
+            $officer->update(['profile_picture_url' => $path]);
+            
+            return response()->json([
+                'message' => 'Profile picture updated successfully.',
+                'profile_picture_url' => asset('storage/' . $path)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to update profile picture: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function settings()
+    {
+        $user = auth()->user();
+        return view('dashboards.officer.settings', compact('user'));
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|confirmed',
+            'new_password_confirmation' => 'required',
+        ], [
+            'current_password.required' => 'Current password is required.',
+            'new_password.required' => 'New password is required.',
+            'new_password.confirmed' => 'New password confirmation does not match.',
+            'new_password_confirmation.required' => 'Please confirm your new password.',
+        ]);
+
+        // Get fresh user instance from database to ensure we have latest password
+        $user = \App\Models\User::find(auth()->id());
+        
+        if (!$user) {
+            return redirect()->back()
+                ->withErrors(['current_password' => 'User not found.'])
+                ->withInput($request->except('current_password', 'new_password', 'new_password_confirmation'));
+        }
+
+        // Verify current password - trim whitespace and check
+        $currentPassword = trim($request->current_password);
+        
+        if (empty($currentPassword)) {
+            return redirect()->back()
+                ->withErrors(['current_password' => 'Current password is required.'])
+                ->withInput($request->except('current_password', 'new_password', 'new_password_confirmation'));
+        }
+        
+        // Check password - use the password attribute directly
+        if (!\Illuminate\Support\Facades\Hash::check($currentPassword, $user->password)) {
+            return redirect()->back()
+                ->withErrors(['current_password' => 'Current password is incorrect. Please check and try again.'])
+                ->withInput($request->except('current_password', 'new_password', 'new_password_confirmation'));
+        }
+
+        // Update password
+        $user->password = \Hash::make($request->new_password);
+        $user->save();
+
+        // Send notification (in-app)
+        $notificationService = app(\App\Services\NotificationService::class);
+        $notification = $notificationService->notify(
+            $user,
+            'password_changed',
+            'Password Changed Successfully',
+            'Your password has been changed successfully. If you did not make this change, please contact support immediately.',
+            null,
+            null,
+            false // Don't queue email, we'll send it synchronously below
+        );
+
+        // Send email immediately (synchronously) for password changes since it's critical
+        try {
+            if ($user->email) {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                    new \App\Mail\NotificationMail($user, $notification)
+                );
+                \Log::info('Password change email sent synchronously', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ]);
+            } else {
+                \Log::warning('Cannot send password change email: user has no email', [
+                    'user_id' => $user->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password change email', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the password change if email fails
+        }
+
+        return redirect()->route('officer.settings')
+            ->with('success', 'Password changed successfully. A notification has been sent to your email.');
     }
 
     public function emoluments(Request $request)

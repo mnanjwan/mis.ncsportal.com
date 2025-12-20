@@ -17,6 +17,9 @@ use App\Models\PassApplication;
 use App\Models\ManningRequest;
 use App\Models\DutyRoster;
 use App\Models\OfficerPosting;
+use App\Models\AccountChangeRequest;
+use App\Models\NextOfKinChangeRequest;
+use App\Models\DeceasedOfficer;
 
 class DashboardController extends Controller
 {
@@ -41,6 +44,8 @@ class DashboardController extends Controller
             'Accounts',
             'Welfare',
             'Establishment',
+            'TRADOC',
+            'ICT',
             'Building Unit',
             'Area Controller',
             'DC Admin',
@@ -708,11 +713,21 @@ class DashboardController extends Controller
             ->whereMonth('processed_at', now()->month)
             ->whereYear('processed_at', now()->year)
             ->count();
+        
+        // Account Change Request statistics
+        $pendingChangeRequests = AccountChangeRequest::where('status', 'PENDING')->count();
+        $recentChangeRequests = AccountChangeRequest::with(['officer.presentStation'])
+            ->where('status', 'PENDING')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
         return view('dashboards.accounts.dashboard', compact(
             'validatedCount',
             'pendingProcessing',
-            'processedThisMonth'
+            'processedThisMonth',
+            'pendingChangeRequests',
+            'recentChangeRequests'
         ));
     }
 
@@ -751,23 +766,134 @@ class DashboardController extends Controller
     // Establishment Dashboard
     public function establishment()
     {
-        return view('dashboards.establishment.dashboard');
+        $totalOfficers = Officer::where('is_active', true)->where('is_deceased', false)->count();
+        
+        $lastServiceNumber = Officer::whereNotNull('service_number')
+            ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
+            ->value('service_number') ?? 'N/A';
+
+        $pendingRecruits = Officer::whereNull('service_number')
+            ->whereNull('appointment_number')
+            ->where('is_active', true)
+            ->where('is_deceased', false)
+            ->count();
+
+        return view('dashboards.establishment.dashboard', compact(
+            'totalOfficers',
+            'lastServiceNumber',
+            'pendingRecruits'
+        ));
     }
 
     public function serviceNumbers()
     {
-        return view('dashboards.establishment.service-numbers');
+        $lastServiceNumber = Officer::whereNotNull('service_number')
+            ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
+            ->value('service_number');
+
+        // Calculate next available
+        $nextAvailable = 'N/A';
+        if ($lastServiceNumber) {
+            preg_match('/(\d+)$/', $lastServiceNumber, $matches);
+            if (!empty($matches[1])) {
+                $nextNum = (int) $matches[1] + 1;
+                $nextAvailable = 'NCS' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
+            }
+        }
+
+        $allocatedToday = Officer::whereNotNull('service_number')
+            ->whereDate('updated_at', today())
+            ->count();
+
+        // Recent allocations
+        $recentAllocations = Officer::whereNotNull('service_number')
+            ->with('createdBy')
+            ->orderBy('updated_at', 'desc')
+            ->take(10)
+            ->get();
+
+        return view('dashboards.establishment.service-numbers', compact(
+            'lastServiceNumber',
+            'nextAvailable',
+            'allocatedToday',
+            'recentAllocations'
+        ));
     }
 
-    public function newRecruits()
+    public function newRecruits(Request $request)
     {
-        return view('dashboards.establishment.new-recruits');
+        $query = Officer::whereNull('service_number')
+            ->where('is_active', true)
+            ->where('is_deceased', false);
+
+        // Handle sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        // Validate sort order
+        $sortOrder = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+
+        // Apply sorting based on sort_by parameter
+        switch ($sortBy) {
+            case 'name':
+                $query->orderBy('surname', $sortOrder)
+                      ->orderBy('initials', $sortOrder);
+                break;
+            case 'email':
+                $query->orderBy('email', $sortOrder);
+                break;
+            case 'appointment_number':
+                $query->orderBy('appointment_number', $sortOrder);
+                break;
+            case 'substantive_rank':
+                $query->orderBy('substantive_rank', $sortOrder);
+                break;
+            case 'created_at':
+            default:
+                $query->orderBy('created_at', $sortOrder);
+                break;
+        }
+
+        $recruits = $query->paginate(100)->withQueryString();
+
+        return view('dashboards.establishment.new-recruits', compact('recruits'));
     }
 
     // Welfare Dashboard
     public function welfare()
     {
-        return view('dashboards.welfare.dashboard');
+        // Deceased Officer statistics
+        $deceasedOfficersCount = DeceasedOfficer::count();
+        $pendingValidationCount = DeceasedOfficer::whereNull('validated_at')->count();
+        $validatedCount = DeceasedOfficer::whereNotNull('validated_at')->count();
+        $benefitsProcessedCount = DeceasedOfficer::where('benefits_processed', true)
+            ->whereYear('benefits_processed_at', now()->year)
+            ->count();
+        
+        // Next of KIN Change Request statistics
+        $pendingNextOfKinRequests = NextOfKinChangeRequest::where('status', 'PENDING')->count();
+        $recentNextOfKinRequests = NextOfKinChangeRequest::with(['officer.presentStation'])
+            ->where('status', 'PENDING')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        // Recent deceased officers pending validation
+        $recentDeceasedOfficers = DeceasedOfficer::with(['officer.presentStation', 'reportedBy'])
+            ->whereNull('validated_at')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        return view('dashboards.welfare.dashboard', compact(
+            'deceasedOfficersCount',
+            'pendingValidationCount',
+            'validatedCount',
+            'benefitsProcessedCount',
+            'pendingNextOfKinRequests',
+            'recentNextOfKinRequests',
+            'recentDeceasedOfficers'
+        ));
     }
 
     public function welfareDeceasedOfficers()
@@ -806,12 +932,15 @@ class DashboardController extends Controller
                     Auth::login($user);
                     
                     // Load existing officer data if available
+                    // Explicitly load the officer relationship
+                    $user->load('officer');
                     $officer = $user->officer;
                     $savedData = session('onboarding_step1', []);
                     
                     // Pre-fill with existing officer data if available
+                    // Only fill fields that are not already in savedData or are empty
                     if ($officer) {
-                        $savedData = array_merge($savedData, [
+                        $officerData = [
                             'service_number' => $officer->service_number,
                             'initials' => $officer->initials,
                             'surname' => $officer->surname,
@@ -826,7 +955,20 @@ class DashboardController extends Controller
                             'email' => $officer->email ?? $user->email,
                             'residential_address' => $officer->residential_address,
                             'permanent_home_address' => $officer->permanent_home_address,
-                        ]);
+                        ];
+                        
+                        // Merge officer data with saved data
+                        // For service_number, always use officer's value if it exists
+                        if (!empty($officerData['service_number'])) {
+                            $savedData['service_number'] = $officerData['service_number'];
+                        }
+                        
+                        // For other fields, don't overwrite non-empty saved values
+                        foreach ($officerData as $key => $value) {
+                            if ($key !== 'service_number' && (!isset($savedData[$key]) || empty($savedData[$key]))) {
+                                $savedData[$key] = $value;
+                            }
+                        }
                     }
                     
                     return view('forms.onboarding.step1', compact('savedData'));
@@ -841,8 +983,49 @@ class DashboardController extends Controller
             return redirect()->route('login')->with('error', 'Invalid or expired onboarding link. Please contact HRD for a new link.');
         }
         
-        // Load saved data if exists
+        // Load existing officer data if available (for already authenticated users)
+        $user = auth()->user();
+        // Explicitly load the officer relationship
+        if (!$user->relationLoaded('officer')) {
+            $user->load('officer');
+        }
+        $officer = $user->officer;
         $savedData = session('onboarding_step1', []);
+        
+        // Pre-fill with existing officer data if available
+        // Only fill fields that are not already in savedData or are empty
+        if ($officer) {
+            $officerData = [
+                'service_number' => $officer->service_number,
+                'initials' => $officer->initials,
+                'surname' => $officer->surname,
+                'first_name' => $officer->surname ?? '',
+                'gender' => $officer->sex == 'M' ? 'Male' : ($officer->sex == 'F' ? 'Female' : ''),
+                'date_of_birth' => $officer->date_of_birth?->format('Y-m-d'),
+                'state_of_origin' => $officer->state_of_origin,
+                'lga' => $officer->lga,
+                'geopolitical_zone' => $officer->geopolitical_zone,
+                'marital_status' => $officer->marital_status,
+                'phone' => $officer->phone_number,
+                'email' => $officer->email ?? $user->email,
+                'residential_address' => $officer->residential_address,
+                'permanent_home_address' => $officer->permanent_home_address,
+            ];
+            
+            // Merge officer data with saved data
+            // For service_number, always use officer's value if it exists
+            if (!empty($officerData['service_number'])) {
+                $savedData['service_number'] = $officerData['service_number'];
+            }
+            
+            // For other fields, don't overwrite non-empty saved values
+            foreach ($officerData as $key => $value) {
+                if ($key !== 'service_number' && (!isset($savedData[$key]) || empty($savedData[$key]))) {
+                    $savedData[$key] = $value;
+                }
+            }
+        }
+        
         return view('forms.onboarding.step1', compact('savedData'));
     }
 
@@ -862,7 +1045,6 @@ class DashboardController extends Controller
             'gender' => 'required|in:Male,Female',
             'phone' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
-            'address' => 'required|string',
             'state_of_origin' => 'required|string|max:255',
             'lga' => 'required|string|max:255',
             'geopolitical_zone' => 'required|string|max:255',
@@ -886,7 +1068,25 @@ class DashboardController extends Controller
         if (!session('onboarding_step1')) {
             return redirect()->route('onboarding.step1')->with('error', 'Please complete Step 1 first.');
         }
+        
         $savedData = session('onboarding_step2', []);
+        
+        // Pre-fill zone_id from officer's command if available
+        $user = auth()->user();
+        if (!$user->relationLoaded('officer')) {
+            $user->load('officer.presentStation.zone');
+        }
+        $officer = $user->officer;
+        
+        if ($officer && $officer->presentStation && $officer->presentStation->zone) {
+            if (!isset($savedData['zone_id']) || empty($savedData['zone_id'])) {
+                $savedData['zone_id'] = $officer->presentStation->zone->id;
+            }
+            if (!isset($savedData['command_id']) || empty($savedData['command_id'])) {
+                $savedData['command_id'] = $officer->presentStation->id;
+            }
+        }
+        
         return view('forms.onboarding.step2', compact('savedData'));
     }
 
@@ -897,12 +1097,14 @@ class DashboardController extends Controller
             'date_of_present_appointment' => 'required|date',
             'substantive_rank' => 'required|string|max:255',
             'salary_grade_level' => 'required|string|max:10',
+            'zone_id' => 'required|exists:zones,id',
             'command_id' => 'required|exists:commands,id',
-            'entry_qualification' => 'required|string|max:255',
-            'discipline' => 'nullable|string|max:255',
-            'additional_qualification' => 'nullable|string|max:255',
             'date_posted_to_station' => 'required|date',
             'unit' => 'nullable|string|max:255',
+            'education' => 'required|array|min:1',
+            'education.*.university' => 'required|string|max:255',
+            'education.*.qualification' => 'required|string|max:255',
+            'education.*.discipline' => 'nullable|string|max:255',
         ]);
 
         session(['onboarding_step2' => $validated]);
@@ -950,21 +1152,45 @@ class DashboardController extends Controller
             return redirect()->route('onboarding.step1')->with('error', 'Please complete previous steps first.');
         }
         $savedData = session('onboarding_step4', []);
+        
+        // Load existing profile picture if officer has one
+        $user = auth()->user();
+        if ($user && $user->officer && $user->officer->profile_picture_url) {
+            $savedData['profile_picture_preview'] = asset('storage/' . $user->officer->profile_picture_url);
+        }
+        
         return view('forms.onboarding.step4', compact('savedData'));
     }
 
     public function saveOnboardingStep4(Request $request)
     {
         $validated = $request->validate([
-            'next_of_kin_name' => 'required|string|max:255',
-            'relationship' => 'required|string|max:50',
-            'next_of_kin_phone' => 'required|string|max:20',
-            'next_of_kin_email' => 'nullable|email|max:255',
-            'next_of_kin_address' => 'required|string',
+            'next_of_kin' => 'required|array|min:1|max:5',
+            'next_of_kin.*.name' => 'required|string|max:255',
+            'next_of_kin.*.relationship' => 'required|string|max:50',
+            'next_of_kin.*.phone_number' => 'required|string|max:20',
+            'next_of_kin.*.email' => 'nullable|email|max:255',
+            'next_of_kin.*.address' => 'required|string',
+            'next_of_kin.*.is_primary' => 'nullable|in:0,1',
             'interdicted' => 'nullable',
             'suspended' => 'nullable',
             'quartered' => 'nullable',
         ]);
+
+        // Ensure at least one next of kin is marked as primary
+        $hasPrimary = false;
+        foreach ($validated['next_of_kin'] as $nok) {
+            if (isset($nok['is_primary']) && $nok['is_primary'] == '1') {
+                $hasPrimary = true;
+                break;
+            }
+        }
+        
+        if (!$hasPrimary) {
+            return redirect()->back()
+                ->withErrors(['next_of_kin' => 'At least one next of kin must be marked as primary.'])
+                ->withInput();
+        }
 
         // Convert checkbox values to boolean
         $validated['interdicted'] = $request->has('interdicted');
@@ -977,11 +1203,91 @@ class DashboardController extends Controller
 
     public function submitOnboarding(Request $request)
     {
+        // First, save step 4 data to session
+        $validated = $request->validate([
+            'next_of_kin' => 'required|array|min:1|max:5',
+            'next_of_kin.*.name' => 'required|string|max:255',
+            'next_of_kin.*.relationship' => 'required|string|max:50',
+            'next_of_kin.*.phone_number' => 'required|string|max:20',
+            'next_of_kin.*.email' => 'nullable|email|max:255',
+            'next_of_kin.*.address' => 'required|string',
+            'next_of_kin.*.is_primary' => 'nullable|in:0,1',
+            'profile_picture_data' => 'required|string',
+            'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+
+        // Validate that profile picture data is not empty
+        if (empty($validated['profile_picture_data']) || !preg_match('/^data:image\//', $validated['profile_picture_data'])) {
+            return redirect()->back()
+                ->withErrors(['profile_picture_data' => 'Please upload your official passport photo before proceeding.'])
+                ->withInput();
+        }
+
+        // Ensure at least one next of kin is marked as primary
+        $hasPrimary = false;
+        foreach ($validated['next_of_kin'] as $nok) {
+            if (isset($nok['is_primary']) && $nok['is_primary'] == '1') {
+                $hasPrimary = true;
+                break;
+            }
+        }
+        
+        if (!$hasPrimary) {
+            return redirect()->back()
+                ->withErrors(['next_of_kin' => 'At least one next of kin must be marked as primary.'])
+                ->withInput();
+        }
+
         // Validate disclaimer acceptance
         if (!$request->has('accept_disclaimer')) {
             return redirect()->back()->with('error', 'You must accept the disclaimer before submitting.')->withInput();
         }
 
+        // Save step 4 to session
+        $step4 = $validated;
+        $step4['interdicted'] = $request->has('interdicted');
+        $step4['suspended'] = $request->has('suspended');
+        $step4['quartered'] = $request->has('quartered');
+        if ($request->has('profile_picture_data')) {
+            $step4['profile_picture_data'] = $request->input('profile_picture_data');
+        }
+        session(['onboarding_step4' => $step4]);
+
+        // Validate all steps are completed
+        $step1 = session('onboarding_step1');
+        $step2 = session('onboarding_step2');
+        $step3 = session('onboarding_step3');
+
+        if (!$step1 || !$step2 || !$step3 || !$step4) {
+            return redirect()->route('onboarding.step1')->with('error', 'Please complete all steps before submitting.');
+        }
+
+        // Redirect to preview page instead of submitting directly
+        return redirect()->route('onboarding.preview');
+    }
+
+    public function onboardingPreview()
+    {
+        // Ensure user is authenticated
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('error', 'Please use the onboarding link from your email.');
+        }
+        
+        // Check if all steps are completed
+        $step1 = session('onboarding_step1');
+        $step2 = session('onboarding_step2');
+        $step3 = session('onboarding_step3');
+        $step4 = session('onboarding_step4');
+
+        if (!$step1 || !$step2 || !$step3 || !$step4) {
+            return redirect()->route('onboarding.step1')->with('error', 'Please complete all steps before preview.');
+        }
+
+        return view('forms.onboarding.preview', compact('step1', 'step2', 'step3', 'step4'));
+    }
+
+    public function finalSubmitOnboarding(Request $request)
+    {
         // Validate all steps are completed
         $step1 = session('onboarding_step1');
         $step2 = session('onboarding_step2');
@@ -991,22 +1297,6 @@ class DashboardController extends Controller
         if (!$step1 || !$step2 || !$step3 || !$step4) {
             return redirect()->route('onboarding.step1')->with('error', 'Please complete all steps before submitting.');
         }
-
-        // Validate step 4 data from request
-        $validated = $request->validate([
-            'next_of_kin_name' => 'required|string|max:255',
-            'relationship' => 'required|string|max:50',
-            'next_of_kin_phone' => 'required|string|max:20',
-            'next_of_kin_email' => 'nullable|email|max:255',
-            'next_of_kin_address' => 'required|string',
-            'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:2048',
-        ]);
-
-        // Update step4 with validated data
-        $step4 = array_merge($step4, $validated);
-        $step4['interdicted'] = $request->has('interdicted');
-        $step4['suspended'] = $request->has('suspended');
-        $step4['quartered'] = $request->has('quartered');
 
         try {
             // Get authenticated user
@@ -1039,9 +1329,15 @@ class DashboardController extends Controller
                 'lga' => $step1['lga'],
                 'geopolitical_zone' => $step1['geopolitical_zone'],
                 'marital_status' => $step1['marital_status'],
-                'entry_qualification' => $step2['entry_qualification'],
-                'discipline' => $step2['discipline'] ?? null,
-                'additional_qualification' => $step2['additional_qualification'] ?? null,
+                'entry_qualification' => isset($step2['education']) && count($step2['education']) > 0 
+                    ? $step2['education'][0]['qualification'] 
+                    : null, // Use first education entry's qualification as primary
+                'discipline' => isset($step2['education']) && count($step2['education']) > 0 
+                    ? ($step2['education'][0]['discipline'] ?? null) 
+                    : null, // Use first education entry's discipline
+                'additional_qualification' => isset($step2['education']) && count($step2['education']) > 0 
+                    ? json_encode($step2['education']) 
+                    : null, // Store ALL education entries as JSON (including first one with university)
                 'present_station' => $step2['command_id'],
                 'date_posted_to_station' => $step2['date_posted_to_station'],
                 'residential_address' => $step1['residential_address'],
@@ -1060,18 +1356,57 @@ class DashboardController extends Controller
                 'is_active' => true,
             ];
 
+            // Handle profile picture upload if provided (from step4 session)
+            if (isset($step4['profile_picture_data']) && !empty($step4['profile_picture_data'])) {
+                try {
+                    $base64Image = $step4['profile_picture_data'];
+                    
+                    // Extract base64 data
+                    if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {
+                        $imageType = $matches[1];
+                        $imageData = base64_decode(preg_replace('/^data:image\/\w+;base64,/', '', $base64Image));
+                        
+                        // Generate unique filename
+                        $filename = 'profile_' . $officer->id . '_' . time() . '.jpg';
+                        $path = 'profiles/' . $filename;
+                        
+                        // Store the image
+                        \Storage::disk('public')->put($path, $imageData);
+                        
+                        // Delete old profile picture if exists
+                        if ($officer->profile_picture_url) {
+                            $oldPath = storage_path('app/public/' . $officer->profile_picture_url);
+                            if (file_exists($oldPath)) {
+                                unlink($oldPath);
+                            }
+                        }
+                        
+                        // Update officer with profile picture path
+                        $officerData['profile_picture_url'] = $path;
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail onboarding
+                    \Log::error('Failed to save profile picture during onboarding: ' . $e->getMessage());
+                }
+            }
+
             // UPDATE existing officer record instead of creating new one
             $officer->update($officerData);
 
-            // Create next of kin
+            // Create next of kin entries
+            if (isset($step4['next_of_kin']) && is_array($step4['next_of_kin'])) {
+                foreach ($step4['next_of_kin'] as $nok) {
             \App\Models\NextOfKin::create([
                 'officer_id' => $officer->id,
-                'name' => $step4['next_of_kin_name'],
-                'relationship' => $step4['relationship'],
-                'phone_number' => $step4['next_of_kin_phone'],
-                'address' => $step4['next_of_kin_address'],
-                'is_primary' => true,
+                        'name' => $nok['name'],
+                        'relationship' => $nok['relationship'],
+                        'phone_number' => $nok['phone_number'],
+                        'email' => $nok['email'] ?? null,
+                        'address' => $nok['address'],
+                        'is_primary' => isset($nok['is_primary']) && $nok['is_primary'] == '1',
             ]);
+                }
+            }
 
             // Handle document uploads if any
             if ($request->hasFile('documents')) {
@@ -1089,10 +1424,28 @@ class DashboardController extends Controller
                 }
             }
 
+            // Send notification to officer about successful onboarding
+            try {
+                $notificationService = app(\App\Services\NotificationService::class);
+                $notificationService->notify(
+                    $user,
+                    'onboarding_completed',
+                    'Onboarding Completed Successfully',
+                    'Your onboarding has been completed successfully. You can now access all dashboard features.',
+                    null,
+                    null,
+                    true // Send email
+                );
+            } catch (\Exception $e) {
+                // Log error but don't fail onboarding
+                \Log::error('Failed to send onboarding completion notification: ' . $e->getMessage());
+            }
+
             // Clear session data
             session()->forget(['onboarding_step1', 'onboarding_step2', 'onboarding_step3', 'onboarding_step4']);
 
-            return redirect()->route('hrd.officers')->with('success', 'Officer onboarded successfully!');
+            // Redirect to officer dashboard after successful onboarding
+            return redirect()->route('officer.dashboard')->with('success', 'Onboarding completed successfully! You can now access all dashboard features.');
         } catch (\Exception $e) {
             Log::error('Onboarding error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to onboard officer: ' . $e->getMessage())->withInput();
@@ -1114,6 +1467,8 @@ class DashboardController extends Controller
             'Board' => 'board.dashboard',
             'Building Unit' => 'building.dashboard',
             'Establishment' => 'establishment.dashboard',
+            'TRADOC' => 'tradoc.dashboard',
+            'ICT' => 'ict.dashboard',
             'Welfare' => 'welfare.dashboard',
         ];
 

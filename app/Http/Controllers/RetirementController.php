@@ -6,13 +6,45 @@ use Illuminate\Http\Request;
 use App\Models\RetirementList;
 use App\Services\RetirementService;
 use Carbon\Carbon;
+use App\Models\Officer;
 
 class RetirementController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:HRD')->except(['index', 'show']);
+        $this->middleware('role:HRD')->except(['index', 'show', 'myRetirement']);
+    }
+
+    /**
+     * Show officer's retirement information
+     */
+    public function myRetirement()
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'Officer record not found.');
+        }
+
+        $retirementDate = $officer->calculateRetirementDate();
+        $retirementType = $officer->getRetirementType();
+        $alertDate = $officer->getAlertDate();
+        $daysUntilRetirement = $officer->getDaysUntilRetirement();
+        $isApproachingRetirement = $officer->isApproachingRetirement();
+        $retirementAlert = $officer->retirementAlert;
+
+        return view('dashboards.officer.retirement', compact(
+            'officer',
+            'retirementDate',
+            'retirementType',
+            'alertDate',
+            'daysUntilRetirement',
+            'isApproachingRetirement',
+            'retirementAlert'
+        ));
     }
 
     public function index(Request $request)

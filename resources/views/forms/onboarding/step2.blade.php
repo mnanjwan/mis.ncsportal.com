@@ -7,23 +7,23 @@
 <div class="grid gap-5 lg:gap-7.5">
     <!-- Progress Indicator -->
     <div class="kt-card">
-        <div class="kt-card-content p-5">
-            <div class="flex items-center justify-between">
+        <div class="kt-card-content p-4 lg:p-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-success text-white flex items-center justify-center font-semibold">✓</div>
-                    <span class="text-sm text-success">Personal Information</span>
+                    <div class="size-8 rounded-full bg-success text-white flex items-center justify-center font-semibold text-sm">✓</div>
+                    <span class="text-xs sm:text-sm text-success">Personal Information</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">2</div>
-                    <span class="text-sm font-medium">Employment Details</span>
+                    <div class="size-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">2</div>
+                    <span class="text-xs sm:text-sm font-medium">Employment Details</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-muted text-secondary-foreground flex items-center justify-center font-semibold">3</div>
-                    <span class="text-sm text-secondary-foreground">Banking Information</span>
+                    <div class="size-8 rounded-full bg-muted text-secondary-foreground flex items-center justify-center font-semibold text-sm">3</div>
+                    <span class="text-xs sm:text-sm text-secondary-foreground">Banking Information</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="size-8 rounded-full bg-muted text-secondary-foreground flex items-center justify-center font-semibold">4</div>
-                    <span class="text-sm text-secondary-foreground">Next of Kin</span>
+                    <div class="size-8 rounded-full bg-muted text-secondary-foreground flex items-center justify-center font-semibold text-sm">4</div>
+                    <span class="text-xs sm:text-sm text-secondary-foreground">Next of Kin</span>
                 </div>
             </div>
         </div>
@@ -38,10 +38,10 @@
             @if($errors->any())
             <div class="kt-alert kt-alert-danger mb-5">
                 <div class="kt-alert-content">
-                    <strong>Please fix the following errors:</strong>
+                    <strong class="text-danger">Please fix the following errors:</strong>
                     <ul class="mt-2 list-disc list-inside">
                         @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                        <li class="text-danger">{{ $error }}</li>
                         @endforeach
                     </ul>
                 </div>
@@ -103,13 +103,21 @@
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
+                        <label class="kt-form-label">Zone <span class="text-danger">*</span></label>
+                        <select name="zone_id" id="zone_id" class="kt-input" required>
+                            <option value="">Select Zone...</option>
+                        </select>
+                        <span class="error-message text-danger text-sm hidden"></span>
+                    </div>
+                    <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Command/Present Station <span class="text-danger">*</span></label>
                         <div class="relative">
                             <input type="text" 
                                    id="command_search" 
                                    class="kt-input w-full" 
-                                   placeholder="Search command..."
-                                   autocomplete="off">
+                                   placeholder="Select zone first, then search command..."
+                                   autocomplete="off"
+                                   readonly>
                             <input type="hidden" 
                                    name="command_id" 
                                    id="command_id" 
@@ -139,36 +147,32 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Unit</label>
-                        <input type="text" name="unit" class="kt-input" value="{{ old('unit', $savedData['unit'] ?? '') }}"/>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Entry Qualification <span class="text-danger">*</span></label>
-                        <select name="entry_qualification" class="kt-input" required>
-                            <option value="">Select...</option>
-                            <option value="WAEC" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'WAEC' ? 'selected' : '' }}>WAEC</option>
-                            <option value="NECO" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'NECO' ? 'selected' : '' }}>NECO</option>
-                            <option value="OND" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'OND' ? 'selected' : '' }}>OND</option>
-                            <option value="HND" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'HND' ? 'selected' : '' }}>HND</option>
-                            <option value="BSc" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'BSc' ? 'selected' : '' }}>BSc</option>
-                            <option value="MSc" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'MSc' ? 'selected' : '' }}>MSc</option>
-                            <option value="PhD" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'PhD' ? 'selected' : '' }}>PhD</option>
-                            <option value="Other" {{ old('entry_qualification', $savedData['entry_qualification'] ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
+                        <select name="unit" class="kt-input">
+                            <option value="">Select Unit...</option>
+                            <option value="General Duty (GD)" {{ old('unit', $savedData['unit'] ?? '') == 'General Duty (GD)' ? 'selected' : '' }}>General Duty (GD)</option>
+                            <option value="Support Staff (SS)" {{ old('unit', $savedData['unit'] ?? '') == 'Support Staff (SS)' ? 'selected' : '' }}>Support Staff (SS)</option>
                         </select>
-                        <span class="error-message text-danger text-sm hidden"></span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Discipline <span class="text-muted">(Optional for WAEC, NECO and Below)</span></label>
-                        <input type="text" name="discipline" class="kt-input" value="{{ old('discipline', $savedData['discipline'] ?? '') }}" placeholder="e.g., Computer Science, Accounting"/>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Additional Qualification (Optional)</label>
-                        <input type="text" name="additional_qualification" class="kt-input" value="{{ old('additional_qualification', $savedData['additional_qualification'] ?? '') }}"/>
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-end gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('onboarding.step1') }}'" class="kt-btn kt-btn-secondary">Previous</button>
-                    <button type="submit" class="kt-btn kt-btn-primary">Next: Banking Information</button>
+                <!-- Education Section -->
+                <div class="flex flex-col gap-5 pt-5 border-t border-input">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold">Education</h3>
+                        <button type="button" id="add-education-btn" class="kt-btn kt-btn-sm kt-btn-primary">
+                            <i class="ki-filled ki-plus"></i> Add Education
+                        </button>
+                    </div>
+                    
+                    <div id="education-entries" class="flex flex-col gap-5">
+                        <!-- Education entries will be added here dynamically -->
+                    </div>
+                </div>
+                
+                
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-5 border-t border-input">
+                    <button type="button" onclick="window.location.href='{{ route('onboarding.step1') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto">Previous</button>
+                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto">Next: Banking Information</button>
                 </div>
             </form>
         </div>
@@ -178,46 +182,629 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load commands
+    // Load zones and commands
     const token = window.API_CONFIG?.token || '{{ auth()->user()?->createToken('token')->plainTextToken ?? '' }}';
+    const savedZoneId = '{{ old('zone_id', $savedData['zone_id'] ?? '') }}';
+    const savedCommandId = '{{ old('command_id', $savedData['command_id'] ?? '') }}';
+    
     try {
-        const res = await fetch('/api/v1/commands', {
+        // Load zones first
+        const zonesRes = await fetch('/api/v1/zones', {
             headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
         });
-        if (res.ok) {
-            const data = await res.json();
-            const savedCommandId = '{{ old('command_id', $savedData['command_id'] ?? '') }}';
-            const savedCommandName = '{{ old('command_name', $savedData['command_name'] ?? '') }}';
+        
+        // Load all commands with zone information
+        const commandsRes = await fetch('/api/v1/commands', {
+            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+        });
+        
+        if (zonesRes.ok && commandsRes.ok) {
+            const zonesData = await zonesRes.json();
+            const commandsData = await commandsRes.json();
             
-            if (data.data) {
-                window.commands = data.data.map(cmd => ({
+            // Populate zones dropdown
+            const zones = zonesData.data || zonesData; // Handle both response formats
+            if (zones && Array.isArray(zones)) {
+                const zoneSelect = document.getElementById('zone_id');
+                zones.forEach(zone => {
+                    const option = document.createElement('option');
+                    option.value = zone.id;
+                    option.textContent = zone.name;
+                    if (zone.id == savedZoneId) {
+                        option.selected = true;
+                    }
+                    zoneSelect.appendChild(option);
+                });
+            } else {
+                console.error('Zones data format error:', zonesData);
+            }
+            
+            // Store all commands with zone info
+            const commands = commandsData.data || commandsData; // Handle both response formats
+            if (commands && Array.isArray(commands)) {
+                window.allCommands = commands.map(cmd => ({
                     id: cmd.id,
-                    name: cmd.name
+                    name: cmd.name,
+                    zone_id: cmd.zone_id || (cmd.zone ? cmd.zone.id : null)
                 }));
                 
-                // Initialize searchable select
-                initializeCommandSearch();
-                
-                // If saved command exists, set it
-                if (savedCommandId) {
-                    const savedCmd = window.commands.find(c => c.id == savedCommandId);
-                    if (savedCmd) {
-                        document.getElementById('command_search').value = savedCmd.name;
-                        document.getElementById('command_id').value = savedCmd.id;
-                        document.getElementById('selected_command_name').textContent = savedCmd.name;
-                        document.getElementById('selected_command').classList.remove('hidden');
-                    } else if (savedCommandName) {
-                        document.getElementById('command_search').value = savedCommandName;
-                        document.getElementById('selected_command_name').textContent = savedCommandName;
-                        document.getElementById('selected_command').classList.remove('hidden');
-                    }
+                // If saved zone exists, load commands for that zone
+                if (savedZoneId) {
+                    // Wait a bit for zone select to be populated
+                    setTimeout(() => {
+                        loadCommandsForZone(savedZoneId, savedCommandId);
+                    }, 100);
                 }
+                
+                // Handle zone change
+                const zoneSelect = document.getElementById('zone_id');
+                zoneSelect.addEventListener('change', function() {
+                    const selectedZoneId = this.value;
+                    if (selectedZoneId) {
+                        loadCommandsForZone(selectedZoneId);
+                    } else {
+                        clearCommandSelection();
+                    }
+                });
+            } else {
+                console.error('Commands data format error:', commandsData);
             }
+        } else {
+            console.error('Error loading zones or commands:', {
+                zones: zonesRes.status,
+                commands: commandsRes.status,
+                zonesText: await zonesRes.text().catch(() => ''),
+                commandsText: await commandsRes.text().catch(() => '')
+            });
         }
     } catch (error) {
-        console.error('Error loading commands:', error);
+        console.error('Error loading zones/commands:', error);
     }
+    
+    // Initialize education entries
+    initializeEducationSection();
 });
+
+// Nigerian Universities List
+const nigerianUniversities = [
+    'University of Lagos (UNILAG)',
+    'University of Ibadan (UI)',
+    'Ahmadu Bello University (ABU)',
+    'University of Nigeria, Nsukka (UNN)',
+    'Obafemi Awolowo University (OAU)',
+    'University of Benin (UNIBEN)',
+    'University of Ilorin (UNILORIN)',
+    'University of Port Harcourt (UNIPORT)',
+    'University of Calabar (UNICAL)',
+    'University of Jos (UNIJOS)',
+    'University of Maiduguri (UNIMAID)',
+    'University of Uyo (UNIUYO)',
+    'Nnamdi Azikiwe University (UNIZIK)',
+    'Federal University of Technology, Akure (FUTA)',
+    'Federal University of Technology, Minna (FUTMINNA)',
+    'Federal University of Technology, Owerri (FUTO)',
+    'Federal University of Agriculture, Abeokuta (FUNAAB)',
+    'Federal University of Agriculture, Makurdi (FUAM)',
+    'Federal University of Petroleum Resources, Effurun (FUPRE)',
+    'Lagos State University (LASU)',
+    'Rivers State University (RSU)',
+    'Delta State University (DELSU)',
+    'Enugu State University of Science and Technology (ESUT)',
+    'Abia State University (ABSU)',
+    'Imo State University (IMSU)',
+    'Anambra State University (ANSU)',
+    'Bayelsa Medical University (BMU)',
+    'Benue State University (BSU)',
+    'Cross River University of Technology (CRUTECH)',
+    'Ebonyi State University (EBSU)',
+    'Ekiti State University (EKSU)',
+    'Kaduna State University (KASU)',
+    'Kano University of Science and Technology (KUST)',
+    'Kebbi State University of Science and Technology (KSUSTA)',
+    'Kwara State University (KWASU)',
+    'Nasarawa State University (NSUK)',
+    'Ondo State University of Science and Technology (OSUSTECH)',
+    'Osun State University (UNIOSUN)',
+    'Plateau State University (PLASU)',
+    'Sokoto State University (SSU)',
+    'Taraba State University (TSU)',
+    'Yobe State University (YSU)',
+    'Zamfara State University (ZASU)',
+    'Covenant University',
+    'Babcock University',
+    'Afe Babalola University (ABUAD)',
+    'American University of Nigeria (AUN)',
+    'Bells University of Technology',
+    'Benson Idahosa University',
+    'Bingham University',
+    'Bowen University',
+    'Caleb University',
+    'Caritas University',
+    'Crawford University',
+    'Crescent University',
+    'Edwin Clark University',
+    'Elizade University',
+    'Evangel University',
+    'Fountain University',
+    'Godfrey Okoye University',
+    'Gregory University',
+    'Hallmark University',
+    'Hezekiah University',
+    'Igbinedion University',
+    'Joseph Ayo Babalola University',
+    'Kings University',
+    'Kwararafa University',
+    'Landmark University',
+    'Lead City University',
+    'Madonna University',
+    'McPherson University',
+    'Michael Okpara University of Agriculture, Umudike',
+    'Nile University of Nigeria',
+    'Novena University',
+    'Obong University',
+    'Oduduwa University',
+    'Pan-Atlantic University',
+    'Paul University',
+    'Redeemer\'s University',
+    'Rhema University',
+    'Ritman University',
+    'Salem University',
+    'Samuel Adegboyega University',
+    'Southwestern University',
+    'Summit University',
+    'Tansian University',
+    'University of Mkar',
+    'Veritas University',
+    'Wesley University',
+    'Western Delta University',
+    // Benin Republic Universities
+    'University of Abomey-Calavi (UAC)',
+    'University of Parakou',
+    'National University of Sciences, Technologies, Engineering, and Mathematics (UNSTIM)',
+    'National University of Agriculture (UNA)',
+    'African School of Economics (ASE)',
+    'ESAE University (École Supérieure d\'Administration, d\'Économie, de Journalisme et des Métiers de l\'Audiovisuel)',
+    'ESCAE-University, Benin',
+    'ISFOP Benin University',
+    'Houdegbe North American University Benin (HNAUB)',
+    'Université Catholique de l\'Afrique de l\'Ouest (UCAO)',
+    'Université des Sciences et Technologies du Bénin',
+    'Université Africaine de Technologie et de Management',
+    'Université Protestante de l\'Afrique de l\'Ouest',
+    'Université Polytechnique Internationale du Bénin',
+    'Université des Sciences Appliquées et du Management',
+    'Other'
+];
+
+// Qualifications List (from image)
+const qualifications = [
+    'PhD',
+    'MBBS',
+    'MSc',
+    'MPhil',
+    'MA',
+    'B TECH',
+    'BA',
+    'BSc',
+    'HND',
+    'OND',
+    'WAEC',
+    'NECO',
+    'TRADE TEST',
+    'DSc',
+    'DPharm',
+    'D Litt',
+    'DDS',
+    'DA',
+    'MMed',
+    'MEng',
+    'BArch',
+    'LLM',
+    'LLB',
+    'MBA',
+    'BEd',
+    'BPharm',
+    'BVSc',
+    'DVM',
+    'BDS',
+    'BEng',
+    'BTech',
+    'BBA',
+    'BCom',
+    'BFA',
+    'BPE',
+    'BSc (Ed)',
+    'PGD',
+    'PGDE',
+    'Other'
+];
+
+// Comprehensive Disciplines List
+const disciplines = [
+    'Accounting',
+    'Actuarial Science',
+    'Agricultural Economics',
+    'Agricultural Engineering',
+    'Agricultural Extension',
+    'Agriculture',
+    'Anatomy',
+    'Animal Science',
+    'Architecture',
+    'Banking and Finance',
+    'Biochemistry',
+    'Biology',
+    'Biomedical Engineering',
+    'Botany',
+    'Business Administration',
+    'Chemical Engineering',
+    'Chemistry',
+    'Civil Engineering',
+    'Computer Engineering',
+    'Computer Science',
+    'Criminology',
+    'Crop Science',
+    'Dentistry',
+    'Economics',
+    'Education',
+    'Electrical Engineering',
+    'English Language',
+    'Environmental Science',
+    'Estate Management',
+    'Finance',
+    'Fisheries',
+    'Food Science and Technology',
+    'Forestry',
+    'Geography',
+    'Geology',
+    'History',
+    'Human Resource Management',
+    'Industrial Chemistry',
+    'Information Technology',
+    'Law',
+    'Library Science',
+    'Linguistics',
+    'Marine Engineering',
+    'Marketing',
+    'Mass Communication',
+    'Mathematics',
+    'Mechanical Engineering',
+    'Medicine and Surgery',
+    'Microbiology',
+    'Nursing',
+    'Petroleum Engineering',
+    'Pharmacy',
+    'Philosophy',
+    'Physics',
+    'Political Science',
+    'Psychology',
+    'Public Administration',
+    'Quantity Surveying',
+    'Sociology',
+    'Soil Science',
+    'Statistics',
+    'Surveying and Geoinformatics',
+    'Veterinary Medicine',
+    'Zoology',
+    'Agricultural Science',
+    'Animal Husbandry',
+    'Building Technology',
+    'Business Management',
+    'Chemical Science',
+    'Communication Arts',
+    'Computer Education',
+    'Crop Production',
+    'Economics and Statistics',
+    'Educational Administration',
+    'Educational Psychology',
+    'Electronics Engineering',
+    'Environmental Management',
+    'Food Technology',
+    'Geophysics',
+    'Guidance and Counseling',
+    'Health Education',
+    'Home Economics',
+    'Human Kinetics',
+    'Industrial Mathematics',
+    'Insurance',
+    'International Relations',
+    'Journalism',
+    'Laboratory Technology',
+    'Land Surveying',
+    'Management',
+    'Marine Science',
+    'Materials Science',
+    'Mechanical Engineering Technology',
+    'Medical Laboratory Science',
+    'Metallurgical Engineering',
+    'Nutrition and Dietetics',
+    'Office Technology and Management',
+    'Operations Research',
+    'Optometry',
+    'Peace and Conflict Studies',
+    'Petroleum and Gas Engineering',
+    'Physics with Electronics',
+    'Plant Science',
+    'Project Management',
+    'Public Health',
+    'Pure and Applied Mathematics',
+    'Radiography',
+    'Real Estate Management',
+    'Religious Studies',
+    'Science Education',
+    'Social Work',
+    'Software Engineering',
+    'Soil Science and Land Management',
+    'Statistics and Computer Science',
+    'Telecommunications Engineering',
+    'Textile Technology',
+    'Transport Management',
+    'Urban and Regional Planning',
+    'Water Resources Engineering',
+    'Wildlife Management'
+];
+
+let educationEntryCount = 0;
+
+function initializeEducationSection() {
+    const addBtn = document.getElementById('add-education-btn');
+    const entriesContainer = document.getElementById('education-entries');
+    
+    // Load saved education entries
+    const savedEducation = @json(old('education', $savedData['education'] ?? []));
+    
+    if (savedEducation && Array.isArray(savedEducation) && savedEducation.length > 0) {
+        // Handle both array of objects and object with numeric keys
+        const educationArray = Array.isArray(savedEducation) 
+            ? savedEducation 
+            : Object.values(savedEducation);
+            
+        educationArray.forEach(edu => {
+            if (edu && (edu.university || edu.qualification)) {
+                addEducationEntry(edu);
+            }
+        });
+    }
+    
+    // If no saved entries, add one empty entry by default
+    if (entriesContainer.children.length === 0) {
+        addEducationEntry();
+    }
+    
+    addBtn.addEventListener('click', () => {
+        addEducationEntry();
+    });
+}
+
+function addEducationEntry(data = null) {
+    const entriesContainer = document.getElementById('education-entries');
+    const entryId = educationEntryCount++;
+    
+    const entryDiv = document.createElement('div');
+    entryDiv.className = 'kt-card p-5 border border-input rounded-lg';
+    entryDiv.dataset.entryId = entryId;
+    
+    const savedUniversity = data && data.university ? data.university : '';
+    const savedQualification = data && data.qualification ? data.qualification : '';
+    const savedDiscipline = data && data.discipline ? data.discipline : '';
+    const isCustomDiscipline = savedDiscipline && !disciplines.includes(savedDiscipline);
+    
+    entryDiv.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div class="flex flex-col gap-1">
+                <label class="kt-form-label">University <span class="text-danger">*</span></label>
+                <div class="relative">
+                    <input type="text" 
+                           name="education[${entryId}][university]" 
+                           id="university_search_${entryId}"
+                           class="kt-input w-full education-university" 
+                           value="${savedUniversity}"
+                           placeholder="Search or type university name..."
+                           autocomplete="off"
+                           required>
+                    <input type="hidden" 
+                           id="university_hidden_${entryId}"
+                           value="${savedUniversity}">
+                    <div id="university_dropdown_${entryId}" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                        <!-- Options will be populated by JavaScript -->
+                    </div>
+                </div>
+                <span class="error-message text-danger text-sm hidden"></span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="kt-form-label">Entry Qualification <span class="text-danger">*</span></label>
+                <select name="education[${entryId}][qualification]" class="kt-input education-qualification" required>
+                    <option value="">-- Select Qualification --</option>
+                    ${qualifications.map(qual => 
+                        `<option value="${qual}" ${savedQualification == qual ? 'selected' : ''}>${qual}</option>`
+                    ).join('')}
+                </select>
+                <span class="error-message text-danger text-sm hidden"></span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="kt-form-label">Discipline <span class="text-muted">(Optional)</span></label>
+                <div class="flex gap-2">
+                    <select id="discipline_select_${entryId}"
+                            class="kt-input flex-1 education-discipline-select" 
+                            onchange="handleDisciplineChange(${entryId})">
+                        <option value="">-- Select Discipline --</option>
+                        ${disciplines.map(disc => 
+                            `<option value="${disc}" ${savedDiscipline == disc ? 'selected' : ''}>${disc}</option>`
+                        ).join('')}
+                        <option value="__CUSTOM__" ${isCustomDiscipline ? 'selected' : ''}>-- Custom (Enter below) --</option>
+                    </select>
+                </div>
+                <input type="text" 
+                       id="discipline_custom_${entryId}"
+                       class="kt-input mt-2 education-discipline-custom ${isCustomDiscipline ? '' : 'hidden'}" 
+                       value="${isCustomDiscipline ? savedDiscipline : ''}"
+                       placeholder="Enter custom discipline..."
+                       oninput="handleCustomDiscipline(${entryId})">
+                <input type="hidden" 
+                       id="discipline_final_${entryId}"
+                       name="education[${entryId}][discipline]"
+                       value="${savedDiscipline}">
+                <span class="error-message text-danger text-sm hidden"></span>
+            </div>
+        </div>
+        <div class="flex items-center justify-end mt-3">
+            <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-education-btn" onclick="removeEducationEntry(${entryId})">
+                <i class="ki-filled ki-trash"></i> Remove
+            </button>
+        </div>
+    `;
+    
+    entriesContainer.appendChild(entryDiv);
+    
+    // Initialize university search for this entry
+    initializeUniversitySearch(entryId);
+    
+    // Initialize discipline handling
+    if (isCustomDiscipline) {
+        document.getElementById(`discipline_custom_${entryId}`).classList.remove('hidden');
+    }
+}
+
+function removeEducationEntry(entryId) {
+    const entry = document.querySelector(`[data-entry-id="${entryId}"]`);
+    if (entry) {
+        entry.remove();
+    }
+    
+    // If no entries left, add one
+    const entriesContainer = document.getElementById('education-entries');
+    if (entriesContainer.children.length === 0) {
+        addEducationEntry();
+    }
+}
+
+// Initialize university search functionality
+function initializeUniversitySearch(entryId) {
+    const universityInput = document.getElementById(`university_search_${entryId}`);
+    const universityDropdown = document.getElementById(`university_dropdown_${entryId}`);
+    
+    if (!universityInput || !universityDropdown) return;
+    
+    universityInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm.length === 0) {
+            universityDropdown.classList.add('hidden');
+            return;
+        }
+        
+        const filtered = nigerianUniversities.filter(uni => 
+            uni.toLowerCase().includes(searchTerm)
+        );
+        
+        if (filtered.length > 0) {
+            universityDropdown.innerHTML = filtered.map(uni => 
+                '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
+                'data-value="' + uni + '">' + uni + '</div>'
+            ).join('');
+            universityDropdown.classList.remove('hidden');
+        } else {
+            universityDropdown.classList.add('hidden');
+        }
+    });
+    
+    // Handle selection from dropdown
+    universityDropdown.addEventListener('click', function(e) {
+        const option = e.target.closest('[data-value]');
+        if (option) {
+            const selectedValue = option.dataset.value;
+            universityInput.value = selectedValue;
+            universityDropdown.classList.add('hidden');
+            clearError(`education[${entryId}][university]`);
+        }
+    });
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!universityInput.contains(e.target) && !universityDropdown.contains(e.target)) {
+            universityDropdown.classList.add('hidden');
+        }
+    });
+    
+    // Allow free text input (user can type custom university)
+    universityInput.addEventListener('blur', function() {
+        // Small delay to allow dropdown click to register
+        setTimeout(() => {
+            universityDropdown.classList.add('hidden');
+        }, 200);
+    });
+}
+
+// Handle discipline dropdown change
+function handleDisciplineChange(entryId) {
+    const disciplineSelect = document.getElementById(`discipline_select_${entryId}`);
+    const disciplineCustom = document.getElementById(`discipline_custom_${entryId}`);
+    const disciplineFinal = document.getElementById(`discipline_final_${entryId}`);
+    
+    if (!disciplineSelect || !disciplineCustom || !disciplineFinal) return;
+    
+    const selectedValue = disciplineSelect.value;
+    
+    if (selectedValue === '__CUSTOM__') {
+        // Show custom input
+        disciplineCustom.classList.remove('hidden');
+        disciplineCustom.focus();
+        // Keep current custom value if it exists
+        if (!disciplineCustom.value.trim()) {
+            disciplineFinal.value = '';
+        }
+    } else if (selectedValue) {
+        // Hide custom input and set final value from dropdown
+        disciplineCustom.classList.add('hidden');
+        disciplineCustom.value = '';
+        disciplineFinal.value = selectedValue;
+    } else {
+        // Clear everything
+        disciplineCustom.classList.add('hidden');
+        disciplineCustom.value = '';
+        disciplineFinal.value = '';
+    }
+}
+
+// Handle custom discipline input
+function handleCustomDiscipline(entryId) {
+    const disciplineCustom = document.getElementById(`discipline_custom_${entryId}`);
+    const disciplineFinal = document.getElementById(`discipline_final_${entryId}`);
+    
+    if (!disciplineCustom || !disciplineFinal) return;
+    
+    disciplineFinal.value = disciplineCustom.value.trim();
+}
+
+function loadCommandsForZone(zoneId, savedCommandId = null) {
+    // Filter commands by zone - check both zone_id and zone.id
+    window.commands = window.allCommands.filter(cmd => {
+        const cmdZoneId = cmd.zone?.id || cmd.zone_id;
+        return cmdZoneId == zoneId;
+    });
+    
+    // Clear previous command selection
+    clearCommandSelection();
+    
+    // Enable command search
+    const commandSearch = document.getElementById('command_search');
+    commandSearch.readOnly = false;
+    commandSearch.placeholder = 'Search command...';
+    
+    // Re-initialize searchable select with filtered commands
+    initializeCommandSearch();
+    
+    // If saved command exists and belongs to this zone, set it
+    if (savedCommandId) {
+        const savedCmd = window.commands.find(c => c.id == savedCommandId);
+        if (savedCmd) {
+            commandSearch.value = savedCmd.name;
+            document.getElementById('command_id').value = savedCmd.id;
+            document.getElementById('selected_command_name').textContent = savedCmd.name;
+            document.getElementById('selected_command').classList.remove('hidden');
+        }
+    }
+}
 
 function initializeCommandSearch() {
     const commandSearch = document.getElementById('command_search');
@@ -269,9 +856,21 @@ function initializeCommandSearch() {
 }
 
 function clearCommandSelection() {
-    document.getElementById('command_search').value = '';
-    document.getElementById('command_id').value = '';
-    document.getElementById('selected_command').classList.add('hidden');
+    const commandSearch = document.getElementById('command_search');
+    const commandId = document.getElementById('command_id');
+    const selectedCommand = document.getElementById('selected_command');
+    
+    commandSearch.value = '';
+    commandId.value = '';
+    selectedCommand.classList.add('hidden');
+    
+    // Reset command search to readonly if no zone selected
+    const zoneId = document.getElementById('zone_id').value;
+    if (!zoneId) {
+        commandSearch.readOnly = true;
+        commandSearch.placeholder = 'Select zone first, then search command...';
+    }
+    
     clearError('command_id');
 }
 
@@ -304,10 +903,42 @@ function validateStep2() {
         'date_of_present_appointment': 'Date of Present Appointment is required',
         'substantive_rank': 'Substantive Rank is required',
         'salary_grade_level': 'Salary Grade Level is required',
+        'zone_id': 'Zone is required',
         'command_id': 'Command/Present Station is required',
-        'date_posted_to_station': 'Date Posted to Station is required',
-        'entry_qualification': 'Entry Qualification is required'
+        'date_posted_to_station': 'Date Posted to Station is required'
     };
+    
+    // Validate education entries
+    const educationCards = document.querySelectorAll('#education-entries .kt-card');
+    let hasEducationError = false;
+    
+    educationCards.forEach((card, index) => {
+        const entryId = card.dataset.entryId;
+        const university = card.querySelector('.education-university');
+        const qualification = card.querySelector('.education-qualification');
+        
+        if (!university || !university.value.trim()) {
+            const errorSpan = university?.parentElement?.querySelector('.error-message');
+            if (errorSpan) {
+                errorSpan.textContent = 'University is required';
+                errorSpan.classList.remove('hidden');
+                university?.classList.add('border-danger');
+            }
+            isValid = false;
+            hasEducationError = true;
+        }
+        
+        if (!qualification || !qualification.value.trim()) {
+            const errorSpan = qualification?.parentElement?.querySelector('.error-message');
+            if (errorSpan) {
+                errorSpan.textContent = 'Entry Qualification is required';
+                errorSpan.classList.remove('hidden');
+                qualification?.classList.add('border-danger');
+            }
+            isValid = false;
+            hasEducationError = true;
+        }
+    });
 
     // Clear all errors first
     Object.keys(requiredFields).forEach(field => clearError(field));
@@ -322,6 +953,14 @@ function validateStep2() {
             isValid = false;
         }
     });
+    
+    // Validate that if zone is selected, command must be selected
+    const zoneId = document.querySelector('[name="zone_id"]')?.value;
+    const commandId = document.querySelector('[name="command_id"]')?.value;
+    if (zoneId && !commandId) {
+        showError('command_id', 'Please select a command from the selected zone');
+        isValid = false;
+    }
 
     // Validate date logic
     const dofa = document.querySelector('[name="date_of_first_appointment"]')?.value;
@@ -360,9 +999,23 @@ document.getElementById('onboarding-step2-form').addEventListener('submit', func
 document.querySelectorAll('#onboarding-step2-form input, #onboarding-step2-form select').forEach(input => {
     input.addEventListener('input', function() {
         clearError(this.name);
+        // Clear education field errors
+        const errorSpan = this.parentElement?.querySelector('.error-message');
+        if (errorSpan && this.classList.contains('education-university') || this.classList.contains('education-qualification')) {
+            errorSpan.textContent = '';
+            errorSpan.classList.add('hidden');
+            this.classList.remove('border-danger');
+        }
     });
     input.addEventListener('change', function() {
         clearError(this.name);
+        // Clear education field errors
+        const errorSpan = this.parentElement?.querySelector('.error-message');
+        if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification'))) {
+            errorSpan.textContent = '';
+            errorSpan.classList.add('hidden');
+            this.classList.remove('border-danger');
+        }
     });
 });
 </script>
