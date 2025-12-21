@@ -13,15 +13,17 @@ class OnboardingLinkMail extends Mailable
     public $onboardingLink;
     public $tempPassword;
     public $officerName;
+    public $email;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($onboardingLink, $tempPassword, $officerName = null)
+    public function __construct($onboardingLink, $tempPassword, $officerName = null, $email = null)
     {
         $this->onboardingLink = $onboardingLink;
         $this->tempPassword = $tempPassword;
         $this->officerName = $officerName;
+        $this->email = $email;
     }
 
     /**
@@ -35,6 +37,7 @@ class OnboardingLinkMail extends Mailable
                         'onboardingLink' => $this->onboardingLink,
                         'tempPassword' => $this->tempPassword,
                         'officerName' => $this->officerName,
+                        'email' => $this->email,
                     ]);
     }
 }

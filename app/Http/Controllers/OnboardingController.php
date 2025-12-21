@@ -94,7 +94,7 @@ class OnboardingController extends Controller
             }
 
             // Generate temporary password
-            $tempPassword = Str::random(12);
+            $tempPassword = 'change123';
             
             // Create user account
             $currentUserId = Auth::id();
@@ -127,7 +127,7 @@ class OnboardingController extends Controller
             $emailDelivered = false;
             try {
                 $officerName = $validated['name'] ?? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                Mail::to($validated['email'])->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName));
+                Mail::to($validated['email'])->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $validated['email']));
                 $emailSent = true;
                 $emailDelivered = true;
             } catch (\Exception $e) {
@@ -284,7 +284,7 @@ class OnboardingController extends Controller
                 $emailSent = false;
                 try {
                     $officerName = $entry['name'] ?? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                    Mail::to($entry['email'])->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName));
+                    Mail::to($entry['email'])->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $entry['email']));
                     $emailSent = true;
                     $user->update(['email_verified_at' => now()]);
                 } catch (\Exception $e) {
@@ -328,7 +328,7 @@ class OnboardingController extends Controller
             }
 
             // Generate new temporary password
-            $tempPassword = Str::random(12);
+            $tempPassword = 'change123';
             $officer->user->update([
                 'password' => Hash::make($tempPassword),
             ]);
@@ -341,7 +341,7 @@ class OnboardingController extends Controller
             $emailDelivered = false;
             try {
                 $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                Mail::to($officer->user->email)->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName));
+                Mail::to($officer->user->email)->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $officer->user->email));
                 $emailSent = true;
                 $emailDelivered = true;
             } catch (\Exception $e) {

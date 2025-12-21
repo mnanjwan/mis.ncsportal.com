@@ -376,6 +376,18 @@
     </div>
 </div>
 
+@push('styles')
+<style>
+    /* Ensure all asterisks in onboarding forms are red */
+    label span.text-danger,
+    label .text-danger,
+    .block span.text-danger,
+    .block .text-danger {
+        color: #dc3545 !important;
+    }
+</style>
+@endpush
+
 <script>
 let bulkEntryCount = 0;
 const maxEntries = 10;

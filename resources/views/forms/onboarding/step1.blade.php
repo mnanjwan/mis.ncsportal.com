@@ -176,14 +176,26 @@
                     <span class="error-message text-danger text-sm hidden"></span>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-5 border-t border-input">
-                    <a href="{{ route('hrd.dashboard') }}" class="kt-btn kt-btn-secondary w-full sm:w-auto">Cancel</a>
-                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto">Next: Employment Details</button>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-input">
+                    <a href="{{ route('hrd.dashboard') }}" class="kt-btn kt-btn-secondary w-full sm:w-auto whitespace-nowrap">Cancel</a>
+                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto whitespace-nowrap">Next: Employment Details</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+    /* Ensure all asterisks in onboarding forms are red */
+    .kt-form-label span.text-danger,
+    .kt-form-label .text-danger,
+    label span.text-danger,
+    label .text-danger {
+        color: #dc3545 !important;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

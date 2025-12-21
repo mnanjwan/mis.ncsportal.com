@@ -129,14 +129,26 @@
                     </div>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('onboarding.step2') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto">Previous</button>
-                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto">Next: Next of Kin</button>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-input">
+                    <button type="button" onclick="window.location.href='{{ route('onboarding.step2') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto whitespace-nowrap">Previous</button>
+                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto whitespace-nowrap">Next: Next of Kin</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+    /* Ensure all asterisks in onboarding forms are red */
+    .kt-form-label span.text-danger,
+    .kt-form-label .text-danger,
+    label span.text-danger,
+    label .text-danger {
+        color: #dc3545 !important;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

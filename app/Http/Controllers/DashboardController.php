@@ -1219,13 +1219,39 @@ class DashboardController extends Controller
             return redirect()->back()->with('error', 'You must accept the disclaimer before submitting.')->withInput();
         }
 
-        // Save step 4 to session
+        // Handle document uploads immediately (before storing in session, as UploadedFile cannot be serialized)
+        $documentPaths = [];
+        if ($request->hasFile('documents')) {
+            $user = auth()->user();
+            $officer = $user->officer;
+            
+            if ($officer) {
+                foreach ($request->file('documents') as $document) {
+                    $path = $document->store('officer-documents-temp', 'public');
+                    $documentPaths[] = [
+                        'path' => $path,
+                        'name' => $document->getClientOriginalName(),
+                        'size' => $document->getSize(),
+                        'mime' => $document->getMimeType(),
+                        'extension' => $document->getClientOriginalExtension(),
+                    ];
+                }
+            }
+        }
+
+        // Save step 4 to session (exclude uploaded files as they cannot be serialized)
         $step4 = $validated;
+        // Remove documents from session data - they are already stored
+        unset($step4['documents']);
         $step4['interdicted'] = $request->has('interdicted');
         $step4['suspended'] = $request->has('suspended');
         $step4['quartered'] = $request->has('quartered');
         if ($request->has('profile_picture_data')) {
             $step4['profile_picture_data'] = $request->input('profile_picture_data');
+        }
+        // Store document paths (already saved to disk)
+        if (!empty($documentPaths)) {
+            $step4['document_paths'] = $documentPaths;
         }
         session(['onboarding_step4' => $step4]);
 
@@ -1384,7 +1410,31 @@ class DashboardController extends Controller
                 }
             }
 
-            // Handle document uploads if any
+            // Handle document uploads if any (from step 4 session - already stored)
+            if (isset($step4['document_paths']) && is_array($step4['document_paths'])) {
+                foreach ($step4['document_paths'] as $docInfo) {
+                    // Move from temp location to final location
+                    $tempPath = $docInfo['path'];
+                    $finalPath = 'officer-documents/' . basename($tempPath);
+                    
+                    // Move file from temp to final location
+                    if (\Storage::disk('public')->exists($tempPath)) {
+                        \Storage::disk('public')->move($tempPath, $finalPath);
+                        
+                        \App\Models\OfficerDocument::create([
+                            'officer_id' => $officer->id,
+                            'document_type' => $docInfo['extension'],
+                            'file_name' => $docInfo['name'],
+                            'file_path' => $finalPath,
+                            'file_size' => $docInfo['size'],
+                            'mime_type' => $docInfo['mime'],
+                            'uploaded_by' => $user->id,
+                        ]);
+                    }
+                }
+            }
+            
+            // Also handle documents from request if submitted again (for backward compatibility)
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $document) {
                     $path = $document->store('officer-documents', 'public');

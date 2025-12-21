@@ -103,9 +103,9 @@
                     <label for="accept_disclaimer" class="kt-form-label">I accept the disclaimer and confirm that all information provided is true and accurate <span class="text-danger">*</span></label>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('onboarding.step3') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto">Previous</button>
-                    <button type="submit" class="kt-btn text-white w-full sm:w-auto" id="submit-btn" style="background-color: #068b57; border-color: #068b57;">Submit Onboarding</button>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-input">
+                    <button type="button" onclick="window.location.href='{{ route('onboarding.step3') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto whitespace-nowrap">Previous</button>
+                    <button type="submit" class="kt-btn text-white w-full sm:w-auto whitespace-nowrap" id="submit-btn" style="background-color: #068b57; border-color: #068b57;">Submit Onboarding</button>
                 </div>
                     </div>
                     
@@ -196,6 +196,16 @@
 @push('styles')
     <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
     <style>
+        /* Ensure all asterisks in onboarding forms are red */
+        .kt-form-label span.text-danger,
+        .kt-form-label .text-danger,
+        label span.text-danger,
+        label .text-danger,
+        .kt-card-title span.text-danger,
+        .kt-card-title .text-danger {
+            color: #dc3545 !important;
+        }
+        
         /* Override icon colors to use green (#068b57) instead of blue (#2b80ff) */
         /* Icons outside buttons */
         .ki-filled:not(.kt-btn i):not(.kt-btn-primary i):not(button i):not(label.kt-btn i),
