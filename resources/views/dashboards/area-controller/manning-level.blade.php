@@ -27,7 +27,7 @@
             <h3 class="kt-card-title">Submitted Manning Requests</h3>
         </div>
         <div class="kt-card-content">
-            @if($requests->count() > 0)
+            @if(isset($requests) && $requests->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="kt-table w-full">
                         <thead>

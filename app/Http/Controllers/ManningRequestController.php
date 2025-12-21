@@ -723,14 +723,22 @@ class ManningRequestController extends Controller
     // Area Controller Methods
     public function areaControllerIndex(Request $request)
     {
-        // Get submitted manning requests (status = SUBMITTED)
+        // Get submitted manning requests (status = SUBMITTED) for Area Controller approval
         // Area Controller oversees multiple units - no command restrictions
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'items'])
-            ->where('status', 'SUBMITTED')
-            ->whereNotNull('submitted_at')
-            ->orderBy('submitted_at', 'desc');
+            ->where('status', 'SUBMITTED');
+        
+        // Order by submitted_at if available, otherwise by created_at
+        $query->orderByRaw('COALESCE(submitted_at, created_at) DESC');
         
         $requests = $query->paginate(20)->withQueryString();
+        
+        // Debug: Log the count for troubleshooting
+        \Log::info('Area Controller Manning Requests', [
+            'total_count' => $requests->total(),
+            'current_count' => $requests->count(),
+            'status_filter' => 'SUBMITTED'
+        ]);
         
         return view('dashboards.area-controller.manning-level', compact('requests'));
     }
