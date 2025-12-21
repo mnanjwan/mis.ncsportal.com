@@ -32,6 +32,9 @@ class EnsureOnboardingComplete
             return $next($request);
         }
 
+        // Refresh officer model to ensure we have latest data (especially after onboarding completion)
+        $officer->refresh();
+
         // Check if user has Officer role
         if (!$user->relationLoaded('roles')) {
             $user->load(['roles' => function($query) {
@@ -42,7 +45,8 @@ class EnsureOnboardingComplete
         $hasOfficerRole = $user->roles->contains('name', 'Officer');
 
         // Only enforce onboarding completion for users with Officer role
-        if ($hasOfficerRole && !$officer->hasCompletedOnboarding()) {
+        // Use profile photo as indicator - if profile_picture_url exists, onboarding is complete
+        if ($hasOfficerRole && empty($officer->profile_picture_url)) {
             // Allow access to onboarding routes
             if ($request->routeIs('onboarding.*')) {
                 return $next($request);

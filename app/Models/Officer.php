@@ -262,51 +262,17 @@ class Officer extends Model
 
     /**
      * Check if officer has completed onboarding
-     * Onboarding is complete when all required fields are filled (not placeholder values)
+     * Onboarding is complete when profile picture is uploaded (indicates completion of onboarding form)
      */
     public function hasCompletedOnboarding(): bool
     {
-        // Check if officer has all required fields filled (not placeholder values)
-        $requiredFields = [
-            'initials' => ['TBD'],
-            'surname' => ['TBD'],
-            'substantive_rank' => ['TBD'],
-            'salary_grade_level' => ['TBD'],
-            'state_of_origin' => ['TBD'],
-            'lga' => ['TBD'],
-            'geopolitical_zone' => ['TBD'],
-            'entry_qualification' => ['TBD'],
-            'date_of_birth' => ['1900-01-01'],
-            'date_of_first_appointment' => null, // Just check if not null
-            'date_of_present_appointment' => null, // Just check if not null
-            'phone_number' => ['00000000000'],
-            'permanent_home_address' => ['To be provided during onboarding'],
-            'bank_name' => null, // Just check if not null
-            'bank_account_number' => null, // Just check if not null
-            'pfa_name' => null, // Just check if not null
-            'rsa_number' => null, // Just check if not null
-        ];
-
-        foreach ($requiredFields as $field => $invalidValues) {
-            $value = $this->$field;
-            
-            // If field is null, onboarding is not complete
-            if ($value === null) {
-                return false;
-            }
-            
-            // If field has invalid placeholder values, onboarding is not complete
-            if ($invalidValues !== null && in_array($value, $invalidValues)) {
-                return false;
-            }
+        // Primary indicator: Profile photo is uploaded during onboarding step 4
+        // This is the most reliable indicator that onboarding was completed
+        if (!empty($this->profile_picture_url)) {
+            return true;
         }
 
-        // Check if next of kin exists (required for onboarding completion)
-        if (!$this->nextOfKin()->where('is_primary', true)->exists()) {
-            return false;
-        }
-
-        return true;
+        return false;
     }
 }
 

@@ -49,9 +49,9 @@
     if ($primaryRole === 'Officer') {
         if ($officer) {
             // Reload officer from database to ensure we have latest data (especially after onboarding completion)
-            // This ensures the check uses fresh data, not cached/stale model attributes
-            $officer = \App\Models\Officer::with('nextOfKin')->find($officer->id);
-            $onboardingComplete = $officer ? $officer->hasCompletedOnboarding() : false;
+            // Use profile photo as indicator - if profile_picture_url exists, onboarding is complete
+            $officer = \App\Models\Officer::find($officer->id);
+            $onboardingComplete = $officer && !empty($officer->profile_picture_url);
         } else {
             // No officer record means onboarding is not complete
             $onboardingComplete = false;
