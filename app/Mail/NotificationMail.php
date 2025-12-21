@@ -43,12 +43,21 @@ class NotificationMail extends Mailable
             ? 'emails.onboarding-completed' 
             : 'emails.notification';
         
+        // Get temporary password for onboarding completion email
+        $tempPassword = null;
+        if ($this->notification->notification_type === 'onboarding_completed') {
+            // Refresh user to get latest temp_password
+            $this->user->refresh();
+            $tempPassword = $this->user->temp_password;
+        }
+        
         return new Content(
             view: $view,
             with: [
                 'user' => $this->user,
                 'notification' => $this->notification,
                 'appUrl' => config('app.url'),
+                'tempPassword' => $tempPassword,
             ],
         );
     }

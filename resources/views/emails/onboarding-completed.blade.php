@@ -53,7 +53,7 @@
             <p><strong>Your Login Credentials:</strong></p>
             <p>
                 <strong>Email:</strong> {{ $user->email }}<br>
-                <strong>Default Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #068b57;">change123</code>
+                <strong>Default Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #068b57;">{{ $tempPassword ?? 'N/A' }}</code>
             </p>
             
             <p style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0;">

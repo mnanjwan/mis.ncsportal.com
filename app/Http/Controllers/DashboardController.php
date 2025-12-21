@@ -1460,7 +1460,7 @@ class DashboardController extends Controller
                     'Your onboarding has been completed successfully. You can now access all dashboard features.',
                     null,
                     null,
-                    true // Send email
+                    true // Send email - NotificationMail will retrieve temp_password from user
                 );
             } catch (\Exception $e) {
                 // Log error but don't fail onboarding

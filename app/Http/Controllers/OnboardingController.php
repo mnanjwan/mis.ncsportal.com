@@ -93,14 +93,15 @@ class OnboardingController extends Controller
                     ->with('error', 'This officer already has an account. Onboarding is not needed.');
             }
 
-            // Generate temporary password
-            $tempPassword = 'change123';
+            // Generate random 8-digit password
+            $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
             
             // Create user account
             $currentUserId = Auth::id();
             $user = User::create([
                 'email' => $validated['email'],
                 'password' => Hash::make($tempPassword),
+                'temp_password' => $tempPassword, // Store plain password temporarily
                 'is_active' => true,
                 'created_by' => $currentUserId,
             ]);
@@ -251,14 +252,15 @@ class OnboardingController extends Controller
                     continue;
                 }
 
-                // Generate temporary password
-                $tempPassword = Str::random(12);
+                // Generate random 8-digit password
+                $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
                 
                 // Create user account
                 $currentUserId = Auth::id();
                 $user = User::create([
                     'email' => $entry['email'],
                     'password' => Hash::make($tempPassword),
+                    'temp_password' => $tempPassword, // Store plain password temporarily
                     'is_active' => true,
                     'created_by' => $currentUserId,
                 ]);
@@ -327,10 +329,11 @@ class OnboardingController extends Controller
                     ->with('error', 'Officer does not have a user account. Please initiate onboarding first.');
             }
 
-            // Generate new temporary password
-            $tempPassword = 'change123';
+            // Generate new random 8-digit password
+            $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
             $officer->user->update([
                 'password' => Hash::make($tempPassword),
+                'temp_password' => $tempPassword, // Store plain password temporarily
             ]);
 
             // Generate onboarding link
