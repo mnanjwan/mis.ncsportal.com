@@ -208,6 +208,10 @@ class LeaveApplicationController extends Controller
             // Refresh the model to ensure we have the latest data
             $application->refresh();
             
+            // Notify officer about minuting
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyLeaveApplicationMinuted($application);
+            
             return redirect()->route('staff-officer.leave-applications.show', $id)
                 ->with('success', 'Application has been minuted to DC Admin for approval.');
         } catch (\Exception $e) {

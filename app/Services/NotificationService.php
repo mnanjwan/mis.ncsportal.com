@@ -36,26 +36,37 @@ class NotificationService
 
         // Send email notification if enabled
         if ($sendEmail && $user->email) {
-            // In local environment, send emails synchronously for easier testing
-            // In production, use queue for better performance
-            if (app()->environment('local')) {
+            try {
+                // Try to send synchronously first (works in all environments if mail is configured)
+                // This ensures emails are sent immediately without requiring queue worker
+                Mail::to($user->email)->send(new NotificationMail($user, $notification));
+                Log::info('Notification email sent synchronously', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'notification_id' => $notification->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send notification email synchronously, attempting to queue', [
+                    'user_id' => $user->id,
+                    'notification_id' => $notification->id,
+                    'error' => $e->getMessage(),
+                ]);
+                
+                // Fallback: Try to queue if synchronous sending fails
+                // This helps if there are temporary SMTP issues
                 try {
-                    Mail::to($user->email)->send(new NotificationMail($user, $notification));
-                    Log::info('Notification email sent synchronously', [
+                    SendNotificationEmailJob::dispatch($user, $notification);
+                    Log::info('Notification email queued as fallback', [
                         'user_id' => $user->id,
-                        'email' => $user->email,
                         'notification_id' => $notification->id,
                     ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send notification email synchronously', [
+                } catch (\Exception $queueException) {
+                    Log::error('Failed to queue notification email', [
                         'user_id' => $user->id,
                         'notification_id' => $notification->id,
-                        'error' => $e->getMessage(),
+                        'error' => $queueException->getMessage(),
                     ]);
                 }
-            } else {
-                // Queue email notification for production
-                SendNotificationEmailJob::dispatch($user, $notification);
             }
         }
 
@@ -252,6 +263,30 @@ class NotificationService
             'leave_application_rejected',
             'Leave Application Rejected',
             "Your leave application has been rejected. Reason: {$rejectionReason}",
+            'leave_application',
+            $application->id
+        );
+    }
+
+    /**
+     * Notify officer about leave application being minuted
+     */
+    public function notifyLeaveApplicationMinuted($application): ?Notification
+    {
+        $officer = $application->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
+        $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
+        $leaveType = $application->leaveType ? $application->leaveType->name : 'Leave';
+
+        return $this->notify(
+            $officer->user,
+            'leave_application_minuted',
+            'Leave Application Minuted',
+            "Your {$leaveType} application from {$startDate} to {$endDate} ({$application->number_of_days} days) has been minuted and forwarded to DC Admin for approval.",
             'leave_application',
             $application->id
         );
