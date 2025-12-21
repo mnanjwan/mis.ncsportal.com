@@ -48,9 +48,10 @@
     $onboardingComplete = true;
     if ($primaryRole === 'Officer') {
         if ($officer) {
-            // Reload officer with nextOfKin relationship to ensure accurate check
-            $officer->load('nextOfKin');
-            $onboardingComplete = $officer->hasCompletedOnboarding();
+            // Reload officer from database to ensure we have latest data (especially after onboarding completion)
+            // This ensures the check uses fresh data, not cached/stale model attributes
+            $officer = \App\Models\Officer::with('nextOfKin')->find($officer->id);
+            $onboardingComplete = $officer ? $officer->hasCompletedOnboarding() : false;
         } else {
             // No officer record means onboarding is not complete
             $onboardingComplete = false;
