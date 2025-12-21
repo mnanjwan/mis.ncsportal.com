@@ -293,6 +293,45 @@ class NotificationService
     }
 
     /**
+     * Notify DC Admins about minuted leave application ready for approval
+     */
+    public function notifyLeaveApplicationMinutedToDcAdmin($application): array
+    {
+        $officer = $application->officer;
+        if (!$officer || !$officer->presentStation) {
+            return [];
+        }
+
+        $command = $officer->presentStation;
+        $officerName = "{$officer->initials} {$officer->surname}";
+        
+        // Get DC Admins for the command
+        $dcAdmins = User::whereHas('roles', function($q) {
+            $q->where('name', 'DC Admin')
+              ->where('user_roles.is_active', true);
+        })->whereHas('officer', function($q) use ($command) {
+            $q->where('present_station', $command->id);
+        })->where('is_active', true)->get();
+
+        if ($dcAdmins->isEmpty()) {
+            return [];
+        }
+
+        $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
+        $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
+        $leaveType = $application->leaveType ? $application->leaveType->name : 'Leave';
+
+        return $this->notifyMany(
+            $dcAdmins,
+            'leave_application_minuted',
+            'Leave Application Minuted - Requires Approval',
+            "Leave application for Officer {$officerName} ({$officer->service_number}) - {$leaveType} from {$startDate} to {$endDate} ({$application->number_of_days} days) has been minuted and requires your approval.",
+            'leave_application',
+            $application->id
+        );
+    }
+
+    /**
      * Notify officer about pass application approval
      */
     public function notifyPassApplicationApproved($application): ?Notification

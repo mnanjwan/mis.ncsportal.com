@@ -8,6 +8,7 @@ use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Services\NotificationService;
 
 class LeaveApplicationController extends Controller
@@ -208,14 +209,15 @@ class LeaveApplicationController extends Controller
             // Refresh the model to ensure we have the latest data
             $application->refresh();
             
-            // Notify officer about minuting
+            // Notify officer and DC Admins about minuting
             $notificationService = app(NotificationService::class);
             $notificationService->notifyLeaveApplicationMinuted($application);
+            $notificationService->notifyLeaveApplicationMinutedToDcAdmin($application);
             
             return redirect()->route('staff-officer.leave-applications.show', $id)
                 ->with('success', 'Application has been minuted to DC Admin for approval.');
         } catch (\Exception $e) {
-            \Log::error('Failed to minute leave application: ' . $e->getMessage());
+            Log::error('Failed to minute leave application: ' . $e->getMessage());
             return redirect()->route('staff-officer.leave-applications.show', $id)
                 ->with('error', 'Failed to minute application: ' . $e->getMessage());
         }
@@ -255,7 +257,7 @@ class LeaveApplicationController extends Controller
             return redirect()->route('dc-admin.leave-pass', ['type' => 'leave'])
                 ->with('success', 'Leave application approved successfully.');
         } catch (\Exception $e) {
-            \Log::error('Failed to approve leave application: ' . $e->getMessage());
+            Log::error('Failed to approve leave application: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to approve application: ' . $e->getMessage());
         }
@@ -300,7 +302,7 @@ class LeaveApplicationController extends Controller
             return redirect()->route('dc-admin.leave-pass', ['type' => 'leave'])
                 ->with('success', 'Leave application rejected.');
         } catch (\Exception $e) {
-            \Log::error('Failed to reject leave application: ' . $e->getMessage());
+            Log::error('Failed to reject leave application: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to reject application: ' . $e->getMessage());
         }
