@@ -61,11 +61,14 @@
                         <label for="timeline_id" class="block text-sm font-medium text-gray-700 mb-2">
                             Emolument Timeline <span class="text-red-500">*</span>
                         </label>
-                        <select id="timeline_id" name="timeline_id" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#088a56] focus:border-transparent">
+                        @php
+                            $selectedTimelineId = old('timeline_id', $timelines->isNotEmpty() ? $timelines->first()->id : '');
+                        @endphp
+                        <select id="timeline_id" name="timeline_id" required disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60">
                             <option value="">Select Timeline</option>
                             @forelse($timelines as $timeline)
-                                <option value="{{ $timeline->id }}" {{ old('timeline_id') == $timeline->id ? 'selected' : '' }}>
+                                <option value="{{ $timeline->id }}" {{ $selectedTimelineId == $timeline->id ? 'selected' : '' }}>
                                     {{ $timeline->year }} ({{ $timeline->start_date->format('d M Y') }} to
                                     {{ $timeline->end_date->format('d M Y') }})
                                 </option>
@@ -73,6 +76,9 @@
                                 <option value="">No active timeline available</option>
                             @endforelse
                         </select>
+                        @if($selectedTimelineId)
+                            <input type="hidden" name="timeline_id" value="{{ $selectedTimelineId }}">
+                        @endif
                         <p class="text-xs text-gray-500 mt-1">Select the active emolument timeline</p>
                     </div>
 
@@ -82,9 +88,9 @@
                             <label for="bank_name" class="block text-sm font-medium text-gray-700 mb-2">
                                 Bank Name <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="bank_name" name="bank_name" required
+                            <input type="text" id="bank_name" name="bank_name" required readonly
                                 value="{{ old('bank_name', $officer->bank_name ?? '') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#088a56] focus:border-transparent"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60"
                                 placeholder="Enter bank name">
                         </div>
 
@@ -92,9 +98,9 @@
                             <label for="bank_account_number" class="block text-sm font-medium text-gray-700 mb-2">
                                 Account Number <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="bank_account_number" name="bank_account_number" required
+                            <input type="text" id="bank_account_number" name="bank_account_number" required readonly
                                 value="{{ old('bank_account_number', $officer->bank_account_number ?? '') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#088a56] focus:border-transparent"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60"
                                 placeholder="Enter account number">
                         </div>
                     </div>
@@ -105,9 +111,9 @@
                             <label for="pfa_name" class="block text-sm font-medium text-gray-700 mb-2">
                                 PFA Name <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="pfa_name" name="pfa_name" required
+                            <input type="text" id="pfa_name" name="pfa_name" required readonly
                                 value="{{ old('pfa_name', $officer->pfa_name ?? '') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#088a56] focus:border-transparent"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60"
                                 placeholder="Enter PFA name">
                         </div>
 
@@ -115,9 +121,9 @@
                             <label for="rsa_pin" class="block text-sm font-medium text-gray-700 mb-2">
                                 RSA PIN <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="rsa_pin" name="rsa_pin" required
+                            <input type="text" id="rsa_pin" name="rsa_pin" required readonly
                                 value="{{ old('rsa_pin', $officer->rsa_number ?? '') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#088a56] focus:border-transparent"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60"
                                 placeholder="Enter RSA PIN">
                         </div>
                     </div>
@@ -127,8 +133,8 @@
                         <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
                             Additional Notes (Optional)
                         </label>
-                        <textarea id="notes" name="notes" rows="4"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#088a56] focus:border-transparent"
+                        <textarea id="notes" name="notes" rows="4" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60"
                             placeholder="Enter any additional information">{{ old('notes') }}</textarea>
                     </div>
 
