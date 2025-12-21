@@ -273,18 +273,43 @@
                         </div>
                     </div>
                     <div class="kt-menu-dropdown w-48 py-2">
-                        <div class="kt-menu-item">
-                            <a class="kt-menu-link" href="{{ route('officer.profile') }}">
-                                <span class="kt-menu-icon"><i class="ki-filled ki-profile-circle"></i></span>
-                                <span class="kt-menu-title">My Profile</span>
-                            </a>
-                        </div>
-                        <div class="kt-menu-item">
-                            <a class="kt-menu-link" href="{{ route('officer.settings') }}">
-                                <span class="kt-menu-icon"><i class="ki-filled ki-setting-2"></i></span>
-                                <span class="kt-menu-title">Change Password</span>
-                            </a>
-                        </div>
+                        @if($primaryRole === 'Officer' && $onboardingComplete)
+                            <div class="kt-menu-item">
+                                <a class="kt-menu-link" href="{{ route('officer.profile') }}">
+                                    <span class="kt-menu-icon"><i class="ki-filled ki-profile-circle"></i></span>
+                                    <span class="kt-menu-title">My Profile</span>
+                                </a>
+                            </div>
+                            <div class="kt-menu-item">
+                                <a class="kt-menu-link" href="{{ route('officer.settings') }}">
+                                    <span class="kt-menu-icon"><i class="ki-filled ki-setting-2"></i></span>
+                                    <span class="kt-menu-title">Change Password</span>
+                                </a>
+                            </div>
+                        @elseif($primaryRole === 'Officer' && !$onboardingComplete)
+                            <div class="kt-menu-item">
+                                <a class="kt-menu-link" href="{{ route('onboarding.step1') }}">
+                                    <span class="kt-menu-icon"><i class="ki-filled ki-user"></i></span>
+                                    <span class="kt-menu-title">Complete Onboarding</span>
+                                </a>
+                            </div>
+                        @else
+                            {{-- For non-Officer roles, show profile/settings if they have officer record --}}
+                            @if($officer)
+                                <div class="kt-menu-item">
+                                    <a class="kt-menu-link" href="{{ route('officer.profile') }}">
+                                        <span class="kt-menu-icon"><i class="ki-filled ki-profile-circle"></i></span>
+                                        <span class="kt-menu-title">My Profile</span>
+                                    </a>
+                                </div>
+                                <div class="kt-menu-item">
+                                    <a class="kt-menu-link" href="{{ route('officer.settings') }}">
+                                        <span class="kt-menu-icon"><i class="ki-filled ki-setting-2"></i></span>
+                                        <span class="kt-menu-title">Change Password</span>
+                                    </a>
+                                </div>
+                            @endif
+                        @endif
                         <div class="kt-menu-item">
                             <a class="kt-menu-link" href="#"
                                 data-kt-modal-toggle="#logout-confirm-modal">
