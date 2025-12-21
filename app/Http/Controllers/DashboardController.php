@@ -25,7 +25,19 @@ class DashboardController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth')->except([
+            'onboardingStep1',
+            'saveOnboardingStep1',
+            'onboardingStep2',
+            'saveOnboardingStep2',
+            'onboardingStep3',
+            'saveOnboardingStep3',
+            'onboardingStep4',
+            'saveOnboardingStep4',
+            'submitOnboarding',
+            'onboardingPreview',
+            'finalSubmitOnboarding',
+        ]);
     }
 
     public function index()
@@ -928,53 +940,17 @@ class DashboardController extends Controller
                 
                 $user = User::find($userId);
                 if ($user && Hash::check($tempPassword, $user->password)) {
-                    // Auto-login the user
-                    Auth::login($user);
+                    // Auto-login the user (remember for the session)
+                    Auth::login($user, true);
                     
-                    // Load existing officer data if available
-                    // Explicitly load the officer relationship
-                    $user->load('officer');
-                    $officer = $user->officer;
-                    $savedData = session('onboarding_step1', []);
-                    
-                    // Pre-fill with existing officer data if available
-                    // Only fill fields that are not already in savedData or are empty
-                    if ($officer) {
-                        $officerData = [
-                            'service_number' => $officer->service_number,
-                            'initials' => $officer->initials,
-                            'surname' => $officer->surname,
-                            'first_name' => $officer->surname ?? '',
-                            'gender' => $officer->sex == 'M' ? 'Male' : ($officer->sex == 'F' ? 'Female' : ''),
-                            'date_of_birth' => $officer->date_of_birth?->format('Y-m-d'),
-                            'state_of_origin' => $officer->state_of_origin,
-                            'lga' => $officer->lga,
-                            'geopolitical_zone' => $officer->geopolitical_zone,
-                            'marital_status' => $officer->marital_status,
-                            'phone' => $officer->phone_number,
-                            'email' => $officer->email ?? $user->email,
-                            'residential_address' => $officer->residential_address,
-                            'permanent_home_address' => $officer->permanent_home_address,
-                        ];
-                        
-                        // Merge officer data with saved data
-                        // For service_number, always use officer's value if it exists
-                        if (!empty($officerData['service_number'])) {
-                            $savedData['service_number'] = $officerData['service_number'];
-                        }
-                        
-                        // For other fields, don't overwrite non-empty saved values
-                        foreach ($officerData as $key => $value) {
-                            if ($key !== 'service_number' && (!isset($savedData[$key]) || empty($savedData[$key]))) {
-                                $savedData[$key] = $value;
-                            }
-                        }
-                    }
-                    
-                    return view('forms.onboarding.step1', compact('savedData'));
+                    // Redirect to remove token from URL for security
+                    return redirect()->route('onboarding.step1');
+                } else {
+                    return redirect()->route('login')->with('error', 'Invalid or expired onboarding link. Please contact HRD for a new link.');
                 }
             } catch (\Exception $e) {
                 Log::error('Onboarding token validation error: ' . $e->getMessage());
+                return redirect()->route('login')->with('error', 'Invalid onboarding link. Please contact HRD for a new link.');
             }
         }
         
