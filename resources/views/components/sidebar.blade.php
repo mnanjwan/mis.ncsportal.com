@@ -37,16 +37,24 @@
     }
 
     // Load officer relationship if not already loaded
-    if (!$officer && $user->relationLoaded('officer')) {
-        $officer = $user->officer;
-    } elseif (!$officer) {
+    if (!$officer && !$user->relationLoaded('officer')) {
         $officer = $user->officer()->first();
+    } elseif (!$officer && $user->relationLoaded('officer')) {
+        // Relation is loaded but officer is null - user has no officer record
+        $officer = null;
     }
 
     // Check if onboarding is complete for Officer role
     $onboardingComplete = true;
-    if ($primaryRole === 'Officer' && $officer) {
-        $onboardingComplete = $officer->hasCompletedOnboarding();
+    if ($primaryRole === 'Officer') {
+        if ($officer) {
+            // Reload officer with nextOfKin relationship to ensure accurate check
+            $officer->load('nextOfKin');
+            $onboardingComplete = $officer->hasCompletedOnboarding();
+        } else {
+            // No officer record means onboarding is not complete
+            $onboardingComplete = false;
+        }
     }
 
     // Get menu items based on role
