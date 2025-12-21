@@ -50,7 +50,19 @@
             
             <p>{{ $notification->message }}</p>
             
+            <p><strong>Your Login Credentials:</strong></p>
+            <p>
+                <strong>Email:</strong> {{ $user->email }}<br>
+                <strong>Default Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #068b57;">change123</code>
+            </p>
+            
+            <p style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0;">
+                <strong>⚠️ Important:</strong> For security purposes, please change your password immediately after logging in. You can update your password from your dashboard settings.
+            </p>
+            
             <p>You can now log in to your dashboard and access all available features.</p>
+            
+            <p><a href="{{ config('app.url') }}/login" style="display: inline-block; background-color: #068b57; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">Log In to Dashboard</a></p>
             
             <p>Thank you for completing your onboarding process.</p>
             

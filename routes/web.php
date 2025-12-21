@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountChangeRequestController;
 use App\Http\Controllers\NextOfKinChangeRequestController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeceasedOfficerController;
 use App\Http\Controllers\DutyRosterController;
@@ -44,6 +45,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Password Reset Routes
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPasswordForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
 
 // Protected Routes
 Route::middleware('auth')->group(function () {
