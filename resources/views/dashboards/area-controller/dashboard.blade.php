@@ -58,7 +58,7 @@
                 <h3 class="kt-card-title">Recent Manning Requests</h3>
             </div>
             <div class="kt-card-content">
-                @if($recentManningRequests->count() > 0)
+                @if(isset($recentManningRequests) && $recentManningRequests->count() > 0)
                     <div class="flex flex-col gap-3">
                         @foreach($recentManningRequests as $request)
                             <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">

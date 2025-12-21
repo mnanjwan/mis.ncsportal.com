@@ -16,7 +16,18 @@ class ManningRequestController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:Staff Officer')->except(['index', 'show', 'hrdIndex', 'hrdShow', 'hrdMatch', 'hrdGenerateOrder']);
+        $this->middleware('role:Staff Officer')->except([
+            'index', 
+            'show', 
+            'hrdIndex', 
+            'hrdShow', 
+            'hrdMatch', 
+            'hrdGenerateOrder',
+            'areaControllerIndex',
+            'areaControllerShow',
+            'areaControllerApprove',
+            'areaControllerReject'
+        ]);
     }
 
     public function index(Request $request)
@@ -62,7 +73,7 @@ class ManningRequestController extends Controller
         
         // Use standard rank abbreviations for Request Items dropdown
         // (HRD matching will handle mapping to database rank variations)
-        $ranks = [
+            $ranks = [
             'CGC',
             'DCG',
             'ACG',
@@ -713,8 +724,10 @@ class ManningRequestController extends Controller
     public function areaControllerIndex(Request $request)
     {
         // Get submitted manning requests (status = SUBMITTED)
+        // Area Controller oversees multiple units - no command restrictions
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'items'])
             ->where('status', 'SUBMITTED')
+            ->whereNotNull('submitted_at')
             ->orderBy('submitted_at', 'desc');
         
         $requests = $query->paginate(20)->withQueryString();

@@ -558,21 +558,23 @@ class DashboardController extends Controller
     // Area Controller Dashboard
     public function areaController()
     {
-        // Get statistics for Area Controller
+        // Get statistics for Area Controller (no command restrictions - Area Controller oversees multiple units)
         $pendingManningRequests = ManningRequest::where('status', 'SUBMITTED')->count();
         $pendingRosters = DutyRoster::where('status', 'SUBMITTED')->count();
         
-        // Get validated emoluments (for Area Controller validation)
-        $pendingEmoluments = Emolument::where('status', 'VALIDATED')->count();
+        // Get assessed emoluments pending Area Controller validation (ASSESSED status)
+        // Area Controller validates emoluments from all commands in their area
+        $pendingEmoluments = Emolument::where('status', 'ASSESSED')->count();
         
-        // Get recent submitted manning requests
+        // Get recent submitted manning requests (all commands - Area Controller oversees multiple units)
         $recentManningRequests = ManningRequest::with(['command.zone', 'requestedBy'])
             ->where('status', 'SUBMITTED')
+            ->whereNotNull('submitted_at')
             ->orderBy('submitted_at', 'desc')
             ->take(5)
             ->get();
         
-        // Get recent submitted rosters
+        // Get recent submitted rosters (all commands)
         $recentRosters = DutyRoster::with(['command', 'preparedBy'])
             ->where('status', 'SUBMITTED')
             ->orderBy('created_at', 'desc')
