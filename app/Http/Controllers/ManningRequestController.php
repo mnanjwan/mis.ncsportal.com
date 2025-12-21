@@ -60,36 +60,26 @@ class ManningRequestController extends Controller
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
         $command = $commandId ? \App\Models\Command::find($commandId) : null;
         
-        // Get all unique ranks from officers
-        $ranks = Officer::whereNotNull('substantive_rank')
-            ->distinct()
-            ->orderBy('substantive_rank')
-            ->pluck('substantive_rank')
-            ->filter()
-            ->values()
-            ->toArray();
-        
-        // If no ranks in database, use standard ranks (abbreviations for display)
-        if (empty($ranks)) {
-            $ranks = [
-                'CGC',
-                'DCG',
-                'ACG',
-                'CC',
-                'DC',
-                'AC',
-                'CSC',
-                'SC',
-                'DSC',
-                'ASC I',
-                'ASC II',
-                'IC',
-                'AIC',
-                'CA I',
-                'CA II',
-                'CA III',
-            ];
-        }
+        // Use standard rank abbreviations for Request Items dropdown
+        // (HRD matching will handle mapping to database rank variations)
+        $ranks = [
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
+        ];
         
         // Get unique qualifications
         $qualifications = Officer::whereNotNull('entry_qualification')
@@ -319,6 +309,62 @@ class ManningRequestController extends Controller
             'CA II',
             'CA III',
         ];
+        
+        // Map existing item ranks to abbreviations if they're stored as full names
+        $rankMappingToAbbr = [
+            'Comptroller General of Customs (CGC) GL18' => 'CGC',
+            'Comptroller General' => 'CGC',
+            'Deputy Comptroller General of Customs (DCG) GL17' => 'DCG',
+            'Deputy Comptroller General' => 'DCG',
+            'Assistant Comptroller General (ACG) of Customs GL 16' => 'ACG',
+            'Assistant Comptroller General' => 'ACG',
+            'Comptroller of Customs (CC) GL15' => 'CC',
+            'Comptroller' => 'CC',
+            'Deputy Comptroller of Customs (DC) GL14' => 'DC',
+            'Deputy Comptroller' => 'DC',
+            'Assistant Comptroller of Customs (AC) GL13' => 'AC',
+            'Assistant Comptroller' => 'AC',
+            'Chief Superintendent of Customs (CSC) GL12' => 'CSC',
+            'Chief Superintendent' => 'CSC',
+            'Superintendent of Customs (SC) GL11' => 'SC',
+            'Superintendent' => 'SC',
+            'Deputy Superintendent of Customs (DSC) GL10' => 'DSC',
+            'Deputy Superintendent' => 'DSC',
+            'Assistant Superintendent of Customs Grade I (ASC I) GL 09' => 'ASC I',
+            'Assistant Superintendent Grade I' => 'ASC I',
+            'Assistant Superintendent of Customs Grade II (ASC II) GL 08' => 'ASC II',
+            'Assistant Superintendent Grade II' => 'ASC II',
+            'Assistant Superintendent' => 'ASC I', // Default to ASC I if ambiguous
+            'Inspector of Customs (IC) GL07' => 'IC',
+            'Inspector' => 'IC',
+            'Assistant Inspector of Customs (AIC) GL06' => 'AIC',
+            'Assistant Inspector' => 'AIC',
+            'Customs Assistant I (CA I) GL05' => 'CA I',
+            'Customs Assistant I' => 'CA I',
+            'Customs Assistant II (CA II) GL04' => 'CA II',
+            'Customs Assistant II' => 'CA II',
+            'Customs Assistant III (CA III) GL03' => 'CA III',
+            'Customs Assistant III' => 'CA III',
+            'Customs Assistant' => 'CA I', // Default to CA I if ambiguous
+        ];
+        
+        // Convert existing item ranks to abbreviations
+        foreach ($request->items as $item) {
+            if (isset($rankMappingToAbbr[$item->rank])) {
+                $item->rank = $rankMappingToAbbr[$item->rank];
+            } elseif (in_array($item->rank, $ranks)) {
+                // Already an abbreviation, keep it
+                continue;
+            } else {
+                // Try partial matching
+                foreach ($rankMappingToAbbr as $fullName => $abbr) {
+                    if (stripos($item->rank, $fullName) !== false || stripos($fullName, $item->rank) !== false) {
+                        $item->rank = $abbr;
+                        break;
+                    }
+                }
+            }
+        }
         
         $qualifications = [
             'B.Sc',
