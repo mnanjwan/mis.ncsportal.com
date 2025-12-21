@@ -48,7 +48,7 @@
             </div>
             @endif
             
-            <form id="onboarding-step1-form" method="POST" action="{{ route('onboarding.step1.save') }}" class="flex flex-col gap-5">
+            <form id="onboarding-step1-form" method="POST" action="{{ route('onboarding.step1.save') }}" class="flex flex-col gap-5 w-full overflow-hidden">
                 @csrf
                 
                 <div class="grid lg:grid-cols-2 gap-5">
@@ -176,9 +176,9 @@
                     <span class="error-message text-danger text-sm hidden"></span>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-input">
-                    <a href="{{ route('hrd.dashboard') }}" class="kt-btn kt-btn-secondary w-full sm:w-auto whitespace-nowrap">Cancel</a>
-                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto whitespace-nowrap">Next: Employment Details</button>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
+                    {{-- <a href="{{ route('hrd.dashboard') }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Cancel</a> --}}
+                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:flex-1 whitespace-nowrap">Next: Employment Details</button>
                 </div>
             </form>
         </div>

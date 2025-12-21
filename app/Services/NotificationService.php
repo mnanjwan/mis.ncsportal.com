@@ -426,8 +426,8 @@ class NotificationService
         // Get Staff Officers for the command
         $staffOfficers = User::whereHas('roles', function($q) use ($command) {
             $q->where('name', 'Staff Officer')
-              ->wherePivot('command_id', $command->id)
-              ->wherePivot('is_active', true);
+              ->where('user_roles.command_id', $command->id)
+              ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($staffOfficers->isEmpty()) {
@@ -463,8 +463,8 @@ class NotificationService
         // Get Staff Officers for the command
         $staffOfficers = User::whereHas('roles', function($q) use ($command) {
             $q->where('name', 'Staff Officer')
-              ->wherePivot('command_id', $command->id)
-              ->wherePivot('is_active', true);
+              ->where('user_roles.command_id', $command->id)
+              ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($staffOfficers->isEmpty()) {
@@ -524,8 +524,8 @@ class NotificationService
         // Get Assessors for the command
         $assessors = User::whereHas('roles', function($q) use ($command) {
             $q->where('name', 'Assessor')
-              ->wherePivot('command_id', $command->id)
-              ->wherePivot('is_active', true);
+              ->where('user_roles.command_id', $command->id)
+              ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($assessors->isEmpty()) {

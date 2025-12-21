@@ -48,7 +48,7 @@
             </div>
             @endif
             
-            <form id="onboarding-step4-form" method="POST" action="{{ route('onboarding.submit') }}" enctype="multipart/form-data" class="flex flex-col gap-5">
+            <form id="onboarding-step4-form" method="POST" action="{{ route('onboarding.submit') }}" enctype="multipart/form-data" class="flex flex-col gap-5 w-full overflow-hidden">
                 @csrf
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-7.5">
@@ -103,9 +103,9 @@
                     <label for="accept_disclaimer" class="kt-form-label">I accept the disclaimer and confirm that all information provided is true and accurate <span class="text-danger">*</span></label>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('onboarding.step3') }}'" class="kt-btn kt-btn-secondary w-full sm:w-auto whitespace-nowrap">Previous</button>
-                    <button type="submit" class="kt-btn text-white w-full sm:w-auto whitespace-nowrap" id="submit-btn" style="background-color: #068b57; border-color: #068b57;">Submit Onboarding</button>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
+                    <button type="button" onclick="window.location.href='{{ route('onboarding.step3') }}'" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</button>
+                    <button type="submit" class="kt-btn text-white w-full sm:flex-1 whitespace-nowrap" id="submit-btn" style="background-color: #068b57; border-color: #068b57;">Submit Onboarding</button>
                 </div>
                     </div>
                     
