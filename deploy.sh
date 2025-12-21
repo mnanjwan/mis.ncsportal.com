@@ -73,8 +73,32 @@ fi
 # Step 6: Set permissions (if needed)
 echo ""
 echo -e "${YELLOW}🔐 Step 6: Setting storage permissions...${NC}"
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || echo "⚠️  Could not set ownership (may need sudo)"
+# Set directory permissions
+find storage -type d -exec chmod 775 {} \; 2>/dev/null || chmod -R 775 storage
+find bootstrap/cache -type d -exec chmod 775 {} \; 2>/dev/null || chmod -R 775 bootstrap/cache
+
+# Set file permissions
+find storage -type f -exec chmod 664 {} \; 2>/dev/null || chmod -R 664 storage
+find bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || chmod -R 664 bootstrap/cache
+
+# Ensure logs directory exists and is writable
+mkdir -p storage/logs
+chmod 775 storage/logs
+touch storage/logs/laravel.log 2>/dev/null || true
+chmod 664 storage/logs/*.log 2>/dev/null || true
+
+# Set ownership (try www-data first, fallback to current user)
+if id "www-data" &>/dev/null; then
+    sudo chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || {
+        echo "⚠️  Could not set ownership to www-data, trying current user..."
+        CURRENT_USER=$(whoami)
+        sudo chown -R $CURRENT_USER:$CURRENT_USER storage bootstrap/cache 2>/dev/null || echo "⚠️  Could not set ownership (may need manual fix)"
+    }
+else
+    CURRENT_USER=$(whoami)
+    sudo chown -R $CURRENT_USER:$CURRENT_USER storage bootstrap/cache 2>/dev/null || echo "⚠️  Could not set ownership (may need manual fix)"
+fi
+
 echo -e "${GREEN}✅ Permissions set${NC}"
 
 # Step 7: Restart queue workers (if using queues)
