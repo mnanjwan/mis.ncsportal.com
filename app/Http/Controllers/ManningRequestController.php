@@ -524,61 +524,10 @@ class ManningRequestController extends Controller
             ->where('dismissed', false)    // Added: exclude dismissed officers
             ->whereNotNull('substantive_rank');
         
-        // Match rank - handle abbreviations and map to all variations for HRD matching
+        // Match rank - EXACT MATCH ONLY (no similar or partial matches)
         if (!empty($item->rank)) {
-            // Map abbreviations to all possible rank variations in the database
-            $rankMapping = [
-                'CGC' => ['CGC', 'Comptroller General of Customs (CGC) GL18', 'Comptroller General', 'Comptroller General of Customs', 'GL18'],
-                'DCG' => ['DCG', 'Deputy Comptroller General of Customs (DCG) GL17', 'Deputy Comptroller General', 'Deputy Comptroller General of Customs', 'GL17'],
-                'ACG' => ['ACG', 'Assistant Comptroller General (ACG) of Customs GL 16', 'Assistant Comptroller General', 'Assistant Comptroller General of Customs', 'GL16', 'GL 16'],
-                'CC' => ['CC', 'Comptroller of Customs (CC) GL15', 'Comptroller', 'Comptroller of Customs', 'GL15'],
-                'DC' => ['DC', 'Deputy Comptroller of Customs (DC) GL14', 'Deputy Comptroller', 'Deputy Comptroller of Customs', 'GL14'],
-                'AC' => ['AC', 'Assistant Comptroller of Customs (AC) GL13', 'Assistant Comptroller', 'Assistant Comptroller of Customs', 'GL13'],
-                'CSC' => ['CSC', 'Chief Superintendent of Customs (CSC) GL12', 'Chief Superintendent', 'Chief Superintendent of Customs', 'GL12'],
-                'SC' => ['SC', 'Superintendent of Customs (SC) GL11', 'Superintendent', 'Superintendent of Customs', 'GL11'],
-                'DSC' => ['DSC', 'Deputy Superintendent of Customs (DSC) GL10', 'Deputy Superintendent', 'Deputy Superintendent of Customs', 'GL10'],
-                'ASC I' => ['ASC I', 'ASC', 'Assistant Superintendent of Customs Grade I (ASC I) GL 09', 'Assistant Superintendent Grade I', 'Assistant Superintendent', 'GL09', 'GL 09'],
-                'ASC II' => ['ASC II', 'ASC', 'Assistant Superintendent of Customs Grade II (ASC II) GL 08', 'Assistant Superintendent Grade II', 'Assistant Superintendent', 'GL08', 'GL 08'],
-                'IC' => ['IC', 'Inspector of Customs (IC) GL07', 'Inspector', 'Inspector of Customs', 'GL07'],
-                'AIC' => ['AIC', 'Assistant Inspector of Customs (AIC) GL06', 'Assistant Inspector', 'Assistant Inspector of Customs', 'GL06'],
-                'CA I' => ['CA I', 'CA', 'Customs Assistant I (CA I) GL05', 'Customs Assistant I', 'Customs Assistant', 'GL05'],
-                'CA II' => ['CA II', 'CA', 'Customs Assistant II (CA II) GL04', 'Customs Assistant II', 'Customs Assistant', 'GL04'],
-                'CA III' => ['CA III', 'CA', 'Customs Assistant III (CA III) GL03', 'Customs Assistant III', 'Customs Assistant', 'GL03'],
-            ];
-            
-            // Start with exact match
-            $matchingRanks = [$item->rank];
-            
-            // Find matching variations for the requested rank (abbreviation)
-            foreach ($rankMapping as $abbreviation => $variations) {
-                // Check if item rank matches the abbreviation or any variation
-                if ($item->rank === $abbreviation || in_array($item->rank, $variations)) {
-                    $matchingRanks = array_merge($matchingRanks, $variations);
-                }
-                // Check for partial matches (e.g., "ASC" matches "ASC I" or "ASC II")
-                foreach ($variations as $variation) {
-                    if (stripos($item->rank, $variation) !== false || stripos($variation, $item->rank) !== false) {
-                        $matchingRanks = array_merge($matchingRanks, $variations);
-                        break;
-                    }
-                }
-            }
-            
-            // Remove duplicates
-            $matchingRanks = array_unique($matchingRanks);
-            
-            // Use whereIn for exact matches, with LIKE fallback for flexible matching
-            $query->where(function($q) use ($item, $matchingRanks) {
-                $q->whereIn('substantive_rank', $matchingRanks);
-                
-                // Also try LIKE matching for partial rank names
-                foreach ($matchingRanks as $rank) {
-                    $q->orWhere('substantive_rank', 'LIKE', '%' . $rank . '%');
-                }
-                
-                // Fallback: match any part of the requested rank
-                $q->orWhere('substantive_rank', 'LIKE', '%' . $item->rank . '%');
-            });
+            // Use exact match only - match the exact rank as requested
+            $query->where('substantive_rank', $item->rank);
         }
         
         // Ensure officer has a current command
