@@ -266,3 +266,4 @@ SELECT * FROM jobs ORDER BY created_at DESC LIMIT 10;
 2. Verify user_id is correct
 3. Check notification API endpoint is working
 4. Verify frontend is polling/displaying notifications
+

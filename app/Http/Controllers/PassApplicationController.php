@@ -66,7 +66,6 @@ class PassApplicationController extends Controller
             }
 
             // Check if annual leave is exhausted
-            /*
             $annualLeaveType = LeaveType::where('code', 'ANNUAL_LEAVE')->first();
             if ($annualLeaveType) {
                 $annualLeaveCount = LeaveApplication::where('officer_id', $officer->id)
@@ -75,11 +74,12 @@ class PassApplicationController extends Controller
                     ->where('status', 'APPROVED')
                     ->count();
 
-                if ($annualLeaveCount < 2) {
-                    return redirect()->back()->with('error', 'Annual leave must be exhausted before applying for pass')->withInput();
+                $maxAnnualLeaveApplications = $annualLeaveType->max_occurrences_per_year ?? 2;
+                
+                if ($annualLeaveCount < $maxAnnualLeaveApplications) {
+                    return redirect()->back()->with('error', 'Annual leave must be exhausted before applying for pass. You must have at least ' . $maxAnnualLeaveApplications . ' approved annual leave application(s) for this year.')->withInput();
                 }
             }
-            */
 
             // Check maximum 2 passes per year
             $passCount = PassApplication::where('officer_id', $officer->id)

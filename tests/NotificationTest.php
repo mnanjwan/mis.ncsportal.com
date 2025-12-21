@@ -227,3 +227,4 @@ class NotificationTest extends TestCase
         Queue::assertPushed(\App\Jobs\SendNotificationEmailJob::class, 2);
     }
 }
+
