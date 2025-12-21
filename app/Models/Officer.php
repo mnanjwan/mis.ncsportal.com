@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Officer extends Model
 {
@@ -75,6 +76,34 @@ class Officer extends Model
     public function getFullNameAttribute()
     {
         return "{$this->initials} {$this->surname}";
+    }
+
+    /**
+     * Get the full URL for the profile picture
+     * Returns the full URL to the profile picture or null if not set
+     */
+    public function getProfilePictureUrlFull(): ?string
+    {
+        $path = $this->attributes['profile_picture_url'] ?? null;
+        
+        if (empty($path)) {
+            return null;
+        }
+
+        // Check if file exists in storage
+        if (!Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        // Get base URL from config (uses APP_URL/storage) or fallback to asset()
+        $baseUrl = config('filesystems.disks.public.url');
+        if (empty($baseUrl)) {
+            // Fallback: use asset() helper which works with symlink
+            return asset('storage/' . $path);
+        }
+        
+        // Ensure proper URL formatting
+        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
 
     // Mutators - Ensure service number always starts with NCS

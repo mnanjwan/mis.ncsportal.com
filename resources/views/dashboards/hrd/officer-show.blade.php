@@ -29,8 +29,8 @@
                 <div class="flex flex-col lg:flex-row items-start lg:items-center gap-5">
                     <div class="kt-avatar size-24">
                         <div class="kt-avatar-image">
-                            @if($officer->profile_picture_url)
-                                <img alt="avatar" src="{{ asset('storage/' . $officer->profile_picture_url) }}" />
+                            @if($officer->getProfilePictureUrlFull())
+                                <img alt="avatar" src="{{ $officer->getProfilePictureUrlFull() }}" />
                             @else
                                 <div class="flex items-center justify-center size-24 rounded-full bg-primary/10 text-primary font-bold text-xl">
                                     {{ strtoupper(($officer->initials[0] ?? '') . ($officer->surname[0] ?? '')) }}

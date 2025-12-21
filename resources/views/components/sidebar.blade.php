@@ -417,7 +417,7 @@
                     <div class="kt-avatar size-10 shrink-0">
                         <div class="kt-avatar-image">
                             <img id="sidebar-profile-picture" alt="avatar"
-                                src="{{ ($officer && $officer->profile_picture_url) ? asset('storage/' . $officer->profile_picture_url) : asset('ncs-employee-portal/dist/assets/media/avatars/300-1.png') }}" />
+                                src="{{ ($officer && $officer->getProfilePictureUrlFull()) ? $officer->getProfilePictureUrlFull() : asset('ncs-employee-portal/dist/assets/media/avatars/300-1.png') }}" />
                         </div>
                     </div>
                     <div class="flex flex-col gap-0.5 grow min-w-0 overflow-hidden">

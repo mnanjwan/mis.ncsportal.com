@@ -543,9 +543,12 @@ class OfficerController extends Controller
             $path = $request->file('profile_picture')->store('profiles', 'public');
             $officer->update(['profile_picture_url' => $path]);
             
+            // Refresh to get updated model
+            $officer->refresh();
+            
             return response()->json([
                 'message' => 'Profile picture updated successfully.',
-                'profile_picture_url' => asset('storage/' . $path)
+                'profile_picture_url' => $officer->getProfilePictureUrlFull()
             ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to update profile picture: ' . $e->getMessage()], 500);
