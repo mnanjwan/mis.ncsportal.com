@@ -64,7 +64,7 @@
                         @php
                             $selectedTimelineId = old('timeline_id', $timelines->isNotEmpty() ? $timelines->first()->id : '');
                         @endphp
-                        <select id="timeline_id" name="timeline_id" required disabled
+                        <select id="timeline_id" name="timeline_id_display" required disabled
                             class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60">
                             <option value="">Select Timeline</option>
                             @forelse($timelines as $timeline)
@@ -76,9 +76,7 @@
                                 <option value="">No active timeline available</option>
                             @endforelse
                         </select>
-                        @if($selectedTimelineId)
-                            <input type="hidden" name="timeline_id" value="{{ $selectedTimelineId }}">
-                        @endif
+                        <input type="hidden" name="timeline_id" value="{{ $selectedTimelineId }}" required>
                         <p class="text-xs text-gray-500 mt-1">Select the active emolument timeline</p>
                     </div>
 
@@ -133,7 +131,7 @@
                         <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">
                             Additional Notes (Optional)
                         </label>
-                        <textarea id="notes" name="notes" rows="4" disabled
+                        <textarea id="notes" name="notes" rows="4" readonly
                             class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed opacity-60"
                             placeholder="Enter any additional information">{{ old('notes') }}</textarea>
                     </div>
