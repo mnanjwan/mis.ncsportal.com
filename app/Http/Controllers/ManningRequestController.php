@@ -69,18 +69,25 @@ class ManningRequestController extends Controller
             ->values()
             ->toArray();
         
-        // If no ranks in database, use common ranks
+        // If no ranks in database, use standard ranks (abbreviations for display)
         if (empty($ranks)) {
             $ranks = [
-                'Assistant Superintendent',
-                'Deputy Superintendent',
-                'Superintendent',
-                'Chief Superintendent',
-                'Assistant Comptroller',
-                'Deputy Comptroller',
-                'Comptroller',
-                'Assistant Comptroller General',
-                'Deputy Comptroller General',
+                'CGC',
+                'DCG',
+                'ACG',
+                'CC',
+                'DC',
+                'AC',
+                'CSC',
+                'SC',
+                'DSC',
+                'ASC I',
+                'ASC II',
+                'IC',
+                'AIC',
+                'CA I',
+                'CA II',
+                'CA III',
             ];
         }
         
@@ -250,6 +257,13 @@ class ManningRequestController extends Controller
                 'submitted_at' => now(),
             ]);
             
+            // Refresh to load relationships
+            $request->refresh();
+            
+            // Notify Area Controllers about submitted request
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyManningRequestSubmitted($request);
+            
             return redirect()->route('staff-officer.manning-level.show', $id)
                 ->with('success', 'Manning request submitted successfully! It is now pending Area Controller approval.');
                 
@@ -286,18 +300,24 @@ class ManningRequestController extends Controller
                 ->with('error', 'Only DRAFT requests can be edited.');
         }
         
-        // Get ranks and qualifications for dropdowns
+        // Get ranks and qualifications for dropdowns (abbreviations for display)
         $ranks = [
-            'Assistant Superintendent',
-            'Deputy Superintendent',
-            'Superintendent',
-            'Chief Superintendent',
-            'Assistant Comptroller',
-            'Deputy Comptroller',
-            'Comptroller',
-            'Assistant Comptroller General',
-            'Deputy Comptroller General',
-            'Comptroller General',
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
         ];
         
         $qualifications = [
@@ -447,43 +467,60 @@ class ManningRequestController extends Controller
             ->where('dismissed', false)    // Added: exclude dismissed officers
             ->whereNotNull('substantive_rank');
         
-        // Match rank - handle both full names and abbreviations
+        // Match rank - handle abbreviations and map to all variations for HRD matching
         if (!empty($item->rank)) {
-            // Map full rank names to common abbreviations
+            // Map abbreviations to all possible rank variations in the database
             $rankMapping = [
-                'Assistant Superintendent' => ['ASC I', 'ASC II', 'ASC', 'Assistant Superintendent'],
-                'Deputy Superintendent' => ['DSC', 'Deputy Superintendent'],
-                'Superintendent' => ['SC', 'Superintendent'],
-                'Chief Superintendent' => ['CSC', 'Chief Superintendent'],
-                'Assistant Comptroller' => ['AC', 'Assistant Comptroller'],
-                'Deputy Comptroller' => ['DC', 'Deputy Comptroller'],
-                'Comptroller' => ['CC', 'Comptroller'],
-                'Assistant Comptroller General' => ['ACG', 'Assistant Comptroller General'],
-                'Deputy Comptroller General' => ['DCG', 'Deputy Comptroller General'],
+                'CGC' => ['CGC', 'Comptroller General of Customs (CGC) GL18', 'Comptroller General', 'Comptroller General of Customs', 'GL18'],
+                'DCG' => ['DCG', 'Deputy Comptroller General of Customs (DCG) GL17', 'Deputy Comptroller General', 'Deputy Comptroller General of Customs', 'GL17'],
+                'ACG' => ['ACG', 'Assistant Comptroller General (ACG) of Customs GL 16', 'Assistant Comptroller General', 'Assistant Comptroller General of Customs', 'GL16', 'GL 16'],
+                'CC' => ['CC', 'Comptroller of Customs (CC) GL15', 'Comptroller', 'Comptroller of Customs', 'GL15'],
+                'DC' => ['DC', 'Deputy Comptroller of Customs (DC) GL14', 'Deputy Comptroller', 'Deputy Comptroller of Customs', 'GL14'],
+                'AC' => ['AC', 'Assistant Comptroller of Customs (AC) GL13', 'Assistant Comptroller', 'Assistant Comptroller of Customs', 'GL13'],
+                'CSC' => ['CSC', 'Chief Superintendent of Customs (CSC) GL12', 'Chief Superintendent', 'Chief Superintendent of Customs', 'GL12'],
+                'SC' => ['SC', 'Superintendent of Customs (SC) GL11', 'Superintendent', 'Superintendent of Customs', 'GL11'],
+                'DSC' => ['DSC', 'Deputy Superintendent of Customs (DSC) GL10', 'Deputy Superintendent', 'Deputy Superintendent of Customs', 'GL10'],
+                'ASC I' => ['ASC I', 'ASC', 'Assistant Superintendent of Customs Grade I (ASC I) GL 09', 'Assistant Superintendent Grade I', 'Assistant Superintendent', 'GL09', 'GL 09'],
+                'ASC II' => ['ASC II', 'ASC', 'Assistant Superintendent of Customs Grade II (ASC II) GL 08', 'Assistant Superintendent Grade II', 'Assistant Superintendent', 'GL08', 'GL 08'],
+                'IC' => ['IC', 'Inspector of Customs (IC) GL07', 'Inspector', 'Inspector of Customs', 'GL07'],
+                'AIC' => ['AIC', 'Assistant Inspector of Customs (AIC) GL06', 'Assistant Inspector', 'Assistant Inspector of Customs', 'GL06'],
+                'CA I' => ['CA I', 'CA', 'Customs Assistant I (CA I) GL05', 'Customs Assistant I', 'Customs Assistant', 'GL05'],
+                'CA II' => ['CA II', 'CA', 'Customs Assistant II (CA II) GL04', 'Customs Assistant II', 'Customs Assistant', 'GL04'],
+                'CA III' => ['CA III', 'CA', 'Customs Assistant III (CA III) GL03', 'Customs Assistant III', 'Customs Assistant', 'GL03'],
             ];
             
             // Start with exact match
             $matchingRanks = [$item->rank];
             
-            // Add mapped ranks if found
-            foreach ($rankMapping as $fullName => $abbreviations) {
-                // Check if item rank contains or is contained in full name
-                if (stripos($item->rank, $fullName) !== false || stripos($fullName, $item->rank) !== false) {
-                    $matchingRanks = array_merge($matchingRanks, $abbreviations);
+            // Find matching variations for the requested rank (abbreviation)
+            foreach ($rankMapping as $abbreviation => $variations) {
+                // Check if item rank matches the abbreviation or any variation
+                if ($item->rank === $abbreviation || in_array($item->rank, $variations)) {
+                    $matchingRanks = array_merge($matchingRanks, $variations);
                 }
-                // Check if item rank matches any abbreviation
-                if (in_array($item->rank, $abbreviations)) {
-                    $matchingRanks = array_merge($matchingRanks, [$fullName], $abbreviations);
+                // Check for partial matches (e.g., "ASC" matches "ASC I" or "ASC II")
+                foreach ($variations as $variation) {
+                    if (stripos($item->rank, $variation) !== false || stripos($variation, $item->rank) !== false) {
+                        $matchingRanks = array_merge($matchingRanks, $variations);
+                        break;
+                    }
                 }
             }
             
             // Remove duplicates
             $matchingRanks = array_unique($matchingRanks);
             
-            // Use whereIn for exact matches, with LIKE fallback
+            // Use whereIn for exact matches, with LIKE fallback for flexible matching
             $query->where(function($q) use ($item, $matchingRanks) {
-                $q->whereIn('substantive_rank', $matchingRanks)
-                  ->orWhere('substantive_rank', 'LIKE', '%' . $item->rank . '%');
+                $q->whereIn('substantive_rank', $matchingRanks);
+                
+                // Also try LIKE matching for partial rank names
+                foreach ($matchingRanks as $rank) {
+                    $q->orWhere('substantive_rank', 'LIKE', '%' . $rank . '%');
+                }
+                
+                // Fallback: match any part of the requested rank
+                $q->orWhere('substantive_rank', 'LIKE', '%' . $item->rank . '%');
             });
         }
         
@@ -599,6 +636,13 @@ class ManningRequestController extends Controller
                     'status' => 'FULFILLED',
                     'fulfilled_at' => now(),
                 ]);
+                
+                // Refresh to load relationships
+                $manningRequest->refresh();
+                
+                // Notify Staff Officer about fulfillment
+                $notificationService = app(NotificationService::class);
+                $notificationService->notifyManningRequestFulfilled($manningRequest);
             }
             
             return redirect()->route('hrd.manning-requests.show', $id)
@@ -672,9 +716,13 @@ class ManningRequestController extends Controller
             }
             $manningRequest->save();
             
-            // Notify Staff Officer about approval
+            // Refresh to load relationships
+            $manningRequest->refresh();
+            
+            // Notify Staff Officer and HRD about approval
             $notificationService = app(NotificationService::class);
             $notificationService->notifyManningRequestApproved($manningRequest);
+            $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
             
             return redirect()->route('area-controller.manning-level')
                 ->with('success', 'Manning request approved successfully.');

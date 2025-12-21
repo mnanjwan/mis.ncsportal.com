@@ -415,6 +415,102 @@ class NotificationService
     }
 
     /**
+     * Notify Area Controllers about submitted manning request ready for approval
+     */
+    public function notifyManningRequestSubmitted($manningRequest): array
+    {
+        $command = $manningRequest->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandName = $command->name;
+        $requestedBy = $manningRequest->requestedBy;
+        $requestedByName = $requestedBy ? ($requestedBy->name ?? $requestedBy->email) : 'Staff Officer';
+        
+        // Get Area Controllers (they can approve any manning request)
+        $areaControllers = User::whereHas('roles', function($q) {
+            $q->where('name', 'Area Controller')
+              ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        if ($areaControllers->isEmpty()) {
+            return [];
+        }
+
+        $itemCount = $manningRequest->items->count();
+        $totalQuantity = $manningRequest->items->sum('quantity_needed');
+
+        return $this->notifyMany(
+            $areaControllers,
+            'manning_request_submitted',
+            'New Manning Request Submitted',
+            "A manning request for {$commandName} has been submitted by {$requestedByName}. It includes {$itemCount} position(s) requiring {$totalQuantity} officer(s) total. Please review and approve.",
+            'manning_request',
+            $manningRequest->id
+        );
+    }
+
+    /**
+     * Notify HRD team about approved manning request ready for officer matching
+     */
+    public function notifyManningRequestApprovedToHrd($manningRequest): array
+    {
+        $command = $manningRequest->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandName = $command->name;
+        
+        // Get HRD users
+        $hrdUsers = User::whereHas('roles', function($q) {
+            $q->where('name', 'HRD')
+              ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        if ($hrdUsers->isEmpty()) {
+            return [];
+        }
+
+        $itemCount = $manningRequest->items->count();
+        $totalQuantity = $manningRequest->items->sum('quantity_needed');
+
+        return $this->notifyMany(
+            $hrdUsers,
+            'manning_request_approved',
+            'Manning Request Approved - Ready for Matching',
+            "Manning request for {$commandName} has been approved. It requires {$itemCount} position(s) with {$totalQuantity} officer(s) total. Please proceed with officer matching.",
+            'manning_request',
+            $manningRequest->id
+        );
+    }
+
+    /**
+     * Notify Staff Officer about manning request fulfillment
+     */
+    public function notifyManningRequestFulfilled($manningRequest): ?Notification
+    {
+        $user = $manningRequest->requestedBy;
+        if (!$user) {
+            return null;
+        }
+
+        $command = $manningRequest->command;
+        $commandName = $command ? $command->name : 'your command';
+        $matchedCount = $manningRequest->items->whereNotNull('matched_officer_id')->count();
+
+        return $this->notify(
+            $user,
+            'manning_request_fulfilled',
+            'Manning Request Fulfilled',
+            "Your manning request for {$commandName} has been fulfilled. {$matchedCount} officer(s) have been matched and movement order(s) have been generated.",
+            'manning_request',
+            $manningRequest->id
+        );
+    }
+
+    /**
      * Notify about staff order creation
      */
     public function notifyStaffOrderCreated($staffOrder): array
