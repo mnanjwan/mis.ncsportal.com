@@ -467,6 +467,21 @@ class EmolumentController extends Controller
 
             DB::commit();
 
+            // Send notifications
+            $notificationService = app(\App\Services\NotificationService::class);
+            
+            // Always notify officer about assessment result
+            $notificationService->notifyEmolumentAssessed(
+                $emolument, 
+                $validated['assessment_status'], 
+                $validated['comments'] ?? null
+            );
+            
+            // If approved, notify validators/area controllers
+            if ($validated['assessment_status'] === 'APPROVED') {
+                $notificationService->notifyEmolumentAssessedReadyForValidation($emolument);
+            }
+
             return redirect()->route('assessor.emoluments')
                 ->with('success', 'Emolument assessed successfully');
 
@@ -631,6 +646,21 @@ class EmolumentController extends Controller
 
             DB::commit();
 
+            // Send notifications
+            $notificationService = app(\App\Services\NotificationService::class);
+            
+            // Always notify officer about validation result
+            $notificationService->notifyEmolumentValidated(
+                $emolument, 
+                $validated['validation_status'], 
+                $validated['comments'] ?? null
+            );
+            
+            // If approved, notify accounts team
+            if ($validated['validation_status'] === 'APPROVED') {
+                $notificationService->notifyEmolumentValidatedReadyForProcessing($emolument);
+            }
+
             // Redirect based on user role
             $user = auth()->user();
             if ($user->hasRole('Area Controller')) {
@@ -714,6 +744,10 @@ class EmolumentController extends Controller
 
             DB::commit();
 
+            // Notify officer about payment processing
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->notifyEmolumentProcessed($emolument);
+
             return redirect()->back()
                 ->with('success', 'Emolument processed successfully');
 
@@ -743,12 +777,18 @@ class EmolumentController extends Controller
 
         DB::beginTransaction();
         try {
+            $notificationService = app(\App\Services\NotificationService::class);
             $processed = 0;
+            
             foreach ($emoluments as $emolument) {
                 $emolument->update([
                     'status' => 'PROCESSED',
                     'processed_at' => now(),
                 ]);
+                
+                // Notify officer about payment processing
+                $notificationService->notifyEmolumentProcessed($emolument);
+                
                 $processed++;
             }
 

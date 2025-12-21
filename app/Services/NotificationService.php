@@ -543,4 +543,166 @@ class NotificationService
             $emolument->id
         );
     }
+
+    /**
+     * Notify officer about emolument assessment (approved or rejected)
+     */
+    public function notifyEmolumentAssessed($emolument, string $status, ?string $comments = null): ?Notification
+    {
+        $officer = $emolument->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        
+        if ($status === 'APPROVED') {
+            $title = 'Emolument Assessed';
+            $message = "Your emolument for year {$emolument->year} has been assessed and approved.";
+        } else {
+            $title = 'Emolument Assessment Rejected';
+            $message = "Your emolument for year {$emolument->year} has been rejected.";
+            if ($comments) {
+                $message .= " Comments: {$comments}";
+            }
+        }
+
+        return $this->notify(
+            $officer->user,
+            'emolument_assessed',
+            $title,
+            $message,
+            'emolument',
+            $emolument->id
+        );
+    }
+
+    /**
+     * Notify Validators and Area Controllers about assessed emolument ready for validation
+     */
+    public function notifyEmolumentAssessedReadyForValidation($emolument): array
+    {
+        $officer = $emolument->officer;
+        if (!$officer || !$officer->presentStation) {
+            return [];
+        }
+
+        $command = $officer->presentStation;
+        $officerName = "{$officer->initials} {$officer->surname}";
+        
+        // Get Validators for the command
+        $validators = User::whereHas('roles', function($q) use ($command) {
+            $q->where('name', 'Validator')
+              ->where('user_roles.command_id', $command->id)
+              ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        // Get Area Controllers (they can validate any emolument, no command restriction)
+        $areaControllers = User::whereHas('roles', function($q) {
+            $q->where('name', 'Area Controller')
+              ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        $allValidators = $validators->merge($areaControllers)->unique('id');
+
+        if ($allValidators->isEmpty()) {
+            return [];
+        }
+
+        return $this->notifyMany(
+            $allValidators,
+            'emolument_assessed',
+            'Emolument Ready for Validation',
+            "Emolument for Officer {$officerName} ({$officer->service_number}) for year {$emolument->year} has been assessed and is ready for validation.",
+            'emolument',
+            $emolument->id
+        );
+    }
+
+    /**
+     * Notify officer about emolument validation (approved or rejected)
+     */
+    public function notifyEmolumentValidated($emolument, string $status, ?string $comments = null): ?Notification
+    {
+        $officer = $emolument->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        
+        if ($status === 'APPROVED') {
+            $title = 'Emolument Validated';
+            $message = "Your emolument for year {$emolument->year} has been validated and approved. It is now ready for payment processing.";
+        } else {
+            $title = 'Emolument Validation Rejected';
+            $message = "Your emolument for year {$emolument->year} has been rejected during validation.";
+            if ($comments) {
+                $message .= " Comments: {$comments}";
+            }
+        }
+
+        return $this->notify(
+            $officer->user,
+            'emolument_validated',
+            $title,
+            $message,
+            'emolument',
+            $emolument->id
+        );
+    }
+
+    /**
+     * Notify Accounts team about validated emolument ready for processing
+     */
+    public function notifyEmolumentValidatedReadyForProcessing($emolument): array
+    {
+        $officer = $emolument->officer;
+        if (!$officer) {
+            return [];
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        
+        // Get Accounts users
+        $accountsUsers = User::whereHas('roles', function($q) {
+            $q->where('name', 'Accounts')
+              ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        if ($accountsUsers->isEmpty()) {
+            return [];
+        }
+
+        return $this->notifyMany(
+            $accountsUsers,
+            'emolument_validated',
+            'Emolument Ready for Payment Processing',
+            "Emolument for Officer {$officerName} ({$officer->service_number}) for year {$emolument->year} has been validated and is ready for payment processing.",
+            'emolument',
+            $emolument->id
+        );
+    }
+
+    /**
+     * Notify officer about emolument payment processed
+     */
+    public function notifyEmolumentProcessed($emolument): ?Notification
+    {
+        $officer = $emolument->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+
+        return $this->notify(
+            $officer->user,
+            'emolument_processed',
+            'Emolument Payment Processed',
+            "Your emolument for year {$emolument->year} has been processed for payment.",
+            'emolument',
+            $emolument->id
+        );
+    }
 }
