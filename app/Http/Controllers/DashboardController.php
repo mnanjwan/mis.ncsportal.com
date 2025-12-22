@@ -291,6 +291,7 @@ class DashboardController extends Controller
         $dutyRosterActive = false;
         $recentLeaveApplications = collect();
         $recentPassApplications = collect();
+        $approvedManningRequestsWithMatches = collect();
         
         if ($commandId) {
             // Get newly posted officers (not yet documented)
@@ -348,6 +349,21 @@ class DashboardController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->take(5)
                 ->get();
+            
+            // Get approved manning requests with matched officers (not yet posted)
+            // These are requests that have been approved and HRD has matched officers, but Movement Order hasn't been generated yet
+            $approvedManningRequestsWithMatches = \App\Models\ManningRequest::where('command_id', $commandId)
+                ->where('status', 'APPROVED')
+                ->whereHas('items', function($q) {
+                    // Has items with matched officers
+                    $q->whereNotNull('matched_officer_id');
+                })
+                ->whereDoesntHave('movementOrders')
+                ->with(['items.matchedOfficer', 'items' => function($q) {
+                    $q->whereNotNull('matched_officer_id');
+                }])
+                ->orderBy('approved_at', 'desc')
+                ->get();
         }
         
         return view('dashboards.staff-officer.dashboard', compact(
@@ -358,7 +374,8 @@ class DashboardController extends Controller
             'manningLevelCount',
             'dutyRosterActive',
             'recentLeaveApplications',
-            'recentPassApplications'
+            'recentPassApplications',
+            'approvedManningRequestsWithMatches'
         ));
     }
 
