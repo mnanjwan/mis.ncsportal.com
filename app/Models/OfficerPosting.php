@@ -17,6 +17,7 @@ class OfficerPosting extends Model
         'posting_date',
         'is_current',
         'documented_by',
+        'documented_at',
     ];
 
     protected function casts(): array

@@ -64,6 +64,12 @@ class LeaveApplicationController extends Controller
 
             $leaveType = LeaveType::findOrFail($request->leave_type_id);
 
+            // Restrict officers from applying preretirement leave
+            // Preretirement leave is automatic and CGC-managed only
+            if ($leaveType->code === 'PRE_RETIREMENT_LEAVE') {
+                return redirect()->back()->with('error', 'Preretirement leave cannot be applied by officers. It is automatically placed 3 months before retirement and managed by CGC only.')->withInput();
+            }
+
             // Calculate number of days
             $startDate = \Carbon\Carbon::parse($request->start_date);
             $endDate = \Carbon\Carbon::parse($request->end_date);

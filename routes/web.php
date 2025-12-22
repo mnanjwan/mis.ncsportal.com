@@ -28,6 +28,7 @@ use App\Http\Controllers\CommandController;
 use App\Http\Controllers\TRADOCController;
 use App\Http\Controllers\ICTController;
 use App\Http\Controllers\EstablishmentController;
+use App\Http\Controllers\CGCPreretirementLeaveController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -184,6 +185,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/commands/{id}', [CommandController::class, 'show'])->name('commands.show');
         Route::get('/commands/{id}/edit', [CommandController::class, 'edit'])->name('commands.edit');
         Route::put('/commands/{id}', [CommandController::class, 'update'])->name('commands.update');
+    });
+
+    // CGC Routes
+    Route::prefix('cgc')->name('cgc.')->middleware('role:CGC')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'cgc'])->name('dashboard');
+        
+        // Preretirement Leave Management
+        Route::get('/preretirement-leave', [CGCPreretirementLeaveController::class, 'index'])->name('preretirement-leave.index');
+        Route::get('/preretirement-leave/approaching', [CGCPreretirementLeaveController::class, 'approaching'])->name('preretirement-leave.approaching');
+        Route::get('/preretirement-leave/{id}', [CGCPreretirementLeaveController::class, 'show'])->name('preretirement-leave.show');
+        Route::post('/preretirement-leave/{id}/approve-in-office', [CGCPreretirementLeaveController::class, 'approveInOffice'])->name('preretirement-leave.approve-in-office');
+        Route::post('/preretirement-leave/{id}/cancel-approval', [CGCPreretirementLeaveController::class, 'cancelApproval'])->name('preretirement-leave.cancel-approval');
     });
 
     // Staff Officer Routes

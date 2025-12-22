@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class RetirementListItem extends Model
 {
@@ -24,6 +25,11 @@ class RetirementListItem extends Model
         'date_of_pre_retirement_leave',
         'retirement_date',
         'notified',
+        'preretirement_leave_status',
+        'auto_placed_at',
+        'cgc_approved_by',
+        'cgc_approved_at',
+        'cgc_approval_reason',
     ];
 
     protected function casts(): array
@@ -35,6 +41,8 @@ class RetirementListItem extends Model
             'retirement_date' => 'date',
             'notified_at' => 'datetime',
             'notified' => 'boolean',
+            'auto_placed_at' => 'datetime',
+            'cgc_approved_at' => 'datetime',
         ];
     }
 
@@ -47,6 +55,11 @@ class RetirementListItem extends Model
     public function officer()
     {
         return $this->belongsTo(Officer::class);
+    }
+
+    public function cgcApprovedBy()
+    {
+        return $this->belongsTo(User::class, 'cgc_approved_by');
     }
 }
 

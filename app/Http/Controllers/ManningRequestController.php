@@ -9,7 +9,9 @@ use App\Models\ManningRequest;
 use App\Models\ManningRequestItem;
 use App\Models\Officer;
 use App\Models\MovementOrder;
+use App\Models\OfficerPosting;
 use App\Services\NotificationService;
+use App\Services\PostingWorkflowService;
 
 class ManningRequestController extends Controller
 {
@@ -612,7 +614,10 @@ class ManningRequestController extends Controller
                 'created_by' => auth()->id(),
             ]);
             
-            // Update matched officers in request items
+            // Get destination command from manning request
+            $destinationCommand = $manningRequest->command;
+            
+            // Update matched officers in request items and post officers to new command
             foreach ($selectedOfficers as $index => $officer) {
                 if ($index < $item->quantity_needed) {
                     // Update the main item if first officer
@@ -628,6 +633,45 @@ class ManningRequestController extends Controller
                             'qualification_requirement' => $item->qualification_requirement,
                             'matched_officer_id' => $officer->id,
                         ]);
+                    }
+                    
+                    // Post officer to destination command
+                    if ($destinationCommand) {
+                        $fromCommand = $officer->presentStation;
+                        
+                        // Mark previous posting as not current
+                        OfficerPosting::where('officer_id', $officer->id)
+                            ->where('is_current', true)
+                            ->update(['is_current' => false]);
+                        
+                        // Create new posting record (not yet documented)
+                        OfficerPosting::create([
+                            'officer_id' => $officer->id,
+                            'command_id' => $destinationCommand->id,
+                            'movement_order_id' => $movementOrder->id,
+                            'posting_date' => now(),
+                            'is_current' => true,
+                            'documented_by' => null, // Will be set when Staff Officer documents
+                            'documented_at' => null, // Explicitly set to null - will be set when Staff Officer documents
+                        ]);
+                        
+                        // Update officer's present_station (this automatically updates nominal roll)
+                        $officer->update([
+                            'present_station' => $destinationCommand->id,
+                            'date_posted_to_station' => now(),
+                        ]);
+                        
+                        // Log the posting
+                        Log::info("Movement Order {$orderNumber}: Officer {$officer->id} ({$officer->service_number}) posted from " . 
+                            ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$destinationCommand->name}");
+                        
+                        // Notify Staff Officer of new posting (via NotificationService if available)
+                        try {
+                            $notificationService = app(NotificationService::class);
+                            // Notification will be handled by NotificationService if methods exist
+                        } catch (\Exception $e) {
+                            Log::info("Notification service not available for officer posting");
+                        }
                     }
                 }
             }

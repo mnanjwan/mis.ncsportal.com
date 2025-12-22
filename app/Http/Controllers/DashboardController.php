@@ -52,6 +52,7 @@ class DashboardController extends Controller
         // Priority order: HRD > Admin roles > Zone Coordinator > Validator > Assessor > Staff Officer > Officer
         $rolePriorities = [
             'HRD',
+            'CGC',
             'Board',
             'Accounts',
             'Welfare',
@@ -293,20 +294,13 @@ class DashboardController extends Controller
         
         if ($commandId) {
             // Get newly posted officers (not yet documented)
-            // Check for officers with current posting that's not documented, OR recently posted (within 30 days) without posting record
+            // Officers with current posting that's not documented
             $newlyPostedOfficers = Officer::where('present_station', $commandId)
                 ->where('is_active', true)
-                ->where(function($q) {
-                    // Has current posting that's not documented
-                    $q->whereHas('currentPosting', function($subQ) {
-                        $subQ->whereNull('documented_at');
-                    })
-                    // OR recently posted (within 30 days) and might not have posting record yet
-                    ->orWhere(function($subQ) {
-                        $subQ->whereNotNull('date_posted_to_station')
-                             ->where('date_posted_to_station', '>=', now()->subDays(30))
-                             ->whereDoesntHave('currentPosting');
-                    });
+                ->whereHas('postings', function($q) {
+                    // Has a current posting that hasn't been documented
+                    $q->where('is_current', true)
+                      ->whereNull('documented_at');
                 })
                 ->with(['presentStation', 'user', 'currentPosting'])
                 ->orderBy('date_posted_to_station', 'desc')
@@ -1498,9 +1492,37 @@ class DashboardController extends Controller
             'TRADOC' => 'tradoc.dashboard',
             'ICT' => 'ict.dashboard',
             'Welfare' => 'welfare.dashboard',
+            'CGC' => 'cgc.dashboard',
         ];
 
         return $routes[$role] ?? 'officer.dashboard';
+    }
+
+    // CGC Dashboard
+    public function cgc()
+    {
+        $preretirementLeaveCount = \App\Models\RetirementListItem::whereNotNull('preretirement_leave_status')->count();
+        $approachingCount = \App\Models\RetirementListItem::where('date_of_pre_retirement_leave', '>=', now())
+            ->where('date_of_pre_retirement_leave', '<=', now()->addMonths(3))
+            ->whereNull('preretirement_leave_status')
+            ->count();
+        $cgcApprovedCount = \App\Models\RetirementListItem::where('preretirement_leave_status', 'CGC_APPROVED_IN_OFFICE')->count();
+        $autoPlacedCount = \App\Models\RetirementListItem::where('preretirement_leave_status', 'AUTO_PLACED')->count();
+
+        // Get recent preretirement leave items
+        $recentItems = \App\Models\RetirementListItem::with(['officer', 'retirementList'])
+            ->whereNotNull('preretirement_leave_status')
+            ->orderBy('auto_placed_at', 'desc')
+            ->take(5)
+            ->get();
+
+        return view('dashboards.cgc.dashboard', compact(
+            'preretirementLeaveCount',
+            'approachingCount',
+            'cgcApprovedCount',
+            'autoPlacedCount',
+            'recentItems'
+        ));
     }
 }
 

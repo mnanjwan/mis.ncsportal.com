@@ -100,6 +100,12 @@ class RoleSeeder extends Seeder
                 'description' => 'ICT - Information and Communication Technology',
                 'access_level' => 'system_wide',
             ],
+            [
+                'name' => 'CGC',
+                'code' => 'CGC',
+                'description' => 'Comptroller General of Customs - Preretirement Leave Authority',
+                'access_level' => 'system_wide',
+            ],
         ];
 
         foreach ($roles as $role) {

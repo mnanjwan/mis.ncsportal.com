@@ -51,6 +51,8 @@ class Officer extends Model
         'is_deceased',
         'deceased_date',
         'is_active',
+        'preretirement_leave_status',
+        'preretirement_leave_started_at',
         'profile_picture_url',
         'created_by',
     ];
@@ -69,6 +71,7 @@ class Officer extends Model
             'quartered' => 'boolean',
             'is_deceased' => 'boolean',
             'is_active' => 'boolean',
+            'preretirement_leave_started_at' => 'datetime',
         ];
     }
 

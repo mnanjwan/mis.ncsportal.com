@@ -115,9 +115,10 @@ class RoleMiddleware
      */
     private function getUserDashboardRoute(array $userRoles): ?string
     {
-        // Priority order: HRD > Admin roles > Zone Coordinator > Validator > Assessor > Staff Officer > Officer
+        // Priority order: HRD > CGC > Admin roles > Zone Coordinator > Validator > Assessor > Staff Officer > Officer
         $rolePriorities = [
             'HRD' => 'hrd.dashboard',
+            'CGC' => 'cgc.dashboard',
             'Board' => 'board.dashboard',
             'Accounts' => 'accounts.dashboard',
             'Welfare' => 'welfare.dashboard',

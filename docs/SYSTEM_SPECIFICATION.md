@@ -225,6 +225,29 @@
 13. Oversee multiple units within area of responsibility
 14. Review and approve internal movements
 
+### CGC (Comptroller General of Customs) - Preretirement Leave Authority
+**Primary Role:** Strategic oversight and preretirement leave management
+
+**Access Level:** System-wide preretirement leave approval authority
+
+**Core Functions:**
+1. Search and view officers approaching preretirement leave (3 months before retirement)
+2. Review officers automatically placed on preretirement leave
+3. Approve officers to continue working during preretirement period (preretirement leave "in office")
+4. Manage exceptions to automatic preretirement leave placement
+5. View comprehensive preretirement leave reports and statistics
+6. Monitor officers working during preretirement period
+7. Strategic decision-making for critical officer retention during preretirement
+8. Override automatic preretirement leave placement when necessary
+9. Track and audit preretirement leave approvals
+10. Generate preretirement leave management reports
+
+**Preretirement Leave Management:**
+- Officers are automatically placed on preretirement leave 3 months before retirement
+- Only CGC can approve officers to work during the last 3 months before retirement
+- Officers cannot apply for preretirement leave - it is automatic and CGC-managed
+- CGC has exclusive authority to approve "preretirement leave in office" status
+
 ### DC Admin (Deputy Comptroller Administration) - Operational Approver
 **Primary Role:** Day-to-day approval of routine administrative requests
 
@@ -651,12 +674,30 @@ The Eligibility List carries the following fields:
    - Date of Pre Retirement Leave (DOPR) - this pre Retirement is 3 months before retirement date
    - Retirement Date
 3. **System calculates** - System calculates pre-retirement leave (3 months prior)
-4. **System activates status** - System activates pre-retirement status
-5. **Notifications sent** - Notifications sent to:
-   - Retiring officer (3 months before retirement)
+4. **Automatic Preretirement Leave Placement:**
+   - When an officer reaches 3 months before retirement date, the system automatically:
+     - Sends notification to the officer about preretirement leave
+     - Places the officer on preretirement leave automatically
+     - Updates officer status to "ON_PRERETIREMENT_LEAVE"
+     - Records the automatic placement date
+5. **CGC Approval Process (Exception):**
+   - CGC can search for officers approaching preretirement leave
+   - CGC can approve officers to continue working during preretirement period
+   - When CGC approves "preretirement leave in office":
+     - Officer status changes to "PRERETIREMENT_LEAVE_IN_OFFICE"
+     - Officer can continue working for the last 3 months before retirement
+     - CGC approval is recorded with timestamp and approval details
+   - Only CGC has authority to approve this exception
+6. **Officer Restrictions:**
+   - Officers CANNOT apply for preretirement leave
+   - Preretirement leave is strictly automatic and CGC-managed
+   - Officers can only view their preretirement leave status
+7. **Notifications sent** - Notifications sent to:
+   - Retiring officer (3 months before retirement - automatic placement notification)
+   - CGC (when officer is automatically placed on preretirement leave)
    - Accounts (for benefits processing)
    - Welfare (for transition support)
-6. **Officer informed** - The officer will be informed
+8. **Officer informed** - The officer will be automatically informed when placed on preretirement leave
 
 ### 9. Service Number Allocation Workflow
 
@@ -947,12 +988,31 @@ The Eligibility List carries the following fields:
 3. Officer dashboard displays retirement information and countdown
 4. System tracks alert status to prevent duplicate notifications
 
+**Automatic Preretirement Leave Placement:**
+1. System detects officers reaching 3 months before retirement date
+2. System automatically places officer on preretirement leave
+3. System sends notification to officer about preretirement leave placement
+4. Officer status updated to "ON_PRERETIREMENT_LEAVE"
+5. System records automatic placement date
+
+**CGC Preretirement Leave Management:**
+1. CGC searches for officers approaching preretirement leave
+2. CGC views list of officers on preretirement leave
+3. CGC can approve officers to work during preretirement period:
+   - CGC selects officer and approves "preretirement leave in office"
+   - Officer status changes to "PRERETIREMENT_LEAVE_IN_OFFICE"
+   - Officer can continue working for last 3 months before retirement
+   - CGC approval recorded with timestamp
+4. CGC can view comprehensive preretirement leave reports
+
 **Processing:**
 1. HRD reviews retirement list
 2. System calculates pre-retirement leave (3 months prior)
-3. System activates pre-retirement status
-4. Notifications sent to:
-   - Retiring officer (3 months before retirement date)
+3. System automatically places officers on preretirement leave
+4. System activates pre-retirement status
+5. Notifications sent to:
+   - Retiring officer (automatic preretirement leave placement notification)
+   - CGC (notification of officers placed on preretirement leave)
    - Accounts (for benefits processing)
    - Welfare (for transition support)
 
@@ -1126,7 +1186,12 @@ Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notif
     - (No specific duration mentioned)
 
 17. **Pre-retirement leave**
-    - (No specific duration mentioned)
+    - Duration: 3 months before retirement date (automatic)
+    - **IMPORTANT:** Officers cannot apply for preretirement leave
+    - Preretirement leave is automatically activated 3 months before retirement date
+    - Only CGC can approve officers to continue working during preretirement period (preretirement leave "in office")
+    - Officers are automatically notified and placed on preretirement leave
+    - CGC has exclusive authority to manage preretirement leave approvals
 
 18. **Leave of absence**
     - (No specific duration mentioned)
@@ -1204,6 +1269,12 @@ Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notif
 3. **Pre-Retirement Leave**
    - Pre-Retirement Leave is 3 months before retirement date
    - Date of Pre Retirement Leave (DOPR) = Retirement Date - 3 months
+   - **Automatic Placement:** Officers are automatically placed on preretirement leave 3 months before retirement
+   - **Automatic Notification:** Officers are automatically notified when preretirement leave begins
+   - **CGC Approval Exception:** Only CGC can approve officers to continue working during preretirement period (preretirement leave "in office")
+   - **Officer Restrictions:** Officers cannot apply for preretirement leave - it is automatic and CGC-managed only
+   - **Default Status:** All officers are automatically placed on preretirement leave unless CGC approves them to work
+   - **CGC Authority:** CGC has exclusive authority to search officers, review preretirement status, and approve exceptions
 
 ### Promotion Rules
 

@@ -12,6 +12,7 @@
     // Determine primary role based on priority (same as DashboardController)
     $rolePriorities = [
         'HRD',
+        'CGC',
         'Board',
         'Accounts',
         'Welfare',
@@ -143,6 +144,19 @@
                         ['title' => 'Zones', 'href' => route('hrd.zones.index')],
                         ['title' => 'Commands', 'href' => route('hrd.commands.index')],
                         ['title' => 'System Settings', 'href' => route('hrd.system-settings')],
+                    ]
+                ],
+            ];
+            break;
+        case 'CGC':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('cgc.dashboard')],
+                [
+                    'title' => 'Preretirement Leave',
+                    'icon' => 'ki-filled ki-calendar-tick',
+                    'submenu' => [
+                        ['title' => 'All Preretirement Leave', 'href' => route('cgc.preretirement-leave.index')],
+                        ['title' => 'Officers Approaching', 'href' => route('cgc.preretirement-leave.approaching')],
                     ]
                 ],
             ];

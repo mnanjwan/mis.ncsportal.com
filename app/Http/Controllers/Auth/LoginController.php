@@ -69,9 +69,10 @@ class LoginController extends Controller
             $query->wherePivot('is_active', true);
         }]);
         
-        // Priority order: HRD > Admin roles > Zone Coordinator > Validator > Assessor > Staff Officer > Others > Officer
+        // Priority order: HRD > CGC > Admin roles > Zone Coordinator > Validator > Assessor > Staff Officer > Others > Officer
         $rolePriorities = [
             'HRD',
+            'CGC',
             'Board',
             'Accounts',
             'Welfare',
@@ -113,6 +114,7 @@ class LoginController extends Controller
         $routes = [
             'Officer' => 'officer.dashboard',
             'HRD' => 'hrd.dashboard',
+            'CGC' => 'cgc.dashboard',
             'Staff Officer' => 'staff-officer.dashboard',
             'Assessor' => 'assessor.dashboard',
             'Validator' => 'validator.dashboard',
