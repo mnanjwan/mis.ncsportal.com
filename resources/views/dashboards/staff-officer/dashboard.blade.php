@@ -77,71 +77,99 @@
         </div>
     @endif
     
-    <!-- Approved Manning Requests with Matched Officers Section -->
+    <!-- Approved Manning Requests Section -->
     @if($command && isset($approvedManningRequestsWithMatches) && $approvedManningRequestsWithMatches->count() > 0)
         <div class="kt-card">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Matched Officers from Approved Requests</h3>
+                <h3 class="kt-card-title">Approved Manning Requests</h3>
                 <div class="kt-card-toolbar">
                     <span class="kt-badge kt-badge-info kt-badge-sm">{{ $approvedManningRequestsWithMatches->count() }} Request(s)</span>
                 </div>
             </div>
             <div class="kt-card-content">
                 <p class="text-sm text-secondary-foreground mb-4">
-                    The following officers have been matched by HRD for your approved manning requests. Review and approve them to proceed with posting.
+                    Your approved manning requests. Officers will appear here once HRD has matched them.
                 </p>
                 <div class="overflow-x-auto">
                     @foreach($approvedManningRequestsWithMatches as $request)
+                        @php
+                            $matchedItems = $request->items->where('matched_officer_id', '!=', null);
+                            $unmatchedItems = $request->items->where('matched_officer_id', '==', null);
+                            $hasMatchedOfficers = $matchedItems->count() > 0;
+                        @endphp
                         <div class="mb-6 pb-6 border-b border-border last:border-0 last:mb-0 last:pb-0">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
                                     <h4 class="text-sm font-semibold text-foreground">Manning Request #{{ $request->id }}</h4>
                                     <p class="text-xs text-secondary-foreground mt-1">
                                         Approved: {{ $request->approved_at ? $request->approved_at->format('M d, Y') : 'N/A' }}
+                                        @if($hasMatchedOfficers)
+                                            <span class="kt-badge kt-badge-success kt-badge-xs ml-2">Officers Matched</span>
+                                        @else
+                                            <span class="kt-badge kt-badge-warning kt-badge-xs ml-2">Waiting for HRD Matching</span>
+                                        @endif
                                     </p>
                                 </div>
                                 <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                                     View Details
                                 </a>
                             </div>
-                            <table class="kt-table w-full">
-                                <thead>
-                                    <tr class="border-b border-border">
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Rank Required</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Matched Officer</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Service Number</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Current Station</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($request->items->where('matched_officer_id', '!=', null) as $item)
-                                        @if($item->matchedOfficer)
-                                            <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                                <td class="py-2 px-4 text-xs text-secondary-foreground">
-                                                    {{ $item->rank }}
-                                                </td>
-                                                <td class="py-2 px-4">
-                                                    <span class="text-xs font-medium text-foreground">
-                                                        {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-2 px-4">
-                                                    <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
-                                                </td>
-                                                <td class="py-2 px-4 text-xs text-secondary-foreground">
-                                                    {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
-                                                </td>
-                                                <td class="py-2 px-4">
-                                                    <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
-                                                        Review
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        @endif
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            
+                            @if($hasMatchedOfficers)
+                                <table class="kt-table w-full">
+                                    <thead>
+                                        <tr class="border-b border-border">
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Rank Required</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Matched Officer</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Service Number</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Current Station</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($matchedItems as $item)
+                                            @if($item->matchedOfficer)
+                                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                                    <td class="py-2 px-4 text-xs text-secondary-foreground">
+                                                        {{ $item->rank }}
+                                                    </td>
+                                                    <td class="py-2 px-4">
+                                                        <span class="text-xs font-medium text-foreground">
+                                                            {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-2 px-4">
+                                                        <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
+                                                    </td>
+                                                    <td class="py-2 px-4 text-xs text-secondary-foreground">
+                                                        {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
+                                                    </td>
+                                                    <td class="py-2 px-4">
+                                                        <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
+                                                            Review
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <div class="bg-muted/50 rounded-lg p-4 text-center">
+                                    <p class="text-sm text-secondary-foreground">
+                                        <i class="ki-filled ki-information-2 mr-2"></i>
+                                        This request is approved and waiting for HRD to match officers. You will be notified when officers are matched.
+                                    </p>
+                                    <div class="mt-3 text-xs text-secondary-foreground">
+                                        <p>Requested positions:</p>
+                                        <ul class="list-disc list-inside mt-1">
+                                            @foreach($request->items as $item)
+                                                <li>{{ $item->rank }} (Qty: {{ $item->quantity_needed }})</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @endforeach
                 </div>

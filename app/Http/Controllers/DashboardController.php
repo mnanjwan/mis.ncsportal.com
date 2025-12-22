@@ -350,18 +350,12 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
             
-            // Get approved manning requests with matched officers (not yet posted)
-            // These are requests that have been approved and HRD has matched officers, but Movement Order hasn't been generated yet
+            // Get approved manning requests (not yet posted)
+            // Show all approved requests - some may have matched officers, others may be waiting for HRD matching
             $approvedManningRequestsWithMatches = \App\Models\ManningRequest::where('command_id', $commandId)
                 ->where('status', 'APPROVED')
-                ->whereHas('items', function($q) {
-                    // Has items with matched officers
-                    $q->whereNotNull('matched_officer_id');
-                })
-                ->whereDoesntHave('movementOrders')
-                ->with(['items.matchedOfficer', 'items' => function($q) {
-                    $q->whereNotNull('matched_officer_id');
-                }])
+                ->whereDoesntHave('movementOrders') // Not yet posted
+                ->with(['items.matchedOfficer', 'items']) // Load all items, including those with and without matched officers
                 ->orderBy('approved_at', 'desc')
                 ->get();
         }
