@@ -119,31 +119,51 @@
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Quantity</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Requested</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Approved</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Sex Requirement</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Qualification</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($request->items as $item)
+                                @php
+                                    // Group items by rank to show summary
+                                    $itemsByRank = $request->items->groupBy('rank');
+                                @endphp
+                                @foreach($itemsByRank as $rank => $rankItems)
+                                    @php
+                                        $requested = $rankItems->sum('quantity_needed');
+                                        $approved = $rankItems->whereNotNull('matched_officer_id')->count();
+                                        $firstItem = $rankItems->first();
+                                        
+                                        if ($approved == 0) {
+                                            $statusClass = 'danger';
+                                            $statusText = 'Rejected';
+                                        } elseif ($approved < $requested) {
+                                            $statusClass = 'warning';
+                                            $statusText = 'Partial';
+                                        } else {
+                                            $statusClass = 'success';
+                                            $statusText = 'Complete';
+                                        }
+                                    @endphp
                                     <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                                         <td class="py-3 px-4">
-                                            <span class="text-sm font-medium text-foreground">{{ $item->rank }}</span>
+                                            <span class="text-sm font-medium text-foreground">{{ $rank }}</span>
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">{{ $item->quantity_needed }}</td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                            {{ $item->sex_requirement === 'ANY' ? 'Any' : ($item->sex_requirement === 'M' ? 'Male' : 'Female') }}
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">{{ $requested }}</td>
+                                        <td class="py-3 px-4">
+                                            <span class="text-sm font-semibold {{ $approved > 0 ? 'text-success' : 'text-danger' }}">{{ $approved }}</span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                            {{ $item->qualification_requirement ?? 'Any' }}
+                                            {{ $firstItem->sex_requirement === 'ANY' ? 'Any' : ($firstItem->sex_requirement === 'M' ? 'Male' : 'Female') }}
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            {{ $firstItem->qualification_requirement ?? 'Any' }}
                                         </td>
                                         <td class="py-3 px-4">
-                                            @if($item->matched_officer_id)
-                                                <span class="kt-badge kt-badge-success kt-badge-sm">Matched</span>
-                                            @else
-                                                <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
-                                            @endif
+                                            <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-sm">{{ $statusText }}</span>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -155,21 +175,39 @@
                 <!-- Mobile Card View -->
                 <div class="lg:hidden">
                     <div class="flex flex-col gap-4">
-                        @foreach($request->items as $item)
+                        @php
+                            $itemsByRank = $request->items->groupBy('rank');
+                        @endphp
+                        @foreach($itemsByRank as $rank => $rankItems)
+                            @php
+                                $requested = $rankItems->sum('quantity_needed');
+                                $approved = $rankItems->whereNotNull('matched_officer_id')->count();
+                                $firstItem = $rankItems->first();
+                                
+                                if ($approved == 0) {
+                                    $statusClass = 'danger';
+                                    $statusText = 'Rejected';
+                                } elseif ($approved < $requested) {
+                                    $statusClass = 'warning';
+                                    $statusText = 'Partial';
+                                } else {
+                                    $statusClass = 'success';
+                                    $statusText = 'Complete';
+                                }
+                            @endphp
                             <div class="kt-card shadow-none bg-muted/30 border border-input">
                                 <div class="kt-card-content p-4">
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-center justify-between">
-                                            <span class="text-sm font-semibold text-foreground">{{ $item->rank }}</span>
-                                            <span class="kt-badge kt-badge-{{ $item->matched_officer_id ? 'success' : 'warning' }} kt-badge-sm">
-                                                {{ $item->matched_officer_id ? 'Matched' : 'Pending' }}
-                                            </span>
+                                            <span class="text-sm font-semibold text-foreground">{{ $rank }}</span>
+                                            <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-sm">{{ $statusText }}</span>
                                         </div>
                                         <div class="text-xs text-secondary-foreground space-y-1">
-                                            <div>Quantity: {{ $item->quantity_needed }}</div>
-                                            <div>Sex: {{ $item->sex_requirement === 'ANY' ? 'Any' : ($item->sex_requirement === 'M' ? 'Male' : 'Female') }}</div>
-                                            @if($item->qualification_requirement)
-                                            <div>Qualification: {{ $item->qualification_requirement }}</div>
+                                            <div>Requested: <span class="font-semibold">{{ $requested }}</span></div>
+                                            <div>Approved: <span class="font-semibold {{ $approved > 0 ? 'text-success' : 'text-danger' }}">{{ $approved }}</span></div>
+                                            <div>Sex: {{ $firstItem->sex_requirement === 'ANY' ? 'Any' : ($firstItem->sex_requirement === 'M' ? 'Male' : 'Female') }}</div>
+                                            @if($firstItem->qualification_requirement)
+                                            <div>Qualification: {{ $firstItem->qualification_requirement }}</div>
                                             @endif
                                         </div>
                                     </div>

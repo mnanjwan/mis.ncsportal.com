@@ -238,15 +238,27 @@ class ManningRequestController extends Controller
         
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
         
-        // Get the manning request
-        $request = ManningRequest::with(['command', 'requestedBy', 'approvedBy', 'items'])->findOrFail($id);
+        // Get the manning request with items and matched officers
+        $request = ManningRequest::with(['command', 'requestedBy', 'approvedBy', 'items.matchedOfficer'])->findOrFail($id);
         
         // Verify access - only show requests from Staff Officer's command
         if (!$commandId || $request->command_id != $commandId) {
             abort(403, 'You can only view manning requests for your assigned command');
         }
         
-        return view('dashboards.staff-officer.manning-level-show', compact('request'));
+        // Calculate approved counts by rank for this specific request
+        // Group items by rank and count requested vs approved
+        $approvedCountsByRank = $request->items->groupBy('rank')->map(function($items, $rank) {
+            $requested = $items->sum('quantity_needed');
+            $approved = $items->whereNotNull('matched_officer_id')->count(); // Count matched officers
+            return [
+                'rank' => $rank,
+                'requested' => $requested,
+                'approved' => $approved
+            ];
+        })->values();
+        
+        return view('dashboards.staff-officer.manning-level-show', compact('request', 'approvedCountsByRank'));
     }
 
     public function submit($id)
