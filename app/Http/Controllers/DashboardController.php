@@ -351,18 +351,16 @@ class DashboardController extends Controller
                 ->get();
             
             // Get approved manning requests with matched officers (ready for Staff Officer review)
-            // Only show requests where HRD has matched officers - these are actionable for Staff Officer
+            // Show requests where HRD has matched at least one rank - these are actionable for Staff Officer
+            // Load all items so we can show which ranks were matched and which weren't
             $approvedManningRequestsWithMatches = \App\Models\ManningRequest::where('command_id', $commandId)
                 ->where('status', 'APPROVED')
                 ->whereHas('items', function($q) {
-                    // Only show requests that have at least one matched officer
+                    // Only show requests that have at least one matched officer (any rank)
                     $q->whereNotNull('matched_officer_id');
                 })
                 ->whereDoesntHave('movementOrders') // Not yet posted
-                ->with(['items.matchedOfficer', 'items' => function($q) {
-                    // Only load items with matched officers for display
-                    $q->whereNotNull('matched_officer_id');
-                }])
+                ->with(['items.matchedOfficer', 'items']) // Load all items to show full picture
                 ->orderBy('approved_at', 'desc')
                 ->get();
         }

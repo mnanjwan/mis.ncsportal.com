@@ -88,7 +88,7 @@
             </div>
             <div class="kt-card-content">
                 <p class="text-sm text-secondary-foreground mb-4">
-                    HRD has matched officers for your approved manning requests. Review the matches and proceed with posting.
+                    HRD has matched officers for your approved manning requests. <strong>These officers are ready for your immediate review and approval</strong> - you don't need to wait for all ranks to be matched. Review and approve matched officers as they become available.
                 </p>
                 <div class="overflow-x-auto">
                     @foreach($approvedManningRequestsWithMatches as $request)
@@ -106,44 +106,81 @@
                                 </a>
                             </div>
                             
-                            <table class="kt-table w-full">
-                                <thead>
-                                    <tr class="border-b border-border">
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Rank Required</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Matched Officer</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Service Number</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Current Station</th>
-                                        <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($request->items as $item)
-                                        @if($item->matchedOfficer)
-                                            <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                                <td class="py-2 px-4 text-xs text-secondary-foreground">
-                                                    {{ $item->rank }}
-                                                </td>
-                                                <td class="py-2 px-4">
-                                                    <span class="text-xs font-medium text-foreground">
-                                                        {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-2 px-4">
-                                                    <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
-                                                </td>
-                                                <td class="py-2 px-4 text-xs text-secondary-foreground">
-                                                    {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
-                                                </td>
-                                                <td class="py-2 px-4">
-                                                    <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
-                                                        Review
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        @endif
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            @php
+                                // Get only matched officers (items with matched_officer_id)
+                                $matchedItems = $request->items->whereNotNull('matched_officer_id');
+                            @endphp
+                            
+                            @if($matchedItems->count() > 0)
+                                <div class="mb-3">
+                                    <p class="text-xs text-secondary-foreground">
+                                        <i class="ki-filled ki-information-2 mr-1"></i>
+                                        {{ $matchedItems->count() }} officer(s) matched by HRD - Ready for your approval
+                                    </p>
+                                </div>
+                                <table class="kt-table w-full">
+                                    <thead>
+                                        <tr class="border-b border-border">
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Rank</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Matched Officer</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Service Number</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Current Station</th>
+                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($matchedItems as $item)
+                                            @if($item->matchedOfficer)
+                                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                                    <td class="py-2 px-4 text-xs font-medium text-foreground">
+                                                        {{ $item->rank }}
+                                                    </td>
+                                                    <td class="py-2 px-4">
+                                                        <span class="text-xs font-medium text-foreground">
+                                                            {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-2 px-4">
+                                                        <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
+                                                    </td>
+                                                    <td class="py-2 px-4 text-xs text-secondary-foreground">
+                                                        {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
+                                                    </td>
+                                                    <td class="py-2 px-4">
+                                                        <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
+                                                            Review & Approve
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                
+                                @php
+                                    // Show summary of unmatched ranks if any
+                                    $unmatchedRanks = $request->items->whereNull('matched_officer_id')->groupBy('rank');
+                                @endphp
+                                @if($unmatchedRanks->count() > 0)
+                                    <div class="mt-4 pt-4 border-t border-border">
+                                        <p class="text-xs text-secondary-foreground mb-2">
+                                            <i class="ki-filled ki-clock mr-1"></i>
+                                            Waiting for HRD to match:
+                                        </p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($unmatchedRanks as $rank => $rankItems)
+                                                <span class="text-xs px-2 py-1 rounded bg-muted text-secondary-foreground">
+                                                    {{ $rank }} ({{ $rankItems->sum('quantity_needed') }})
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="text-center py-4">
+                                    <p class="text-xs text-secondary-foreground">No matched officers yet</p>
+                                </div>
+                            @endif
                         </div>
                     @endforeach
                 </div>
