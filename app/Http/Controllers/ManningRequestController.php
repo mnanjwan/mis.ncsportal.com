@@ -47,7 +47,7 @@ class ManningRequestController extends Controller
         
         // Get manning requests for this command
         $query = ManningRequest::where('command_id', $commandId)
-            ->with(['requestedBy', 'approvedBy', 'items'])
+            ->with(['requestedBy', 'approvedBy', 'items.matchedOfficer'])
             ->orderBy('created_at', 'desc');
         
         // Filter by status if provided
@@ -57,7 +57,28 @@ class ManningRequestController extends Controller
         
         $requests = $query->paginate(20)->withQueryString();
         
-        return view('dashboards.staff-officer.manning-level', compact('requests', 'command'));
+        // Calculate approved officers count by rank across all approved requests
+        // This shows how many officers HRD has matched for each rank vs how many were requested
+        // Note: When HRD matches multiple officers for one item, they create additional items
+        // So we count items with matched_officer_id for approved count
+        $allItems = ManningRequestItem::whereHas('manningRequest', function($q) use ($commandId) {
+                $q->where('command_id', $commandId)
+                  ->where('status', 'APPROVED');
+            })
+            ->get();
+        
+        // Group by rank and calculate requested vs approved
+        $approvedOfficersByRank = $allItems->groupBy('rank')->map(function($items, $rank) {
+            $requested = $items->sum('quantity_needed');
+            $approved = $items->whereNotNull('matched_officer_id')->count(); // Count matched officers
+            return (object)[
+                'rank' => $rank,
+                'requested_count' => $requested,
+                'approved_count' => $approved
+            ];
+        })->values()->sortBy('rank');
+        
+        return view('dashboards.staff-officer.manning-level', compact('requests', 'command', 'approvedOfficersByRank'));
     }
 
     public function create()

@@ -51,6 +51,96 @@
             </a>
         </div>
         
+        <!-- Approved Officers Summary by Rank -->
+        @if(isset($approvedOfficersByRank) && $approvedOfficersByRank->count() > 0)
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Approved Officers by Rank</h3>
+                    <div class="kt-card-toolbar">
+                        <span class="kt-badge kt-badge-success kt-badge-sm">HRD Matched</span>
+                    </div>
+                </div>
+                <div class="kt-card-content">
+                    <p class="text-sm text-secondary-foreground mb-4">
+                        Summary of officers that HRD has matched for your approved manning requests. 
+                        <span class="text-xs text-muted-foreground">Compare requested vs approved to see which ranks were partially or fully rejected by HRD.</span>
+                    </p>
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Requested</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Approved</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($approvedOfficersByRank as $rankSummary)
+                                    @php
+                                        $requested = (int)$rankSummary->requested_count;
+                                        $approved = (int)$rankSummary->approved_count;
+                                        $percentage = $requested > 0 ? round(($approved / $requested) * 100, 1) : 0;
+                                        
+                                        if ($approved == 0) {
+                                            $statusClass = 'danger';
+                                            $statusText = 'Rejected';
+                                        } elseif ($approved < $requested) {
+                                            $statusClass = 'warning';
+                                            $statusText = 'Partial';
+                                        } else {
+                                            $statusClass = 'success';
+                                            $statusText = 'Complete';
+                                        }
+                                    @endphp
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <td class="py-3 px-4">
+                                            <span class="text-sm font-medium text-foreground">{{ $rankSummary->rank }}</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right">
+                                            <span class="text-sm text-secondary-foreground">{{ $requested }}</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right">
+                                            <span class="text-sm font-semibold {{ $approved > 0 ? 'text-success' : 'text-danger' }}">{{ $approved }}</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right">
+                                            <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-xs">
+                                                {{ $statusText }}
+                                                @if($requested > 0)
+                                                    ({{ $percentage }}%)
+                                                @endif
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-t-2 border-primary">
+                                    <td class="py-3 px-4">
+                                        <span class="text-sm font-semibold text-foreground">Total</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        <span class="text-sm font-bold text-secondary-foreground">{{ $approvedOfficersByRank->sum('requested_count') }}</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        <span class="text-sm font-bold text-primary">{{ $approvedOfficersByRank->sum('approved_count') }}</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        @php
+                                            $totalRequested = $approvedOfficersByRank->sum('requested_count');
+                                            $totalApproved = $approvedOfficersByRank->sum('approved_count');
+                                            $totalPercentage = $totalRequested > 0 ? round(($totalApproved / $totalRequested) * 100, 1) : 0;
+                                        @endphp
+                                        <span class="text-xs text-secondary-foreground">{{ $totalPercentage }}%</span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+        
         <!-- Manning Level Requests -->
         <div class="kt-card">
             <div class="kt-card-header">
