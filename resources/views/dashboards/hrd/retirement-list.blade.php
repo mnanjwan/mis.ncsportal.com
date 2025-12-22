@@ -185,6 +185,7 @@
                                 Generate First List
                             </a>
                         </div>
+                    @endforelse
                     {{ $lists->withQueryString()->links() }}
                 </div>
             @endif
