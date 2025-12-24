@@ -60,9 +60,11 @@
                     <a href="{{ route('building.quarters') }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-home-2"></i> Manage Quarters
                     </a>
-                    <a href="#"
-                        class="inline-flex items-center justify-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all shadow-sm">
-                        <i class="ki-filled ki-plus mr-2"></i> Allocate Quarters
+                    <a href="{{ route('building.officers') }}" class="kt-btn kt-btn-success">
+                        <i class="ki-filled ki-user"></i> Manage Officers Quartered Status
+                    </a>
+                    <a href="{{ route('building.quarters.allocate') }}" class="kt-btn kt-btn-info">
+                        <i class="ki-filled ki-plus"></i> Allocate Quarters
                     </a>
                 </div>
             </div>
@@ -75,17 +77,24 @@
                 const token = window.API_CONFIG.token;
 
                 try {
-                    const res = await fetch('/api/v1/quarters?per_page=1', {
+                    // Load statistics
+                    const statsRes = await fetch('/api/v1/quarters/statistics', {
                         headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
                     });
 
-                    if (res.ok) {
-                        const data = await res.json();
-                        // Calculate statistics from data
-                        document.getElementById('total-quarters').textContent = data.meta?.total || 0;
+                    if (statsRes.ok) {
+                        const statsData = await statsRes.json();
+                        if (statsData.success && statsData.data) {
+                            document.getElementById('total-quarters').textContent = statsData.data.total_quarters || 0;
+                            document.getElementById('occupied-quarters').textContent = statsData.data.occupied || 0;
+                            document.getElementById('available-quarters').textContent = statsData.data.available || 0;
+                        }
                     }
                 } catch (error) {
                     console.error('Error loading dashboard data:', error);
+                    document.getElementById('total-quarters').textContent = '0';
+                    document.getElementById('occupied-quarters').textContent = '0';
+                    document.getElementById('available-quarters').textContent = '0';
                 }
             });
         </script>

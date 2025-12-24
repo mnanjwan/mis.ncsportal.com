@@ -268,3 +268,5 @@ SELECT * FROM jobs ORDER BY created_at DESC LIMIT 10;
 4. Verify frontend is polling/displaying notifications
 
 
+
+

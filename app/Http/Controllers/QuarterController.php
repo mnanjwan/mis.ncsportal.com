@@ -26,6 +26,11 @@ class QuarterController extends Controller
     {
         return view('forms.quarter.allocate');
     }
+
+    public function officers()
+    {
+        return view('dashboards.building.officers');
+    }
 }
 
 

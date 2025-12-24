@@ -51,6 +51,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/officers', [OfficerController::class, 'index']);
     Route::get('/officers/{id}', [OfficerController::class, 'show']);
     Route::patch('/officers/{id}', [OfficerController::class, 'update']);
+    Route::patch('/officers/{id}/quartered-status', [OfficerController::class, 'updateQuarteredStatus']);
+    Route::post('/officers/bulk-update-quartered-status', [OfficerController::class, 'bulkUpdateQuarteredStatus']);
     Route::get('/officers/{id}/emoluments', [EmolumentController::class, 'index']);
     Route::get('/officers/{id}/leave-applications', [LeaveApplicationController::class, 'index']);
 
@@ -149,6 +151,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Quarters
     Route::get('/quarters', [QuarterController::class, 'index']);
+    Route::get('/quarters/statistics', [QuarterController::class, 'statistics']);
     Route::post('/quarters', [QuarterController::class, 'store']);
     Route::post('/quarters/allocate', [QuarterController::class, 'allocate']);
     Route::post('/quarters/{id}/deallocate', [QuarterController::class, 'deallocate']);

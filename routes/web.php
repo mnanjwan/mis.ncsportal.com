@@ -331,6 +331,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/quarters', [QuarterController::class, 'index'])->name('quarters');
         Route::get('/quarters/create', [QuarterController::class, 'create'])->name('quarters.create');
         Route::get('/quarters/allocate', [QuarterController::class, 'allocate'])->name('quarters.allocate');
+        Route::get('/officers', [QuarterController::class, 'officers'])->name('officers');
     });
 
     // Establishment Routes

@@ -26,6 +26,11 @@ class OfficerController extends BaseController
             if ($user->officer?->present_station) {
                 $query->where('present_station', $user->officer->present_station);
             }
+        } elseif ($user->hasRole('Building Unit')) {
+            // Building Unit sees officers in their command
+            if ($user->officer?->present_station) {
+                $query->where('present_station', $user->officer->present_station);
+            }
         }
         // HRD and Area Controller see all officers (no filter)
 
@@ -48,6 +53,10 @@ class OfficerController extends BaseController
 
         if ($request->has('is_deceased')) {
             $query->where('is_deceased', $request->boolean('is_deceased'));
+        }
+
+        if ($request->has('quartered')) {
+            $query->where('quartered', $request->boolean('quartered'));
         }
 
         if ($request->has('search')) {
@@ -170,6 +179,99 @@ class OfficerController extends BaseController
         }
 
         return $this->successResponse($officer->fresh(), 'Officer updated successfully');
+    }
+
+    /**
+     * Update officer quartered status (Building Unit)
+     */
+    public function updateQuarteredStatus(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can update quartered status',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        $request->validate([
+            'quartered' => 'required|boolean',
+        ]);
+
+        $officer = Officer::findOrFail($id);
+
+        // Verify officer is in Building Unit's command
+        if ($user->officer?->present_station && $officer->present_station !== $user->officer->present_station) {
+            return $this->errorResponse(
+                'You can only update quartered status for officers in your command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        $officer->update([
+            'quartered' => $request->boolean('quartered'),
+        ]);
+
+        return $this->successResponse([
+            'id' => $officer->id,
+            'service_number' => $officer->service_number,
+            'quartered' => $officer->quartered,
+        ], 'Quartered status updated successfully');
+    }
+
+    /**
+     * Bulk update quartered status (Building Unit)
+     */
+    public function bulkUpdateQuarteredStatus(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can bulk update quartered status',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        $request->validate([
+            'officer_ids' => 'required|array',
+            'officer_ids.*' => 'required|exists:officers,id',
+            'quartered' => 'required|boolean',
+        ]);
+
+        $commandId = $user->officer?->present_station;
+        
+        // Verify all officers are in Building Unit's command
+        $officers = Officer::whereIn('id', $request->officer_ids)
+            ->when($commandId, function ($query) use ($commandId) {
+                $query->where('present_station', $commandId);
+            })
+            ->get();
+
+        if ($officers->count() !== count($request->officer_ids)) {
+            return $this->errorResponse(
+                'Some officers are not in your command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        Officer::whereIn('id', $request->officer_ids)->update([
+            'quartered' => $request->boolean('quartered'),
+        ]);
+
+        return $this->successResponse([
+            'updated_count' => count($request->officer_ids),
+            'quartered' => $request->boolean('quartered'),
+        ], 'Quartered status updated successfully for ' . count($request->officer_ids) . ' officer(s)');
     }
 }
 
