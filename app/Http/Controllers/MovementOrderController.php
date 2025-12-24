@@ -105,15 +105,52 @@ class MovementOrderController extends Controller
         // Load previous postings for each officer to show "from command"
         $order->postings->each(function($posting) {
             if ($posting->officer) {
-                // Get the previous posting (before this one was created)
+                // Get the previous posting (before this movement order posting was created)
+                // We need to find where the officer was BEFORE this posting
+                // Since the workflow may have already updated present_station, we need to look at posting history
                 $previousPosting = \App\Models\OfficerPosting::where('officer_id', $posting->officer_id)
                     ->where('id', '<', $posting->id)
-                    ->where('is_current', true)
                     ->with('command')
                     ->orderBy('id', 'desc')
                     ->first();
                 
-                $posting->fromCommand = $previousPosting ? $previousPosting->command : $posting->officer->presentStation;
+                if ($previousPosting) {
+                    // Found a previous posting - use its command as "from"
+                    $posting->fromCommand = $previousPosting->command;
+                } else {
+                    // No previous posting found - this might be the officer's first posting
+                    // Try to get the command from the staff order or movement order's from_command
+                    // For movement orders, we don't have a from_command, so we need another way
+                    
+                    // Check if there's a staff order that created this posting
+                    if ($posting->staff_order_id) {
+                        $staffOrder = \App\Models\StaffOrder::find($posting->staff_order_id);
+                        if ($staffOrder && $staffOrder->fromCommand) {
+                            $posting->fromCommand = $staffOrder->fromCommand;
+                        }
+                    }
+                    
+                    // If still no fromCommand, check if officer's present_station differs from posting's command
+                    // This would indicate they were moved from somewhere else
+                    if (!$posting->fromCommand && $posting->officer->present_station != $posting->command_id) {
+                        // Officer was moved, try to find their original station
+                        // Check all other postings for this officer
+                        $allOtherPostings = \App\Models\OfficerPosting::where('officer_id', $posting->officer_id)
+                            ->where('id', '!=', $posting->id)
+                            ->with('command')
+                            ->orderBy('id', 'desc')
+                            ->get();
+                        
+                        if ($allOtherPostings->count() > 0) {
+                            $posting->fromCommand = $allOtherPostings->first()->command;
+                        }
+                    }
+                    
+                    // Final fallback: use current station (though this may be wrong if workflow already ran)
+                    if (!$posting->fromCommand) {
+                        $posting->fromCommand = $posting->officer->presentStation;
+                    }
+                }
             }
         });
         
