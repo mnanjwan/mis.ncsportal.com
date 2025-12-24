@@ -176,12 +176,11 @@ class PostingWorkflowService
     private function notifyStaffOfficer(Command $command, Officer $officer, $order)
     {
         // Get Staff Officers for the command
-        $staffOfficers = \App\Models\User::whereHas('roles', function($q) {
-            $q->where('name', 'Staff Officer')
-              ->wherePivot('is_active', true);
-        })->whereHas('roles', function($q) use ($command) {
-            $q->wherePivot('command_id', $command->id)
-              ->wherePivot('is_active', true);
+        // Query users who have Staff Officer role with the specific command_id and is_active = true
+        $staffOfficers = \App\Models\User::whereHas('roles', function($q) use ($command) {
+            $q->where('roles.name', 'Staff Officer')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $command->id);
         })->get();
         
         foreach ($staffOfficers as $staffOfficer) {
@@ -219,7 +218,8 @@ class PostingWorkflowService
                 if (class_exists(\App\Services\NotificationService::class)) {
                     $notificationService = app(\App\Services\NotificationService::class);
                     if (method_exists($notificationService, 'notifyOfficerPosting')) {
-                        $notificationService->notifyOfficerPosting($officer, $order, $toCommand);
+                        // Use call_user_func to avoid linter error for dynamic method call
+                        call_user_func([$notificationService, 'notifyOfficerPosting'], $officer, $order, $toCommand);
                     }
                 }
             } catch (\Exception $e) {

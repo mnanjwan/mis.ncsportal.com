@@ -139,7 +139,8 @@
                                             <td class="py-3 px-4">
                                                 <select name="to_command_ids[]" 
                                                         class="kt-input kt-input-sm command-select"
-                                                        data-index="{{ $index }}">
+                                                        data-index="{{ $index }}"
+                                                        disabled>
                                                     <option value="">Select command...</option>
                                                     @foreach($commands as $command)
                                                         <option value="{{ $command->id }}">{{ $command->name }}</option>
@@ -177,6 +178,14 @@
 
     @push('scripts')
     <script>
+        // Initialize: Ensure all command selects start disabled
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.command-select').forEach(select => {
+                select.disabled = true;
+            });
+            updatePostButton();
+        });
+
         // Select all checkbox
         document.getElementById('select-all-officers')?.addEventListener('change', function() {
             const checkboxes = document.querySelectorAll('.officer-checkbox');
@@ -185,6 +194,7 @@
                 toggleCommandSelect(cb);
             });
             updatePostButton();
+            updateSelectAll();
         });
 
         // Individual officer checkbox
@@ -213,6 +223,8 @@
             const checkedBoxes = document.querySelectorAll('.officer-checkbox:checked');
             const postBtn = document.getElementById('post-officers-btn');
             
+            if (!postBtn) return;
+            
             if (checkedBoxes.length === 0) {
                 postBtn.disabled = true;
                 return;
@@ -223,7 +235,7 @@
             checkedBoxes.forEach(checkbox => {
                 const index = checkbox.dataset.index;
                 const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
-                if (!commandSelect || !commandSelect.value) {
+                if (!commandSelect || !commandSelect.value || commandSelect.disabled) {
                     allHaveCommands = false;
                 }
             });
@@ -250,7 +262,7 @@
             });
         });
 
-        // Apply default command to all selected
+        // Also trigger update when default command is applied
         document.getElementById('apply-default-command')?.addEventListener('click', function() {
             const defaultCommandId = document.getElementById('default_command_id').value;
             if (!defaultCommandId) {
@@ -261,13 +273,14 @@
             document.querySelectorAll('.officer-checkbox:checked').forEach(checkbox => {
                 const index = checkbox.dataset.index;
                 const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
-                if (commandSelect) {
+                if (commandSelect && !commandSelect.disabled) {
                     commandSelect.value = defaultCommandId;
                 }
             });
 
             updatePostButton();
         });
+
 
         // Form validation
         document.getElementById('post-officers-form')?.addEventListener('submit', function(e) {

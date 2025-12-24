@@ -316,10 +316,15 @@ class StaffOrderController extends Controller
             'status' => 'nullable|in:DRAFT,PUBLISHED,CANCELLED',
         ]);
 
+        // Check if status is changing to PUBLISHED before updating
+        $oldStatus = $order->status;
+        $newStatus = $validated['status'] ?? $order->status;
+        $statusChangedToPublished = ($oldStatus !== 'PUBLISHED' && $newStatus === 'PUBLISHED');
+
         $order->update($validated);
 
         // Process workflow automation if order status changed to PUBLISHED
-        if (isset($validated['status']) && $validated['status'] === 'PUBLISHED' && $order->wasChanged('status')) {
+        if ($statusChangedToPublished) {
             try {
                 $workflowService = new PostingWorkflowService();
                 $workflowService->processStaffOrder($order);
