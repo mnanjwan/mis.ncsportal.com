@@ -44,13 +44,16 @@ return new class extends Migration
             Schema::dropIfExists('movement_orders');
             DB::statement('ALTER TABLE movement_orders_new RENAME TO movement_orders');
         } else {
-            // For MySQL/PostgreSQL: update existing data first, then modify enum
-            // Map ACTIVE and COMPLETED to PUBLISHED
+            // For MySQL: We need to temporarily remove enum constraint, update data, then restore enum
+            // Step 1: Change column to VARCHAR temporarily (removes enum constraint)
+            DB::statement("ALTER TABLE movement_orders MODIFY COLUMN status VARCHAR(20) DEFAULT 'DRAFT'");
+            
+            // Step 2: Update existing data - map ACTIVE and COMPLETED to PUBLISHED
             DB::table('movement_orders')
                 ->whereIn('status', ['ACTIVE', 'COMPLETED'])
                 ->update(['status' => 'PUBLISHED']);
             
-            // Now modify the enum constraint
+            // Step 3: Change back to ENUM with new values
             DB::statement("ALTER TABLE movement_orders MODIFY COLUMN status ENUM('DRAFT', 'PUBLISHED', 'CANCELLED') DEFAULT 'DRAFT'");
         }
     }
@@ -89,12 +92,15 @@ return new class extends Migration
             DB::statement('ALTER TABLE movement_orders_old RENAME TO movement_orders');
         } else {
             // Revert to original enum for MySQL/PostgreSQL
-            // Map PUBLISHED back to ACTIVE before changing enum
+            // Step 1: Change column to VARCHAR temporarily
+            DB::statement("ALTER TABLE movement_orders MODIFY COLUMN status VARCHAR(20) DEFAULT 'DRAFT'");
+            
+            // Step 2: Map PUBLISHED back to ACTIVE
             DB::table('movement_orders')
                 ->where('status', 'PUBLISHED')
                 ->update(['status' => 'ACTIVE']);
             
-            // Now revert the enum constraint
+            // Step 3: Change back to original ENUM
             DB::statement("ALTER TABLE movement_orders MODIFY COLUMN status ENUM('DRAFT', 'ACTIVE', 'COMPLETED') DEFAULT 'DRAFT'");
         }
     }
