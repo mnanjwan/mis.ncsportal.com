@@ -19,8 +19,16 @@ class QuarterController extends BaseController
         $user = $request->user();
         $query = Quarter::where('is_active', true);
 
-        // Building Unit sees quarters in their command
-        if ($user->hasRole('Building Unit') && $user->officer?->present_station) {
+        // Building Unit MUST see only quarters in their command (command-based access)
+        if ($user->hasRole('Building Unit')) {
+            if (!$user->officer?->present_station) {
+                return $this->errorResponse(
+                    'Building Unit user must be assigned to a command',
+                    null,
+                    403,
+                    'NO_COMMAND_ASSIGNED'
+                );
+            }
             $query->where('command_id', $user->officer->present_station);
         } elseif ($request->has('command_id')) {
             $query->where('command_id', $request->command_id);
@@ -72,12 +80,20 @@ class QuarterController extends BaseController
             );
         }
 
-        $commandId = $user->officer?->present_station;
-        
-        $query = Quarter::where('is_active', true);
-        if ($commandId) {
-            $query->where('command_id', $commandId);
+        // Building Unit MUST be assigned to a command (command-based access)
+        if (!$user->officer?->present_station) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
         }
+
+        $commandId = $user->officer->present_station;
+        
+        $query = Quarter::where('is_active', true)
+            ->where('command_id', $commandId);
 
         $totalQuarters = $query->count();
         $occupiedQuarters = (clone $query)->where('is_occupied', true)->count();
@@ -95,7 +111,9 @@ class QuarterController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        if (!$request->user()->hasRole('Building Unit')) {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can create quarters',
                 null,
@@ -104,11 +122,31 @@ class QuarterController extends BaseController
             );
         }
 
+        // Building Unit can only create quarters for their own command
+        if (!$user->officer?->present_station) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
         $request->validate([
             'command_id' => 'required|exists:commands,id',
             'quarter_number' => 'required|string|max:50',
             'quarter_type' => 'required|string',
         ]);
+
+        // Ensure Building Unit can only create quarters for their command
+        if ($request->command_id != $user->officer->present_station) {
+            return $this->errorResponse(
+                'Building Unit can only create quarters for their assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
 
         $quarter = Quarter::create([
             'command_id' => $request->command_id,
@@ -136,12 +174,24 @@ class QuarterController extends BaseController
      */
     public function allocate(Request $request): JsonResponse
     {
-        if (!$request->user()->hasRole('Building Unit')) {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can allocate quarters',
                 null,
                 403,
                 'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        if (!$user->officer?->present_station) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
             );
         }
 
@@ -152,6 +202,28 @@ class QuarterController extends BaseController
         ]);
 
         $quarter = Quarter::findOrFail($request->quarter_id);
+        
+        // Ensure quarter belongs to Building Unit's command
+        if ($quarter->command_id != $user->officer->present_station) {
+            return $this->errorResponse(
+                'You can only allocate quarters in your assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        $officer = Officer::findOrFail($request->officer_id);
+        
+        // Ensure officer belongs to Building Unit's command
+        if ($officer->present_station != $user->officer->present_station) {
+            return $this->errorResponse(
+                'You can only allocate quarters to officers in your assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
 
         if ($quarter->is_occupied) {
             return $this->errorResponse(
@@ -173,7 +245,7 @@ class QuarterController extends BaseController
             'quarter_id' => $request->quarter_id,
             'allocated_date' => $request->allocation_date ?? now(),
             'is_current' => true,
-            'allocated_by' => $request->user()->id,
+            'allocated_by' => $user->id,
         ]);
 
         // Mark quarter as occupied
@@ -202,12 +274,24 @@ class QuarterController extends BaseController
      */
     public function deallocate(Request $request, $id): JsonResponse
     {
-        if (!$request->user()->hasRole('Building Unit')) {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can deallocate quarters',
                 null,
                 403,
                 'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        if (!$user->officer?->present_station) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
             );
         }
 
@@ -220,6 +304,17 @@ class QuarterController extends BaseController
         } else {
             // Otherwise, find by allocation ID
             $allocation = OfficerQuarter::findOrFail($id);
+        }
+
+        // Ensure quarter belongs to Building Unit's command
+        $quarter = $allocation->quarter;
+        if ($quarter->command_id != $user->officer->present_station) {
+            return $this->errorResponse(
+                'You can only deallocate quarters in your assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
         }
 
         $allocation->update([

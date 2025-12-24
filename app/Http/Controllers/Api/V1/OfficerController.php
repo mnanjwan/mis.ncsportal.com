@@ -28,10 +28,28 @@ class OfficerController extends BaseController
                 $query->where('present_station', $user->officer->present_station);
             }
         } elseif ($user->hasRole('Building Unit')) {
-            // Building Unit sees officers in their command
-            if ($user->officer?->present_station) {
-                $query->where('present_station', $user->officer->present_station);
+            // Building Unit MUST see only officers in their command (command-based access)
+            if (!$user->officer?->present_station) {
+                // Return empty result if no command assigned
+                return $this->paginatedResponse(
+                    [],
+                    [
+                        'current_page' => 1,
+                        'per_page' => $request->get('per_page', 20),
+                        'total' => 0,
+                        'last_page' => 1,
+                        'from' => null,
+                        'to' => null,
+                    ],
+                    [
+                        'first' => null,
+                        'last' => null,
+                        'prev' => null,
+                        'next' => null,
+                    ]
+                );
             }
+            $query->where('present_station', $user->officer->present_station);
         }
         // HRD and Area Controller see all officers (no filter)
 
@@ -204,8 +222,18 @@ class OfficerController extends BaseController
 
         $officer = Officer::findOrFail($id);
 
+        // Building Unit MUST be assigned to a command
+        if (!$user->officer?->present_station) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
         // Verify officer is in Building Unit's command
-        if ($user->officer?->present_station && $officer->present_station !== $user->officer->present_station) {
+        if ($officer->present_station !== $user->officer->present_station) {
             return $this->errorResponse(
                 'You can only update quartered status for officers in your command',
                 null,
@@ -251,13 +279,21 @@ class OfficerController extends BaseController
             'quartered' => 'required|boolean',
         ]);
 
-        $commandId = $user->officer?->present_station;
+        // Building Unit MUST be assigned to a command
+        if (!$user->officer?->present_station) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
+        $commandId = $user->officer->present_station;
         
         // Verify all officers are in Building Unit's command
         $officers = Officer::whereIn('id', $request->officer_ids)
-            ->when($commandId, function ($query) use ($commandId) {
-                $query->where('present_station', $commandId);
-            })
+            ->where('present_station', $commandId)
             ->get();
 
         if ($officers->count() !== count($request->officer_ids)) {
