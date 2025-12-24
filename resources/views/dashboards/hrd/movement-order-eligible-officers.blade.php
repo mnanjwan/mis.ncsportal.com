@@ -71,10 +71,22 @@
                         
                         <!-- Commands Selection -->
                         <div class="p-4 bg-muted/50 border-b border-border">
-                            <label class="kt-form-label mb-2">Select Destination Commands</label>
-                            <p class="text-xs text-secondary-foreground mb-3">
-                                Assign each selected officer to a destination command. Officers will be posted to these commands.
-                            </p>
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex-1">
+                                    <label class="kt-form-label mb-2">Select Destination Commands</label>
+                                    <p class="text-xs text-secondary-foreground mb-3">
+                                        Assign each selected officer to a destination command. Officers will be posted to these commands.
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-3 ml-4">
+                                    <a href="{{ route('hrd.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" class="kt-btn kt-btn-primary" id="post-officers-btn-top" disabled>
+                                        <i class="ki-filled ki-check"></i> Post Selected Officers
+                                    </button>
+                                </div>
+                            </div>
                             @php
                                 $commands = \App\Models\Command::where('is_active', true)->orderBy('name')->get();
                             @endphp
@@ -183,6 +195,15 @@
             document.querySelectorAll('.command-select').forEach(select => {
                 select.disabled = true;
             });
+            // Initial button state update
+            updatePostButton();
+            
+            // Also check on page load if any checkboxes are already checked (e.g., from browser back button)
+            document.querySelectorAll('.officer-checkbox').forEach(checkbox => {
+                if (checkbox.checked) {
+                    toggleCommandSelect(checkbox);
+                }
+            });
             updatePostButton();
         });
 
@@ -218,29 +239,51 @@
             }
         }
 
-        // Update post button state
+        // Update post button state (syncs both top and bottom buttons)
         function updatePostButton() {
             const checkedBoxes = document.querySelectorAll('.officer-checkbox:checked');
             const postBtn = document.getElementById('post-officers-btn');
+            const postBtnTop = document.getElementById('post-officers-btn-top');
             
-            if (!postBtn) return;
-            
+            // If no officers are selected, disable buttons
             if (checkedBoxes.length === 0) {
-                postBtn.disabled = true;
+                if (postBtn) postBtn.disabled = true;
+                if (postBtnTop) postBtnTop.disabled = true;
                 return;
             }
 
-            // Check if all selected officers have commands assigned
-            let allHaveCommands = true;
+            // Check if at least one selected officer has a command assigned
+            // This allows batch posting - you can post officers that have commands assigned
+            let atLeastOneHasCommand = false;
             checkedBoxes.forEach(checkbox => {
                 const index = checkbox.dataset.index;
                 const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
-                if (!commandSelect || !commandSelect.value || commandSelect.disabled) {
-                    allHaveCommands = false;
+                // Check if select exists, is enabled (not disabled), and has a value
+                if (commandSelect && !commandSelect.disabled && commandSelect.value && commandSelect.value !== '') {
+                    atLeastOneHasCommand = true;
                 }
             });
 
-            postBtn.disabled = !allHaveCommands;
+            // Enable buttons if at least one selected officer has a command
+            const shouldEnable = atLeastOneHasCommand;
+            if (postBtn) {
+                postBtn.disabled = !shouldEnable;
+                // Update button styling
+                if (shouldEnable) {
+                    postBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    postBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+            if (postBtnTop) {
+                postBtnTop.disabled = !shouldEnable;
+                // Update button styling
+                if (shouldEnable) {
+                    postBtnTop.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    postBtnTop.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
         }
 
         // Update select all checkbox state
@@ -262,6 +305,12 @@
             });
         });
 
+        // Make top button trigger form submission
+        document.getElementById('post-officers-btn-top')?.addEventListener('click', function(e) {
+            // Let the form handle submission naturally
+            // The form's submit handler will validate
+        });
+
         // Also trigger update when default command is applied
         document.getElementById('apply-default-command')?.addEventListener('click', function() {
             const defaultCommandId = document.getElementById('default_command_id').value;
@@ -270,13 +319,20 @@
                 return;
             }
 
+            let appliedCount = 0;
             document.querySelectorAll('.officer-checkbox:checked').forEach(checkbox => {
                 const index = checkbox.dataset.index;
                 const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
                 if (commandSelect && !commandSelect.disabled) {
                     commandSelect.value = defaultCommandId;
+                    appliedCount++;
                 }
             });
+
+            if (appliedCount === 0) {
+                alert('Please select at least one officer first.');
+                return;
+            }
 
             updatePostButton();
         });
@@ -292,23 +348,48 @@
                 return false;
             }
 
-            // Verify all selected officers have commands
-            let missingCommands = [];
+            // Collect officers with commands (only post those that have commands assigned)
+            let officersWithCommands = [];
+            let officersWithoutCommands = [];
+            
             checkedBoxes.forEach(checkbox => {
                 const index = checkbox.dataset.index;
                 const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
-                if (!commandSelect || !commandSelect.value) {
-                    const row = checkbox.closest('tr');
-                    const name = row.querySelector('td:nth-child(3)').textContent.trim();
-                    missingCommands.push(name);
+                const row = checkbox.closest('tr');
+                const name = row.querySelector('td:nth-child(3)').textContent.trim();
+                
+                if (commandSelect && commandSelect.value) {
+                    officersWithCommands.push(name);
+                } else {
+                    officersWithoutCommands.push(name);
+                    // Uncheck officers without commands so they won't be posted
+                    checkbox.checked = false;
                 }
             });
 
-            if (missingCommands.length > 0) {
+            if (officersWithCommands.length === 0) {
                 e.preventDefault();
-                alert('Please assign a destination command for all selected officers:\n' + missingCommands.join('\n'));
+                alert('Please assign destination commands to at least one selected officer.');
                 return false;
             }
+
+            // Show warning if some officers won't be posted
+            if (officersWithoutCommands.length > 0) {
+                const proceed = confirm(
+                    `Only officers with assigned commands will be posted (${officersWithCommands.length} officer(s)).\n\n` +
+                    `The following officers will NOT be posted (no command assigned):\n` +
+                    officersWithoutCommands.join(', ') +
+                    `\n\nDo you want to continue?`
+                );
+                
+                if (!proceed) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+            // Update button state after unchecking
+            updatePostButton();
         });
     </script>
     @endpush
@@ -338,4 +419,5 @@
         }
     </style>
 @endsection
+
 

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\PostingWorkflowService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class MovementOrderController extends Controller
@@ -155,7 +156,7 @@ class MovementOrderController extends Controller
                     $officerIds = $postings->pluck('officer_id')->toArray();
                     $workflowService->processMovementOrder($order, $officerIds);
                 } catch (\Exception $e) {
-                    \Log::error("Failed to process movement order workflow: " . $e->getMessage());
+                    Log::error("Failed to process movement order workflow: " . $e->getMessage());
                 }
             }
         }
@@ -256,7 +257,7 @@ class MovementOrderController extends Controller
             'officer_ids' => 'required|array|min:1',
             'officer_ids.*' => 'exists:officers,id',
             'to_command_ids' => 'required|array',
-            'to_command_ids.*' => 'exists:commands,id',
+            'to_command_ids.*' => 'nullable|exists:commands,id',
             'posting_date' => 'nullable|date',
         ]);
 
@@ -264,10 +265,23 @@ class MovementOrderController extends Controller
         $toCommandIds = $validated['to_command_ids'];
         $postingDate = $validated['posting_date'] ?? now();
 
-        // Ensure we have a command for each officer
-        if (count($officerIds) !== count($toCommandIds)) {
+        // Filter to only post officers that have commands assigned
+        // Match officer_ids with their corresponding command_ids by index
+        $officersToPost = [];
+        foreach ($officerIds as $index => $officerId) {
+            $commandId = $toCommandIds[$index] ?? null;
+            if ($commandId) {
+                $officersToPost[] = [
+                    'officer_id' => $officerId,
+                    'command_id' => $commandId,
+                ];
+            }
+        }
+
+        // Ensure at least one officer has a command
+        if (empty($officersToPost)) {
             return redirect()->back()
-                ->with('error', 'Each officer must have a destination command assigned.')
+                ->with('error', 'Please assign destination commands to at least one selected officer.')
                 ->withInput();
         }
 
@@ -275,17 +289,13 @@ class MovementOrderController extends Controller
         try {
             $workflowService = new PostingWorkflowService();
             $postedCount = 0;
+            $postedOfficerIds = [];
 
-            foreach ($officerIds as $index => $officerId) {
-                $officer = \App\Models\Officer::find($officerId);
-                $toCommandId = $toCommandIds[$index] ?? null;
+            foreach ($officersToPost as $postingData) {
+                $officer = \App\Models\Officer::find($postingData['officer_id']);
+                $toCommand = \App\Models\Command::find($postingData['command_id']);
 
-                if (!$officer || !$toCommandId) {
-                    continue;
-                }
-
-                $toCommand = \App\Models\Command::find($toCommandId);
-                if (!$toCommand) {
+                if (!$officer || !$toCommand) {
                     continue;
                 }
 
@@ -300,11 +310,12 @@ class MovementOrderController extends Controller
                 ]);
 
                 $postedCount++;
+                $postedOfficerIds[] = $officer->id;
             }
 
             // Process workflow if order is PUBLISHED
-            if ($order->status === 'PUBLISHED') {
-                $workflowService->processMovementOrder($order, $officerIds);
+            if ($order->status === 'PUBLISHED' && !empty($postedOfficerIds)) {
+                $workflowService->processMovementOrder($order, $postedOfficerIds);
             }
 
             DB::commit();
@@ -313,7 +324,7 @@ class MovementOrderController extends Controller
                 ->with('success', "Successfully posted {$postedCount} officer(s).");
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error("Failed to post officers: " . $e->getMessage());
+            Log::error("Failed to post officers: " . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to post officers: ' . $e->getMessage())
                 ->withInput();
