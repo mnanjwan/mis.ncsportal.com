@@ -875,4 +875,108 @@ class NotificationService
             $emolument->id
         );
     }
+
+    /**
+     * Notify officer about quarter allocation
+     */
+    public function notifyQuarterAllocated($officer, $quarter, $allocationDate): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $date = \Carbon\Carbon::parse($allocationDate)->format('d/m/Y');
+        $quarterNumber = $quarter->quarter_number ?? 'N/A';
+        $quarterType = $quarter->quarter_type ?? 'N/A';
+
+        return $this->notify(
+            $officer->user,
+            'quarter_allocated',
+            'Quarter Allocated',
+            "You have been allocated Quarter {$quarterNumber} ({$quarterType}) effective from {$date}. Your quartered status has been updated.",
+            'quarter',
+            $quarter->id
+        );
+    }
+
+    /**
+     * Notify officer about quarter deallocation
+     */
+    public function notifyQuarterDeallocated($officer, $quarter): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $quarterNumber = $quarter->quarter_number ?? 'N/A';
+
+        return $this->notify(
+            $officer->user,
+            'quarter_deallocated',
+            'Quarter Deallocated',
+            "Your allocation for Quarter {$quarterNumber} has been deallocated. Your quartered status has been updated.",
+            'quarter',
+            $quarter->id
+        );
+    }
+
+    /**
+     * Notify officer about quartered status update
+     */
+    public function notifyQuarteredStatusUpdated($officer, bool $quartered): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $status = $quartered ? 'Yes' : 'No';
+
+        return $this->notify(
+            $officer->user,
+            'quartered_status_updated',
+            'Quartered Status Updated',
+            "Your quartered status has been updated to: {$status}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify Building Unit users about new quarter creation
+     */
+    public function notifyQuarterCreated($quarter, User $createdBy): array
+    {
+        $command = $quarter->command;
+        if (!$command) {
+            return [];
+        }
+
+        // Get Building Unit users for the command (they have present_station matching command)
+        $buildingUnitUsers = User::whereHas('roles', function($q) {
+            $q->where('name', 'Building Unit')
+              ->where('user_roles.is_active', true);
+        })->whereHas('officer', function($q) use ($command) {
+            $q->where('present_station', $command->id);
+        })->where('is_active', true)->where('id', '!=', $createdBy->id)->get();
+
+        if ($buildingUnitUsers->isEmpty()) {
+            return [];
+        }
+
+        $quarterNumber = $quarter->quarter_number ?? 'N/A';
+        $quarterType = $quarter->quarter_type ?? 'N/A';
+        $commandName = $command->name ?? 'Unknown';
+
+        return $this->notifyMany(
+            $buildingUnitUsers,
+            'quarter_created',
+            'New Quarter Created',
+            "A new quarter {$quarterNumber} ({$quarterType}) has been created for {$commandName}.",
+            'quarter',
+            $quarter->id
+        );
+    }
 }

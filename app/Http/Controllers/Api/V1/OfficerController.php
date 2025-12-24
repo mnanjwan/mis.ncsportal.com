@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Officer;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -217,6 +218,10 @@ class OfficerController extends BaseController
             'quartered' => $request->boolean('quartered'),
         ]);
 
+        // Notify officer about quartered status update
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarteredStatusUpdated($officer, $request->boolean('quartered'));
+
         return $this->successResponse([
             'id' => $officer->id,
             'service_number' => $officer->service_number,
@@ -264,13 +269,23 @@ class OfficerController extends BaseController
             );
         }
 
+        $quartered = $request->boolean('quartered');
         Officer::whereIn('id', $request->officer_ids)->update([
-            'quartered' => $request->boolean('quartered'),
+            'quartered' => $quartered,
         ]);
+
+        // Notify all affected officers
+        $notificationService = app(NotificationService::class);
+        $officers = Officer::whereIn('id', $request->officer_ids)->with('user')->get();
+        foreach ($officers as $officer) {
+            if ($officer->user) {
+                $notificationService->notifyQuarteredStatusUpdated($officer, $quartered);
+            }
+        }
 
         return $this->successResponse([
             'updated_count' => count($request->officer_ids),
-            'quartered' => $request->boolean('quartered'),
+            'quartered' => $quartered,
         ], 'Quartered status updated successfully for ' . count($request->officer_ids) . ' officer(s)');
     }
 }

@@ -38,15 +38,31 @@
                 <!-- Quarter Selection -->
                 <div class="flex flex-col gap-2">
                     <label class="kt-form-label">Select Quarter</label>
-                    <select id="quarter-id" name="quarter_id" class="kt-select" required>
-                        <option value="">Loading quarters...</option>
-                    </select>
-                    <div id="quarter-info" class="hidden mt-2 p-3 bg-muted rounded-lg">
-                        <div class="text-sm">
-                            <div><strong>Type:</strong> <span id="quarter-type"></span></div>
-                            <div><strong>Status:</strong> <span id="quarter-status"></span></div>
+                    <div class="relative">
+                        <input type="text" id="quarter-search" 
+                            placeholder="Search quarters by number or type..."
+                            class="kt-input w-full" 
+                            autocomplete="off" />
+                        <div id="quarter-results" class="hidden absolute z-10 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <input type="hidden" id="quarter-id" name="quarter_id" />
+                    <div id="selected-quarter" class="hidden mt-2 p-3 bg-muted rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold" id="quarter-display"></div>
+                                <div class="text-sm text-secondary-foreground" id="quarter-details"></div>
+                            </div>
+                            <button type="button" onclick="clearQuarter()" class="kt-btn kt-btn-sm kt-btn-secondary">
+                                Clear
+                            </button>
                         </div>
                     </div>
+                    <div class="mt-2">
+                        <button type="button" onclick="toggleQuarterList()" class="kt-btn kt-btn-sm kt-btn-secondary">
+                            <i class="ki-filled ki-list"></i> Show All Available Quarters
+                        </button>
+                    </div>
+                    <div id="all-quarters-list" class="hidden mt-2 max-h-60 overflow-y-auto border border-input rounded-lg p-2"></div>
                 </div>
 
                 <!-- Allocation Date -->
@@ -76,16 +92,23 @@
 <script>
 let officersCache = [];
 let quartersCache = [];
+let allQuartersListVisible = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadQuarters();
     setupOfficerSearch();
-    
-    document.getElementById('quarter-id').addEventListener('change', (e) => {
-        updateQuarterInfo(e.target.value);
-    });
+    setupQuarterSearch();
     
     document.getElementById('allocate-form').addEventListener('submit', handleSubmit);
+    
+    // Hide results when clicking outside
+    document.addEventListener('click', (e) => {
+        const quarterSearch = document.getElementById('quarter-search');
+        const quarterResults = document.getElementById('quarter-results');
+        if (!quarterSearch.contains(e.target) && !quarterResults.contains(e.target)) {
+            quarterResults.classList.add('hidden');
+        }
+    });
 });
 
 async function loadQuarters() {
@@ -98,23 +121,109 @@ async function loadQuarters() {
         if (res.ok) {
             const data = await res.json();
             quartersCache = data.data || [];
-            
-            const select = document.getElementById('quarter-id');
-            if (quartersCache.length === 0) {
-                select.innerHTML = '<option value="">No available quarters</option>';
-            } else {
-                select.innerHTML = '<option value="">Select a quarter</option>' +
-                    quartersCache.map(q => `
-                        <option value="${q.id}" data-type="${q.quarter_type || 'N/A'}" 
-                            data-occupied="${q.is_occupied}">
-                            ${q.quarter_number} - ${q.quarter_type || 'N/A'}
-                        </option>
-                    `).join('');
-            }
+            renderAllQuartersList();
         }
     } catch (error) {
         console.error('Error loading quarters:', error);
     }
+}
+
+function setupQuarterSearch() {
+    const searchInput = document.getElementById('quarter-search');
+    const resultsDiv = document.getElementById('quarter-results');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+        
+        if (query.length === 0) {
+            resultsDiv.classList.add('hidden');
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchQuarters(query);
+        }, 300);
+    });
+}
+
+function searchQuarters(query) {
+    const resultsDiv = document.getElementById('quarter-results');
+    const queryLower = query.toLowerCase();
+    
+    const filtered = quartersCache.filter(q => {
+        const number = (q.quarter_number || '').toLowerCase();
+        const type = (q.quarter_type || '').toLowerCase();
+        return number.includes(queryLower) || type.includes(queryLower);
+    });
+    
+    if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-3 text-secondary-foreground">No quarters found</div>';
+        resultsDiv.classList.remove('hidden');
+        return;
+    }
+    
+    resultsDiv.innerHTML = filtered.map(q => `
+        <div class="p-3 hover:bg-muted cursor-pointer border-b border-input last:border-b-0" 
+            onclick="selectQuarter(${q.id}, '${q.quarter_number || 'N/A'}', '${q.quarter_type || 'N/A'}')">
+            <div class="font-semibold">${q.quarter_number || 'N/A'}</div>
+            <div class="text-sm text-secondary-foreground">${q.quarter_type || 'N/A'}</div>
+        </div>
+    `).join('');
+    
+    resultsDiv.classList.remove('hidden');
+}
+
+function renderAllQuartersList() {
+    const listDiv = document.getElementById('all-quarters-list');
+    
+    if (quartersCache.length === 0) {
+        listDiv.innerHTML = '<div class="p-3 text-secondary-foreground text-center">No available quarters</div>';
+        return;
+    }
+    
+    listDiv.innerHTML = quartersCache.map(q => `
+        <div class="p-3 hover:bg-muted cursor-pointer border-b border-input last:border-b-0 rounded mb-1" 
+            onclick="selectQuarter(${q.id}, '${q.quarter_number || 'N/A'}', '${q.quarter_type || 'N/A'}')">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="font-semibold">${q.quarter_number || 'N/A'}</div>
+                    <div class="text-sm text-secondary-foreground">${q.quarter_type || 'N/A'}</div>
+                </div>
+                <span class="kt-badge kt-badge-success kt-badge-sm">Available</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function toggleQuarterList() {
+    const listDiv = document.getElementById('all-quarters-list');
+    allQuartersListVisible = !allQuartersListVisible;
+    
+    if (allQuartersListVisible) {
+        listDiv.classList.remove('hidden');
+        renderAllQuartersList();
+    } else {
+        listDiv.classList.add('hidden');
+    }
+}
+
+function selectQuarter(id, number, type) {
+    document.getElementById('quarter-id').value = id;
+    document.getElementById('quarter-display').textContent = number;
+    document.getElementById('quarter-details').textContent = type;
+    document.getElementById('selected-quarter').classList.remove('hidden');
+    document.getElementById('quarter-search').value = '';
+    document.getElementById('quarter-results').classList.add('hidden');
+    document.getElementById('all-quarters-list').classList.add('hidden');
+    allQuartersListVisible = false;
+}
+
+function clearQuarter() {
+    document.getElementById('quarter-id').value = '';
+    document.getElementById('selected-quarter').classList.add('hidden');
+    document.getElementById('quarter-search').value = '';
 }
 
 function setupOfficerSearch() {
@@ -196,18 +305,6 @@ function clearOfficer() {
     document.getElementById('officer-search').value = '';
 }
 
-function updateQuarterInfo(quarterId) {
-    const quarterInfo = document.getElementById('quarter-info');
-    const quarter = quartersCache.find(q => q.id == quarterId);
-    
-    if (quarter) {
-        document.getElementById('quarter-type').textContent = quarter.quarter_type || 'N/A';
-        document.getElementById('quarter-status').textContent = quarter.is_occupied ? 'Occupied' : 'Available';
-        quarterInfo.classList.remove('hidden');
-    } else {
-        quarterInfo.classList.add('hidden');
-    }
-}
 
 async function handleSubmit(e) {
     e.preventDefault();

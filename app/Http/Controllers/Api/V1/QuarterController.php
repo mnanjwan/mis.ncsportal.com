@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\Officer;
 use App\Models\OfficerQuarter;
 use App\Models\Quarter;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -117,6 +118,13 @@ class QuarterController extends BaseController
             'is_active' => true,
         ]);
 
+        // Load command relationship for notification
+        $quarter->load('command');
+
+        // Notify Building Unit users about new quarter
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarterCreated($quarter, $request->user());
+
         return $this->successResponse([
             'id' => $quarter->id,
             'quarter_number' => $quarter->quarter_number,
@@ -175,6 +183,14 @@ class QuarterController extends BaseController
         $officer = Officer::findOrFail($request->officer_id);
         $officer->update(['quartered' => true]);
 
+        // Refresh quarter to ensure we have latest data
+        $quarter->refresh();
+
+        // Notify officer about quarter allocation
+        $notificationService = app(NotificationService::class);
+        $allocationDate = $request->allocation_date ?? now();
+        $notificationService->notifyQuarterAllocated($officer, $quarter, $allocationDate);
+
         return $this->successResponse([
             'officer_id' => $request->officer_id,
             'quarter_id' => $request->quarter_id,
@@ -216,7 +232,12 @@ class QuarterController extends BaseController
 
         // Update officer's quartered status
         $officer = $allocation->officer;
+        $quarter = $allocation->quarter;
         $officer->update(['quartered' => false]);
+
+        // Notify officer about quarter deallocation
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarterDeallocated($officer, $quarter);
 
         return $this->successResponse([
             'id' => $allocation->id,
