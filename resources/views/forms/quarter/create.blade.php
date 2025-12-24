@@ -89,27 +89,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadCommands() {
     try {
-        const token = window.API_CONFIG.token;
+        const token = window.API_CONFIG?.token;
+        if (!token) {
+            console.error('API token not found');
+            return;
+        }
+
         const res = await fetch('/api/v1/commands', {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+            headers: { 
+                'Authorization': 'Bearer ' + token, 
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         });
         
-        if (res.ok) {
-            const data = await res.json();
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
             const commands = data.data || [];
             
             const select = document.getElementById('command-id');
             if (commands.length === 0) {
                 select.innerHTML = '<option value="">No commands available</option>';
             } else {
+                // Pre-select Building Unit's command if available
+                const userCommandId = null; // Could be passed from backend if needed
                 select.innerHTML = '<option value="">Select a command</option>' +
                     commands.map(cmd => `
-                        <option value="${cmd.id}">${cmd.name || cmd.code || 'N/A'}</option>
+                        <option value="${cmd.id}" ${userCommandId == cmd.id ? 'selected' : ''}>
+                            ${cmd.name || cmd.code || 'N/A'}
+                        </option>
                     `).join('');
             }
+        } else {
+            const errorMsg = data.message || 'Failed to load commands';
+            console.error('API Error:', errorMsg);
+            document.getElementById('command-id').innerHTML = '<option value="">Error loading commands</option>';
         }
     } catch (error) {
         console.error('Error loading commands:', error);
+        document.getElementById('command-id').innerHTML = '<option value="">Error loading commands</option>';
     }
 }
 
@@ -123,18 +142,18 @@ async function handleSubmit(e) {
     if (quarterType === 'Other') {
         quarterType = document.getElementById('custom-quarter-type').value.trim();
         if (!quarterType) {
-            alert('Please specify the quarter type');
+            showError('Please specify the quarter type');
             return;
         }
     }
     
     if (!commandId) {
-        alert('Please select a command');
+        showError('Please select a command');
         return;
     }
     
     if (!quarterNumber) {
-        alert('Please enter a quarter number');
+        showError('Please enter a quarter number');
         return;
     }
     
@@ -154,19 +173,63 @@ async function handleSubmit(e) {
             })
         });
         
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                alert('Quarter created successfully!');
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+            showSuccess('Quarter created successfully!');
+            setTimeout(() => {
                 window.location.href = '{{ route("building.quarters") }}';
-            }
+            }, 1500);
         } else {
-            const error = await res.json();
-            alert(error.message || 'Failed to create quarter');
+            const errorMsg = data.message || 'Failed to create quarter';
+            console.error('API Error:', errorMsg);
+            showError(errorMsg);
         }
     } catch (error) {
         console.error('Error creating quarter:', error);
-        alert('Error creating quarter');
+        showError('Error creating quarter. Please try again.');
+    }
+}
+
+function showSuccess(message) {
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-success/10 border border-success/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        setTimeout(() => notification.remove(), 5000);
+    } else {
+        alert(message);
+    }
+}
+
+function showError(message) {
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-danger/10 border border-danger/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-information text-danger text-xl"></i>
+                <p class="text-sm text-danger font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        setTimeout(() => notification.remove(), 5000);
+    } else {
+        alert(message);
     }
 }
 </script>

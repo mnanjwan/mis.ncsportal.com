@@ -9,7 +9,6 @@ class QuarterController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:Building Unit');
     }
 
     public function index()
@@ -30,6 +29,30 @@ class QuarterController extends Controller
     public function officers()
     {
         return view('dashboards.building.officers');
+    }
+
+    /**
+     * Show quarter requests management page (Building Unit)
+     */
+    public function requests()
+    {
+        return view('dashboards.building.requests');
+    }
+
+    /**
+     * Show officer's own quarter requests
+     */
+    public function myRequests()
+    {
+        return view('officer.quarter-requests.index');
+    }
+
+    /**
+     * Show create quarter request form (Officer)
+     */
+    public function createRequest()
+    {
+        return view('officer.quarter-requests.create');
     }
 }
 

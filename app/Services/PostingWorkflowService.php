@@ -80,46 +80,68 @@ class PostingWorkflowService
 
     /**
      * Process movement order posting workflow
+     * Implements the complete workflow from specification:
+     * 1. Update officer's present_station (automatically updates nominal roll)
+     * 2. Create/update posting records
+     * 3. Notify Staff Officer
+     * 4. Notify officer
+     * 5. Transfer chat room
      */
     public function processMovementOrder(MovementOrder $order, $officerIds = [])
     {
         DB::beginTransaction();
         try {
-            // Movement orders may have multiple officers
-            // Process each officer posting
-            foreach ($officerIds as $officerId) {
-                $officer = Officer::find($officerId);
-                if (!$officer) {
-                    continue;
-                }
+            // Get postings for this movement order
+            $postings = OfficerPosting::where('movement_order_id', $order->id)
+                ->whereIn('officer_id', $officerIds)
+                ->with(['officer', 'command'])
+                ->get();
 
-                // Get destination command from manning request or criteria
-                $toCommand = $this->getDestinationCommand($order);
-                if (!$toCommand) {
+            foreach ($postings as $posting) {
+                $officer = $posting->officer;
+                $toCommand = $posting->command;
+                
+                if (!$officer || !$toCommand) {
                     continue;
                 }
 
                 $fromCommand = $officer->presentStation;
 
-                // Update officer's present_station
+                // Mark previous posting as not current
+                OfficerPosting::where('officer_id', $officer->id)
+                    ->where('id', '!=', $posting->id)
+                    ->where('is_current', true)
+                    ->update(['is_current' => false]);
+
+                // Update posting record
+                $posting->update([
+                    'is_current' => true,
+                    'posting_date' => $posting->posting_date ?? now(),
+                ]);
+
+                // Update officer's present_station (this automatically updates nominal roll)
                 $officer->update([
                     'present_station' => $toCommand->id,
-                    'date_posted_to_station' => now(),
+                    'date_posted_to_station' => $posting->posting_date ?? now(),
                 ]);
 
                 // Log the posting
-                Log::info("Movement Order {$order->order_number}: Officer {$officer->id} posted from " . 
+                Log::info("Movement Order {$order->order_number}: Officer {$officer->id} ({$officer->service_number}) posted from " . 
                     ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}");
 
-                // TODO: Implement when chat room system is available
-                // $this->transferChatRoom($officer, $fromCommand, $toCommand);
+                // Nominal roll is automatically updated since it's based on present_station
+                // When present_station changes, officer automatically:
+                // - Leaves old command's nominal roll (officers are filtered by present_station)
+                // - Joins new command's nominal roll
 
-                // TODO: Implement when notification system is available
-                // $this->notifyStaffOfficer($toCommand, $officer, $order);
-                // $this->notifyOfficer($officer, $order);
+                // Notify Staff Officer of new posting
+                $this->notifyStaffOfficer($toCommand, $officer, $order);
 
-                // TODO: Implement when nominal roll system is available
-                // $this->updateNominalRolls($officer, $fromCommand, $toCommand);
+                // Notify officer of their posting
+                $this->notifyOfficer($officer, $order);
+
+                // Transfer chat room
+                $this->transferChatRoom($officer, $fromCommand, $toCommand);
             }
 
             DB::commit();
@@ -131,18 +153,6 @@ class PostingWorkflowService
         }
     }
 
-    /**
-     * Get destination command for movement order
-     */
-    private function getDestinationCommand(MovementOrder $order)
-    {
-        if ($order->manningRequest) {
-            return $order->manningRequest->command;
-        }
-        // If no manning request, destination would need to be specified
-        // This is a placeholder for future implementation
-        return null;
-    }
 
     /**
      * Transfer officer to new command chat room
@@ -189,11 +199,32 @@ class PostingWorkflowService
     private function notifyOfficer(Officer $officer, $order)
     {
         if ($officer->user) {
-            // Log notification (can be enhanced with actual notification system)
-            Log::info("Officer notification: {$officer->user->email} - Posted to {$order->toCommand->name} via {$order->order_number}");
+            $toCommand = null;
+            if ($order instanceof StaffOrder) {
+                $toCommand = $order->toCommand;
+            } elseif ($order instanceof MovementOrder) {
+                // Get the command from the posting
+                $posting = OfficerPosting::where('movement_order_id', $order->id)
+                    ->where('officer_id', $officer->id)
+                    ->with('command')
+                    ->first();
+                $toCommand = $posting ? $posting->command : null;
+            }
+
+            $commandName = $toCommand ? $toCommand->name : 'Unknown';
+            Log::info("Officer notification: {$officer->user->email} - Posted to {$commandName} via {$order->order_number}");
             
-            // TODO: When notification system is ready, uncomment:
-            // $officer->user->notify(new \App\Notifications\OfficerPostingNotification($order));
+            // Send notification if NotificationService is available
+            try {
+                if (class_exists(\App\Services\NotificationService::class)) {
+                    $notificationService = app(\App\Services\NotificationService::class);
+                    if (method_exists($notificationService, 'notifyOfficerPosting')) {
+                        $notificationService->notifyOfficerPosting($officer, $order, $toCommand);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Notification service not available: " . $e->getMessage());
+            }
         }
     }
 }

@@ -155,6 +155,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/quarters', [QuarterController::class, 'store']);
     Route::post('/quarters/allocate', [QuarterController::class, 'allocate']);
     Route::post('/quarters/{id}/deallocate', [QuarterController::class, 'deallocate']);
+    
+    // Quarter Requests (Officers)
+    Route::post('/quarters/request', [QuarterController::class, 'submitRequest']);
+    Route::get('/quarters/my-requests', [QuarterController::class, 'myRequests']);
+    
+    // Quarter Requests (Building Unit)
+    Route::get('/quarters/requests', [QuarterController::class, 'requests']);
+    Route::post('/quarters/requests/{id}/approve', [QuarterController::class, 'approveRequest']);
+    Route::post('/quarters/requests/{id}/reject', [QuarterController::class, 'rejectRequest']);
 
     // Chat
     Route::get('/chat/rooms', [ChatController::class, 'rooms']);

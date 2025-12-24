@@ -16,6 +16,7 @@ class OfficerQuarter extends Model
         'deallocated_date',
         'is_current',
         'allocated_by',
+        'request_id',
     ];
 
     protected function casts(): array
@@ -41,6 +42,11 @@ class OfficerQuarter extends Model
     public function allocatedBy()
     {
         return $this->belongsTo(User::class, 'allocated_by');
+    }
+
+    public function request()
+    {
+        return $this->belongsTo(QuarterRequest::class, 'request_id');
     }
 }
 

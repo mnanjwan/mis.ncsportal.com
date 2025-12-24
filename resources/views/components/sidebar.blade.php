@@ -116,7 +116,7 @@
                     ]
                 ],
                 [
-                    'title' => 'Orders',
+                    'title' => 'Postings',
                     'icon' => 'ki-filled ki-file-up',
                     'submenu' => [
                         ['title' => 'Staff Orders', 'href' => route('hrd.staff-orders')],

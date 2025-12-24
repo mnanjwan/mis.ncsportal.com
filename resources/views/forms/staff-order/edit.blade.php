@@ -131,9 +131,9 @@
 
                         <!-- Order Type -->
                         <div class="flex flex-col gap-1">
-                            <label class="kt-form-label">Order Type</label>
+                            <label class="kt-form-label">Posting Type</label>
                             <select name="order_type" class="kt-input">
-                                <option value="">Select Order Type</option>
+                                <option value="">Select Posting Type</option>
                                 <option value="POSTING" {{ old('order_type', $order->order_type) == 'POSTING' ? 'selected' : '' }}>Posting</option>
                                 <option value="TRANSFER" {{ old('order_type', $order->order_type) == 'TRANSFER' ? 'selected' : '' }}>Transfer</option>
                                 <option value="DEPLOYMENT" {{ old('order_type', $order->order_type) == 'DEPLOYMENT' ? 'selected' : '' }}>Deployment</option>

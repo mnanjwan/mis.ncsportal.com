@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\Officer;
 use App\Models\OfficerQuarter;
 use App\Models\Quarter;
+use App\Models\QuarterRequest;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class QuarterController extends BaseController
 {
@@ -21,7 +23,14 @@ class QuarterController extends BaseController
 
         // Building Unit MUST see only quarters in their command (command-based access)
         if ($user->hasRole('Building Unit')) {
-            if (!$user->officer?->present_station) {
+            $buildingUnitRole = $user->roles()
+                ->where('name', 'Building Unit')
+                ->wherePivot('is_active', true)
+                ->first();
+            
+            $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+            
+            if (!$commandId) {
                 return $this->errorResponse(
                     'Building Unit user must be assigned to a command',
                     null,
@@ -29,7 +38,7 @@ class QuarterController extends BaseController
                     'NO_COMMAND_ASSIGNED'
                 );
             }
-            $query->where('command_id', $user->officer->present_station);
+            $query->where('command_id', $commandId);
         } elseif ($request->has('command_id')) {
             $query->where('command_id', $request->command_id);
         }
@@ -81,7 +90,14 @@ class QuarterController extends BaseController
         }
 
         // Building Unit MUST be assigned to a command (command-based access)
-        if (!$user->officer?->present_station) {
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
                 null,
@@ -89,8 +105,6 @@ class QuarterController extends BaseController
                 'NO_COMMAND_ASSIGNED'
             );
         }
-
-        $commandId = $user->officer->present_station;
         
         $query = Quarter::where('is_active', true)
             ->where('command_id', $commandId);
@@ -103,7 +117,7 @@ class QuarterController extends BaseController
             'total_quarters' => $totalQuarters,
             'occupied' => $occupiedQuarters,
             'available' => $availableQuarters,
-        ]);
+        ], 'Statistics retrieved successfully');
     }
 
     /**
@@ -123,7 +137,14 @@ class QuarterController extends BaseController
         }
 
         // Building Unit can only create quarters for their own command
-        if (!$user->officer?->present_station) {
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
                 null,
@@ -139,7 +160,7 @@ class QuarterController extends BaseController
         ]);
 
         // Ensure Building Unit can only create quarters for their command
-        if ($request->command_id != $user->officer->present_station) {
+        if ($request->command_id != $commandId) {
             return $this->errorResponse(
                 'Building Unit can only create quarters for their assigned command',
                 null,
@@ -186,7 +207,14 @@ class QuarterController extends BaseController
         }
 
         // Building Unit MUST be assigned to a command
-        if (!$user->officer?->present_station) {
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
                 null,
@@ -204,7 +232,7 @@ class QuarterController extends BaseController
         $quarter = Quarter::findOrFail($request->quarter_id);
         
         // Ensure quarter belongs to Building Unit's command
-        if ($quarter->command_id != $user->officer->present_station) {
+        if ($quarter->command_id != $commandId) {
             return $this->errorResponse(
                 'You can only allocate quarters in your assigned command',
                 null,
@@ -216,7 +244,7 @@ class QuarterController extends BaseController
         $officer = Officer::findOrFail($request->officer_id);
         
         // Ensure officer belongs to Building Unit's command
-        if ($officer->present_station != $user->officer->present_station) {
+        if ($officer->present_station != $commandId) {
             return $this->errorResponse(
                 'You can only allocate quarters to officers in your assigned command',
                 null,
@@ -286,7 +314,14 @@ class QuarterController extends BaseController
         }
 
         // Building Unit MUST be assigned to a command
-        if (!$user->officer?->present_station) {
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
                 null,
@@ -308,7 +343,7 @@ class QuarterController extends BaseController
 
         // Ensure quarter belongs to Building Unit's command
         $quarter = $allocation->quarter;
-        if ($quarter->command_id != $user->officer->present_station) {
+        if ($quarter->command_id != $commandId) {
             return $this->errorResponse(
                 'You can only deallocate quarters in your assigned command',
                 null,
@@ -339,6 +374,352 @@ class QuarterController extends BaseController
             'quarter_id' => $allocation->quarter_id,
             'officer_id' => $allocation->officer_id,
         ], 'Quarter deallocated successfully');
+    }
+
+    /**
+     * Submit quarter request (Officer)
+     */
+    public function submitRequest(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return $this->errorResponse(
+                'User must be linked to an officer',
+                null,
+                403,
+                'NO_OFFICER_LINKED'
+            );
+        }
+
+        // Check if officer already has a pending request
+        $pendingRequest = QuarterRequest::where('officer_id', $officer->id)
+            ->where('status', 'PENDING')
+            ->first();
+
+        if ($pendingRequest) {
+            return $this->errorResponse(
+                'You already have a pending quarter request',
+                null,
+                400,
+                'PENDING_REQUEST_EXISTS'
+            );
+        }
+
+        $request->validate([
+            'quarter_id' => 'nullable|exists:quarters,id',
+            'preferred_quarter_type' => 'nullable|string|max:100',
+        ]);
+
+        $quarterRequest = QuarterRequest::create([
+            'officer_id' => $officer->id,
+            'quarter_id' => $request->quarter_id,
+            'preferred_quarter_type' => $request->preferred_quarter_type,
+            'status' => 'PENDING',
+        ]);
+
+        $quarterRequest->load(['officer:id,service_number,initials,surname', 'quarter']);
+
+        // Notify Building Unit users about new request
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarterRequestSubmitted($quarterRequest);
+
+        return $this->successResponse([
+            'id' => $quarterRequest->id,
+            'status' => $quarterRequest->status,
+        ], 'Quarter request submitted successfully', 201);
+    }
+
+    /**
+     * Get officer's own quarter requests
+     */
+    public function myRequests(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return $this->errorResponse(
+                'User must be linked to an officer',
+                null,
+                403,
+                'NO_OFFICER_LINKED'
+            );
+        }
+
+        $requests = QuarterRequest::where('officer_id', $officer->id)
+            ->with(['quarter', 'rejectedBy:id,name', 'approvedBy:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $this->successResponse($requests);
+    }
+
+    /**
+     * List all quarter requests (Building Unit)
+     */
+    public function requests(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can view quarter requests',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
+        $query = QuarterRequest::with([
+            'officer:id,service_number,initials,surname,present_station',
+            'quarter:id,quarter_number,quarter_type,command_id',
+            'rejectedBy:id,name',
+            'approvedBy:id,name',
+        ])
+        ->whereHas('officer', function ($q) use ($commandId) {
+            $q->where('present_station', $commandId);
+        });
+
+        // Filter by status if provided
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $requests = $query->orderBy('created_at', 'desc')->get();
+
+        return $this->successResponse($requests);
+    }
+
+    /**
+     * Approve quarter request (Building Unit)
+     */
+    public function approveRequest(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can approve quarter requests',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
+        $quarterRequest = QuarterRequest::with(['officer', 'quarter'])->findOrFail($id);
+
+        // Ensure request is for officer in Building Unit's command
+        if ($quarterRequest->officer->present_station != $commandId) {
+            return $this->errorResponse(
+                'You can only approve requests for officers in your assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Ensure request is pending
+        if (!$quarterRequest->isPending()) {
+            return $this->errorResponse(
+                'Only pending requests can be approved',
+                null,
+                400,
+                'INVALID_STATUS'
+            );
+        }
+
+        $request->validate([
+            'quarter_id' => 'required|exists:quarters,id',
+            'allocation_date' => 'sometimes|date',
+        ]);
+
+        $quarter = Quarter::findOrFail($request->quarter_id);
+
+        // Ensure quarter belongs to Building Unit's command
+        if ($quarter->command_id != $commandId) {
+            return $this->errorResponse(
+                'You can only allocate quarters in your assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        if ($quarter->is_occupied) {
+            return $this->errorResponse(
+                'Quarter is already occupied',
+                null,
+                400,
+                'QUARTER_OCCUPIED'
+            );
+        }
+
+        DB::transaction(function () use ($quarterRequest, $quarter, $user, $request) {
+            // Update request status
+            $quarterRequest->update([
+                'status' => 'APPROVED',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
+                'quarter_id' => $request->quarter_id,
+            ]);
+
+            // Deallocate previous quarter if any
+            OfficerQuarter::where('officer_id', $quarterRequest->officer_id)
+                ->where('is_current', true)
+                ->update(['is_current' => false]);
+
+            // Create new allocation linked to request
+            OfficerQuarter::create([
+                'officer_id' => $quarterRequest->officer_id,
+                'quarter_id' => $request->quarter_id,
+                'allocated_date' => $request->allocation_date ?? now(),
+                'is_current' => true,
+                'allocated_by' => $user->id,
+                'request_id' => $quarterRequest->id,
+            ]);
+
+            // Mark quarter as occupied
+            $quarter->update(['is_occupied' => true]);
+
+            // Update officer's quartered status
+            $quarterRequest->officer->update(['quartered' => true]);
+        });
+
+        // Refresh relationships
+        $quarterRequest->refresh();
+        $quarter->refresh();
+
+        // Notify officer about approval
+        $notificationService = app(NotificationService::class);
+        $allocationDate = $request->allocation_date ?? now();
+        $notificationService->notifyQuarterRequestApproved($quarterRequest, $quarter, $allocationDate);
+
+        return $this->successResponse([
+            'id' => $quarterRequest->id,
+            'status' => $quarterRequest->status,
+        ], 'Quarter request approved successfully');
+    }
+
+    /**
+     * Reject quarter request (Building Unit) - One-time only
+     */
+    public function rejectRequest(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can reject quarter requests',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
+        $quarterRequest = QuarterRequest::with('officer')->findOrFail($id);
+
+        // Ensure request is for officer in Building Unit's command
+        if ($quarterRequest->officer->present_station != $commandId) {
+            return $this->errorResponse(
+                'You can only reject requests for officers in your assigned command',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // ONE-TIME REJECTION RULE: Cannot reject if already rejected
+        if ($quarterRequest->isRejected()) {
+            return $this->errorResponse(
+                'This request has already been rejected and cannot be rejected again',
+                null,
+                400,
+                'ALREADY_REJECTED'
+            );
+        }
+
+        // Ensure request is pending
+        if (!$quarterRequest->isPending()) {
+            return $this->errorResponse(
+                'Only pending requests can be rejected',
+                null,
+                400,
+                'INVALID_STATUS'
+            );
+        }
+
+        $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+
+        $quarterRequest->update([
+            'status' => 'REJECTED',
+            'rejection_reason' => $request->rejection_reason,
+            'rejected_by' => $user->id,
+            'rejected_at' => now(),
+        ]);
+
+        // Notify officer about rejection
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarterRequestRejected($quarterRequest, $request->rejection_reason);
+
+        return $this->successResponse([
+            'id' => $quarterRequest->id,
+            'status' => $quarterRequest->status,
+        ], 'Quarter request rejected successfully');
     }
 }
 

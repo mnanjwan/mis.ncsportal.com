@@ -83,6 +83,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'update'])->name('next-of-kin.update');
         Route::delete('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'destroy'])->name('next-of-kin.destroy');
         Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
+        Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
+        Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
     });
 
     // HRD Routes
@@ -111,6 +113,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/movement-orders/create', [MovementOrderController::class, 'create'])->name('movement-orders.create');
         Route::post('/movement-orders', [MovementOrderController::class, 'store'])->name('movement-orders.store');
         Route::get('/movement-orders/{id}', [MovementOrderController::class, 'show'])->name('movement-orders.show');
+        Route::get('/movement-orders/{id}/edit', [MovementOrderController::class, 'edit'])->name('movement-orders.edit');
+        Route::put('/movement-orders/{id}', [MovementOrderController::class, 'update'])->name('movement-orders.update');
+        Route::get('/movement-orders/{id}/eligible-officers', [MovementOrderController::class, 'eligibleOfficers'])->name('movement-orders.eligible-officers');
+        Route::post('/movement-orders/{id}/post-officers', [MovementOrderController::class, 'postOfficers'])->name('movement-orders.post-officers');
 
         Route::get('/promotion-eligibility', [PromotionController::class, 'index'])->name('promotion-eligibility');
         Route::get('/promotion-eligibility/create', [PromotionController::class, 'createEligibilityList'])->name('promotion-eligibility.create');
@@ -332,6 +338,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/quarters/create', [QuarterController::class, 'create'])->name('quarters.create');
         Route::get('/quarters/allocate', [QuarterController::class, 'allocate'])->name('quarters.allocate');
         Route::get('/officers', [QuarterController::class, 'officers'])->name('officers');
+        Route::get('/requests', [QuarterController::class, 'requests'])->name('requests');
     });
 
     // Establishment Routes

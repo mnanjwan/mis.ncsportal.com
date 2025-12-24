@@ -117,10 +117,18 @@
                                             {{ $order->created_at->format('d/m/Y') }}
                                         </td>
                                         <td class="py-3 px-4 text-right">
-                                            <a href="{{ route('hrd.movement-orders.show', $order->id) }}" 
-                                               class="kt-btn kt-btn-sm kt-btn-ghost">
-                                                View
-                                            </a>
+                                            <div class="flex items-center justify-end gap-2">
+                                                <a href="{{ route('hrd.movement-orders.show', $order->id) }}" 
+                                                   class="kt-btn kt-btn-sm kt-btn-ghost">
+                                                    View
+                                                </a>
+                                                @if($order->status !== 'CANCELLED')
+                                                    <a href="{{ route('hrd.movement-orders.edit', $order->id) }}" 
+                                                       class="kt-btn kt-btn-sm kt-btn-secondary">
+                                                        Edit
+                                                    </a>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -141,54 +149,6 @@
                 <!-- Pagination -->
                 @if($orders->hasPages())
                     <div class="mt-6 pt-4 border-t border-border px-4">
-                        @forelse($orders as $order)
-                            @php
-                                $statusClass = match($order->status ?? 'DRAFT') {
-                                    'PUBLISHED' => 'success',
-                                    'CANCELLED' => 'danger',
-                                    default => 'secondary'
-                                };
-                            @endphp
-                            <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input hover:bg-muted transition-colors">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
-                                        <i class="ki-filled ki-abstract-26 text-primary text-xl"></i>
-                                    </div>
-                                    <div class="flex flex-col gap-1">
-                                        <span class="text-sm font-semibold text-foreground">
-                                            {{ $order->order_number ?? 'N/A' }}
-                                        </span>
-                                        <span class="text-xs text-secondary-foreground">
-                                            Criteria: {{ $order->criteria_months_at_station ?? 'N/A' }} months
-                                        </span>
-                                        @if($order->manningRequest)
-                                            <span class="text-xs text-secondary-foreground">
-                                                Manning Request #{{ $order->manningRequest->id }}
-                                            </span>
-                                        @endif
-                                        <span class="text-xs text-secondary-foreground">
-                                            Created: {{ $order->created_at->format('d/m/Y') }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="flex flex-col items-end gap-2">
-                                    <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-sm">
-                                        {{ $order->status ?? 'DRAFT' }}
-                                    </span>
-                                    <a href="{{ route('hrd.movement-orders.show', $order->id) }}" 
-                                       class="kt-btn kt-btn-sm kt-btn-ghost">
-                                        View
-                                    </a>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center py-12">
-                                <i class="ki-filled ki-abstract-26 text-4xl text-muted-foreground mb-4"></i>
-                                <p class="text-secondary-foreground mb-4">No movement orders found</p>
-                                <a href="{{ route('hrd.movement-orders.create') }}" class="kt-btn kt-btn-primary">
-                                    Create First Movement Order
-                                </a>
-                            </div>
                         {{ $orders->withQueryString()->links() }}
                     </div>
                 @endif

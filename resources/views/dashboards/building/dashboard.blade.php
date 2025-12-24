@@ -74,29 +74,89 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', async () => {
-                const token = window.API_CONFIG.token;
+                const token = window.API_CONFIG?.token;
+
+                if (!token) {
+                    console.error('API token not found');
+                    showError('Authentication required. Please refresh the page.');
+                    return;
+                }
 
                 try {
                     // Load statistics
                     const statsRes = await fetch('/api/v1/quarters/statistics', {
-                        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+                        headers: { 
+                            'Authorization': 'Bearer ' + token, 
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
                     });
 
-                    if (statsRes.ok) {
-                        const statsData = await statsRes.json();
-                        if (statsData.success && statsData.data) {
+                    const statsData = await statsRes.json();
+
+                    if (statsRes.ok && statsData.success) {
+                        if (statsData.data) {
                             document.getElementById('total-quarters').textContent = statsData.data.total_quarters || 0;
                             document.getElementById('occupied-quarters').textContent = statsData.data.occupied || 0;
                             document.getElementById('available-quarters').textContent = statsData.data.available || 0;
+                        } else {
+                            // No data available
+                            document.getElementById('total-quarters').textContent = '0';
+                            document.getElementById('occupied-quarters').textContent = '0';
+                            document.getElementById('available-quarters').textContent = '0';
+                        }
+                    } else {
+                        // Handle error response
+                        const errorMsg = statsData.message || 'Failed to load statistics';
+                        console.error('API Error:', errorMsg);
+                        
+                        if (statsData.meta?.code === 'NO_COMMAND_ASSIGNED') {
+                            document.getElementById('total-quarters').textContent = 'N/A';
+                            document.getElementById('occupied-quarters').textContent = 'N/A';
+                            document.getElementById('available-quarters').textContent = 'N/A';
+                            showError('You must be assigned to a command to view statistics. Please contact HRD.');
+                        } else {
+                            document.getElementById('total-quarters').textContent = '0';
+                            document.getElementById('occupied-quarters').textContent = '0';
+                            document.getElementById('available-quarters').textContent = '0';
+                            showError(errorMsg);
                         }
                     }
                 } catch (error) {
                     console.error('Error loading dashboard data:', error);
-                    document.getElementById('total-quarters').textContent = '0';
-                    document.getElementById('occupied-quarters').textContent = '0';
-                    document.getElementById('available-quarters').textContent = '0';
+                    document.getElementById('total-quarters').textContent = 'Error';
+                    document.getElementById('occupied-quarters').textContent = 'Error';
+                    document.getElementById('available-quarters').textContent = 'Error';
+                    showError('Failed to load dashboard data. Please refresh the page.');
                 }
             });
+
+            function showError(message) {
+                // Create error notification card
+                const notification = document.createElement('div');
+                notification.className = 'kt-card bg-danger/10 border border-danger/20 mb-4';
+                notification.innerHTML = `
+                    <div class="kt-card-content p-4">
+                        <div class="flex items-center gap-3">
+                            <i class="ki-filled ki-information text-danger text-xl"></i>
+                            <p class="text-sm text-danger font-medium">${message}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Insert at top of content
+                const content = document.querySelector('.grid.gap-5');
+                if (content) {
+                    content.insertBefore(notification, content.firstChild);
+                    
+                    // Auto-remove after 5 seconds
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 5000);
+                } else {
+                    alert(message);
+                }
+            }
         </script>
     @endpush
 @endsection

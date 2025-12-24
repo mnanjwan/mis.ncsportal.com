@@ -179,6 +179,11 @@ class Officer extends Model
         return $this->hasOne(OfficerQuarter::class)->where('is_current', true);
     }
 
+    public function quarterRequests()
+    {
+        return $this->hasMany(QuarterRequest::class);
+    }
+
     public function chatRoomMembers()
     {
         return $this->hasMany(ChatRoomMember::class);

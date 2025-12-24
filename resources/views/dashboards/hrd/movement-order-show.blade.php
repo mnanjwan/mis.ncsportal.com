@@ -13,11 +13,21 @@
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
-        <!-- Back Button -->
+        <!-- Back Button and Actions -->
         <div class="flex items-center justify-between">
             <a href="{{ route('hrd.movement-orders') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Movement Orders
             </a>
+            <div class="flex items-center gap-2">
+                @if($order->status !== 'CANCELLED')
+                    <a href="{{ route('hrd.movement-orders.eligible-officers', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                        <i class="ki-filled ki-search"></i> Search Eligible Officers
+                    </a>
+                    <a href="{{ route('hrd.movement-orders.edit', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-secondary">
+                        <i class="ki-filled ki-pencil"></i> Edit Order
+                    </a>
+                @endif
+            </div>
         </div>
 
         <!-- Order Header -->
@@ -96,6 +106,13 @@
             <div class="kt-card md:col-span-2">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Officer Postings</h3>
+                    <div class="kt-card-toolbar">
+                        @if($order->status !== 'CANCELLED')
+                            <a href="{{ route('hrd.movement-orders.eligible-officers', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                                <i class="ki-filled ki-plus"></i> Add Officers
+                            </a>
+                        @endif
+                    </div>
                 </div>
                 <div class="kt-card-content">
                     @if($order->postings && $order->postings->count() > 0)
@@ -116,7 +133,7 @@
                                                 {{ $posting->officer ? ($posting->officer->initials . ' ' . $posting->officer->surname) : 'N/A' }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $posting->officer && $posting->officer->presentStation ? $posting->officer->presentStation->name : 'N/A' }}
+                                                {{ $posting->fromCommand ? $posting->fromCommand->name : ($posting->officer && $posting->officer->presentStation ? $posting->officer->presentStation->name : 'N/A') }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $posting->command->name ?? 'N/A' }}

@@ -68,19 +68,42 @@
 ### Building Unit - Accommodation Manager
 **Primary Role:** Officer quarters allocation and management
 
-**Access Level:** Quarters and accommodation records
+**Access Level:** Command-level quarters and accommodation records (also applies to Headquarters as Building Unit is a unit under HQ)
 
 **Core Functions:**
-1. Quarters the Officers (But the status on the PE form will indicate whether the Officers is quartered or not)
-2. At the Command level, enters the Quartered status Yes or No option on the drop down
-3. Allocate quarters to eligible officers
-4. Update quartered status (Yes/No) in the system
-5. Maintain quarters occupancy database
-6. Process quarter allocation requests
-7. Deallocate quarters when officers are posted
-8. Track quarters maintenance requirements
-9. Generate accommodation reports
-10. Manage waiting lists for quarters
+
+**Quarter Creation & Management:**
+1. Create quarters (Block Numbers) with unique identifiers
+2. Assign quarter types (Single Room, One Bedroom, Two Bedroom, Three Bedroom, Four Bedroom, Duplex, Bungalow, Other)
+3. Link quarters to specific commands
+4. Maintain quarters occupancy database
+5. Track quarters maintenance requirements
+6. View quarters statistics (Total, Occupied, Available)
+
+**Officer Search & Allocation:**
+7. Search for officers within assigned command by service number, name, or email
+8. Allocate quarters (rooms) to eligible officers at command level
+9. Set allocation dates
+10. Deallocate quarters when officers are posted or transferred
+
+**Quarter Request Processing:**
+11. View quarter requests from officers in assigned command
+12. Process quarter allocation requests
+13. Approve quarter requests (allocates quarter and updates officer's quartered status)
+14. Reject quarter requests with reason (one-time rejection only - cannot reject again after first rejection)
+15. Track request status (PENDING, APPROVED, REJECTED)
+
+**Quartered Status Management:**
+16. At Command level, enter Quartered status Yes or No option on dropdown
+17. Update individual officer quartered status (Yes/No)
+18. Bulk update quartered status for multiple officers
+19. Status automatically reflects on PE (Personal Emolument) form - when quartered status is Yes, it shows Yes on emolument form
+
+**Reporting & Lists:**
+20. Generate accommodation reports
+21. Manage waiting lists for quarters
+22. View allocation history
+23. Track quarters occupancy trends
 
 ### Establishment - Service Number Administrator
 **Primary Role:** New officer registration and service number management
@@ -595,8 +618,32 @@ The system is organized into the following zones:
 
 ### 6. Building/Quartering Workflow
 
-1. **Command level entry** - At the Command level, Building Unit will enter the Quartered status Yes or No option on the drop down
-2. **Status on PE form** - The status on the PE form will indicate whether the Officers is quartered or not
+**Quarter Creation:**
+1. **Building Unit creates quarters** - Building Unit creates Block Numbers (quarters) with unique identifiers and types
+2. **Quarters linked to commands** - Each quarter is assigned to a specific command
+
+**Quarter Request Process:**
+3. **Officer requests quarter** - Officer can request a quarter through the system (status: PENDING)
+4. **Building Unit reviews** - Building Unit views pending requests for their command
+5. **Building Unit approves** - Building Unit can approve request and allocate quarter (status: APPROVED)
+6. **Building Unit rejects** - Building Unit can reject request with reason (one-time only - cannot reject again after first rejection) (status: REJECTED)
+7. **Status updates** - When approved, officer's quartered status automatically updates to Yes
+
+**Quartered Status Management:**
+8. **Command level entry** - At the Command level, Building Unit enters the Quartered status Yes or No option on the dropdown
+9. **Status on PE form** - The status on the PE (Personal Emolument) form indicates whether the Officer is quartered or not
+10. **Automatic sync** - When Building Unit allocates a quarter or updates quartered status to Yes, it automatically reflects on the officer's emolument form
+
+**Direct Allocation (Without Request):**
+11. **Search officers** - Building Unit can search for officers at command level
+12. **Direct allocation** - Building Unit can directly allocate quarters to officers without waiting for request
+13. **Status update** - Direct allocation automatically updates officer's quartered status to Yes
+
+**Deallocation:**
+14. **Deallocate on posting** - When officers are posted, Building Unit deallocates their quarters
+15. **Status update** - Deallocation automatically updates officer's quartered status to No
+
+**Note:** Building Unit functionality applies to both regular commands and Headquarters, as Building Unit is also a unit under HQ.
 
 ### 7. Eligibility List for Promotion Workflow
 

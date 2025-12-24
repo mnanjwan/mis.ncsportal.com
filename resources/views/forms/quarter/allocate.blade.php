@@ -113,18 +113,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadQuarters() {
     try {
-        const token = window.API_CONFIG.token;
+        const token = window.API_CONFIG?.token;
+        if (!token) {
+            console.error('API token not found');
+            return;
+        }
+
         const res = await fetch('/api/v1/quarters?is_occupied=0', {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+            headers: { 
+                'Authorization': 'Bearer ' + token, 
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         });
         
-        if (res.ok) {
-            const data = await res.json();
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
             quartersCache = data.data || [];
+            renderAllQuartersList();
+        } else {
+            const errorMsg = data.message || 'Failed to load quarters';
+            console.error('API Error:', errorMsg);
+            
+            if (data.meta?.code === 'NO_COMMAND_ASSIGNED') {
+                showError('You must be assigned to a command to view quarters. Please contact HRD.');
+            } else {
+                showError(errorMsg);
+            }
+            quartersCache = [];
             renderAllQuartersList();
         }
     } catch (error) {
         console.error('Error loading quarters:', error);
+        quartersCache = [];
+        renderAllQuartersList();
     }
 }
 
@@ -314,17 +337,22 @@ async function handleSubmit(e) {
     const allocationDate = document.getElementById('allocation-date').value;
     
     if (!officerId) {
-        alert('Please select an officer');
+        showError('Please select an officer');
         return;
     }
     
     if (!quarterId) {
-        alert('Please select a quarter');
+        showError('Please select a quarter');
         return;
     }
     
     try {
-        const token = window.API_CONFIG.token;
+        const token = window.API_CONFIG?.token;
+        if (!token) {
+            showError('Authentication required. Please refresh the page.');
+            return;
+        }
+
         const res = await fetch('/api/v1/quarters/allocate', {
             method: 'POST',
             headers: {
@@ -339,19 +367,66 @@ async function handleSubmit(e) {
             })
         });
         
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                alert('Quarter allocated successfully!');
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+            // Show success message
+            showSuccess('Quarter allocated successfully!');
+            
+            // Redirect after short delay
+            setTimeout(() => {
                 window.location.href = '{{ route("building.quarters") }}';
-            }
+            }, 1500);
         } else {
-            const error = await res.json();
-            alert(error.message || 'Failed to allocate quarter');
+            const errorMsg = data.message || 'Failed to allocate quarter';
+            console.error('API Error:', errorMsg);
+            showError(errorMsg);
         }
     } catch (error) {
         console.error('Error allocating quarter:', error);
-        alert('Error allocating quarter');
+        showError('Error allocating quarter. Please try again.');
+    }
+}
+
+function showSuccess(message) {
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-success/10 border border-success/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        setTimeout(() => notification.remove(), 5000);
+    } else {
+        alert(message);
+    }
+}
+
+function showError(message) {
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-danger/10 border border-danger/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-information text-danger text-xl"></i>
+                <p class="text-sm text-danger font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        setTimeout(() => notification.remove(), 5000);
+    } else {
+        alert(message);
     }
 }
 </script>

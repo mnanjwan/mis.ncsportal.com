@@ -35,10 +35,10 @@
                     <span id="selected-count">0</span> officer(s) selected
                 </span>
                 <div class="flex gap-2">
-                    <button onclick="bulkUpdateQuartered(true)" class="kt-btn kt-btn-sm kt-btn-success">
+                    <button onclick="showBulkUpdateModal(true)" class="kt-btn kt-btn-sm kt-btn-success">
                         <i class="ki-filled ki-check"></i> Set as Quartered
                     </button>
-                    <button onclick="bulkUpdateQuartered(false)" class="kt-btn kt-btn-sm kt-btn-secondary">
+                    <button onclick="showBulkUpdateModal(false)" class="kt-btn kt-btn-sm kt-btn-secondary">
                         <i class="ki-filled ki-cross"></i> Set as Not Quartered
                     </button>
                     <button onclick="clearSelection()" class="kt-btn kt-btn-sm kt-btn-secondary">
@@ -116,15 +116,25 @@ async function loadOfficers(page = 1) {
             headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
         });
         
-        if (res.ok) {
-            const data = await res.json();
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
             allOfficers = data.data || [];
             currentPage = page;
             
             renderOfficers(allOfficers);
             renderPagination(data.meta);
         } else {
-            showError('Failed to load officers');
+            const errorMsg = data.message || 'Failed to load officers';
+            console.error('API Error:', errorMsg);
+            
+            if (data.meta?.code === 'NO_COMMAND_ASSIGNED') {
+                showError('You must be assigned to a command to view officers. Please contact HRD.');
+                renderOfficers([]);
+            } else {
+                showError(errorMsg);
+                renderOfficers([]);
+            }
         }
     } catch (error) {
         console.error('Error loading officers:', error);
@@ -271,16 +281,27 @@ function clearSelection() {
     updateBulkActions();
 }
 
-async function bulkUpdateQuartered(quartered) {
+function showBulkUpdateModal(quartered) {
     if (selectedOfficers.size === 0) {
         showError('Please select at least one officer');
         return;
     }
     
     const status = quartered ? 'quartered' : 'not quartered';
-    if (!confirm(`Are you sure you want to set ${selectedOfficers.size} officer(s) as ${status}?`)) {
-        return;
+    document.getElementById('bulk-update-status').textContent = status;
+    document.getElementById('bulk-update-count').textContent = selectedOfficers.size;
+    document.getElementById('bulk-update-form').dataset.quartered = quartered;
+    
+    const modal = document.getElementById('bulk-update-modal');
+    if (typeof KTModal !== 'undefined') {
+        const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+        modalInstance.show();
+    } else {
+        modal.style.display = 'flex';
     }
+}
+
+async function bulkUpdateQuartered(quartered) {
     
     try {
         const token = window.API_CONFIG.token;
@@ -315,15 +336,113 @@ async function bulkUpdateQuartered(quartered) {
 }
 
 function showSuccess(message) {
-    // You can use SweetAlert or any notification library here
-    alert(message);
+    // Create success notification card
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-success/10 border border-success/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    // Insert at top of content
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    } else {
+        alert(message);
+    }
 }
 
 function showError(message) {
-    // You can use SweetAlert or any notification library here
-    alert(message);
+    // Create error notification card
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-danger/10 border border-danger/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-information text-danger text-xl"></i>
+                <p class="text-sm text-danger font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    // Insert at top of content
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    } else {
+        alert(message);
+    }
 }
 </script>
 @endpush
+
+<!-- Bulk Update Confirmation Modal -->
+<div class="kt-modal" data-kt-modal="true" id="bulk-update-modal">
+    <div class="kt-modal-content max-w-md">
+        <div class="kt-modal-header py-4 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-info/10">
+                    <i class="ki-filled ki-information text-info text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Confirm Bulk Update</h3>
+            </div>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <div class="kt-modal-body py-5 px-5">
+            <p class="text-sm text-secondary-foreground">
+                Are you sure you want to set <strong id="bulk-update-count">0</strong> officer(s) as <strong id="bulk-update-status">quartered</strong>?
+            </p>
+        </div>
+        <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+            <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                Cancel
+            </button>
+            <button type="button" onclick="processBulkUpdate()" class="kt-btn kt-btn-primary">
+                <i class="ki-filled ki-check"></i> Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function processBulkUpdate() {
+    const form = document.getElementById('bulk-update-form');
+    const quartered = form.dataset.quartered === 'true';
+    
+    // Close modal
+    const modal = document.getElementById('bulk-update-modal');
+    if (typeof KTModal !== 'undefined') {
+        const modalInstance = KTModal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    } else {
+        modal.style.display = 'none';
+    }
+    
+    // Process the update
+    bulkUpdateQuartered(quartered);
+}
+</script>
+
+<!-- Hidden form to store bulk update data -->
+<form id="bulk-update-form" style="display: none;" data-quartered=""></form>
 @endsection
 

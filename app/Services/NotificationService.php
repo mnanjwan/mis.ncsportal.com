@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Notification;
+use App\Models\QuarterRequest;
 use App\Models\User;
 use App\Jobs\SendNotificationEmailJob;
 use App\Mail\NotificationMail;
@@ -954,12 +955,11 @@ class NotificationService
             return [];
         }
 
-        // Get Building Unit users for the command (they have present_station matching command)
-        $buildingUnitUsers = User::whereHas('roles', function($q) {
+        // Get Building Unit users for the command (from role pivot command_id)
+        $buildingUnitUsers = User::whereHas('roles', function($q) use ($command) {
             $q->where('name', 'Building Unit')
-              ->where('user_roles.is_active', true);
-        })->whereHas('officer', function($q) use ($command) {
-            $q->where('present_station', $command->id);
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $command->id);
         })->where('is_active', true)->where('id', '!=', $createdBy->id)->get();
 
         if ($buildingUnitUsers->isEmpty()) {
@@ -977,6 +977,90 @@ class NotificationService
             "A new quarter {$quarterNumber} ({$quarterType}) has been created for {$commandName}.",
             'quarter',
             $quarter->id
+        );
+    }
+
+    /**
+     * Notify Building Unit users about new quarter request submission
+     */
+    public function notifyQuarterRequestSubmitted($quarterRequest): array
+    {
+        $officer = $quarterRequest->officer;
+        if (!$officer || !$officer->present_station) {
+            return [];
+        }
+
+        $commandId = $officer->present_station;
+
+        // Get Building Unit users for the command (from role pivot command_id)
+        $buildingUnitUsers = User::whereHas('roles', function($q) use ($commandId) {
+            $q->where('name', 'Building Unit')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        if ($buildingUnitUsers->isEmpty()) {
+            return [];
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $serviceNumber = $officer->service_number ?? 'N/A';
+        $preferredType = $quarterRequest->preferred_quarter_type ?? 'Any';
+
+        return $this->notifyMany(
+            $buildingUnitUsers,
+            'quarter_request_submitted',
+            'New Quarter Request',
+            "Officer {$officerName} ({$serviceNumber}) has submitted a quarter request. Preferred type: {$preferredType}.",
+            'quarter_request',
+            $quarterRequest->id
+        );
+    }
+
+    /**
+     * Notify officer about quarter request approval
+     */
+    public function notifyQuarterRequestApproved($quarterRequest, $quarter, $allocationDate): ?Notification
+    {
+        $officer = $quarterRequest->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $date = \Carbon\Carbon::parse($allocationDate)->format('d/m/Y');
+        $quarterNumber = $quarter->quarter_number ?? 'N/A';
+        $quarterType = $quarter->quarter_type ?? 'N/A';
+
+        return $this->notify(
+            $officer->user,
+            'quarter_request_approved',
+            'Quarter Request Approved',
+            "Your quarter request has been approved. You have been allocated Quarter {$quarterNumber} ({$quarterType}) effective from {$date}. Your quartered status has been updated.",
+            'quarter_request',
+            $quarterRequest->id
+        );
+    }
+
+    /**
+     * Notify officer about quarter request rejection
+     */
+    public function notifyQuarterRequestRejected($quarterRequest, string $rejectionReason): ?Notification
+    {
+        $officer = $quarterRequest->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+
+        return $this->notify(
+            $officer->user,
+            'quarter_request_rejected',
+            'Quarter Request Rejected',
+            "Your quarter request has been rejected. Reason: {$rejectionReason}",
+            'quarter_request',
+            $quarterRequest->id
         );
     }
 }

@@ -72,15 +72,29 @@ async function loadQuarters() {
         }
         
         const res = await fetch(url, {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+            headers: { 
+                'Authorization': 'Bearer ' + token, 
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         });
         
-        if (res.ok) {
-            const data = await res.json();
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
             const quarters = data.data || [];
             renderQuarters(quarters);
         } else {
-            showError('Failed to load quarters');
+            const errorMsg = data.message || 'Failed to load quarters';
+            console.error('API Error:', errorMsg);
+            
+            if (data.meta?.code === 'NO_COMMAND_ASSIGNED') {
+                showError('You must be assigned to a command to view quarters. Please contact HRD.');
+                renderQuarters([]);
+            } else {
+                showError(errorMsg);
+                renderQuarters([]);
+            }
         }
     } catch (error) {
         console.error('Error loading quarters:', error);
@@ -130,9 +144,9 @@ function renderQuarters(quarters) {
                 <td class="font-mono font-semibold">${quarter.quarter_number || 'N/A'}</td>
                 <td>${quarter.quarter_type || 'N/A'}</td>
                 <td>
-                    <span class="kt-badge kt-badge-${quarter.is_occupied ? 'success' : 'secondary'} kt-badge-sm">
-                        ${quarter.is_occupied ? 'Occupied' : 'Available'}
-                    </span>
+                            <span class="kt-badge kt-badge-${quarter.is_occupied ? 'success' : 'secondary'} kt-badge-sm">
+                                ${quarter.is_occupied ? 'Occupied' : 'Available'}
+                            </span>
                 </td>
                 <td>
                     ${officer ? `
@@ -144,7 +158,7 @@ function renderQuarters(quarters) {
                 </td>
                 <td>
                     ${quarter.is_occupied && officer ? `
-                        <button onclick="deallocateQuarter(${quarter.id}, ${officer.id})" 
+                        <button onclick="showDeallocateModal(${quarter.id}, ${officer.id}, '${(officer.initials || '') + ' ' + (officer.surname || '')}', '${quarter.quarter_number || 'N/A'}')" 
                             class="kt-btn kt-btn-sm kt-btn-danger">
                             <i class="ki-filled ki-cross"></i> Deallocate
                         </button>
@@ -155,10 +169,22 @@ function renderQuarters(quarters) {
     }).join('');
 }
 
-async function deallocateQuarter(quarterId, officerId) {
-    if (!confirm('Are you sure you want to deallocate this quarter?')) {
-        return;
+function showDeallocateModal(quarterId, officerId, officerName, quarterNumber) {
+    document.getElementById('deallocate-officer-name').textContent = officerName || 'Officer';
+    document.getElementById('deallocate-quarter-number').textContent = quarterNumber || 'Quarter';
+    document.getElementById('deallocate-form').dataset.quarterId = quarterId;
+    document.getElementById('deallocate-form').dataset.officerId = officerId;
+    
+    const modal = document.getElementById('deallocate-modal');
+    if (typeof KTModal !== 'undefined') {
+        const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+        modalInstance.show();
+    } else {
+        modal.style.display = 'flex';
     }
+}
+
+async function deallocateQuarter(quarterId, officerId) {
     
     try {
         const token = window.API_CONFIG.token;
@@ -207,14 +233,115 @@ async function deallocateQuarter(quarterId, officerId) {
 }
 
 function showSuccess(message) {
-    alert(message);
+    // Create success notification card
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-success/10 border border-success/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    // Insert at top of content
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    } else {
+        alert(message);
+    }
 }
 
 function showError(message) {
-    alert(message);
+    // Create error notification card
+    const notification = document.createElement('div');
+    notification.className = 'kt-card bg-danger/10 border border-danger/20 mb-4';
+    notification.innerHTML = `
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-information text-danger text-xl"></i>
+                <p class="text-sm text-danger font-medium">${message}</p>
+            </div>
+        </div>
+    `;
+    
+    // Insert at top of content
+    const content = document.querySelector('.grid.gap-5');
+    if (content) {
+        content.insertBefore(notification, content.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    } else {
+        alert(message);
+    }
+}
+
+function processDeallocation() {
+    const form = document.getElementById('deallocate-form');
+    const quarterId = form.dataset.quarterId;
+    const officerId = form.dataset.officerId;
+    
+    // Close modal
+    const modal = document.getElementById('deallocate-modal');
+    if (typeof KTModal !== 'undefined') {
+        const modalInstance = KTModal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    } else {
+        modal.style.display = 'none';
+    }
+    
+    // Process deallocation
+    deallocateQuarter(quarterId, officerId);
 }
 </script>
 @endpush
+
+<!-- Deallocate Confirmation Modal -->
+<div class="kt-modal" data-kt-modal="true" id="deallocate-modal">
+    <div class="kt-modal-content max-w-md">
+        <div class="kt-modal-header py-4 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-danger/10">
+                    <i class="ki-filled ki-information text-danger text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Confirm Deallocation</h3>
+            </div>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <div class="kt-modal-body py-5 px-5">
+            <p class="text-sm text-secondary-foreground">
+                Are you sure you want to deallocate <strong id="deallocate-quarter-number">Quarter</strong> from <strong id="deallocate-officer-name">Officer</strong>?
+            </p>
+            <p class="text-xs text-secondary-foreground mt-2">
+                This will update the officer's quartered status and make the quarter available for allocation.
+            </p>
+        </div>
+        <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+            <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                Cancel
+            </button>
+            <button type="button" onclick="processDeallocation()" class="kt-btn kt-btn-danger">
+                <i class="ki-filled ki-cross"></i> Deallocate
+            </button>
+        </div>
+    </div>
+</div>
+
+<form id="deallocate-form" style="display: none;" data-quarter-id="" data-officer-id=""></form>
 @endsection
 
 
