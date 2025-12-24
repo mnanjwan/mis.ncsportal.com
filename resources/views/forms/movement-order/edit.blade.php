@@ -177,14 +177,19 @@
                     'created_at' => $request->created_at ? $request->created_at->format('d/m/Y') : 'N/A',
                 ];
             })->toArray();
+
+            $selectedManningRequestData = null;
+            if ($order->manningRequest) {
+                $selectedManningRequestData = [
+                    'id' => $order->manningRequest->id,
+                    'name' => $order->manningRequest->command->name ?? 'N/A',
+                    'details' => 'MR-' . str_pad($order->manningRequest->id, 4, '0', STR_PAD_LEFT) . ' - ' . ($order->manningRequest->status ?? 'N/A') . ' - ' . ($order->manningRequest->created_at ? $order->manningRequest->created_at->format('d/m/Y') : 'N/A')
+                ];
+            }
         @endphp
 
         const manningRequests = @json($manningRequestsData);
-        let selectedManningRequest = @json($order->manningRequest ? [
-            'id' => $order->manningRequest->id,
-            'name' => $order->manningRequest->command->name ?? 'N/A',
-            'details' => 'MR-' . str_pad($order->manningRequest->id, 4, '0', STR_PAD_LEFT) . ' - ' . ($order->manningRequest->status ?? 'N/A') . ' - ' . ($order->manningRequest->created_at ? $order->manningRequest->created_at->format('d/m/Y') : 'N/A')
-        ] : null);
+        let selectedManningRequest = @json($selectedManningRequestData);
 
         const manningRequestSearchInput = document.getElementById('manning_request_search');
         const manningRequestHiddenInput = document.getElementById('manning_request_id');
