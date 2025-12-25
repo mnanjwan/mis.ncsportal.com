@@ -215,7 +215,8 @@ class QuarterController extends Controller
                 ->with('error', 'Building Unit user must be assigned to a command');
         }
 
-        // Get rejected allocations
+        // Get rejected allocations that haven't been re-allocated
+        // Exclude rejected allocations if there's a newer allocation (PENDING or ACCEPTED) for the same officer
         $query = \App\Models\OfficerQuarter::where('status', 'REJECTED')
             ->with([
                 'officer:id,service_number,initials,surname,present_station',
@@ -228,6 +229,14 @@ class QuarterController extends Controller
             })
             ->whereHas('quarter', function ($q) use ($commandId) {
                 $q->where('command_id', $commandId);
+            })
+            ->whereNotExists(function ($q) {
+                // Exclude if there's a newer allocation (PENDING or ACCEPTED) for this officer
+                $q->select(DB::raw(1))
+                  ->from('officer_quarters as newer_allocations')
+                  ->whereColumn('newer_allocations.officer_id', 'officer_quarters.officer_id')
+                  ->whereIn('newer_allocations.status', ['PENDING', 'ACCEPTED'])
+                  ->whereColumn('newer_allocations.created_at', '>', 'officer_quarters.created_at');
             });
 
         // Apply date filters if provided
