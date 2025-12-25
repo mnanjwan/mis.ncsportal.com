@@ -35,7 +35,7 @@
 
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Current Next of KIN -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Current Next of KIN</h3>
                 <div class="kt-card-toolbar">
@@ -44,49 +44,50 @@
                     </a>
                 </div>
             </div>
-            <div class="kt-card-content">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 @if($nextOfKins->count() > 0)
                     <!-- Desktop Table View -->
                     <div class="hidden lg:block">
-                        <div class="overflow-x-auto">
-                            <table class="kt-table w-full">
+                        <!-- Table with horizontal scroll wrapper -->
+                        <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                            <table class="kt-table" style="min-width: 900px; width: 100%;">
                                 <thead>
                                     <tr class="border-b border-border">
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Name</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Relationship</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Phone Number</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Email</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Address</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Primary</th>
-                                        <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Name</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Relationship</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Phone Number</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Email</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Address</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Primary</th>
+                                        <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($nextOfKins as $nextOfKin)
                                         <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                            <td class="py-3 px-4">
+                                            <td class="py-3 px-4" style="white-space: nowrap;">
                                                 <span class="text-sm font-medium text-foreground">{{ $nextOfKin->name }}</span>
                                             </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                 {{ $nextOfKin->relationship }}
                                             </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                 {{ $nextOfKin->phone_number ?? '—' }}
                                             </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                 {{ $nextOfKin->email ?? '—' }}
                                             </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                 {{ \Illuminate\Support\Str::limit($nextOfKin->address ?? '—', 30) }}
                                             </td>
-                                            <td class="py-3 px-4">
+                                            <td class="py-3 px-4" style="white-space: nowrap;">
                                                 @if($nextOfKin->is_primary)
                                                     <span class="kt-badge kt-badge-success kt-badge-sm">Primary</span>
                                                 @else
                                                     <span class="text-sm text-secondary-foreground">—</span>
                                                 @endif
                                             </td>
-                                            <td class="py-3 px-4 text-right">
+                                            <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                                 <div class="flex items-center justify-end gap-2">
                                                     <a href="{{ route('officer.next-of-kin.edit', $nextOfKin->id) }}" 
                                                        class="kt-btn kt-btn-sm kt-btn-ghost"
@@ -173,8 +174,8 @@
                         </div>
                     </div>
                 @else
-                    <div class="text-center py-12">
-                        <i class="ki-filled ki-people text-4xl text-muted-foreground mb-4"></i>
+                    <div class="text-center py-12 px-4">
+                        <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                         <p class="text-secondary-foreground mb-4">No Next of KIN records found</p>
                         <a href="{{ route('officer.next-of-kin.create') }}" class="kt-btn kt-btn-primary">
                             <i class="ki-filled ki-plus"></i> Add Next of KIN
@@ -185,45 +186,46 @@
         </div>
 
         <!-- Change Requests -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Change Requests</h3>
             </div>
-            <div class="kt-card-content">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 @if($requests->count() > 0)
                     <!-- Desktop Table View -->
                     <div class="hidden lg:block">
-                        <div class="overflow-x-auto">
-                            <table class="kt-table w-full">
+                        <!-- Table with horizontal scroll wrapper -->
+                        <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                            <table class="kt-table" style="min-width: 800px; width: 100%;">
                                 <thead>
                                     <tr class="border-b border-border">
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Request Date</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Action</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Name</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Verified At</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Request Date</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Action</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Name</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Status</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Verified At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($requests as $request)
                                         <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                            <td class="py-3 px-4 text-sm text-foreground">
+                                            <td class="py-3 px-4 text-sm text-foreground" style="white-space: nowrap;">
                                                 {{ $request->created_at->format('d/m/Y H:i') }}
                                             </td>
-                                            <td class="py-3 px-4">
+                                            <td class="py-3 px-4" style="white-space: nowrap;">
                                                 <span class="kt-badge kt-badge-{{ $request->action_type === 'add' ? 'success' : ($request->action_type === 'edit' ? 'info' : 'danger') }} kt-badge-sm">
                                                     {{ strtoupper($request->action_type) }}
                                                 </span>
                                             </td>
-                                            <td class="py-3 px-4 text-sm text-foreground">
+                                            <td class="py-3 px-4 text-sm text-foreground" style="white-space: nowrap;">
                                                 {{ $request->name }}
                                             </td>
-                                            <td class="py-3 px-4">
+                                            <td class="py-3 px-4" style="white-space: nowrap;">
                                                 <span class="kt-badge kt-badge-{{ $request->status === 'APPROVED' ? 'success' : ($request->status === 'REJECTED' ? 'danger' : 'warning') }} kt-badge-sm">
                                                     {{ $request->status }}
                                                 </span>
                                             </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                 {{ $request->verified_at ? $request->verified_at->format('d/m/Y H:i') : '—' }}
                                             </td>
                                         </tr>
@@ -279,12 +281,12 @@
 
                     <!-- Pagination -->
                     @if($requests->hasPages())
-                        <div class="mt-6 pt-4 border-t border-border">
+                        <div class="mt-6 pt-4 border-t border-border px-4">
                             {{ $requests->links() }}
                         </div>
                     @endif
                 @else
-                    <div class="text-center py-12">
+                    <div class="text-center py-12 px-4">
                         <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                         <p class="text-secondary-foreground">No change requests found</p>
                     </div>
@@ -292,6 +294,44 @@
             </div>
         </div>
     </div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 
     <!-- Delete Confirmation Modal -->
     <div class="kt-modal" data-kt-modal="true" id="delete-confirm-modal">

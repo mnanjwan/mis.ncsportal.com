@@ -21,27 +21,41 @@
         </div>
 
         <!-- Table Card -->
-        <div class="kt-card">
-            <div class="kt-card-content p-0">
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+        <div class="kt-card overflow-hidden">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Command Officers</h3>
+            </div>
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 900px; width: 100%;">
                         <thead>
-                            <tr class="border-b border-input bg-muted/20">
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Officer Details</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Service No</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Rank</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Unit</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono">Status</th>
-                                <th class="text-left p-4 text-sm font-semibold text-mono text-right">Actions</th>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Officer Details
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Service No
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Rank
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Unit
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Status
+                                </th>
+                                <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
-                        <tbody id="officers-table-body" class="divide-y divide-input">
+                        <tbody id="officers-table-body">
                             <tr>
-                                <td colspan="6" class="text-center p-8 text-muted-foreground">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-                                        <p>Loading officers...</p>
-                                    </div>
+                                <td colspan="6" class="py-12 text-center">
+                                    <i class="ki-filled ki-loader text-4xl text-muted-foreground mb-4 animate-spin"></i>
+                                    <p class="text-secondary-foreground">Loading officers...</p>
                                 </td>
                             </tr>
                         </tbody>
@@ -49,7 +63,7 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="flex items-center justify-between p-4 border-t border-input" id="pagination">
+                <div class="mt-6 pt-4 border-t border-border px-4" id="pagination">
                 </div>
             </div>
         </div>
@@ -68,18 +82,52 @@
                 const tbody = document.getElementById('officers-table-body');
                 tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center p-8 text-muted-foreground">
-                        <div class="flex flex-col items-center justify-center">
-                            <div class="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-                                <i class="ki-filled ki-users text-xl text-muted-foreground"></i>
-                            </div>
-                            <p class="text-base font-medium">No officers found in command</p>
-                            <p class="text-sm text-muted-foreground mt-1">Officers posted to this command will appear here</p>
-                        </div>
+                    <td colspan="6" class="py-12 text-center">
+                        <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground">No officers found in command</p>
+                        <p class="text-sm text-muted-foreground mt-1">Officers posted to this command will appear here</p>
                     </td>
                 </tr>
             `;
             }
         </script>
     @endpush
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection

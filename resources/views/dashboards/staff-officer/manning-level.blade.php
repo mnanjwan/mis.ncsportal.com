@@ -53,26 +53,27 @@
         
         <!-- Approved Officers Summary by Rank -->
         @if(isset($approvedOfficersByRank) && $approvedOfficersByRank->count() > 0)
-            <div class="kt-card">
+            <div class="kt-card overflow-hidden">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Approved Officers by Rank</h3>
                     <div class="kt-card-toolbar">
                         <span class="kt-badge kt-badge-success kt-badge-sm">HRD Matched</span>
                     </div>
                 </div>
-                <div class="kt-card-content">
-                    <p class="text-sm text-secondary-foreground mb-4">
+                <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                    <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
                         Summary of officers that HRD has matched for your approved manning requests. 
                         <span class="text-xs text-muted-foreground">Compare requested vs approved to see which ranks were partially or fully rejected by HRD.</span>
                     </p>
-                    <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+                    <!-- Table with horizontal scroll wrapper -->
+                    <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                        <table class="kt-table" style="min-width: 600px; width: 100%;">
                             <thead>
                                 <tr class="border-b border-border">
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Requested</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Approved</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Rank</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Requested</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Approved</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -94,16 +95,16 @@
                                         }
                                     @endphp
                                     <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="text-sm font-medium text-foreground">{{ $rankSummary->rank }}</span>
                                         </td>
-                                        <td class="py-3 px-4 text-right">
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                             <span class="text-sm text-secondary-foreground">{{ $requested }}</span>
                                         </td>
-                                        <td class="py-3 px-4 text-right">
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                             <span class="text-sm font-semibold {{ $approved > 0 ? 'text-success' : 'text-danger' }}">{{ $approved }}</span>
                                         </td>
-                                        <td class="py-3 px-4 text-right">
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                             <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-xs">
                                                 {{ $statusText }}
                                                 @if($requested > 0)
@@ -116,16 +117,16 @@
                             </tbody>
                             <tfoot>
                                 <tr class="border-t-2 border-primary">
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="text-sm font-semibold text-foreground">Total</span>
                                     </td>
-                                    <td class="py-3 px-4 text-right">
+                                    <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                         <span class="text-sm font-bold text-secondary-foreground">{{ $approvedOfficersByRank->sum('requested_count') }}</span>
                                     </td>
-                                    <td class="py-3 px-4 text-right">
+                                    <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                         <span class="text-sm font-bold text-primary">{{ $approvedOfficersByRank->sum('approved_count') }}</span>
                                     </td>
-                                    <td class="py-3 px-4 text-right">
+                                    <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                         @php
                                             $totalRequested = $approvedOfficersByRank->sum('requested_count');
                                             $totalApproved = $approvedOfficersByRank->sum('approved_count');
@@ -210,4 +211,42 @@
         </div>
     </div>
 @endif
+
+<style>
+    /* Prevent page from expanding beyond viewport on mobile */
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+        }
+
+        .kt-card {
+            max-width: 100vw;
+        }
+    }
+
+    /* Smooth scrolling for mobile */
+    .table-scroll-wrapper {
+        position: relative;
+        max-width: 100%;
+    }
+
+    /* Custom scrollbar for webkit browsers */
+    .scrollbar-thin::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
 @endsection

@@ -181,7 +181,7 @@
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('staff-officer.leave-pass')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
-                ['icon' => 'ki-filled ki-profile-circle', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
             ];
             break;
@@ -216,9 +216,9 @@
         case 'Accounts':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('accounts.dashboard')],
-                ['icon' => 'ki-filled ki-wallet', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Account Change Requests', 'href' => route('accounts.account-change.pending')],
-                ['icon' => 'ki-filled ki-heart', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
             ];
             break;
         case 'Board':
@@ -231,7 +231,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('building.dashboard')],
                 ['icon' => 'ki-filled ki-home-2', 'title' => 'Quarters', 'href' => route('building.quarters')],
-                ['icon' => 'ki-filled ki-user', 'title' => 'Officers', 'href' => route('building.officers')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('building.officers')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Quarter Requests', 'href' => route('building.requests')],
                 ['icon' => 'ki-filled ki-cross-circle', 'title' => 'Rejected Allocations', 'href' => route('building.rejected-allocations')],
             ];
@@ -248,7 +248,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('welfare.dashboard')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Next of KIN Requests', 'href' => route('welfare.next-of-kin.pending')],
-                ['icon' => 'ki-filled ki-heart', 'title' => 'Deceased Officers', 'href' => route('welfare.deceased-officers')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Deceased Officers', 'href' => route('welfare.deceased-officers')],
             ];
             break;
         case 'TRADOC':

@@ -85,20 +85,12 @@
                 </div>
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
-                <!-- Mobile scroll hint -->
-                <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
-                    <div class="flex items-center gap-2 text-xs text-secondary-foreground">
-                        <i class="ki-filled ki-arrow-left-right"></i>
-                        <span>Swipe left to view more columns</span>
-                    </div>
-                </div>
-
                 <!-- Table with horizontal scroll wrapper -->
                 <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
                     <table class="kt-table" style="min-width: 900px; width: 100%;">
                             <thead>
                                 <tr class="border-b border-border">
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_order' => request('sort_by') === 'name' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Officer Details
@@ -109,7 +101,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Service Number
@@ -120,7 +112,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'rank', 'sort_order' => request('sort_by') === 'rank' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Rank
@@ -131,7 +123,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'command', 'sort_order' => request('sort_by') === 'command' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Command
@@ -142,7 +134,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'zone', 'sort_order' => request('sort_by') === 'zone' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Zone
@@ -153,7 +145,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'status', 'sort_order' => request('sort_by') === 'status' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Status
@@ -164,7 +156,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         Actions
                                     </th>
                                 </tr>
@@ -178,9 +170,9 @@
                                         $avatarInitials = strtoupper(($initials[0] ?? '') . ($surname[0] ?? ''));
                                     @endphp
                                     <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
                                             <div class="flex items-center gap-3">
-                                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm" style="flex-shrink: 0;">
                                                     {{ $avatarInitials }}
                                                 </div>
                                                 <div>
@@ -189,30 +181,30 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="text-sm font-mono text-foreground">
                                                 {{ $officer->service_number ?? 'N/A' }}
                                             </span>
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             {{ $officer->substantive_rank ?? 'N/A' }}
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             {{ $officer->presentStation->name ?? 'N/A' }}
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             @if($officer->presentStation && $officer->presentStation->zone)
                                                 {{ $officer->presentStation->zone->name }}
                                             @else
                                                 <span class="text-secondary-foreground italic">N/A</span>
                                             @endif
                                         </td>
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="kt-badge kt-badge-{{ $officer->is_active ? 'success' : 'danger' }} kt-badge-sm">
                                                 {{ $officer->is_active ? 'Active' : 'Inactive' }}
                                             </span>
                                         </td>
-                                        <td class="py-3 px-4 text-right">
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                             <a href="{{ route('hrd.officers.show', $officer->id) }}" 
                                                class="kt-btn kt-btn-sm kt-btn-ghost">
                                                 <i class="ki-filled ki-eye"></i> View
@@ -222,7 +214,7 @@
                                 @empty
                                     <tr>
                                         <td colspan="7" class="py-12 text-center">
-                                            <i class="ki-filled ki-profile-circle text-4xl text-muted-foreground mb-4"></i>
+                                            <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground">No officers found</p>
                                         </td>
                                     </tr>

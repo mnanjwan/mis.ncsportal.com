@@ -105,7 +105,7 @@
         </div>
 
         <!-- Emoluments Table -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Emolument History</h3>
                 <div class="kt-card-toolbar">
@@ -114,20 +114,21 @@
                     </a>
                 </div>
             </div>
-            <div class="kt-card-content">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 <!-- Desktop Table View -->
                 <div class="hidden lg:block">
-                    <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+                    <!-- Table with horizontal scroll wrapper -->
+                    <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                        <table class="kt-table" style="min-width: 1000px; width: 100%;">
                             <thead>
                                 <tr class="border-b border-border">
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Year</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Timeline</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Bank Details</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">PFA Details</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Submitted</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Year</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Timeline</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Bank Details</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">PFA Details</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Status</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Submitted</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -143,27 +144,27 @@
                                         $class = $statusClasses[$emolument->status] ?? 'bg-gray-100 text-gray-800';
                                     @endphp
                                     <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                        <td class="py-3 px-4 text-sm font-medium text-foreground">{{ $emolument->year }}</td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm font-medium text-foreground" style="white-space: nowrap;">{{ $emolument->year }}</td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             {{ $emolument->timeline ? $emolument->timeline->year : 'N/A' }}
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             <div>{{ $emolument->bank_name }}</div>
                                             <div class="text-xs text-muted-foreground">{{ $emolument->bank_account_number }}</div>
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             <div>{{ $emolument->pfa_name }}</div>
                                             <div class="text-xs text-muted-foreground">{{ $emolument->rsa_pin }}</div>
                                         </td>
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="px-2 py-1 text-xs font-medium rounded-full {{ $class }}">
                                                 {{ ucfirst(strtolower($emolument->status)) }}
                                             </span>
                                         </td>
-                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             {{ $emolument->submitted_at ? $emolument->submitted_at->format('d M Y') : 'N/A' }}
                                         </td>
-                                        <td class="py-3 px-4 text-right">
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                             <a href="{{ route('officer.emoluments') }}/{{ $emolument->id }}"
                                                 class="kt-btn kt-btn-sm kt-btn-ghost"
                                                 title="View Details">
@@ -174,7 +175,7 @@
                                 @empty
                                     <tr>
                                         <td colspan="7" class="py-12 text-center">
-                                            <i class="ki-filled ki-document text-4xl text-muted-foreground mb-4"></i>
+                                            <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground mb-4">No emoluments found</p>
                                             <a href="{{ route('emolument.raise') }}"
                                                 class="kt-btn kt-btn-primary">
@@ -266,4 +267,42 @@
             </div>
         </div>
     </div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection

@@ -79,18 +79,17 @@
     
     <!-- Matched Officers from Approved Requests Section -->
     @if($command && isset($approvedManningRequestsWithMatches) && $approvedManningRequestsWithMatches->count() > 0)
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Matched Officers Ready for Review</h3>
                 <div class="kt-card-toolbar">
                     <span class="kt-badge kt-badge-success kt-badge-sm">{{ $approvedManningRequestsWithMatches->count() }} Request(s)</span>
                 </div>
             </div>
-            <div class="kt-card-content">
-                <p class="text-sm text-secondary-foreground mb-4">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
                     HRD has matched officers for your approved manning requests. <strong>These officers are ready for your immediate review and approval</strong> - you don't need to wait for all ranks to be matched. Review and approve matched officers as they become available.
                 </p>
-                <div class="overflow-x-auto">
                     @foreach($approvedManningRequestsWithMatches as $request)
                         <div class="mb-6 pb-6 border-b border-border last:border-0 last:mb-0 last:pb-0">
                             <div class="flex items-center justify-between mb-4">
@@ -112,50 +111,53 @@
                             @endphp
                             
                             @if($matchedItems->count() > 0)
-                                <div class="mb-3">
+                                <div class="mb-3 px-4 md:px-0">
                                     <p class="text-xs text-secondary-foreground">
                                         <i class="ki-filled ki-information-2 mr-1"></i>
                                         {{ $matchedItems->count() }} officer(s) matched by HRD - Ready for your approval
                                     </p>
                                 </div>
-                                <table class="kt-table w-full">
-                                    <thead>
-                                        <tr class="border-b border-border">
-                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Rank</th>
-                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Matched Officer</th>
-                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Service Number</th>
-                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Current Station</th>
-                                            <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($matchedItems as $item)
-                                            @if($item->matchedOfficer)
-                                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                                    <td class="py-2 px-4 text-xs font-medium text-foreground">
-                                                        {{ $item->rank }}
-                                                    </td>
-                                                    <td class="py-2 px-4">
-                                                        <span class="text-xs font-medium text-foreground">
-                                                            {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
-                                                        </span>
-                                                    </td>
-                                                    <td class="py-2 px-4">
-                                                        <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
-                                                    </td>
-                                                    <td class="py-2 px-4 text-xs text-secondary-foreground">
-                                                        {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
-                                                    </td>
-                                                    <td class="py-2 px-4">
-                                                        <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
-                                                            Review & Approve
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            @endif
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                                <!-- Table with horizontal scroll wrapper -->
+                                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                                    <table class="kt-table" style="min-width: 700px; width: 100%;">
+                                        <thead>
+                                            <tr class="border-b border-border">
+                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Rank</th>
+                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Matched Officer</th>
+                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Service Number</th>
+                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Current Station</th>
+                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($matchedItems as $item)
+                                                @if($item->matchedOfficer)
+                                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                                        <td class="py-2 px-4 text-xs font-medium text-foreground" style="white-space: nowrap;">
+                                                            {{ $item->rank }}
+                                                        </td>
+                                                        <td class="py-2 px-4" style="white-space: nowrap;">
+                                                            <span class="text-xs font-medium text-foreground">
+                                                                {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="py-2 px-4" style="white-space: nowrap;">
+                                                            <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
+                                                        </td>
+                                                        <td class="py-2 px-4 text-xs text-secondary-foreground" style="white-space: nowrap;">
+                                                            {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
+                                                        </td>
+                                                        <td class="py-2 px-4" style="white-space: nowrap;">
+                                                            <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
+                                                                Review & Approve
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                @endif
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                                 
                                 @php
                                     // Show summary of unmatched ranks if any
@@ -190,46 +192,47 @@
 
     <!-- Newly Posted Officers Section -->
     @if($command && $newlyPostedOfficers->count() > 0)
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Newly Posted Officers</h3>
                 <div class="kt-card-toolbar">
                     <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $newlyPostedOfficers->count() }} New</span>
                 </div>
             </div>
-            <div class="kt-card-content">
-                <p class="text-sm text-secondary-foreground mb-4">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
                     The following officers have been posted to <strong>{{ $command->name }}</strong> and need to be documented.
                 </p>
-                <div class="overflow-x-auto">
-                    <table class="kt-table w-full">
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 800px; width: 100%;">
                         <thead>
                             <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer Name</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Posted Date</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Action</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Officer Name</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Service Number</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Rank</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Posted Date</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($newlyPostedOfficers as $officer)
                                 <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="text-sm font-medium text-foreground">
                                             {{ $officer->initials }} {{ $officer->surname }}
                                         </span>
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="text-sm font-mono text-secondary-foreground">{{ $officer->service_number }}</span>
                                     </td>
-                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $officer->substantive_rank }}
                                     </td>
-                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $officer->date_posted_to_station ? $officer->date_posted_to_station->format('M d, Y') : 'N/A' }}
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         <form action="{{ route('staff-officer.officers.document', $officer->id) }}" method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Document this officer? This confirms their arrival at the command.')">
@@ -331,5 +334,43 @@
         </div>
     @endif
 </div>
+
+<style>
+    /* Prevent page from expanding beyond viewport on mobile */
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+        }
+
+        .kt-card {
+            max-width: 100vw;
+        }
+    }
+
+    /* Smooth scrolling for mobile */
+    .table-scroll-wrapper {
+        position: relative;
+        max-width: 100%;
+    }
+
+    /* Custom scrollbar for webkit browsers */
+    .scrollbar-thin::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
 @endsection
 

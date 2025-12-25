@@ -48,22 +48,41 @@
                 @csrf
                 @method('PUT')
 
-                <!-- Officer -->
+                <!-- Officer (Searchable) -->
                 <div class="space-y-2">
-                    <label for="officer_id" class="block text-sm font-medium text-foreground">
+                    <label for="officer_search" class="block text-sm font-medium text-foreground">
                         Officer <span class="text-danger">*</span>
                     </label>
-                    <select name="officer_id" 
-                            id="officer_id" 
-                            class="kt-input @error('officer_id') kt-input-error @enderror"
-                            required>
-                        <option value="">Select Officer</option>
-                        @foreach($officers as $officer)
-                            <option value="{{ $officer->id }}" {{ old('officer_id', $course->officer_id) == $officer->id ? 'selected' : '' }}>
-                                {{ $officer->initials ?? '' }} {{ $officer->surname ?? '' }} - {{ $officer->service_number ?? 'N/A' }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="relative">
+                        <input type="text" 
+                               id="officer_search" 
+                               class="kt-input @error('officer_id') kt-input-error @enderror w-full" 
+                               placeholder="Search officer by name or service number..."
+                               autocomplete="off"
+                               value="{{ old('officer_search') }}">
+                        <input type="hidden" 
+                               name="officer_id" 
+                               id="officer_id"
+                               value="{{ old('officer_id', $course->officer_id) }}"
+                               required>
+                        <div id="officer_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                            <!-- Options will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div id="selected_officer" class="mt-2 p-2 bg-muted/50 rounded-lg {{ old('officer_id', $course->officer_id) ? '' : 'hidden' }}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-medium" id="selected_officer_name"></span>
+                                <span class="text-xs text-secondary-foreground" id="selected_officer_details"></span>
+                            </div>
+                            <button type="button" 
+                                    id="clear_officer" 
+                                    class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
+                                <i class="ki-filled ki-cross"></i>
+                            </button>
+                        </div>
+                    </div>
                     @error('officer_id')
                         <p class="text-sm text-danger">{{ $message }}</p>
                     @enderror
@@ -162,5 +181,138 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Officers data
+    @php
+        $officersData = $officers->map(function($officer) {
+            return [
+                'id' => $officer->id,
+                'name' => ($officer->initials ?? '') . ' ' . ($officer->surname ?? ''),
+                'service_number' => $officer->service_number ?? 'N/A',
+                'rank' => $officer->substantive_rank ?? 'N/A',
+            ];
+        })->values();
+        
+        // Get current officer data for pre-selection
+        $currentOfficerId = old('officer_id', $course->officer_id);
+        $currentOfficer = $officers->firstWhere('id', $currentOfficerId);
+    @endphp
+    const officers = @json($officersData);
+    let selectedOfficer = null;
+
+    const officerSearchInput = document.getElementById('officer_search');
+    const officerHiddenInput = document.getElementById('officer_id');
+    const officerDropdown = document.getElementById('officer_dropdown');
+    const selectedOfficerDiv = document.getElementById('selected_officer');
+    const selectedOfficerName = document.getElementById('selected_officer_name');
+    const selectedOfficerDetails = document.getElementById('selected_officer_details');
+
+    // Initialize selected officer
+    @if($currentOfficer)
+        const currentOfficer = {
+            id: {{ $currentOfficer->id }},
+            name: '{{ ($currentOfficer->initials ?? '') . ' ' . ($currentOfficer->surname ?? '') }}',
+            service_number: '{{ $currentOfficer->service_number ?? 'N/A' }}',
+            rank: '{{ $currentOfficer->substantive_rank ?? 'N/A' }}'
+        };
+        selectedOfficer = currentOfficer;
+        officerHiddenInput.value = currentOfficer.id;
+        officerSearchInput.value = currentOfficer.name.trim();
+        selectedOfficerName.textContent = currentOfficer.name.trim();
+        selectedOfficerDetails.textContent = currentOfficer.service_number + (currentOfficer.rank !== 'N/A' ? ' - ' + currentOfficer.rank : '');
+        selectedOfficerDiv.classList.remove('hidden');
+    @elseif(old('officer_id'))
+        const oldOfficerId = {{ old('officer_id') }};
+        const oldOfficer = officers.find(o => o.id == oldOfficerId);
+        if (oldOfficer) {
+            selectedOfficer = oldOfficer;
+            officerHiddenInput.value = oldOfficer.id;
+            officerSearchInput.value = oldOfficer.name.trim();
+            selectedOfficerName.textContent = oldOfficer.name.trim();
+            selectedOfficerDetails.textContent = oldOfficer.service_number + (oldOfficer.rank !== 'N/A' ? ' - ' + oldOfficer.rank : '');
+            selectedOfficerDiv.classList.remove('hidden');
+        }
+    @endif
+
+    // Search functionality
+    officerSearchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm.length === 0) {
+            officerDropdown.classList.add('hidden');
+            return;
+        }
+
+        const filtered = officers.filter(officer => {
+            const nameMatch = officer.name.toLowerCase().includes(searchTerm);
+            const serviceMatch = officer.service_number.toLowerCase().includes(searchTerm);
+            const rankMatch = officer.rank.toLowerCase().includes(searchTerm);
+            return nameMatch || serviceMatch || rankMatch;
+        });
+
+        if (filtered.length > 0) {
+            officerDropdown.innerHTML = filtered.map(officer => {
+                const displayName = officer.name.trim();
+                const displayDetails = officer.service_number + (officer.rank !== 'N/A' ? ' - ' + officer.rank : '');
+                return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
+                            'data-id="' + officer.id + '" ' +
+                            'data-name="' + displayName.replace(/"/g, '&quot;') + '" ' +
+                            'data-details="' + displayDetails.replace(/"/g, '&quot;') + '">' +
+                            '<div class="text-sm font-medium text-foreground">' + displayName + '</div>' +
+                            '<div class="text-xs text-secondary-foreground">' + displayDetails + '</div>' +
+                        '</div>';
+            }).join('');
+            officerDropdown.classList.remove('hidden');
+        } else {
+            officerDropdown.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found</div>';
+            officerDropdown.classList.remove('hidden');
+        }
+    });
+
+    // Handle option selection
+    officerDropdown.addEventListener('click', function(e) {
+        const option = e.target.closest('[data-id]');
+        if (option) {
+            const foundOfficer = officers.find(o => o.id == parseInt(option.dataset.id));
+            if (foundOfficer) {
+                selectedOfficer = foundOfficer;
+                officerHiddenInput.value = foundOfficer.id;
+                const displayName = foundOfficer.name.trim();
+                const displayDetails = foundOfficer.service_number + (foundOfficer.rank !== 'N/A' ? ' - ' + foundOfficer.rank : '');
+                officerSearchInput.value = displayName;
+                selectedOfficerName.textContent = displayName;
+                selectedOfficerDetails.textContent = displayDetails;
+                selectedOfficerDiv.classList.remove('hidden');
+                officerDropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // Clear selection
+    document.getElementById('clear_officer')?.addEventListener('click', function() {
+        selectedOfficer = null;
+        officerHiddenInput.value = '';
+        officerSearchInput.value = '';
+        selectedOfficerDiv.classList.add('hidden');
+        officerDropdown.classList.add('hidden');
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!officerSearchInput.contains(e.target) && !officerDropdown.contains(e.target) && !selectedOfficerDiv.contains(e.target)) {
+            officerDropdown.classList.add('hidden');
+        }
+    });
+
+    // Show dropdown when focusing on search input
+    officerSearchInput.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            this.dispatchEvent(new Event('input'));
+        }
+    });
+</script>
+@endpush
 @endsection
 
