@@ -3,6 +3,12 @@
 @section('title', 'Quarter Requests')
 @section('page-title', 'Quarter Requests Management')
 
+@section('breadcrumbs')
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('building.dashboard') }}">Building Unit</a>
+    <span>/</span>
+    <span class="text-primary">Quarter Requests</span>
+@endsection
+
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
     <!-- Filter -->

@@ -6,7 +6,7 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
             <div class="kt-card">
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
@@ -45,6 +45,25 @@
                         <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
                             <i class="ki-filled ki-home text-2xl text-info"></i>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Rejected</span>
+                            <span class="text-2xl font-semibold text-mono" id="rejected-count">Loading...</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-danger/10">
+                            <i class="ki-filled ki-cross-circle text-2xl text-danger"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <a href="{{ route('building.rejected-allocations') }}" class="kt-btn kt-btn-danger kt-btn-sm justify-center">
+                            <i class="ki-filled ki-eye"></i> View All
+                        </a>
                     </div>
                 </div>
             </div>
@@ -128,11 +147,32 @@
                             showError(errorMsg);
                         }
                     }
+
+                    // Load rejected allocations count
+                    const rejectedRes = await fetch('/api/v1/quarters/rejected-allocations', {
+                        headers: { 
+                            'Authorization': 'Bearer ' + token, 
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (rejectedRes.ok) {
+                        const rejectedData = await rejectedRes.json();
+                        if (rejectedData.success && rejectedData.data) {
+                            document.getElementById('rejected-count').textContent = rejectedData.data.length || 0;
+                        } else {
+                            document.getElementById('rejected-count').textContent = '0';
+                        }
+                    } else {
+                        document.getElementById('rejected-count').textContent = '0';
+                    }
                 } catch (error) {
                     console.error('Error loading dashboard data:', error);
                     document.getElementById('total-quarters').textContent = 'Error';
                     document.getElementById('occupied-quarters').textContent = 'Error';
                     document.getElementById('available-quarters').textContent = 'Error';
+                    document.getElementById('rejected-count').textContent = 'Error';
                     showError('Failed to load dashboard data. Please refresh the page.');
                 }
             });

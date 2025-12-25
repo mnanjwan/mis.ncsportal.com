@@ -16,9 +16,9 @@
         <div class="kt-card-content">
             <div class="flex flex-wrap gap-3 items-center">
                 <label class="text-sm text-secondary-foreground">Filter by Date:</label>
-                <input type="date" id="filter-from-date" class="kt-input" onchange="loadRejectedAllocations()">
+                <input type="date" id="filter-from-date" class="kt-input" value="{{ request('from_date') }}" onchange="applyFilters()">
                 <span class="text-secondary-foreground">to</span>
-                <input type="date" id="filter-to-date" class="kt-input" onchange="loadRejectedAllocations()">
+                <input type="date" id="filter-to-date" class="kt-input" value="{{ request('to_date') }}" onchange="applyFilters()">
                 <button onclick="clearFilters()" class="kt-btn kt-btn-sm kt-btn-ghost">
                     <i class="ki-filled ki-cross"></i> Clear
                 </button>
@@ -55,8 +55,12 @@
                                 <td>{{ $allocation->quarter->quarter_number ?? 'N/A' }}</td>
                                 <td>{{ $allocation->quarter->quarter_type ?? 'N/A' }}</td>
                                 <td>
-                                    @if($allocation->allocatedBy && $allocation->allocatedBy->officer)
-                                        {{ ($allocation->allocatedBy->officer->initials ?? '') . ' ' . ($allocation->allocatedBy->officer->surname ?? '') }}
+                                    @if($allocation->allocatedBy)
+                                        @if($allocation->allocatedBy->officer)
+                                            {{ ($allocation->allocatedBy->officer->initials ?? '') . ' ' . ($allocation->allocatedBy->officer->surname ?? '') }}
+                                        @else
+                                            {{ $allocation->allocatedBy->email ?? 'N/A' }}
+                                        @endif
                                     @else
                                         N/A
                                     @endif
@@ -151,29 +155,39 @@ function closeReallocateModal() {
 
 async function loadAvailableQuarters() {
     try {
+        const token = window.API_CONFIG?.token;
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
         const response = await fetch('/api/v1/quarters?is_occupied=0', {
             headers: {
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            credentials: 'same-origin'
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
         });
 
         if (!response.ok) {
-            throw new Error('Failed to load quarters');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to load quarters');
         }
 
         const data = await response.json();
         const quarters = data.data || [];
         
         const select = document.getElementById('reallocate-quarter-id');
-        select.innerHTML = '<option value="">Select a quarter...</option>' +
-            quarters.map(q => 
-                `<option value="${q.id}">${q.quarter_number} (${q.quarter_type})</option>`
-            ).join('');
+        if (quarters.length === 0) {
+            select.innerHTML = '<option value="">No available quarters</option>';
+        } else {
+            select.innerHTML = '<option value="">Select a quarter...</option>' +
+                quarters.map(q => 
+                    `<option value="${q.id}">${q.quarter_number} (${q.quarter_type})</option>`
+                ).join('');
+        }
     } catch (error) {
         console.error('Error loading quarters:', error);
-        document.getElementById('reallocate-quarter-id').innerHTML = '<option value="">Error loading quarters</option>';
+        document.getElementById('reallocate-quarter-id').innerHTML = `<option value="">Error: ${error.message}</option>`;
     }
 }
 
@@ -190,14 +204,19 @@ document.getElementById('reallocate-form').addEventListener('submit', async func
     }
 
     try {
+        const token = window.API_CONFIG?.token;
+        if (!token) {
+            alert('Authentication token not found. Please refresh the page.');
+            return;
+        }
+
         const response = await fetch('/api/v1/quarters/allocate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'Authorization': 'Bearer ' + token
             },
-            credentials: 'same-origin',
             body: JSON.stringify({
                 officer_id: officerId,
                 quarter_id: quarterId,
@@ -220,10 +239,30 @@ document.getElementById('reallocate-form').addEventListener('submit', async func
     }
 });
 
+function applyFilters() {
+    const fromDate = document.getElementById('filter-from-date').value;
+    const toDate = document.getElementById('filter-to-date').value;
+    
+    // Build URL with filters
+    let url = new URL(window.location.href);
+    if (fromDate) {
+        url.searchParams.set('from_date', fromDate);
+    } else {
+        url.searchParams.delete('from_date');
+    }
+    if (toDate) {
+        url.searchParams.set('to_date', toDate);
+    } else {
+        url.searchParams.delete('to_date');
+    }
+    
+    window.location.href = url.toString();
+}
+
 function clearFilters() {
     document.getElementById('filter-from-date').value = '';
     document.getElementById('filter-to-date').value = '';
-    location.reload();
+    window.location.href = window.location.pathname;
 }
 </script>
 @endsection

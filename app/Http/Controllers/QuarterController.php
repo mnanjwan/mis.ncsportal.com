@@ -216,7 +216,7 @@ class QuarterController extends Controller
         }
 
         // Get rejected allocations
-        $rejectedAllocations = \App\Models\OfficerQuarter::where('status', 'REJECTED')
+        $query = \App\Models\OfficerQuarter::where('status', 'REJECTED')
             ->with([
                 'officer:id,service_number,initials,surname,present_station',
                 'quarter:id,quarter_number,quarter_type,command_id',
@@ -228,9 +228,25 @@ class QuarterController extends Controller
             })
             ->whereHas('quarter', function ($q) use ($commandId) {
                 $q->where('command_id', $commandId);
-            })
-            ->orderBy('rejected_at', 'desc')
-            ->get();
+            });
+
+        // Apply date filters if provided
+        if ($request->has('from_date')) {
+            $query->whereDate('rejected_at', '>=', $request->from_date);
+        }
+        if ($request->has('to_date')) {
+            $query->whereDate('rejected_at', '<=', $request->to_date);
+        }
+
+        $rejectedAllocations = $query->orderBy('rejected_at', 'desc')
+            ->get()
+            ->map(function ($allocation) {
+                // Ensure allocatedBy relationship is loaded even if user doesn't have officer
+                if ($allocation->allocatedBy && !$allocation->allocatedBy->relationLoaded('officer')) {
+                    $allocation->allocatedBy->load('officer:id,user_id,initials,surname');
+                }
+                return $allocation;
+            });
 
         return view('dashboards.building.rejected-allocations', compact('rejectedAllocations'));
     }
