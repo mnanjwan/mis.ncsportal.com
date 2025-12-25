@@ -161,8 +161,12 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                            @if($course->nominatedBy && $course->nominatedBy->officer)
-                                                {{ $course->nominatedBy->officer->initials }} {{ $course->nominatedBy->officer->surname }}
+                                            @if($course->nominatedBy)
+                                                @if($course->nominatedBy->officer)
+                                                    {{ $course->nominatedBy->officer->initials }} {{ $course->nominatedBy->officer->surname }}
+                                                @else
+                                                    {{ $course->nominatedBy->email }}
+                                                @endif
                                             @else
                                                 N/A
                                             @endif
@@ -213,9 +217,14 @@
                                                 Completed: {{ $course->completion_date->format('d/m/Y') }}
                                             </span>
                                             @endif
-                                            @if($course->nominatedBy && $course->nominatedBy->officer)
+                                            @if($course->nominatedBy)
                                             <span class="text-xs text-secondary-foreground">
-                                                Nominated by: {{ $course->nominatedBy->officer->initials }} {{ $course->nominatedBy->officer->surname }}
+                                                Nominated by: 
+                                                @if($course->nominatedBy->officer)
+                                                    {{ $course->nominatedBy->officer->initials }} {{ $course->nominatedBy->officer->surname }}
+                                                @else
+                                                    {{ $course->nominatedBy->email }}
+                                                @endif
                                             </span>
                                             @endif
                                         </div>
