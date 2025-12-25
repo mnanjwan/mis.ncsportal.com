@@ -169,6 +169,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/quarters/requests', [QuarterController::class, 'requests']);
     Route::post('/quarters/requests/{id}/approve', [QuarterController::class, 'approveRequest']);
     Route::post('/quarters/requests/{id}/reject', [QuarterController::class, 'rejectRequest']);
+    
+    // Rejected Allocations (Building Unit)
+    Route::get('/quarters/rejected-allocations', [QuarterController::class, 'rejectedAllocations']);
 
     // Chat
     Route::get('/chat/rooms', [ChatController::class, 'rooms']);

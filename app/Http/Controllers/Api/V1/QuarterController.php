@@ -934,5 +934,65 @@ class QuarterController extends BaseController
 
         return $this->successResponse($allocations);
     }
+
+    /**
+     * Get rejected allocations (Building Unit)
+     */
+    public function rejectedAllocations(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can view rejected allocations',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
+        $query = OfficerQuarter::where('status', 'REJECTED')
+            ->with([
+                'officer:id,service_number,initials,surname,present_station',
+                'quarter:id,quarter_number,quarter_type,command_id',
+                'allocatedBy:id,email',
+                'allocatedBy.officer:id,user_id,initials,surname',
+            ])
+            ->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
+            ->whereHas('quarter', function ($q) use ($commandId) {
+                $q->where('command_id', $commandId);
+            });
+
+        // Filter by date range if provided
+        if ($request->has('from_date')) {
+            $query->whereDate('rejected_at', '>=', $request->from_date);
+        }
+        if ($request->has('to_date')) {
+            $query->whereDate('rejected_at', '<=', $request->to_date);
+        }
+
+        $rejectedAllocations = $query->orderBy('rejected_at', 'desc')->get();
+
+        return $this->successResponse($rejectedAllocations);
+    }
 }
 

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\V1\QuarterController as ApiQuarterController;
+use App\Models\OfficerQuarter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class QuarterController extends Controller
 {
@@ -53,6 +56,183 @@ class QuarterController extends Controller
     public function createRequest()
     {
         return view('officer.quarter-requests.create');
+    }
+
+    /**
+     * Accept quarter allocation (Officer) - Web route
+     */
+    public function acceptAllocation(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'User must be linked to an officer');
+        }
+
+        $allocation = OfficerQuarter::with(['quarter', 'officer'])->findOrFail($id);
+
+        // Ensure allocation belongs to the officer
+        if ($allocation->officer_id != $officer->id) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'You can only accept your own allocations');
+        }
+
+        // Ensure allocation is pending
+        if (!$allocation->isPending()) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'Only pending allocations can be accepted');
+        }
+
+        // Check if quarter is still available
+        $quarterOccupied = OfficerQuarter::where('quarter_id', $allocation->quarter_id)
+            ->where('id', '!=', $allocation->id)
+            ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
+            ->exists();
+
+        if ($quarterOccupied) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'This quarter has already been accepted by another officer');
+        }
+
+        try {
+            DB::transaction(function () use ($allocation, $officer) {
+                // Update allocation status to ACCEPTED
+                $allocation->update([
+                    'status' => 'ACCEPTED',
+                    'accepted_at' => now(),
+                ]);
+
+                // Mark quarter as occupied
+                $allocation->quarter->update(['is_occupied' => true]);
+
+                // Update officer's quartered status
+                $officer->update(['quartered' => true]);
+
+                // Reject any other pending allocations for this officer
+                OfficerQuarter::where('officer_id', $officer->id)
+                    ->where('id', '!=', $allocation->id)
+                    ->where('status', 'PENDING')
+                    ->update([
+                        'status' => 'REJECTED',
+                        'rejected_at' => now(),
+                        'is_current' => false,
+                    ]);
+            });
+
+            // Notify Building Unit about acceptance
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->notifyQuarterAllocationAccepted($allocation);
+
+            return redirect()->route('officer.dashboard')
+                ->with('success', 'Quarter allocation accepted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'An error occurred: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Reject quarter allocation (Officer) - Web route
+     */
+    public function rejectAllocation(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'User must be linked to an officer');
+        }
+
+        $allocation = OfficerQuarter::with(['quarter', 'officer'])->findOrFail($id);
+
+        // Ensure allocation belongs to the officer
+        if ($allocation->officer_id != $officer->id) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'You can only reject your own allocations');
+        }
+
+        // Ensure allocation is pending
+        if (!$allocation->isPending()) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'Only pending allocations can be rejected');
+        }
+
+        $request->validate([
+            'rejection_reason' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $allocation->update([
+                'status' => 'REJECTED',
+                'rejection_reason' => $request->rejection_reason,
+                'rejected_at' => now(),
+                'is_current' => false,
+            ]);
+
+            // Notify Building Unit about rejection
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->notifyQuarterAllocationRejected($allocation, $request->rejection_reason);
+
+            return redirect()->route('officer.dashboard')
+                ->with('success', 'Quarter allocation rejected successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('officer.dashboard')
+                ->with('error', 'An error occurred: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show rejected allocations (Building Unit)
+     */
+    public function rejectedAllocations(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !$user->hasRole('Building Unit')) {
+            return redirect()->route('building.dashboard')
+                ->with('error', 'Unauthorized access');
+        }
+
+        // Get Building Unit command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return redirect()->route('building.dashboard')
+                ->with('error', 'Building Unit user must be assigned to a command');
+        }
+
+        // Get rejected allocations
+        $rejectedAllocations = \App\Models\OfficerQuarter::where('status', 'REJECTED')
+            ->with([
+                'officer:id,service_number,initials,surname,present_station',
+                'quarter:id,quarter_number,quarter_type,command_id',
+                'allocatedBy:id,email',
+                'allocatedBy.officer:id,user_id,initials,surname',
+            ])
+            ->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
+            ->whereHas('quarter', function ($q) use ($commandId) {
+                $q->where('command_id', $commandId);
+            })
+            ->orderBy('rejected_at', 'desc')
+            ->get();
+
+        return view('dashboards.building.rejected-allocations', compact('rejectedAllocations'));
     }
 }
 

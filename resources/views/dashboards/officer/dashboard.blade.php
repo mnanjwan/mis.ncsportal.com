@@ -276,27 +276,19 @@
                 return;
             }
 
-            fetch(`/api/v1/quarters/allocations/${allocationId}/accept`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Quarter allocation accepted successfully!');
-                    location.reload();
-                } else {
-                    alert(data.message || 'Failed to accept allocation');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
+            // Use form submission for web route
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/quarters/allocations/${allocationId}/accept`;
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = document.querySelector('meta[name="csrf-token"]').content;
+            form.appendChild(csrfToken);
+            
+            document.body.appendChild(form);
+            form.submit();
         }
 
         function rejectAllocation(allocationId) {
@@ -315,31 +307,27 @@
             const allocationId = document.getElementById('allocationId').value;
             const rejectionReason = document.getElementById('rejectionReason').value;
 
-            fetch(`/api/v1/quarters/allocations/${allocationId}/reject`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    rejection_reason: rejectionReason
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Quarter allocation rejected successfully!');
-                    closeRejectionModal();
-                    location.reload();
-                } else {
-                    alert(data.message || 'Failed to reject allocation');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
+            // Use form submission for web route
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/quarters/allocations/${allocationId}/reject`;
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = document.querySelector('meta[name="csrf-token"]').content;
+            form.appendChild(csrfToken);
+            
+            if (rejectionReason) {
+                const reasonInput = document.createElement('input');
+                reasonInput.type = 'hidden';
+                reasonInput.name = 'rejection_reason';
+                reasonInput.value = rejectionReason;
+                form.appendChild(reasonInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
         });
     </script>
 @endsection

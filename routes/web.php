@@ -85,6 +85,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
         Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
         Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
+        
+        // Quarter Allocation Accept/Reject
+        Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation'])->name('quarters.allocations.accept');
+        Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation'])->name('quarters.allocations.reject');
     });
 
     // HRD Routes
@@ -339,6 +343,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/quarters/allocate', [QuarterController::class, 'allocate'])->name('quarters.allocate');
         Route::get('/officers', [QuarterController::class, 'officers'])->name('officers');
         Route::get('/requests', [QuarterController::class, 'requests'])->name('requests');
+        Route::get('/rejected-allocations', [QuarterController::class, 'rejectedAllocations'])->name('rejected-allocations');
     });
 
     // Establishment Routes
