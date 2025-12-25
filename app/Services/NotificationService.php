@@ -1063,4 +1063,237 @@ class NotificationService
             $quarterRequest->id
         );
     }
+
+    /**
+     * Notify officer about posting/transfer
+     */
+    public function notifyOfficerPosted($officer, $fromCommand, $toCommand, $postingDate = null): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $fromCommandName = $fromCommand ? $fromCommand->name : 'Previous Command';
+        $toCommandName = $toCommand ? $toCommand->name : 'New Command';
+        $date = $postingDate ? \Carbon\Carbon::parse($postingDate)->format('d/m/Y') : 'Effective immediately';
+
+        return $this->notify(
+            $officer->user,
+            'officer_posted',
+            'Posting/Transfer Notification',
+            "You have been posted/transferred from {$fromCommandName} to {$toCommandName}. Posting date: {$date}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about rank/promotion change
+     */
+    public function notifyRankChanged($officer, string $oldRank, string $newRank): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        return $this->notify(
+            $officer->user,
+            'rank_changed',
+            'Rank Changed',
+            "Your rank has been changed from {$oldRank} to {$newRank}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about interdiction status change
+     */
+    public function notifyInterdictionStatusChanged($officer, bool $interdicted): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $status = $interdicted ? 'interdicted' : 'removed from interdiction';
+        $title = $interdicted ? 'Interdiction Notice' : 'Interdiction Removed';
+
+        return $this->notify(
+            $officer->user,
+            'interdiction_status_changed',
+            $title,
+            "You have been {$status}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about suspension status change
+     */
+    public function notifySuspensionStatusChanged($officer, bool $suspended): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $status = $suspended ? 'suspended' : 'removed from suspension';
+        $title = $suspended ? 'Suspension Notice' : 'Suspension Removed';
+
+        return $this->notify(
+            $officer->user,
+            'suspension_status_changed',
+            $title,
+            "You have been {$status}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about dismissal
+     */
+    public function notifyOfficerDismissed($officer): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        return $this->notify(
+            $officer->user,
+            'officer_dismissed',
+            'Dismissal Notice',
+            "You have been dismissed from service.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about active/inactive status change
+     */
+    public function notifyActiveStatusChanged($officer, bool $isActive): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $status = $isActive ? 'activated' : 'deactivated';
+        $title = $isActive ? 'Account Activated' : 'Account Deactivated';
+
+        return $this->notify(
+            $officer->user,
+            'active_status_changed',
+            $title,
+            "Your account has been {$status}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about command/station change
+     */
+    public function notifyCommandChanged($officer, $oldCommand, $newCommand): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $oldCommandName = $oldCommand ? $oldCommand->name : 'Previous Command';
+        $newCommandName = $newCommand ? $newCommand->name : 'New Command';
+
+        return $this->notify(
+            $officer->user,
+            'command_changed',
+            'Command/Station Changed',
+            "Your command/station has been changed from {$oldCommandName} to {$newCommandName}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about date posted to station change
+     */
+    public function notifyDatePostedChanged($officer, $oldDate, $newDate): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $oldDateFormatted = $oldDate ? \Carbon\Carbon::parse($oldDate)->format('d/m/Y') : 'Not set';
+        $newDateFormatted = $newDate ? \Carbon\Carbon::parse($newDate)->format('d/m/Y') : 'Not set';
+
+        return $this->notify(
+            $officer->user,
+            'date_posted_changed',
+            'Date Posted to Station Updated',
+            "Your date posted to station has been updated from {$oldDateFormatted} to {$newDateFormatted}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about unit assignment change
+     */
+    public function notifyUnitChanged($officer, string $oldUnit, string $newUnit): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $oldUnitDisplay = $oldUnit ?: 'Not assigned';
+        $newUnitDisplay = $newUnit ?: 'Not assigned';
+
+        return $this->notify(
+            $officer->user,
+            'unit_changed',
+            'Unit Assignment Changed',
+            "Your unit assignment has been changed from {$oldUnitDisplay} to {$newUnitDisplay}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about service number assignment
+     */
+    public function notifyServiceNumberAssignedToOfficer($officer, string $serviceNumber): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        return $this->notify(
+            $officer->user,
+            'service_number_assigned',
+            'Service Number Assigned',
+            "Service number {$serviceNumber} has been assigned to you.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about deceased status (when reported)
+     */
+    public function notifyOfficerDeceased($officer, $dateOfDeath): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $dateFormatted = \Carbon\Carbon::parse($dateOfDeath)->format('d/m/Y');
+
+        return $this->notify(
+            $officer->user,
+            'officer_deceased_reported',
+            'Deceased Status Reported',
+            "You have been reported as deceased with date of death: {$dateFormatted}. This report is pending validation.",
+            'officer',
+            $officer->id
+        );
+    }
 }

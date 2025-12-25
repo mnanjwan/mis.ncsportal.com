@@ -189,3 +189,4 @@ Building Unit manages officer quarters (accommodation) at the command level. Thi
 
 **Main Gap:** The quarter request and rejection system is not yet implemented. Currently, Building Unit can only directly allocate quarters, but officers cannot request them, and Building Unit cannot reject requests with reasons.
 
+

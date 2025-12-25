@@ -198,9 +198,14 @@ class PostingWorkflowService
     private function notifyOfficer(Officer $officer, $order)
     {
         if ($officer->user) {
+            $fromCommand = $officer->presentStation;
             $toCommand = null;
+            $postingDate = null;
+            
             if ($order instanceof StaffOrder) {
+                $fromCommand = $order->fromCommand;
                 $toCommand = $order->toCommand;
+                $postingDate = $order->effective_date ?? now();
             } elseif ($order instanceof MovementOrder) {
                 // Get the command from the posting
                 $posting = OfficerPosting::where('movement_order_id', $order->id)
@@ -208,22 +213,18 @@ class PostingWorkflowService
                     ->with('command')
                     ->first();
                 $toCommand = $posting ? $posting->command : null;
+                $postingDate = $posting ? ($posting->posting_date ?? now()) : now();
             }
 
             $commandName = $toCommand ? $toCommand->name : 'Unknown';
             Log::info("Officer notification: {$officer->user->email} - Posted to {$commandName} via {$order->order_number}");
             
-            // Send notification if NotificationService is available
+            // Send notification using NotificationService
             try {
-                if (class_exists(\App\Services\NotificationService::class)) {
-                    $notificationService = app(\App\Services\NotificationService::class);
-                    if (method_exists($notificationService, 'notifyOfficerPosting')) {
-                        // Use call_user_func to avoid linter error for dynamic method call
-                        call_user_func([$notificationService, 'notifyOfficerPosting'], $officer, $order, $toCommand);
-                    }
-                }
+                $notificationService = app(\App\Services\NotificationService::class);
+                $notificationService->notifyOfficerPosted($officer, $fromCommand, $toCommand, $postingDate);
             } catch (\Exception $e) {
-                Log::warning("Notification service not available: " . $e->getMessage());
+                Log::warning("Failed to send posting notification: " . $e->getMessage());
             }
         }
     }

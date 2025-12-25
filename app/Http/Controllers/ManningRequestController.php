@@ -698,12 +698,12 @@ class ManningRequestController extends Controller
                         Log::info("Movement Order {$orderNumber}: Officer {$officer->id} ({$officer->service_number}) posted from " . 
                             ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$destinationCommand->name}");
                         
-                        // Notify Staff Officer of new posting (via NotificationService if available)
+                        // Notify officer about posting
                         try {
                             $notificationService = app(NotificationService::class);
-                            // Notification will be handled by NotificationService if methods exist
+                            $notificationService->notifyOfficerPosted($officer, $fromCommand, $destinationCommand, now());
                         } catch (\Exception $e) {
-                            Log::info("Notification service not available for officer posting");
+                            Log::warning("Failed to send posting notification: " . $e->getMessage());
                         }
                     }
                 }

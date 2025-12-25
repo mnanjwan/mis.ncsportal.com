@@ -282,6 +282,63 @@ class Officer extends Model
         return max(0, now()->diffInDays($retirementDate, false));
     }
 
+    /**
+     * Get time in service (from date of first appointment to now)
+     * Returns an array with years, months, and days
+     */
+    public function getTimeInService(): ?array
+    {
+        if (!$this->date_of_first_appointment) {
+            return null;
+        }
+
+        $startDate = $this->date_of_first_appointment;
+        $endDate = now();
+
+        $diff = $startDate->diff($endDate);
+
+        return [
+            'years' => (int) $diff->y,
+            'months' => (int) $diff->m,
+            'days' => (int) $diff->d,
+            'total_days' => (int) $startDate->diffInDays($endDate),
+        ];
+    }
+
+    /**
+     * Get time left in service (from now to retirement date)
+     * Returns an array with years, months, and days
+     */
+    public function getTimeLeftInService(): ?array
+    {
+        $retirementDate = $this->calculateRetirementDate();
+        if (!$retirementDate) {
+            return null;
+        }
+
+        $startDate = now();
+        $endDate = $retirementDate;
+
+        // If retirement date has passed, return zeros
+        if ($endDate->lt($startDate)) {
+            return [
+                'years' => 0,
+                'months' => 0,
+                'days' => 0,
+                'total_days' => 0,
+            ];
+        }
+
+        $diff = $startDate->diff($endDate);
+
+        return [
+            'years' => (int) $diff->y,
+            'months' => (int) $diff->m,
+            'days' => (int) $diff->d,
+            'total_days' => (int) $startDate->diffInDays($endDate),
+        ];
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

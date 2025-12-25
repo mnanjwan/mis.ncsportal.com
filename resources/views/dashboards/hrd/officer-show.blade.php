@@ -58,8 +58,24 @@
             </div>
         </div>
 
-        <!-- Profile Details -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5 lg:gap-7.5">
+        <!-- Tabs Navigation -->
+        <div class="kt-card">
+            <div class="kt-card-content p-0">
+                <div class="flex border-b border-input">
+                    <button onclick="switchTab('overview')" id="tab-overview" class="tab-button active px-6 py-4 text-sm font-medium text-foreground border-b-2 border-primary transition-colors">
+                        Overview
+                    </button>
+                    <button onclick="switchTab('career-timeline')" id="tab-career-timeline" class="tab-button px-6 py-4 text-sm font-medium text-secondary-foreground hover:text-foreground transition-colors">
+                        Career Timeline
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Overview -->
+        <div id="content-overview" class="tab-content">
+            <!-- Profile Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5 lg:gap-7.5">
             <!-- Personal Information -->
             <div class="kt-card">
                 <div class="kt-card-header">
@@ -377,7 +393,161 @@
                 </div>
             </div>
             @endif
+            </div>
+        </div>
+
+        <!-- Tab Content: Career Timeline -->
+        <div id="content-career-timeline" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-7.5">
+                @php
+                    $timeInService = $officer->getTimeInService();
+                    $timeLeftInService = $officer->getTimeLeftInService();
+                    $retirementDate = $officer->calculateRetirementDate();
+                    $retirementType = $officer->getRetirementType();
+                @endphp
+
+                <!-- Service Duration -->
+                <div class="kt-card">
+                    <div class="kt-card-header">
+                        <h3 class="kt-card-title">Service Duration</h3>
+                    </div>
+                    <div class="kt-card-content">
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Date of First Appointment</span>
+                                <span class="text-sm font-semibold text-mono">
+                                    {{ $officer->date_of_first_appointment ? $officer->date_of_first_appointment->format('d/m/Y') : 'N/A' }}
+                                </span>
+                            </div>
+                            @if($timeInService)
+                            <div class="pt-4 border-t border-input">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-secondary-foreground">Years in Service</span>
+                                    <span class="text-lg font-bold text-primary">{{ $timeInService['years'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-secondary-foreground">Months</span>
+                                    <span class="text-sm font-semibold text-mono">{{ $timeInService['months'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-secondary-foreground">Days</span>
+                                    <span class="text-sm font-semibold text-mono">{{ $timeInService['days'] }}</span>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-input">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-secondary-foreground">Total Days</span>
+                                        <span class="text-sm font-semibold text-mono">{{ number_format($timeInService['total_days']) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @else
+                            <div class="text-sm text-secondary-foreground pt-4 border-t border-input">
+                                Date of first appointment not available
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projected Service Balance -->
+                <div class="kt-card">
+                    <div class="kt-card-header">
+                        <h3 class="kt-card-title">Projected Service Balance</h3>
+                    </div>
+                    <div class="kt-card-content">
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Retirement Date</span>
+                                <span class="text-sm font-semibold text-mono">
+                                    {{ $retirementDate ? $retirementDate->format('d/m/Y') : 'N/A' }}
+                                </span>
+                            </div>
+                            @if($retirementType)
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Retirement Type</span>
+                                <span class="kt-badge kt-badge-{{ $retirementType === 'AGE' ? 'info' : 'primary' }} kt-badge-sm">
+                                    {{ $retirementType === 'AGE' ? 'Age-Based (60 years)' : 'Service-Based (35 years)' }}
+                                </span>
+                            </div>
+                            @endif
+                            @if($timeLeftInService)
+                            <div class="pt-4 border-t border-input">
+                                @if($timeLeftInService['total_days'] > 0)
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-secondary-foreground">Years Remaining</span>
+                                    <span class="text-lg font-bold text-primary">{{ $timeLeftInService['years'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-secondary-foreground">Months Remaining</span>
+                                    <span class="text-sm font-semibold text-mono">{{ $timeLeftInService['months'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-secondary-foreground">Days Remaining</span>
+                                    <span class="text-sm font-semibold text-mono">{{ $timeLeftInService['days'] }}</span>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-input">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-secondary-foreground">Total Days Remaining</span>
+                                        <span class="text-sm font-semibold text-mono">{{ number_format($timeLeftInService['total_days']) }}</span>
+                                    </div>
+                                </div>
+                                @else
+                                <div class="text-sm font-semibold text-danger">
+                                    Officer has reached retirement date
+                                </div>
+                                @endif
+                            </div>
+                            @else
+                            <div class="text-sm text-secondary-foreground pt-4 border-t border-input">
+                                Retirement information not available
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <style>
+        .tab-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            color: var(--kt-primary);
+            border-bottom-color: var(--kt-primary);
+        }
+        .tab-content {
+            display: block;
+        }
+        .tab-content.hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active', 'border-b-2', 'border-primary', 'text-foreground');
+                button.classList.add('text-secondary-foreground');
+            });
+            
+            // Show selected tab content
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            
+            // Add active class to selected tab
+            const activeTab = document.getElementById('tab-' + tabName);
+            activeTab.classList.add('active', 'border-b-2', 'border-primary', 'text-foreground');
+            activeTab.classList.remove('text-secondary-foreground');
+        }
+    </script>
 @endsection
 

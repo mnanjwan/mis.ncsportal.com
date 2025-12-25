@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DeceasedOfficer;
 use App\Models\Officer;
 use App\Models\NextOfKin;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -136,6 +137,15 @@ class DeceasedOfficerController extends Controller
             ]);
 
             DB::commit();
+
+            // Notify officer about deceased status report
+            try {
+                $notificationService = app(NotificationService::class);
+                $notificationService->notifyOfficerDeceased($officer, $validated['date_of_death']);
+            } catch (\Exception $e) {
+                // Log but don't fail the transaction
+                \Log::warning("Failed to send deceased notification: " . $e->getMessage());
+            }
 
             // Redirect based on user role
             if ($user->hasRole('Area Controller')) {

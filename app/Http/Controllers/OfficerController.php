@@ -351,6 +351,16 @@ class OfficerController extends Controller
     {
         $officer = \App\Models\Officer::findOrFail($id);
         
+        // Store original values for comparison
+        $originalRank = $officer->substantive_rank;
+        $originalInterdicted = $officer->interdicted;
+        $originalSuspended = $officer->suspended;
+        $originalDismissed = $officer->dismissed;
+        $originalIsActive = $officer->is_active;
+        $originalPresentStation = $officer->present_station;
+        $originalDatePosted = $officer->date_posted_to_station;
+        $originalUnit = $officer->unit;
+        
         $validated = $request->validate([
             'initials' => 'required|string|max:50',
             'surname' => 'required|string|max:255',
@@ -378,6 +388,8 @@ class OfficerController extends Controller
             'interdicted' => 'nullable|boolean',
             'suspended' => 'nullable|boolean',
             'quartered' => 'nullable|boolean',
+            'dismissed' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
         
         // Process education data
@@ -391,9 +403,59 @@ class OfficerController extends Controller
         $validated['interdicted'] = $request->has('interdicted');
         $validated['suspended'] = $request->has('suspended');
         $validated['quartered'] = $request->has('quartered');
+        $validated['dismissed'] = $request->has('dismissed');
+        $validated['is_active'] = $request->has('is_active') ? true : ($request->has('is_active') === false ? false : $officer->is_active);
         
         // Update officer
         $officer->update($validated);
+        
+        // Refresh to get updated values
+        $officer->refresh();
+        
+        // Send notifications for changes
+        $notificationService = app(\App\Services\NotificationService::class);
+        
+        // Rank change notification
+        if ($originalRank !== $officer->substantive_rank) {
+            $notificationService->notifyRankChanged($officer, $originalRank, $officer->substantive_rank);
+        }
+        
+        // Interdiction status change notification
+        if ($originalInterdicted !== $officer->interdicted) {
+            $notificationService->notifyInterdictionStatusChanged($officer, $officer->interdicted);
+        }
+        
+        // Suspension status change notification
+        if ($originalSuspended !== $officer->suspended) {
+            $notificationService->notifySuspensionStatusChanged($officer, $officer->suspended);
+        }
+        
+        // Dismissal notification
+        if (!$originalDismissed && $officer->dismissed) {
+            $notificationService->notifyOfficerDismissed($officer);
+        }
+        
+        // Active status change notification
+        if ($originalIsActive !== $officer->is_active) {
+            $notificationService->notifyActiveStatusChanged($officer, $officer->is_active);
+        }
+        
+        // Command/Station change notification
+        if ($originalPresentStation !== $officer->present_station) {
+            $oldCommand = \App\Models\Command::find($originalPresentStation);
+            $newCommand = \App\Models\Command::find($officer->present_station);
+            $notificationService->notifyCommandChanged($officer, $oldCommand, $newCommand);
+        }
+        
+        // Date posted change notification
+        if ($originalDatePosted != $officer->date_posted_to_station) {
+            $notificationService->notifyDatePostedChanged($officer, $originalDatePosted, $officer->date_posted_to_station);
+        }
+        
+        // Unit change notification
+        if ($originalUnit !== $officer->unit) {
+            $notificationService->notifyUnitChanged($officer, $originalUnit ?? '', $officer->unit ?? '');
+        }
         
         return redirect()->route('hrd.officers.show', $officer->id)
             ->with('success', 'Officer information updated successfully.');

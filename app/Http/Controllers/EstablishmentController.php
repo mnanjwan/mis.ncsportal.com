@@ -127,9 +127,9 @@ class EstablishmentController extends Controller
                             
                             // Notify officer if they have a user account
                             $user = User::where('email', $officer->email)->first();
-                            if ($user) {
+                            if ($user && $officer->user_id) {
                                 $notificationService = app(NotificationService::class);
-                                $notificationService->notifyServiceNumberAssigned($user, $officer);
+                                $notificationService->notifyServiceNumberAssignedToOfficer($officer, $officer->service_number);
                             }
                         }
                     }
@@ -619,12 +619,26 @@ class EstablishmentController extends Controller
                         $officer = Officer::find($result->officer_id);
                         if ($officer) {
                             $officer->update(['service_number' => $serviceNumber]);
+                            // Notify officer about service number assignment
+                            try {
+                                $notificationService = app(NotificationService::class);
+                                $notificationService->notifyServiceNumberAssignedToOfficer($officer, $serviceNumber);
+                            } catch (\Exception $e) {
+                                \Log::warning("Failed to send service number notification: " . $e->getMessage());
+                            }
                         }
                     } else {
                         $officer = Officer::where('appointment_number', $result->appointment_number)->first();
                         if ($officer) {
                             $officer->update(['service_number' => $serviceNumber]);
                             $result->update(['officer_id' => $officer->id]);
+                            // Notify officer about service number assignment
+                            try {
+                                $notificationService = app(NotificationService::class);
+                                $notificationService->notifyServiceNumberAssignedToOfficer($officer, $serviceNumber);
+                            } catch (\Exception $e) {
+                                \Log::warning("Failed to send service number notification: " . $e->getMessage());
+                            }
                         }
                     }
 
@@ -658,6 +672,13 @@ class EstablishmentController extends Controller
                     }
 
                     $officer->update(['service_number' => $serviceNumber]);
+                    // Notify officer about service number assignment
+                    try {
+                        $notificationService = app(NotificationService::class);
+                        $notificationService->notifyServiceNumberAssignedToOfficer($officer, $serviceNumber);
+                    } catch (\Exception $e) {
+                        \Log::warning("Failed to send service number notification: " . $e->getMessage());
+                    }
                     $currentNumber++;
                     $assigned++;
                 }
