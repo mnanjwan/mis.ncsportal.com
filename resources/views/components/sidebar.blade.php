@@ -240,8 +240,8 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('establishment.dashboard')],
                 ['icon' => 'ki-filled ki-abstract-26', 'title' => 'Service Numbers', 'href' => route('establishment.service-numbers')],
-                ['icon' => 'ki-filled ki-user-plus', 'title' => 'New Recruits', 'href' => route('establishment.new-recruits')],
-                ['icon' => 'ki-filled ki-file', 'title' => 'Training Results', 'href' => route('establishment.training-results')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'New Recruits', 'href' => route('establishment.new-recruits')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Training Results', 'href' => route('establishment.training-results')],
             ];
             break;
         case 'Welfare':

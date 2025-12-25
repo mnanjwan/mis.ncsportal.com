@@ -69,25 +69,26 @@
         </div>
 
         <!-- Table Card -->
-        <div class="kt-card">
+        <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">New Recruits</h3>
             </div>
-            <div class="kt-card-content">
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 <form id="bulkAssignForm" action="{{ route('establishment.assign-appointment-numbers') }}" method="POST" style="display: none;">
                     @csrf
                     <div id="bulkOfficerIdsContainer"></div>
                     <input type="hidden" name="appointment_number_prefix" id="bulkPrefix" value="APT">
                 </form>
                 
-                <div class="overflow-x-auto">
-                    <table class="kt-table w-full">
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 900px; width: 100%;">
                         <thead>
                             <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground w-12">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground w-12" style="white-space: nowrap;">
                                     <input type="checkbox" id="selectAll" class="kt-checkbox">
                                 </th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_order' => request('sort_by') === 'name' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                        class="flex items-center gap-1 hover:text-primary transition-colors">
                                         Recruit Details
@@ -98,7 +99,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'appointment_number', 'sort_order' => request('sort_by') === 'appointment_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                        class="flex items-center gap-1 hover:text-primary transition-colors">
                                         Appointment Number
@@ -109,7 +110,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'substantive_rank', 'sort_order' => request('sort_by') === 'substantive_rank' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                        class="flex items-center gap-1 hover:text-primary transition-colors">
                                         Entry Rank
@@ -120,10 +121,10 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Status
                                 </th>
-                                <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Actions
                                 </th>
                             </tr>
@@ -139,7 +140,7 @@
                                     $canDelete = !$recruit->service_number; // Can delete if no service number
                                 @endphp
                                 <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         @if($canAssign || $canDelete)
                                             <input type="checkbox" 
                                                    name="selected_recruits[]" 
@@ -149,9 +150,9 @@
                                                    data-can-delete="{{ $canDelete ? '1' : '0' }}">
                                         @endif
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         <div class="flex items-center gap-3">
-                                            <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                            <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm" style="flex-shrink: 0;">
                                                 {{ $avatarInitials }}
                                             </div>
                                             <div>
@@ -160,15 +161,15 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="text-sm font-mono text-foreground">
                                             {{ $recruit->appointment_number ?? 'Not Assigned' }}
                                         </span>
                                     </td>
-                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $recruit->substantive_rank ?? 'N/A' }}
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
                                         @if($recruit->appointment_number && $recruit->service_number)
                                             <span class="kt-badge kt-badge-success kt-badge-sm">Complete</span>
                                         @elseif($recruit->appointment_number)
@@ -177,7 +178,7 @@
                                             <span class="kt-badge kt-badge-secondary kt-badge-sm">Pending Appointment</span>
                                         @endif
                                     </td>
-                                    <td class="py-3 px-4 text-right">
+                                    <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                         <div class="relative inline-block text-right">
                                             <button type="button" 
                                                     onclick="toggleActionMenu({{ $recruit->id }}, event)"
@@ -218,7 +219,7 @@
                             @empty
                                 <tr>
                                     <td colspan="6" class="py-12 text-center">
-                                        <i class="ki-filled ki-users text-4xl text-muted-foreground mb-4"></i>
+                                        <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                                         <p class="text-secondary-foreground">No new recruits found</p>
                                         <p class="text-sm text-muted-foreground mt-1">Add a new recruit to get started</p>
                                     </td>
@@ -666,9 +667,47 @@
         @endpush
 
         @if($recruits->hasPages())
-            <div class="mt-6">
-                {{ $recruits->links() }}
+            <div class="mt-6 pt-4 border-t border-border px-4">
+                {{ $recruits->withQueryString()->links() }}
             </div>
         @endif
     </div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection
