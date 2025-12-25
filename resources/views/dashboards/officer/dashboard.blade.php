@@ -279,7 +279,7 @@
             // Use form submission for web route
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/quarters/allocations/${allocationId}/accept`;
+            form.action = `/officer/quarters/allocations/${allocationId}/accept`;
             
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
@@ -310,7 +310,7 @@
             // Use form submission for web route
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/quarters/allocations/${allocationId}/reject`;
+            form.action = `/officer/quarters/allocations/${allocationId}/reject`;
             
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
