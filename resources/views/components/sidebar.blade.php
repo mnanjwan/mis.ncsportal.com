@@ -231,6 +231,9 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('building.dashboard')],
                 ['icon' => 'ki-filled ki-home-2', 'title' => 'Quarters', 'href' => route('building.quarters')],
+                ['icon' => 'ki-filled ki-user', 'title' => 'Officers', 'href' => route('building.officers')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Quarter Requests', 'href' => route('building.requests')],
+                ['icon' => 'ki-filled ki-cross-circle', 'title' => 'Rejected Allocations', 'href' => route('building.rejected-allocations')],
             ];
             break;
         case 'Establishment':

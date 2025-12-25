@@ -66,6 +66,12 @@
                     <a href="{{ route('building.quarters.allocate') }}" class="kt-btn kt-btn-info">
                         <i class="ki-filled ki-plus"></i> Allocate Quarters
                     </a>
+                    <a href="{{ route('building.requests') }}" class="kt-btn kt-btn-warning">
+                        <i class="ki-filled ki-file-up"></i> Quarter Requests
+                    </a>
+                    <a href="{{ route('building.rejected-allocations') }}" class="kt-btn kt-btn-danger">
+                        <i class="ki-filled ki-cross-circle"></i> Rejected Allocations
+                    </a>
                 </div>
             </div>
         </div>
