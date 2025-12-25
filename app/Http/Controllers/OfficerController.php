@@ -6,6 +6,7 @@ use App\Models\Emolument;
 use App\Models\EmolumentTimeline;
 use App\Models\LeaveApplication;
 use App\Models\PassApplication;
+use App\Models\OfficerQuarter;
 use Illuminate\Http\Request;
 
 class OfficerController extends Controller
@@ -476,6 +477,7 @@ class OfficerController extends Controller
                 'passStatus' => 'Unavailable',
                 'recentApplications' => [],
                 'activeTimeline' => null,
+                'pendingAllocations' => collect([]),
             ]);
         }
 
@@ -533,13 +535,21 @@ class OfficerController extends Controller
             ->sortByDesc('created_at')
             ->take(5);
 
+        // 6. Pending Quarter Allocations
+        $pendingAllocations = OfficerQuarter::where('officer_id', $officer->id)
+            ->where('status', 'PENDING')
+            ->with(['quarter:id,quarter_number,quarter_type,command_id', 'allocatedBy:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('dashboards.officer.dashboard', compact(
             'officer',
             'emolumentStatus',
             'leaveBalance',
             'passStatus',
             'recentApplications',
-            'activeTimeline'
+            'activeTimeline',
+            'pendingAllocations'
         ));
     }
 

@@ -15,6 +15,10 @@ class OfficerQuarter extends Model
         'allocated_date',
         'deallocated_date',
         'is_current',
+        'status',
+        'rejection_reason',
+        'accepted_at',
+        'rejected_at',
         'allocated_by',
         'request_id',
     ];
@@ -25,7 +29,25 @@ class OfficerQuarter extends Model
             'allocated_date' => 'date',
             'deallocated_date' => 'date',
             'is_current' => 'boolean',
+            'accepted_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
+    }
+
+    // Helper methods
+    public function isPending(): bool
+    {
+        return $this->status === 'PENDING';
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status === 'ACCEPTED';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'REJECTED';
     }
 
     // Relationships

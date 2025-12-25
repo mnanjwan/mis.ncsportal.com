@@ -48,7 +48,9 @@ class QuarterController extends BaseController
         }
 
         $quarters = $query->with(['officerQuarters' => function ($q) {
-            $q->where('is_current', true)->with('officer:id,service_number,initials,surname');
+            $q->where('is_current', true)
+              ->where('status', 'ACCEPTED')
+              ->with('officer:id,service_number,initials,surname');
         }])->get();
 
         // Transform response to include officer info
@@ -110,7 +112,13 @@ class QuarterController extends BaseController
             ->where('command_id', $commandId);
 
         $totalQuarters = $query->count();
-        $occupiedQuarters = (clone $query)->where('is_occupied', true)->count();
+        // Only count quarters with ACCEPTED allocations as occupied
+        $occupiedQuarters = OfficerQuarter::whereHas('quarter', function($q) use ($commandId) {
+            $q->where('command_id', $commandId)->where('is_active', true);
+        })
+        ->where('is_current', true)
+        ->where('status', 'ACCEPTED')
+        ->count();
         $availableQuarters = $totalQuarters - $occupiedQuarters;
 
         return $this->successResponse([
@@ -253,7 +261,13 @@ class QuarterController extends BaseController
             );
         }
 
-        if ($quarter->is_occupied) {
+        // Check if quarter is occupied by an accepted allocation
+        $acceptedAllocation = OfficerQuarter::where('quarter_id', $request->quarter_id)
+            ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
+            ->exists();
+
+        if ($acceptedAllocation) {
             return $this->errorResponse(
                 'Quarter is already occupied',
                 null,
@@ -262,39 +276,42 @@ class QuarterController extends BaseController
             );
         }
 
-        // Deallocate previous quarter if any
+        // Deallocate previous accepted quarter if any
         OfficerQuarter::where('officer_id', $request->officer_id)
             ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
             ->update(['is_current' => false]);
 
-        // Create new allocation
-        OfficerQuarter::create([
+        // Cancel any pending allocations for this officer
+        OfficerQuarter::where('officer_id', $request->officer_id)
+            ->where('status', 'PENDING')
+            ->update(['is_current' => false, 'status' => 'REJECTED', 'rejected_at' => now()]);
+
+        // Create new allocation with PENDING status - officer must accept
+        $allocation = OfficerQuarter::create([
             'officer_id' => $request->officer_id,
             'quarter_id' => $request->quarter_id,
             'allocated_date' => $request->allocation_date ?? now(),
             'is_current' => true,
+            'status' => 'PENDING',
             'allocated_by' => $user->id,
         ]);
 
-        // Mark quarter as occupied
-        $quarter->update(['is_occupied' => true]);
+        // Refresh relationships
+        $allocation->load(['officer', 'quarter']);
 
-        // Update officer's quartered status
-        $officer = Officer::findOrFail($request->officer_id);
-        $officer->update(['quartered' => true]);
-
-        // Refresh quarter to ensure we have latest data
-        $quarter->refresh();
-
-        // Notify officer about quarter allocation
+        // Notify officer about pending quarter allocation (needs acceptance)
         $notificationService = app(NotificationService::class);
         $allocationDate = $request->allocation_date ?? now();
         $notificationService->notifyQuarterAllocated($officer, $quarter, $allocationDate);
 
         return $this->successResponse([
+            'id' => $allocation->id,
             'officer_id' => $request->officer_id,
             'quarter_id' => $request->quarter_id,
-        ], 'Quarter allocated successfully');
+            'status' => 'PENDING',
+            'message' => 'Quarter allocation pending officer acceptance',
+        ], 'Quarter allocation created. Officer must accept the allocation.');
     }
 
     /**
@@ -335,6 +352,7 @@ class QuarterController extends BaseController
             $allocation = OfficerQuarter::where('quarter_id', $id)
                 ->where('officer_id', $request->officer_id)
                 ->where('is_current', true)
+                ->where('status', 'ACCEPTED')
                 ->firstOrFail();
         } else {
             // Otherwise, find by allocation ID
@@ -349,6 +367,16 @@ class QuarterController extends BaseController
                 null,
                 403,
                 'PERMISSION_DENIED'
+            );
+        }
+
+        // Only deallocate accepted allocations
+        if (!$allocation->isAccepted()) {
+            return $this->errorResponse(
+                'Only accepted allocations can be deallocated',
+                null,
+                400,
+                'INVALID_STATUS'
             );
         }
 
@@ -581,7 +609,13 @@ class QuarterController extends BaseController
             );
         }
 
-        if ($quarter->is_occupied) {
+        // Check if quarter is occupied by an accepted allocation
+        $acceptedAllocation = OfficerQuarter::where('quarter_id', $request->quarter_id)
+            ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
+            ->exists();
+
+        if ($acceptedAllocation) {
             return $this->errorResponse(
                 'Quarter is already occupied',
                 null,
@@ -599,33 +633,34 @@ class QuarterController extends BaseController
                 'quarter_id' => $request->quarter_id,
             ]);
 
-            // Deallocate previous quarter if any
+            // Deallocate previous accepted quarter if any
             OfficerQuarter::where('officer_id', $quarterRequest->officer_id)
                 ->where('is_current', true)
+                ->where('status', 'ACCEPTED')
                 ->update(['is_current' => false]);
 
-            // Create new allocation linked to request
+            // Cancel any pending allocations for this officer
+            OfficerQuarter::where('officer_id', $quarterRequest->officer_id)
+                ->where('status', 'PENDING')
+                ->update(['is_current' => false, 'status' => 'REJECTED', 'rejected_at' => now()]);
+
+            // Create new allocation with PENDING status - officer must accept
             OfficerQuarter::create([
                 'officer_id' => $quarterRequest->officer_id,
                 'quarter_id' => $request->quarter_id,
                 'allocated_date' => $request->allocation_date ?? now(),
                 'is_current' => true,
+                'status' => 'PENDING',
                 'allocated_by' => $user->id,
                 'request_id' => $quarterRequest->id,
             ]);
-
-            // Mark quarter as occupied
-            $quarter->update(['is_occupied' => true]);
-
-            // Update officer's quartered status
-            $quarterRequest->officer->update(['quartered' => true]);
         });
 
         // Refresh relationships
         $quarterRequest->refresh();
         $quarter->refresh();
 
-        // Notify officer about approval
+        // Notify officer about approval (allocation pending acceptance)
         $notificationService = app(NotificationService::class);
         $allocationDate = $request->allocation_date ?? now();
         $notificationService->notifyQuarterRequestApproved($quarterRequest, $quarter, $allocationDate);
@@ -720,6 +755,184 @@ class QuarterController extends BaseController
             'id' => $quarterRequest->id,
             'status' => $quarterRequest->status,
         ], 'Quarter request rejected successfully');
+    }
+
+    /**
+     * Accept quarter allocation (Officer)
+     */
+    public function acceptAllocation(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return $this->errorResponse(
+                'User must be linked to an officer',
+                null,
+                403,
+                'NO_OFFICER_LINKED'
+            );
+        }
+
+        $allocation = OfficerQuarter::with(['quarter', 'officer'])->findOrFail($id);
+
+        // Ensure allocation belongs to the officer
+        if ($allocation->officer_id != $officer->id) {
+            return $this->errorResponse(
+                'You can only accept your own allocations',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Ensure allocation is pending
+        if (!$allocation->isPending()) {
+            return $this->errorResponse(
+                'Only pending allocations can be accepted',
+                null,
+                400,
+                'INVALID_STATUS'
+            );
+        }
+
+        // Check if quarter is still available (not accepted by another officer)
+        $quarterOccupied = OfficerQuarter::where('quarter_id', $allocation->quarter_id)
+            ->where('id', '!=', $allocation->id)
+            ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
+            ->exists();
+
+        if ($quarterOccupied) {
+            return $this->errorResponse(
+                'This quarter has already been accepted by another officer',
+                null,
+                400,
+                'QUARTER_OCCUPIED'
+            );
+        }
+
+        DB::transaction(function () use ($allocation, $officer) {
+            // Update allocation status to ACCEPTED
+            $allocation->update([
+                'status' => 'ACCEPTED',
+                'accepted_at' => now(),
+            ]);
+
+            // Mark quarter as occupied
+            $allocation->quarter->update(['is_occupied' => true]);
+
+            // Update officer's quartered status
+            $officer->update(['quartered' => true]);
+
+            // Reject any other pending allocations for this officer
+            OfficerQuarter::where('officer_id', $officer->id)
+                ->where('id', '!=', $allocation->id)
+                ->where('status', 'PENDING')
+                ->update([
+                    'status' => 'REJECTED',
+                    'rejected_at' => now(),
+                    'is_current' => false,
+                ]);
+        });
+
+        // Refresh relationships
+        $allocation->refresh();
+
+        // Notify Building Unit about acceptance
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarterAllocationAccepted($allocation);
+
+        return $this->successResponse([
+            'id' => $allocation->id,
+            'status' => $allocation->status,
+            'quarter' => $allocation->quarter,
+        ], 'Quarter allocation accepted successfully');
+    }
+
+    /**
+     * Reject quarter allocation (Officer)
+     */
+    public function rejectAllocation(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return $this->errorResponse(
+                'User must be linked to an officer',
+                null,
+                403,
+                'NO_OFFICER_LINKED'
+            );
+        }
+
+        $allocation = OfficerQuarter::with(['quarter', 'officer'])->findOrFail($id);
+
+        // Ensure allocation belongs to the officer
+        if ($allocation->officer_id != $officer->id) {
+            return $this->errorResponse(
+                'You can only reject your own allocations',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Ensure allocation is pending
+        if (!$allocation->isPending()) {
+            return $this->errorResponse(
+                'Only pending allocations can be rejected',
+                null,
+                400,
+                'INVALID_STATUS'
+            );
+        }
+
+        $request->validate([
+            'rejection_reason' => 'nullable|string|max:500',
+        ]);
+
+        $allocation->update([
+            'status' => 'REJECTED',
+            'rejection_reason' => $request->rejection_reason,
+            'rejected_at' => now(),
+            'is_current' => false,
+        ]);
+
+        // Notify Building Unit about rejection
+        $notificationService = app(NotificationService::class);
+        $notificationService->notifyQuarterAllocationRejected($allocation, $request->rejection_reason);
+
+        return $this->successResponse([
+            'id' => $allocation->id,
+            'status' => $allocation->status,
+        ], 'Quarter allocation rejected successfully');
+    }
+
+    /**
+     * Get officer's pending allocations
+     */
+    public function myAllocations(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return $this->errorResponse(
+                'User must be linked to an officer',
+                null,
+                403,
+                'NO_OFFICER_LINKED'
+            );
+        }
+
+        $allocations = OfficerQuarter::where('officer_id', $officer->id)
+            ->with(['quarter:id,quarter_number,quarter_type,command_id', 'allocatedBy:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $this->successResponse($allocations);
     }
 }
 

@@ -160,6 +160,11 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/quarters/request', [QuarterController::class, 'submitRequest']);
     Route::get('/quarters/my-requests', [QuarterController::class, 'myRequests']);
     
+    // Quarter Allocations (Officers)
+    Route::get('/quarters/my-allocations', [QuarterController::class, 'myAllocations']);
+    Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation']);
+    Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation']);
+    
     // Quarter Requests (Building Unit)
     Route::get('/quarters/requests', [QuarterController::class, 'requests']);
     Route::post('/quarters/requests/{id}/approve', [QuarterController::class, 'approveRequest']);

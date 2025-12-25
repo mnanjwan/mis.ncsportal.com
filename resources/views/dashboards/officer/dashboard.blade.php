@@ -169,5 +169,177 @@
             </div>
         </div>
         <!-- End of Recent Activities -->
+
+        <!-- Pending Quarter Allocations -->
+        @if($pendingAllocations && $pendingAllocations->count() > 0)
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Pending Quarter Allocations</h3>
+            </div>
+            <div class="kt-card-content">
+                <div class="flex flex-col gap-4">
+                    @foreach($pendingAllocations as $allocation)
+                        <div class="p-4 rounded-lg border border-warning/20 bg-warning/5">
+                            <div class="flex flex-col gap-3">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-sm font-semibold text-mono">Quarter Allocation</span>
+                                        <span class="text-xs text-secondary-foreground">
+                                            Allocated on: {{ $allocation->created_at->format('d/m/Y H:i') }}
+                                        </span>
+                                    </div>
+                                    <span class="kt-badge kt-badge-warning kt-badge-sm">PENDING</span>
+                                </div>
+                                
+                                @if($allocation->quarter)
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
+                                    <div>
+                                        <span class="text-xs text-secondary-foreground">Quarter Number:</span>
+                                        <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->quarter->quarter_number }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs text-secondary-foreground">Quarter Type:</span>
+                                        <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->quarter->quarter_type }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs text-secondary-foreground">Allocation Date:</span>
+                                        <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->allocated_date->format('d/m/Y') }}</span>
+                                    </div>
+                                    @if($allocation->allocatedBy)
+                                    <div>
+                                        <span class="text-xs text-secondary-foreground">Allocated By:</span>
+                                        <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->allocatedBy->name }}</span>
+                                    </div>
+                                    @endif
+                                </div>
+                                @endif
+
+                                <div class="flex gap-2 pt-2">
+                                    <button 
+                                        onclick="acceptAllocation({{ $allocation->id }})"
+                                        class="kt-btn kt-btn-success kt-btn-sm flex-1">
+                                        <i class="ki-filled ki-check"></i> Accept
+                                    </button>
+                                    <button 
+                                        onclick="rejectAllocation({{ $allocation->id }})"
+                                        class="kt-btn kt-btn-danger kt-btn-sm flex-1">
+                                        <i class="ki-filled ki-cross"></i> Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+        <!-- End of Pending Quarter Allocations -->
     </div>
+
+    <!-- Rejection Modal -->
+    <div id="rejectionModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Reject Quarter Allocation</h3>
+            <form id="rejectionForm">
+                <input type="hidden" id="allocationId" name="allocation_id">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Reason (Optional)</label>
+                    <textarea 
+                        id="rejectionReason" 
+                        name="rejection_reason" 
+                        rows="3" 
+                        class="w-full border border-input rounded-md p-2"
+                        placeholder="Enter reason for rejection..."
+                        maxlength="500"></textarea>
+                    <span class="text-xs text-secondary-foreground mt-1">Maximum 500 characters</span>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button 
+                        type="button"
+                        onclick="closeRejectionModal()"
+                        class="kt-btn kt-btn-secondary kt-btn-sm">
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit"
+                        class="kt-btn kt-btn-danger kt-btn-sm">
+                        Reject Allocation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function acceptAllocation(allocationId) {
+            if (!confirm('Are you sure you want to accept this quarter allocation?')) {
+                return;
+            }
+
+            fetch(`/api/v1/quarters/allocations/${allocationId}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Quarter allocation accepted successfully!');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to accept allocation');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        function rejectAllocation(allocationId) {
+            document.getElementById('allocationId').value = allocationId;
+            document.getElementById('rejectionReason').value = '';
+            document.getElementById('rejectionModal').classList.remove('hidden');
+        }
+
+        function closeRejectionModal() {
+            document.getElementById('rejectionModal').classList.add('hidden');
+        }
+
+        document.getElementById('rejectionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const allocationId = document.getElementById('allocationId').value;
+            const rejectionReason = document.getElementById('rejectionReason').value;
+
+            fetch(`/api/v1/quarters/allocations/${allocationId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    rejection_reason: rejectionReason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Quarter allocation rejected successfully!');
+                    closeRejectionModal();
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to reject allocation');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+    </script>
 @endsection

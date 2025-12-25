@@ -894,8 +894,8 @@ class NotificationService
         return $this->notify(
             $officer->user,
             'quarter_allocated',
-            'Quarter Allocated',
-            "You have been allocated Quarter {$quarterNumber} ({$quarterType}) effective from {$date}. Your quartered status has been updated.",
+            'Quarter Allocation Pending',
+            "You have been allocated Quarter {$quarterNumber} ({$quarterType}) effective from {$date}. Please accept or reject this allocation on your dashboard.",
             'quarter',
             $quarter->id
         );
@@ -1036,7 +1036,7 @@ class NotificationService
             $officer->user,
             'quarter_request_approved',
             'Quarter Request Approved',
-            "Your quarter request has been approved. You have been allocated Quarter {$quarterNumber} ({$quarterType}) effective from {$date}. Your quartered status has been updated.",
+            "Your quarter request has been approved. You have been allocated Quarter {$quarterNumber} ({$quarterType}) effective from {$date}. Please accept or reject this allocation on your dashboard.",
             'quarter_request',
             $quarterRequest->id
         );
@@ -1061,6 +1061,87 @@ class NotificationService
             "Your quarter request has been rejected. Reason: {$rejectionReason}",
             'quarter_request',
             $quarterRequest->id
+        );
+    }
+
+    /**
+     * Notify Building Unit about quarter allocation acceptance
+     */
+    public function notifyQuarterAllocationAccepted($allocation): array
+    {
+        $officer = $allocation->officer;
+        $quarter = $allocation->quarter;
+        
+        if (!$officer || !$quarter || !$quarter->command_id) {
+            return [];
+        }
+
+        $commandId = $quarter->command_id;
+
+        // Get Building Unit users for the command
+        $buildingUnitUsers = User::whereHas('roles', function($q) use ($commandId) {
+            $q->where('name', 'Building Unit')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        if ($buildingUnitUsers->isEmpty()) {
+            return [];
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $serviceNumber = $officer->service_number ?? 'N/A';
+        $quarterNumber = $quarter->quarter_number ?? 'N/A';
+        $quarterType = $quarter->quarter_type ?? 'N/A';
+
+        return $this->notifyMany(
+            $buildingUnitUsers,
+            'quarter_allocation_accepted',
+            'Quarter Allocation Accepted',
+            "Officer {$officerName} ({$serviceNumber}) has accepted the allocation of Quarter {$quarterNumber} ({$quarterType}).",
+            'quarter',
+            $quarter->id
+        );
+    }
+
+    /**
+     * Notify Building Unit about quarter allocation rejection
+     */
+    public function notifyQuarterAllocationRejected($allocation, ?string $rejectionReason = null): array
+    {
+        $officer = $allocation->officer;
+        $quarter = $allocation->quarter;
+        
+        if (!$officer || !$quarter || !$quarter->command_id) {
+            return [];
+        }
+
+        $commandId = $quarter->command_id;
+
+        // Get Building Unit users for the command
+        $buildingUnitUsers = User::whereHas('roles', function($q) use ($commandId) {
+            $q->where('name', 'Building Unit')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        if ($buildingUnitUsers->isEmpty()) {
+            return [];
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+        $serviceNumber = $officer->service_number ?? 'N/A';
+        $quarterNumber = $quarter->quarter_number ?? 'N/A';
+        $quarterType = $quarter->quarter_type ?? 'N/A';
+        $reason = $rejectionReason ? " Reason: {$rejectionReason}" : '';
+
+        return $this->notifyMany(
+            $buildingUnitUsers,
+            'quarter_allocation_rejected',
+            'Quarter Allocation Rejected',
+            "Officer {$officerName} ({$serviceNumber}) has rejected the allocation of Quarter {$quarterNumber} ({$quarterType}).{$reason}",
+            'quarter',
+            $quarter->id
         );
     }
 
