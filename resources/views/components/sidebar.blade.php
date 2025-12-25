@@ -87,6 +87,7 @@
                         ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
                     ]
                 ],
+                ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
                 ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
                 [
                     'title' => 'Settings',

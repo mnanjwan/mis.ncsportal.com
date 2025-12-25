@@ -7,6 +7,7 @@ use App\Models\EmolumentTimeline;
 use App\Models\LeaveApplication;
 use App\Models\PassApplication;
 use App\Models\OfficerQuarter;
+use App\Models\OfficerCourse;
 use Illuminate\Http\Request;
 
 class OfficerController extends Controller
@@ -478,6 +479,8 @@ class OfficerController extends Controller
                 'recentApplications' => [],
                 'activeTimeline' => null,
                 'pendingAllocations' => collect([]),
+                'recentCourses' => collect([]),
+                'upcomingCourses' => collect([]),
             ]);
         }
 
@@ -542,6 +545,19 @@ class OfficerController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // 7. Recent Course Nominations
+        $recentCourses = OfficerCourse::where('officer_id', $officer->id)
+            ->orderBy('start_date', 'desc')
+            ->take(5)
+            ->get();
+
+        $upcomingCourses = OfficerCourse::where('officer_id', $officer->id)
+            ->where('is_completed', false)
+            ->where('start_date', '>=', now())
+            ->orderBy('start_date', 'asc')
+            ->take(3)
+            ->get();
+
         return view('dashboards.officer.dashboard', compact(
             'officer',
             'emolumentStatus',
@@ -549,7 +565,9 @@ class OfficerController extends Controller
             'passStatus',
             'recentApplications',
             'activeTimeline',
-            'pendingAllocations'
+            'pendingAllocations',
+            'recentCourses',
+            'upcomingCourses'
         ));
     }
 
@@ -872,6 +890,72 @@ class OfficerController extends Controller
         );
 
         return view('dashboards.officer.application-history', compact('applications', 'years'));
+    }
+
+    public function courseNominations()
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $query = OfficerCourse::where('officer_id', $officer->id)
+            ->with('nominatedBy.officer');
+
+        // Filter by status
+        if ($status = request('status')) {
+            if ($status === 'completed') {
+                $query->where('is_completed', true);
+            } elseif ($status === 'pending') {
+                $query->where('is_completed', false);
+            }
+        }
+
+        // Filter by year
+        if ($year = request('year')) {
+            $query->whereYear('start_date', $year);
+        }
+
+        // Sorting
+        $sortBy = request('sort_by', 'start_date');
+        $sortOrder = request('sort_order', 'desc');
+
+        $sortableColumns = [
+            'course_name' => 'course_name',
+            'course_type' => 'course_type',
+            'start_date' => 'start_date',
+            'end_date' => 'end_date',
+            'completion_date' => 'completion_date',
+            'status' => 'is_completed',
+            'created_at' => 'created_at',
+        ];
+
+        $column = $sortableColumns[$sortBy] ?? 'start_date';
+        $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+
+        $query->orderBy($column, $order);
+
+        $courses = $query->paginate(20)->withQueryString();
+
+        // Get unique years for filter
+        $years = OfficerCourse::where('officer_id', $officer->id)
+            ->get()
+            ->pluck('start_date')
+            ->map(function ($date) {
+                return $date ? $date->format('Y') : null;
+            })
+            ->filter()
+            ->unique()
+            ->map(function ($year) {
+                return (int) $year;
+            })
+            ->sort()
+            ->reverse()
+            ->values();
+
+        return view('dashboards.officer.course-nominations', compact('courses', 'years'));
     }
 }
 

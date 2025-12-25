@@ -1377,4 +1377,50 @@ class NotificationService
             $officer->id
         );
     }
+
+    /**
+     * Notify officer about course nomination
+     */
+    public function notifyCourseNominationCreated($course): ?Notification
+    {
+        $officer = $course->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $startDate = \Carbon\Carbon::parse($course->start_date)->format('d/m/Y');
+        $endDate = $course->end_date ? \Carbon\Carbon::parse($course->end_date)->format('d/m/Y') : 'TBD';
+        $courseType = $course->course_type ? " ({$course->course_type})" : '';
+
+        return $this->notify(
+            $officer->user,
+            'course_nomination_created',
+            'Course Nomination',
+            "You have been nominated for the course: {$course->course_name}{$courseType}. Start date: {$startDate}, End date: {$endDate}.",
+            'officer_course',
+            $course->id
+        );
+    }
+
+    /**
+     * Notify officer about course completion
+     */
+    public function notifyCourseCompleted($course): ?Notification
+    {
+        $officer = $course->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $completionDate = $course->completion_date ? \Carbon\Carbon::parse($course->completion_date)->format('d/m/Y') : 'N/A';
+
+        return $this->notify(
+            $officer->user,
+            'course_completed',
+            'Course Completed',
+            "Your course nomination for '{$course->course_name}' has been marked as completed. Completion date: {$completionDate}. This has been recorded in your service record.",
+            'officer_course',
+            $course->id
+        );
+    }
 }

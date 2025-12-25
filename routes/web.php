@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pass-applications', [PassApplicationController::class, 'index'])->name('pass-applications');
         Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show'])->name('pass-applications.show');
         Route::get('/application-history', [OfficerController::class, 'applicationHistory'])->name('application-history');
+        Route::get('/course-nominations', [OfficerController::class, 'courseNominations'])->name('course-nominations');
         Route::get('/next-of-kin', [NextOfKinChangeRequestController::class, 'index'])->name('next-of-kin.index');
         Route::get('/next-of-kin/create', [NextOfKinChangeRequestController::class, 'create'])->name('next-of-kin.create');
         Route::post('/next-of-kin', [NextOfKinChangeRequestController::class, 'store'])->name('next-of-kin.store');

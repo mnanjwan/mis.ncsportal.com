@@ -170,6 +170,102 @@
         </div>
         <!-- End of Recent Activities -->
 
+        <!-- Course Nominations -->
+        @if($upcomingCourses && $upcomingCourses->count() > 0)
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Upcoming Course Nominations</h3>
+                <div class="kt-card-toolbar">
+                    <a href="{{ route('officer.course-nominations') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                        View All
+                    </a>
+                </div>
+            </div>
+            <div class="kt-card-content">
+                <div class="flex flex-col gap-4">
+                    @foreach($upcomingCourses as $course)
+                        <div class="p-4 rounded-lg border border-info/20 bg-info/5">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="ki-filled ki-book text-info"></i>
+                                        <span class="text-sm font-semibold text-foreground">{{ $course->course_name }}</span>
+                                        @if($course->course_type)
+                                            <span class="kt-badge kt-badge-secondary kt-badge-xs">{{ $course->course_type }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-secondary-foreground">
+                                        <div>
+                                            <span class="font-medium">Start Date:</span>
+                                            <span class="ml-1">{{ $course->start_date->format('d/m/Y') }}</span>
+                                        </div>
+                                        @if($course->end_date)
+                                        <div>
+                                            <span class="font-medium">End Date:</span>
+                                            <span class="ml-1">{{ $course->end_date->format('d/m/Y') }}</span>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                <span class="kt-badge kt-badge-warning kt-badge-sm">Upcoming</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-4 pt-4 border-t border-border">
+                    <a href="{{ route('officer.course-nominations') }}" class="kt-btn kt-btn-outline w-full justify-center">
+                        <i class="ki-filled ki-book"></i> View All Course Nominations
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Recent Course Nominations -->
+        @if($recentCourses && $recentCourses->count() > 0)
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Recent Course Nominations</h3>
+                <div class="kt-card-toolbar">
+                    <a href="{{ route('officer.course-nominations') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                        View All
+                    </a>
+                </div>
+            </div>
+            <div class="kt-card-content">
+                <div class="flex flex-col gap-4">
+                    @foreach($recentCourses->take(3) as $course)
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-center size-10 rounded-full {{ $course->is_completed ? 'bg-success/10' : 'bg-warning/10' }}">
+                                    <i class="ki-filled ki-book {{ $course->is_completed ? 'text-success' : 'text-warning' }}"></i>
+                                </div>
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="text-sm font-medium text-foreground">{{ $course->course_name }}</span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        {{ $course->start_date->format('d/m/Y') }}
+                                        @if($course->is_completed && $course->completion_date)
+                                            • Completed: {{ $course->completion_date->format('d/m/Y') }}
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
+                            <span class="kt-badge kt-badge-{{ $course->is_completed ? 'success' : 'warning' }} kt-badge-sm">
+                                {{ $course->is_completed ? 'Completed' : 'Pending' }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-4 pt-4 border-t border-border">
+                    <a href="{{ route('officer.course-nominations') }}" class="kt-btn kt-btn-outline w-full justify-center">
+                        <i class="ki-filled ki-book"></i> View All Course Nominations
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
+        <!-- End of Course Nominations -->
+
         <!-- Pending Quarter Allocations -->
         @if($pendingAllocations && $pendingAllocations->count() > 0)
         <div class="kt-card">

@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\OfficerCourse;
 use App\Models\Officer;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 
 class CourseController extends Controller
 {
-    public function __construct()
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
     {
         $this->middleware('auth');
         $this->middleware('role:HRD');
+        $this->notificationService = $notificationService;
     }
 
     public function index(Request $request)
@@ -71,7 +75,7 @@ class CourseController extends Controller
         ]);
 
         try {
-            OfficerCourse::create([
+            $course = OfficerCourse::create([
                 'officer_id' => $validated['officer_id'],
                 'course_name' => $validated['course_name'],
                 'course_type' => $validated['course_type'] ?? null,
@@ -81,6 +85,9 @@ class CourseController extends Controller
                 'nominated_by' => auth()->id(),
                 'notes' => $validated['notes'] ?? null,
             ]);
+
+            // Send notification to officer
+            $this->notificationService->notifyCourseNominationCreated($course);
 
             return redirect()->route('hrd.courses')
                 ->with('success', 'Officer nominated for course successfully!');
@@ -162,6 +169,9 @@ class CourseController extends Controller
 
             // Course completion goes directly into officer's record
             // The relationship already exists, so it's automatically linked
+
+            // Send notification to officer
+            $this->notificationService->notifyCourseCompleted($course);
 
             return redirect()->route('hrd.courses.show', $id)
                 ->with('success', 'Course marked as completed! This has been recorded in the officer\'s record.');
