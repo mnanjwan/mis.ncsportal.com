@@ -71,14 +71,6 @@
             <h3 class="kt-card-title">Officers in Command</h3>
         </div>
         <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
-            <!-- Mobile scroll hint -->
-            <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
-                <div class="flex items-center gap-2 text-xs text-secondary-foreground">
-                    <i class="ki-filled ki-arrow-left-right"></i>
-                    <span>Swipe left to view more columns</span>
-                </div>
-            </div>
-
             <!-- Table with horizontal scroll wrapper -->
             <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
                 <table class="kt-table" style="min-width: 900px; width: 100%;">

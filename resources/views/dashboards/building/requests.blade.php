@@ -82,14 +82,6 @@
                 <h3 class="kt-card-title">All Quarter Requests</h3>
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
-                <!-- Mobile scroll hint -->
-                <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
-                    <div class="flex items-center gap-2 text-xs text-secondary-foreground">
-                        <i class="ki-filled ki-arrow-left-right"></i>
-                        <span>Swipe left to view more columns</span>
-                    </div>
-                </div>
-
                 <!-- Table with horizontal scroll wrapper -->
                 <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
                     <table class="kt-table" style="min-width: 900px; width: 100%;">
@@ -130,68 +122,78 @@
     </div>
 
     <!-- Approve Modal -->
-    <div id="approve-modal" class="kt-modal" style="display: none;">
-        <div class="kt-modal-content w-full max-w-[500px] mx-4 md:mx-auto">
+    <div id="approve-modal" class="kt-modal" data-kt-modal="true">
+        <div class="kt-modal-content max-w-[500px]">
             <div class="kt-modal-header py-4 px-5">
-                <h3 class="text-lg font-semibold text-foreground">Approve Quarter Request</h3>
-                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" onclick="closeApproveModal()">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
+                        <i class="ki-filled ki-check text-success text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-foreground">Approve Quarter Request</h3>
+                </div>
+                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
                     <i class="ki-filled ki-cross"></i>
                 </button>
             </div>
-            <form id="approve-form" class="kt-modal-body">
+            <form id="approve-form">
                 <input type="hidden" id="approve-request-id">
-                
-                <div class="flex flex-col gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Select Quarter <span class="text-danger">*</span></label>
-                        <select id="approve-quarter-id" name="quarter_id" class="kt-input w-full" required>
-                            <option value="">Loading available quarters...</option>
-                        </select>
-                    </div>
+                <div class="kt-modal-body py-5 px-5">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Select Quarter <span class="text-danger">*</span></label>
+                            <select id="approve-quarter-id" name="quarter_id" class="kt-input w-full" required>
+                                <option value="">Loading available quarters...</option>
+                            </select>
+                        </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Allocation Date</label>
-                        <input type="date" id="approve-allocation-date" name="allocation_date" class="kt-input w-full" value="{{ date('Y-m-d') }}">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Allocation Date</label>
+                            <input type="date" id="approve-allocation-date" name="allocation_date" class="kt-input w-full" value="{{ date('Y-m-d') }}">
+                        </div>
                     </div>
                 </div>
-
-                <div class="kt-modal-footer py-4 px-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
-                    <button type="button" class="kt-btn kt-btn-secondary w-full sm:w-auto" onclick="closeApproveModal()">Cancel</button>
-                    <button type="submit" class="kt-btn kt-btn-primary w-full sm:w-auto">Approve & Allocate</button>
+                <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                    <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                    <button type="submit" class="kt-btn kt-btn-primary">Approve & Allocate</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Reject Modal -->
-    <div id="reject-modal" class="kt-modal" style="display: none;">
-        <div class="kt-modal-content w-full max-w-[500px] mx-4 md:mx-auto">
+    <div id="reject-modal" class="kt-modal" data-kt-modal="true">
+        <div class="kt-modal-content max-w-[500px]">
             <div class="kt-modal-header py-4 px-5">
-                <h3 class="text-lg font-semibold text-foreground">Reject Quarter Request</h3>
-                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" onclick="closeRejectModal()">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center size-10 rounded-full bg-danger/10">
+                        <i class="ki-filled ki-cross text-danger text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-foreground">Reject Quarter Request</h3>
+                </div>
+                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
                     <i class="ki-filled ki-cross"></i>
                 </button>
             </div>
-            <form id="reject-form" class="kt-modal-body">
+            <form id="reject-form">
                 <input type="hidden" id="reject-request-id">
-                
-                <div class="kt-alert kt-alert-warning mb-4">
-                    <i class="ki-filled ki-information"></i>
-                    <div>
-                        <strong>Note:</strong> You can only reject a request once. After rejection, it cannot be rejected again.
+                <div class="kt-modal-body py-5 px-5">
+                    <div class="kt-alert kt-alert-warning mb-4">
+                        <i class="ki-filled ki-information"></i>
+                        <div>
+                            <strong>Note:</strong> You can only reject a request once. After rejection, it cannot be rejected again.
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Rejection Reason <span class="text-danger">*</span></label>
+                            <textarea id="reject-reason" name="rejection_reason" class="kt-textarea w-full" rows="4" required placeholder="Enter reason for rejection..."></textarea>
+                        </div>
                     </div>
                 </div>
-
-                <div class="flex flex-col gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Rejection Reason <span class="text-danger">*</span></label>
-                        <textarea id="reject-reason" name="rejection_reason" class="kt-textarea w-full" rows="4" required placeholder="Enter reason for rejection..."></textarea>
-                    </div>
-                </div>
-
-                <div class="kt-modal-footer py-4 px-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
-                    <button type="button" class="kt-btn kt-btn-secondary w-full sm:w-auto" onclick="closeRejectModal()">Cancel</button>
-                    <button type="submit" class="kt-btn kt-btn-danger w-full sm:w-auto">Reject Request</button>
+                <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                    <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                    <button type="submit" class="kt-btn kt-btn-danger">Reject Request</button>
                 </div>
             </form>
         </div>
@@ -426,13 +428,26 @@
         document.getElementById('approve-request-id').value = requestId;
         await loadAvailableQuarters();
         
-        // Show modal
+        // Show modal using KTModal system
         const modal = document.getElementById('approve-modal');
-        modal.style.display = 'flex';
+        if (typeof KTModal !== 'undefined') {
+            const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+            modalInstance.show();
+        } else {
+            modal.style.display = 'flex';
+        }
     }
 
     function closeApproveModal() {
-        document.getElementById('approve-modal').style.display = 'none';
+        const modal = document.getElementById('approve-modal');
+        if (typeof KTModal !== 'undefined') {
+            const modalInstance = KTModal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        } else {
+            modal.style.display = 'none';
+        }
         document.getElementById('approve-form').reset();
     }
 
@@ -451,13 +466,26 @@
         document.getElementById('reject-request-id').value = requestId;
         document.getElementById('reject-reason').value = '';
         
-        // Show modal
+        // Show modal using KTModal system
         const modal = document.getElementById('reject-modal');
-        modal.style.display = 'flex';
+        if (typeof KTModal !== 'undefined') {
+            const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+            modalInstance.show();
+        } else {
+            modal.style.display = 'flex';
+        }
     }
 
     function closeRejectModal() {
-        document.getElementById('reject-modal').style.display = 'none';
+        const modal = document.getElementById('reject-modal');
+        if (typeof KTModal !== 'undefined') {
+            const modalInstance = KTModal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        } else {
+            modal.style.display = 'none';
+        }
         document.getElementById('reject-form').reset();
     }
 

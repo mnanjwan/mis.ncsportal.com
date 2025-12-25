@@ -48,14 +48,6 @@
             <h3 class="kt-card-title">Rejected Quarter Allocations</h3>
         </div>
         <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
-            <!-- Mobile scroll hint -->
-            <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
-                <div class="flex items-center gap-2 text-xs text-secondary-foreground">
-                    <i class="ki-filled ki-arrow-left-right"></i>
-                    <span>Swipe left to view more columns</span>
-                </div>
-            </div>
-
             <!-- Table with horizontal scroll wrapper -->
             <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
                 <table class="kt-table" style="min-width: 1000px; width: 100%;">
@@ -186,11 +178,16 @@
 </style>
 
 <!-- Re-allocate Modal -->
-<div id="reallocate-modal" class="kt-modal" style="display: none;">
-    <div class="kt-modal-content">
-        <div class="kt-modal-header">
-            <h3 class="kt-modal-title">Re-allocate Quarter</h3>
-            <button type="button" class="kt-modal-close" onclick="closeReallocateModal()">
+<div id="reallocate-modal" class="kt-modal" data-kt-modal="true">
+    <div class="kt-modal-content max-w-[500px]">
+        <div class="kt-modal-header py-4 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                    <i class="ki-filled ki-check text-primary text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Re-allocate Quarter</h3>
+            </div>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
                 <i class="ki-filled ki-cross"></i>
             </button>
         </div>
@@ -198,7 +195,7 @@
             <input type="hidden" id="reallocate-officer-id">
             <input type="hidden" id="reallocate-allocation-id">
             
-            <div class="kt-modal-body">
+            <div class="kt-modal-body py-5 px-5">
                 <div class="kt-alert kt-alert-info mb-4">
                     <i class="ki-filled ki-information"></i>
                     <div>
@@ -207,21 +204,23 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-2 mb-4">
-                    <label class="kt-form-label">Select New Quarter <span class="text-danger">*</span></label>
-                    <select id="reallocate-quarter-id" name="quarter_id" class="kt-select" required>
-                        <option value="">Loading available quarters...</option>
-                    </select>
-                </div>
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Select New Quarter <span class="text-danger">*</span></label>
+                        <select id="reallocate-quarter-id" name="quarter_id" class="kt-input w-full" required>
+                            <option value="">Loading available quarters...</option>
+                        </select>
+                    </div>
 
-                <div class="flex flex-col gap-2">
-                    <label class="kt-form-label">Allocation Date</label>
-                    <input type="date" id="reallocate-allocation-date" name="allocation_date" class="kt-input" value="{{ date('Y-m-d') }}">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Allocation Date</label>
+                        <input type="date" id="reallocate-allocation-date" name="allocation_date" class="kt-input w-full" value="{{ date('Y-m-d') }}">
+                    </div>
                 </div>
             </div>
 
             <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
-                <button type="button" class="kt-btn kt-btn-secondary" onclick="closeReallocateModal()">Cancel</button>
+                <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
                 <button type="submit" class="kt-btn kt-btn-primary">Re-allocate</button>
             </div>
         </form>
@@ -243,11 +242,26 @@ function openReallocateModal(allocationId, officerId, officerName, previousQuart
     // Load available quarters
     loadAvailableQuarters();
     
-    document.getElementById('reallocate-modal').style.display = 'flex';
+    // Show modal using KTModal system
+    const modal = document.getElementById('reallocate-modal');
+    if (typeof KTModal !== 'undefined') {
+        const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+        modalInstance.show();
+    } else {
+        modal.style.display = 'flex';
+    }
 }
 
 function closeReallocateModal() {
-    document.getElementById('reallocate-modal').style.display = 'none';
+    const modal = document.getElementById('reallocate-modal');
+    if (typeof KTModal !== 'undefined') {
+        const modalInstance = KTModal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    } else {
+        modal.style.display = 'none';
+    }
     document.getElementById('reallocate-form').reset();
 }
 
