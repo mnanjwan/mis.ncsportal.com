@@ -104,31 +104,33 @@
                 <i class="ki-filled ki-cross"></i>
             </button>
         </div>
-        <form id="reallocate-form" class="kt-modal-body">
+        <form id="reallocate-form">
             <input type="hidden" id="reallocate-officer-id">
             <input type="hidden" id="reallocate-allocation-id">
             
-            <div class="kt-alert kt-alert-info mb-4">
-                <i class="ki-filled ki-information"></i>
-                <div>
-                    <strong>Officer:</strong> <span id="reallocate-officer-name"></span><br>
-                    <strong>Previous Quarter:</strong> <span id="reallocate-previous-quarter"></span>
+            <div class="kt-modal-body">
+                <div class="kt-alert kt-alert-info mb-4">
+                    <i class="ki-filled ki-information"></i>
+                    <div>
+                        <strong>Officer:</strong> <span id="reallocate-officer-name"></span><br>
+                        <strong>Previous Quarter:</strong> <span id="reallocate-previous-quarter"></span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 mb-4">
+                    <label class="kt-form-label">Select New Quarter <span class="text-danger">*</span></label>
+                    <select id="reallocate-quarter-id" name="quarter_id" class="kt-select" required>
+                        <option value="">Loading available quarters...</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="kt-form-label">Allocation Date</label>
+                    <input type="date" id="reallocate-allocation-date" name="allocation_date" class="kt-input" value="{{ date('Y-m-d') }}">
                 </div>
             </div>
 
-            <div class="flex flex-col gap-2 mb-4">
-                <label class="kt-form-label">Select New Quarter <span class="text-danger">*</span></label>
-                <select id="reallocate-quarter-id" name="quarter_id" class="kt-select" required>
-                    <option value="">Loading available quarters...</option>
-                </select>
-            </div>
-
-            <div class="flex flex-col gap-2 mb-4">
-                <label class="kt-form-label">Allocation Date</label>
-                <input type="date" id="reallocate-allocation-date" name="allocation_date" class="kt-input" value="{{ date('Y-m-d') }}">
-            </div>
-
-            <div class="flex gap-3 justify-end">
+            <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
                 <button type="button" class="kt-btn kt-btn-secondary" onclick="closeReallocateModal()">Cancel</button>
                 <button type="submit" class="kt-btn kt-btn-primary">Re-allocate</button>
             </div>
@@ -136,7 +138,12 @@
     </div>
 </div>
 
+@push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('reallocate-form').addEventListener('submit', handleReallocate);
+});
+
 function openReallocateModal(allocationId, officerId, officerName, previousQuarter) {
     document.getElementById('reallocate-allocation-id').value = allocationId;
     document.getElementById('reallocate-officer-id').value = officerId;
@@ -151,6 +158,7 @@ function openReallocateModal(allocationId, officerId, officerName, previousQuart
 
 function closeReallocateModal() {
     document.getElementById('reallocate-modal').style.display = 'none';
+    document.getElementById('reallocate-form').reset();
 }
 
 async function loadAvailableQuarters() {
@@ -191,8 +199,13 @@ async function loadAvailableQuarters() {
     }
 }
 
-document.getElementById('reallocate-form').addEventListener('submit', async function(e) {
+async function handleReallocate(e) {
     e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="ki-filled ki-loader"></i> Re-allocating...';
     
     const officerId = document.getElementById('reallocate-officer-id').value;
     const quarterId = document.getElementById('reallocate-quarter-id').value;
@@ -200,6 +213,8 @@ document.getElementById('reallocate-form').addEventListener('submit', async func
 
     if (!quarterId) {
         alert('Please select a quarter');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
         return;
     }
 
@@ -229,15 +244,18 @@ document.getElementById('reallocate-form').addEventListener('submit', async func
         if (data.success) {
             alert('Quarter re-allocated successfully! The officer will need to accept the allocation.');
             closeReallocateModal();
-            loadRejectedAllocations();
+            window.location.reload();
         } else {
             alert(data.message || 'Failed to re-allocate quarter');
         }
     } catch (error) {
         console.error('Error re-allocating quarter:', error);
         alert('An error occurred. Please try again.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     }
-});
+}
 
 function applyFilters() {
     const fromDate = document.getElementById('filter-from-date').value;
@@ -265,5 +283,6 @@ function clearFilters() {
     window.location.href = window.location.pathname;
 }
 </script>
+@endpush
 @endsection
 

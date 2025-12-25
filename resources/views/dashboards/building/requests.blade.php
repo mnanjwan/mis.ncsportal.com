@@ -11,16 +11,25 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
-    <!-- Filter -->
+    <!-- Filters -->
     <div class="kt-card">
         <div class="kt-card-content">
-            <div class="flex flex-wrap gap-3">
-                <select id="filter-status" class="kt-select" onchange="loadRequests()">
-                    <option value="">All Requests</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="APPROVED">Approved</option>
-                    <option value="REJECTED">Rejected</option>
-                </select>
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" id="search-input" placeholder="Search by officer name, service number..." 
+                        class="kt-input w-full" />
+                </div>
+                <div class="flex gap-2">
+                    <select id="filter-status" class="kt-select" onchange="loadRequests()">
+                        <option value="">All Requests</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                    <button onclick="loadRequests()" class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-magnifier"></i> Search
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -128,6 +137,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadRequests();
     document.getElementById('approve-form').addEventListener('submit', handleApprove);
     document.getElementById('reject-form').addEventListener('submit', handleReject);
+    
+    // Search on Enter key
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            loadRequests();
+        }
+    });
 });
 
 async function loadRequests() {
@@ -140,9 +156,19 @@ async function loadRequests() {
         }
 
         const filter = document.getElementById('filter-status').value;
+        const search = document.getElementById('search-input').value.trim();
         let url = '/api/v1/quarters/requests';
+        const params = new URLSearchParams();
+        
         if (filter) {
-            url += `?status=${filter}`;
+            params.append('status', filter);
+        }
+        if (search) {
+            params.append('search', search);
+        }
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
         }
 
         const res = await fetch(url, {
@@ -197,8 +223,8 @@ function renderRequests(requests) {
 
     tbody.innerHTML = requests.map(request => {
         const statusBadge = getStatusBadge(request.status);
-        const date = new Date(request.created_at).toLocaleDateString();
-        const officerName = request.officer ? `${request.officer.initials} ${request.officer.surname}` : 'N/A';
+        const date = new Date(request.created_at).toLocaleDateString('en-GB');
+        const officerName = request.officer ? `${request.officer.initials || ''} ${request.officer.surname || ''}`.trim() : 'N/A';
         const serviceNumber = request.officer?.service_number || 'N/A';
         const preferredType = request.preferred_quarter_type || 'Any';
 
@@ -216,9 +242,9 @@ function renderRequests(requests) {
             `;
         } else if (request.status === 'APPROVED') {
             const quarterInfo = request.quarter ? `${request.quarter.quarter_number} (${request.quarter.quarter_type})` : 'N/A';
-            actions = `<span class="text-success">Approved - ${quarterInfo}</span>`;
+            actions = `<span class="text-success text-sm">Approved - ${quarterInfo}</span>`;
         } else if (request.status === 'REJECTED') {
-            actions = `<span class="text-danger">Rejected</span>`;
+            actions = `<span class="text-danger text-sm">Rejected</span>`;
         }
 
         return `
@@ -428,5 +454,4 @@ function showError(message) {
 }
 </script>
 @endpush
-
 

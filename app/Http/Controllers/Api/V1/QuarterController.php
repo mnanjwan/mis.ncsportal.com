@@ -532,6 +532,19 @@ class QuarterController extends BaseController
             $query->where('status', $request->status);
         }
 
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->whereHas('officer', function ($q) use ($searchTerm, $commandId) {
+                $q->where('present_station', $commandId)
+                  ->where(function ($subQ) use ($searchTerm) {
+                      $subQ->where('service_number', 'like', "%{$searchTerm}%")
+                           ->orWhere('initials', 'like', "%{$searchTerm}%")
+                           ->orWhere('surname', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
         $requests = $query->orderBy('created_at', 'desc')->get();
 
         return $this->successResponse($requests);
