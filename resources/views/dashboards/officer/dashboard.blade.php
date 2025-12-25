@@ -205,10 +205,10 @@
                                         <span class="text-xs text-secondary-foreground">Allocation Date:</span>
                                         <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->allocated_date->format('d/m/Y') }}</span>
                                     </div>
-                                    @if($allocation->allocatedBy)
+                                    @if($allocation->allocatedBy && $allocation->allocatedBy->officer)
                                     <div>
                                         <span class="text-xs text-secondary-foreground">Allocated By:</span>
-                                        <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->allocatedBy->name }}</span>
+                                        <span class="text-sm font-semibold text-mono ml-2">{{ $allocation->allocatedBy->officer->full_name }}</span>
                                     </div>
                                     @endif
                                 </div>

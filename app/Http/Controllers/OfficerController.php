@@ -538,7 +538,7 @@ class OfficerController extends Controller
         // 6. Pending Quarter Allocations
         $pendingAllocations = OfficerQuarter::where('officer_id', $officer->id)
             ->where('status', 'PENDING')
-            ->with(['quarter:id,quarter_number,quarter_type,command_id', 'allocatedBy:id,name'])
+            ->with(['quarter:id,quarter_number,quarter_type,command_id', 'allocatedBy:id,email', 'allocatedBy.officer:id,user_id,initials,surname'])
             ->orderBy('created_at', 'desc')
             ->get();
 
