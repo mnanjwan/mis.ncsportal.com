@@ -11,50 +11,101 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
-    <!-- Filter -->
+    <!-- Filters Card -->
     <div class="kt-card">
+        <div class="kt-card-header">
+            <h3 class="kt-card-title">Filter Rejected Allocations</h3>
+        </div>
         <div class="kt-card-content">
-            <div class="flex flex-wrap gap-3 items-center">
-                <label class="text-sm text-secondary-foreground">Filter by Date:</label>
-                <input type="date" id="filter-from-date" class="kt-input" value="{{ request('from_date') }}" onchange="applyFilters()">
-                <span class="text-secondary-foreground">to</span>
-                <input type="date" id="filter-to-date" class="kt-input" value="{{ request('to_date') }}" onchange="applyFilters()">
-                <button onclick="clearFilters()" class="kt-btn kt-btn-sm kt-btn-ghost">
-                    <i class="ki-filled ki-cross"></i> Clear
-                </button>
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col md:flex-row gap-3 items-end">
+                    <!-- From Date -->
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium text-secondary-foreground mb-1">From Date</label>
+                        <input type="date" id="filter-from-date" class="kt-input w-full" value="{{ request('from_date') }}" onchange="applyFilters()">
+                    </div>
+
+                    <!-- To Date -->
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium text-secondary-foreground mb-1">To Date</label>
+                        <input type="date" id="filter-to-date" class="kt-input w-full" value="{{ request('to_date') }}" onchange="applyFilters()">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button type="button" onclick="clearFilters()" class="kt-btn kt-btn-outline w-full md:w-auto">
+                            <i class="ki-filled ki-cross"></i> Clear
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Rejected Allocations List -->
-    <div class="kt-card">
+    <div class="kt-card overflow-hidden">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Rejected Quarter Allocations</h3>
         </div>
-        <div class="kt-card-content">
-            <div class="overflow-x-auto">
-                <table class="kt-table">
+        <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+            <!-- Mobile scroll hint -->
+            <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
+                <div class="flex items-center gap-2 text-xs text-secondary-foreground">
+                    <i class="ki-filled ki-arrow-left-right"></i>
+                    <span>Swipe left to view more columns</span>
+                </div>
+            </div>
+
+            <!-- Table with horizontal scroll wrapper -->
+            <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                <table class="kt-table" style="min-width: 1000px; width: 100%;">
                     <thead>
-                        <tr>
-                            <th>Rejected Date</th>
-                            <th>Officer</th>
-                            <th>Service Number</th>
-                            <th>Quarter Number</th>
-                            <th>Quarter Type</th>
-                            <th>Allocated By</th>
-                            <th>Rejection Reason</th>
-                            <th>Actions</th>
+                        <tr class="border-b border-border">
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Rejected Date
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Officer
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Service Number
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Quarter Number
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Quarter Type
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Allocated By
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Rejection Reason
+                            </th>
+                            <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="rejected-allocations-list">
                         @forelse($rejectedAllocations as $allocation)
-                            <tr>
-                                <td>{{ $allocation->rejected_at ? $allocation->rejected_at->format('d/m/Y H:i') : 'N/A' }}</td>
-                                <td>{{ ($allocation->officer->initials ?? '') . ' ' . ($allocation->officer->surname ?? '') }}</td>
-                                <td>{{ $allocation->officer->service_number ?? 'N/A' }}</td>
-                                <td>{{ $allocation->quarter->quarter_number ?? 'N/A' }}</td>
-                                <td>{{ $allocation->quarter->quarter_type ?? 'N/A' }}</td>
-                                <td>
+                            <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    {{ $allocation->rejected_at ? $allocation->rejected_at->format('d/m/Y H:i') : 'N/A' }}
+                                </td>
+                                <td class="py-3 px-4 text-sm font-medium text-foreground" style="white-space: nowrap;">
+                                    {{ ($allocation->officer->initials ?? '') . ' ' . ($allocation->officer->surname ?? '') }}
+                                </td>
+                                <td class="py-3 px-4" style="white-space: nowrap;">
+                                    <span class="text-sm font-mono text-foreground">{{ $allocation->officer->service_number ?? 'N/A' }}</span>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    {{ $allocation->quarter->quarter_number ?? 'N/A' }}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    {{ $allocation->quarter->quarter_type ?? 'N/A' }}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     @if($allocation->allocatedBy)
                                         @if($allocation->allocatedBy->officer)
                                             {{ ($allocation->allocatedBy->officer->initials ?? '') . ' ' . ($allocation->allocatedBy->officer->surname ?? '') }}
@@ -65,14 +116,14 @@
                                         N/A
                                     @endif
                                 </td>
-                                <td class="max-w-xs">
+                                <td class="py-3 px-4 text-sm text-secondary-foreground max-w-xs" style="white-space: nowrap;">
                                     @if($allocation->rejection_reason)
-                                        <span class="text-sm">{{ $allocation->rejection_reason }}</span>
+                                        <span>{{ $allocation->rejection_reason }}</span>
                                     @else
-                                        <span class="text-secondary-foreground text-sm">No reason provided</span>
+                                        <span class="text-secondary-foreground italic">No reason provided</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                     <button 
                                         onclick="openReallocateModal({{ $allocation->id }}, {{ $allocation->officer_id }}, '{{ ($allocation->officer->initials ?? '') . ' ' . ($allocation->officer->surname ?? '') }} ({{ $allocation->officer->service_number ?? 'N/A' }})', '{{ ($allocation->quarter->quarter_number ?? 'N/A') . ' (' . ($allocation->quarter->quarter_type ?? 'N/A') . ')' }}')"
                                         class="kt-btn kt-btn-sm kt-btn-primary"
@@ -83,8 +134,9 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-8 text-secondary-foreground">
-                                    No rejected allocations found
+                                <td colspan="8" class="py-12 text-center">
+                                    <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                                    <p class="text-secondary-foreground">No rejected allocations found</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -94,6 +146,44 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Prevent page from expanding beyond viewport on mobile */
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+        }
+
+        .kt-card {
+            max-width: 100vw;
+        }
+    }
+
+    /* Smooth scrolling for mobile */
+    .table-scroll-wrapper {
+        position: relative;
+        max-width: 100%;
+    }
+
+    /* Custom scrollbar for webkit browsers */
+    .scrollbar-thin::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
 
 <!-- Re-allocate Modal -->
 <div id="reallocate-modal" class="kt-modal" style="display: none;">

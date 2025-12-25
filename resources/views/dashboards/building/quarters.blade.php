@@ -5,8 +5,11 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
-    <!-- Actions -->
+    <!-- Actions Card -->
     <div class="kt-card">
+        <div class="kt-card-header">
+            <h3 class="kt-card-title">Quick Actions</h3>
+        </div>
         <div class="kt-card-content">
             <div class="flex flex-wrap gap-3">
                 <a href="{{ route('building.quarters.create') }}" class="kt-btn kt-btn-primary">
@@ -15,36 +18,80 @@
                 <a href="{{ route('building.quarters.allocate') }}" class="kt-btn kt-btn-success">
                     <i class="ki-filled ki-check"></i> Allocate Quarter
                 </a>
-                <select id="filter-status" class="kt-select" onchange="loadQuarters()">
-                    <option value="">All Quarters</option>
-                    <option value="0">Available</option>
-                    <option value="1">Occupied</option>
-                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="kt-card">
+        <div class="kt-card-header">
+            <h3 class="kt-card-title">Filter Quarters</h3>
+        </div>
+        <div class="kt-card-content">
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col md:flex-row gap-3 items-end">
+                    <!-- Status Select -->
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium text-secondary-foreground mb-1">Status</label>
+                        <select id="filter-status" class="kt-input w-full" onchange="loadQuarters()">
+                            <option value="">All Quarters</option>
+                            <option value="0">Available</option>
+                            <option value="1">Occupied</option>
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button type="button" onclick="loadQuarters()" class="kt-btn kt-btn-primary w-full md:w-auto">
+                            <i class="ki-filled ki-filter"></i> Filter
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Quarters List -->
-    <div class="kt-card">
+    <div class="kt-card overflow-hidden">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Quarters List</h3>
         </div>
-        <div class="kt-card-content">
-            <div class="overflow-x-auto">
-                <table class="kt-table">
+        <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+            <!-- Mobile scroll hint -->
+            <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
+                <div class="flex items-center gap-2 text-xs text-secondary-foreground">
+                    <i class="ki-filled ki-arrow-left-right"></i>
+                    <span>Swipe left to view more columns</span>
+                </div>
+            </div>
+
+            <!-- Table with horizontal scroll wrapper -->
+            <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                <table class="kt-table" style="min-width: 900px; width: 100%;">
                     <thead>
-                        <tr>
-                            <th>Quarter Number</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Occupied By</th>
-                            <th>Actions</th>
+                        <tr class="border-b border-border">
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Quarter Number
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Type
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Status
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Occupied By
+                            </th>
+                            <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="quarters-list">
                         <tr>
-                            <td colspan="5" class="text-center py-8 text-secondary-foreground">
-                                Loading quarters...
+                            <td colspan="5" class="py-12 text-center">
+                                <i class="ki-filled ki-loader text-4xl text-muted-foreground mb-4 animate-spin"></i>
+                                <p class="text-secondary-foreground">Loading quarters...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -53,6 +100,44 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Prevent page from expanding beyond viewport on mobile */
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+        }
+
+        .kt-card {
+            max-width: 100vw;
+        }
+    }
+
+    /* Smooth scrolling for mobile */
+    .table-scroll-wrapper {
+        position: relative;
+        max-width: 100%;
+    }
+
+    /* Custom scrollbar for webkit browsers */
+    .scrollbar-thin::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
 
 @push('scripts')
 <script>
@@ -129,8 +214,9 @@ function renderQuarters(quarters) {
     if (quarters.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center py-8 text-secondary-foreground">
-                    No quarters found
+                <td colspan="5" class="py-12 text-center">
+                    <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                    <p class="text-secondary-foreground">No quarters found</p>
                 </td>
             </tr>
         `;
@@ -140,23 +226,27 @@ function renderQuarters(quarters) {
     tbody.innerHTML = quarters.map(quarter => {
         const officer = quarter.officer;
         return `
-            <tr>
-                <td class="font-mono font-semibold">${quarter.quarter_number || 'N/A'}</td>
-                <td>${quarter.quarter_type || 'N/A'}</td>
-                <td>
-                            <span class="kt-badge kt-badge-${quarter.is_occupied ? 'success' : 'secondary'} kt-badge-sm">
-                                ${quarter.is_occupied ? 'Occupied' : 'Available'}
-                            </span>
+            <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                <td class="py-3 px-4" style="white-space: nowrap;">
+                    <span class="text-sm font-mono font-semibold text-foreground">${quarter.quarter_number || 'N/A'}</span>
                 </td>
-                <td>
+                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                    ${quarter.quarter_type || 'N/A'}
+                </td>
+                <td class="py-3 px-4" style="white-space: nowrap;">
+                    <span class="kt-badge kt-badge-${quarter.is_occupied ? 'success' : 'secondary'} kt-badge-sm">
+                        ${quarter.is_occupied ? 'Occupied' : 'Available'}
+                    </span>
+                </td>
+                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                     ${officer ? `
                         <div class="flex flex-col">
-                            <span class="font-semibold">${(officer.initials || '') + ' ' + (officer.surname || '')}</span>
+                            <span class="font-semibold text-foreground">${(officer.initials || '') + ' ' + (officer.surname || '')}</span>
                             <span class="text-xs text-secondary-foreground">${officer.service_number || 'N/A'}</span>
                         </div>
                     ` : '<span class="text-secondary-foreground">-</span>'}
                 </td>
-                <td>
+                <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                     ${quarter.is_occupied && officer ? `
                         <button onclick="showDeallocateModal(${quarter.id}, ${officer.id}, '${(officer.initials || '') + ' ' + (officer.surname || '')}', '${quarter.quarter_number || 'N/A'}')" 
                             class="kt-btn kt-btn-sm kt-btn-danger">

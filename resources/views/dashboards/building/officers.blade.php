@@ -5,23 +5,39 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
-    <!-- Filters -->
+    <!-- Filters Card -->
     <div class="kt-card">
+        <div class="kt-card-header">
+            <h3 class="kt-card-title">Filter Officers</h3>
+        </div>
         <div class="kt-card-content">
-            <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex-1">
-                    <input type="text" id="search-input" placeholder="Search by service number, name..." 
-                        class="kt-input w-full" />
-                </div>
-                <div class="flex gap-2">
-                    <select id="filter-quartered" class="kt-select">
-                        <option value="">All Status</option>
-                        <option value="1">Quartered</option>
-                        <option value="0">Not Quartered</option>
-                    </select>
-                    <button onclick="loadOfficers()" class="kt-btn kt-btn-primary">
-                        <i class="ki-filled ki-magnifier"></i> Search
-                    </button>
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col md:flex-row gap-3 items-end">
+                    <!-- Search Input -->
+                    <div class="flex-1 min-w-[250px] w-full md:w-auto">
+                        <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
+                        <input type="text" 
+                               id="search-input"
+                               class="kt-input w-full" 
+                               placeholder="Search by service number, name...">
+                    </div>
+
+                    <!-- Quartered Status Select -->
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium text-secondary-foreground mb-1">Quartered Status</label>
+                        <select id="filter-quartered" class="kt-input w-full">
+                            <option value="">All Status</option>
+                            <option value="1">Quartered</option>
+                            <option value="0">Not Quartered</option>
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button type="button" onclick="loadOfficers()" class="kt-btn kt-btn-primary w-full md:w-auto">
+                            <i class="ki-filled ki-filter"></i> Filter
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -50,29 +66,49 @@
     </div>
 
     <!-- Officers List -->
-    <div class="kt-card">
+    <div class="kt-card overflow-hidden">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Officers in Command</h3>
         </div>
-        <div class="kt-card-content">
-            <div class="overflow-x-auto">
-                <table class="kt-table">
+        <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+            <!-- Mobile scroll hint -->
+            <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
+                <div class="flex items-center gap-2 text-xs text-secondary-foreground">
+                    <i class="ki-filled ki-arrow-left-right"></i>
+                    <span>Swipe left to view more columns</span>
+                </div>
+            </div>
+
+            <!-- Table with horizontal scroll wrapper -->
+            <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                <table class="kt-table" style="min-width: 900px; width: 100%;">
                     <thead>
-                        <tr>
-                            <th>
+                        <tr class="border-b border-border">
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                 <input type="checkbox" id="select-all" onchange="toggleSelectAll()" />
                             </th>
-                            <th>Service Number</th>
-                            <th>Name</th>
-                            <th>Rank</th>
-                            <th>Quartered Status</th>
-                            <th>Actions</th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Service Number
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Name
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Rank
+                            </th>
+                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Quartered Status
+                            </th>
+                            <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="officers-list">
                         <tr>
-                            <td colspan="6" class="text-center py-8 text-secondary-foreground">
-                                Loading officers...
+                            <td colspan="6" class="py-12 text-center">
+                                <i class="ki-filled ki-loader text-4xl text-muted-foreground mb-4 animate-spin"></i>
+                                <p class="text-secondary-foreground">Loading officers...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -80,10 +116,48 @@
             </div>
             
             <!-- Pagination -->
-            <div id="pagination" class="mt-4 flex items-center justify-between"></div>
+            <div id="pagination" class="mt-6 pt-4 border-t border-border px-4"></div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Prevent page from expanding beyond viewport on mobile */
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+        }
+
+        .kt-card {
+            max-width: 100vw;
+        }
+    }
+
+    /* Smooth scrolling for mobile */
+    .table-scroll-wrapper {
+        position: relative;
+        max-width: 100%;
+    }
+
+    /* Custom scrollbar for webkit browsers */
+    .scrollbar-thin::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
 
 @push('scripts')
 <script>
@@ -148,8 +222,9 @@ function renderOfficers(officers) {
     if (officers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-8 text-secondary-foreground">
-                    No officers found
+                <td colspan="6" class="py-12 text-center">
+                    <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                    <p class="text-secondary-foreground">No officers found</p>
                 </td>
             </tr>
         `;
@@ -157,21 +232,27 @@ function renderOfficers(officers) {
     }
     
     tbody.innerHTML = officers.map(officer => `
-        <tr>
-            <td>
+        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+            <td class="py-3 px-4" style="white-space: nowrap;">
                 <input type="checkbox" class="officer-checkbox" 
                     value="${officer.id}" 
                     onchange="updateSelection(${officer.id}, this.checked)" />
             </td>
-            <td class="font-mono">${officer.service_number || 'N/A'}</td>
-            <td>${(officer.initials || '') + ' ' + (officer.surname || '')}</td>
-            <td>${officer.substantive_rank || 'N/A'}</td>
-            <td>
+            <td class="py-3 px-4" style="white-space: nowrap;">
+                <span class="text-sm font-mono text-foreground">${officer.service_number || 'N/A'}</span>
+            </td>
+            <td class="py-3 px-4" style="white-space: nowrap;">
+                <span class="text-sm font-medium text-foreground">${(officer.initials || '') + ' ' + (officer.surname || '')}</span>
+            </td>
+            <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                ${officer.substantive_rank || 'N/A'}
+            </td>
+            <td class="py-3 px-4" style="white-space: nowrap;">
                 <span class="kt-badge kt-badge-${officer.quartered ? 'success' : 'secondary'} kt-badge-sm">
                     ${officer.quartered ? 'Yes' : 'No'}
                 </span>
             </td>
-            <td>
+            <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                 <select class="kt-select kt-select-sm" 
                     onchange="updateQuarteredStatus(${officer.id}, this.value)"
                     value="${officer.quartered ? '1' : '0'}">
