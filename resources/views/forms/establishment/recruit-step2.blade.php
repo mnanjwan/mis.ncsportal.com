@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeEducationSection();
 });
 
-// Nigerian Universities List
+// Nigerian Institutions List (Universities and other institutions)
 const nigerianUniversities = [
     'University of Lagos (UNILAG)',
     'University of Ibadan (UI)',
@@ -387,8 +387,13 @@ const nigerianUniversities = [
     'Other'
 ];
 
-// Qualifications List (from image)
+// Qualifications List - Entry Qualifications prioritized
 const qualifications = [
+    'WAEC',
+    'NECO',
+    'NABTEB',
+    'HND',
+    'OND',
     'PhD',
     'MBBS',
     'MSc',
@@ -397,10 +402,6 @@ const qualifications = [
     'B TECH',
     'BA',
     'BSc',
-    'HND',
-    'OND',
-    'WAEC',
-    'NECO',
     'TRADE TEST',
     'DSc',
     'DPharm',
@@ -597,19 +598,19 @@ function addEducationEntry(data = null) {
     const savedUniversity = data && data.university ? data.university : '';
     const savedQualification = data && data.qualification ? data.qualification : '';
     const savedDiscipline = data && data.discipline ? data.discipline : '';
-    const isCustomDiscipline = savedDiscipline && !disciplines.includes(savedDiscipline);
+    const savedYearObtained = data && data.year_obtained ? data.year_obtained : '';
     
     entryDiv.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             <div class="flex flex-col gap-1">
-                <label class="kt-form-label">University <span class="text-danger">*</span></label>
+                <label class="kt-form-label">Institution <span class="text-danger">*</span></label>
                 <div class="relative">
                     <input type="text" 
                            name="education[${entryId}][university]" 
                            id="university_search_${entryId}"
                            class="kt-input w-full education-university" 
                            value="${savedUniversity}"
-                           placeholder="Search or type university name..."
+                           placeholder="Search or type institution name..."
                            autocomplete="off"
                            required>
                     <input type="hidden" 
@@ -633,28 +634,35 @@ function addEducationEntry(data = null) {
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
             <div class="flex flex-col gap-1">
+                <label class="kt-form-label">Year Obtained <span class="text-danger">*</span></label>
+                <input type="number" 
+                       name="education[${entryId}][year_obtained]" 
+                       class="kt-input education-year-obtained" 
+                       value="${savedYearObtained}"
+                       placeholder="e.g., 2020"
+                       min="1950"
+                       max="${new Date().getFullYear()}"
+                       required>
+                <span class="error-message text-danger text-sm hidden"></span>
+            </div>
+            <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Discipline <span class="text-muted">(Optional)</span></label>
-                <div class="flex gap-2">
-                    <select id="discipline_select_${entryId}"
-                            class="kt-input flex-1 education-discipline-select" 
-                            onchange="handleDisciplineChange(${entryId})">
-                        <option value="">-- Select Discipline --</option>
-                        ${disciplines.map(disc => 
-                            `<option value="${disc}" ${savedDiscipline == disc ? 'selected' : ''}>${disc}</option>`
-                        ).join('')}
-                        <option value="__CUSTOM__" ${isCustomDiscipline ? 'selected' : ''}>-- Custom (Enter below) --</option>
-                    </select>
+                <div class="relative">
+                    <input type="text" 
+                           id="discipline_search_${entryId}"
+                           class="kt-input w-full education-discipline-search" 
+                           value="${savedDiscipline}"
+                           placeholder="Search or type discipline..."
+                           autocomplete="off">
+                    <input type="hidden" 
+                           id="discipline_hidden_${entryId}"
+                           name="education[${entryId}][discipline]"
+                           value="${savedDiscipline}">
+                    <div id="discipline_dropdown_${entryId}" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                        <!-- Options will be populated by JavaScript -->
+                    </div>
                 </div>
-                <input type="text" 
-                       id="discipline_custom_${entryId}"
-                       class="kt-input mt-2 education-discipline-custom ${isCustomDiscipline ? '' : 'hidden'}" 
-                       value="${isCustomDiscipline ? savedDiscipline : ''}"
-                       placeholder="Enter custom discipline..."
-                       oninput="handleCustomDiscipline(${entryId})">
-                <input type="hidden" 
-                       id="discipline_final_${entryId}"
-                       name="education[${entryId}][discipline]"
-                       value="${savedDiscipline}">
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
         </div>
@@ -670,10 +678,8 @@ function addEducationEntry(data = null) {
     // Initialize university search for this entry
     initializeUniversitySearch(entryId);
     
-    // Initialize discipline handling
-    if (isCustomDiscipline) {
-        document.getElementById(`discipline_custom_${entryId}`).classList.remove('hidden');
-    }
+    // Initialize discipline search for this entry
+    initializeDisciplineSearch(entryId);
 }
 
 function removeEducationEntry(entryId) {
@@ -746,45 +752,67 @@ function initializeUniversitySearch(entryId) {
     });
 }
 
-// Handle discipline dropdown change
-function handleDisciplineChange(entryId) {
-    const disciplineSelect = document.getElementById(`discipline_select_${entryId}`);
-    const disciplineCustom = document.getElementById(`discipline_custom_${entryId}`);
-    const disciplineFinal = document.getElementById(`discipline_final_${entryId}`);
+// Initialize discipline search functionality
+function initializeDisciplineSearch(entryId) {
+    const disciplineInput = document.getElementById(`discipline_search_${entryId}`);
+    const disciplineDropdown = document.getElementById(`discipline_dropdown_${entryId}`);
+    const disciplineHidden = document.getElementById(`discipline_hidden_${entryId}`);
     
-    if (!disciplineSelect || !disciplineCustom || !disciplineFinal) return;
+    if (!disciplineInput || !disciplineDropdown || !disciplineHidden) return;
     
-    const selectedValue = disciplineSelect.value;
-    
-    if (selectedValue === '__CUSTOM__') {
-        // Show custom input
-        disciplineCustom.classList.remove('hidden');
-        disciplineCustom.focus();
-        // Keep current custom value if it exists
-        if (!disciplineCustom.value.trim()) {
-            disciplineFinal.value = '';
+    disciplineInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        // Update hidden field with current value
+        disciplineHidden.value = this.value.trim();
+        
+        if (searchTerm.length === 0) {
+            disciplineDropdown.classList.add('hidden');
+            return;
         }
-    } else if (selectedValue) {
-        // Hide custom input and set final value from dropdown
-        disciplineCustom.classList.add('hidden');
-        disciplineCustom.value = '';
-        disciplineFinal.value = selectedValue;
-    } else {
-        // Clear everything
-        disciplineCustom.classList.add('hidden');
-        disciplineCustom.value = '';
-        disciplineFinal.value = '';
-    }
-}
-
-// Handle custom discipline input
-function handleCustomDiscipline(entryId) {
-    const disciplineCustom = document.getElementById(`discipline_custom_${entryId}`);
-    const disciplineFinal = document.getElementById(`discipline_final_${entryId}`);
+        
+        const filtered = disciplines.filter(disc => 
+            disc.toLowerCase().includes(searchTerm)
+        );
+        
+        if (filtered.length > 0) {
+            disciplineDropdown.innerHTML = filtered.map(disc => 
+                '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
+                'data-value="' + disc + '">' + disc + '</div>'
+            ).join('');
+            disciplineDropdown.classList.remove('hidden');
+        } else {
+            disciplineDropdown.classList.add('hidden');
+        }
+    });
     
-    if (!disciplineCustom || !disciplineFinal) return;
+    // Handle selection from dropdown
+    disciplineDropdown.addEventListener('click', function(e) {
+        const option = e.target.closest('[data-value]');
+        if (option) {
+            const selectedValue = option.dataset.value;
+            disciplineInput.value = selectedValue;
+            disciplineHidden.value = selectedValue;
+            disciplineDropdown.classList.add('hidden');
+        }
+    });
     
-    disciplineFinal.value = disciplineCustom.value.trim();
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!disciplineInput.contains(e.target) && !disciplineDropdown.contains(e.target)) {
+            disciplineDropdown.classList.add('hidden');
+        }
+    });
+    
+    // Allow free text input (user can type custom discipline)
+    disciplineInput.addEventListener('blur', function() {
+        // Small delay to allow dropdown click to register
+        setTimeout(() => {
+            disciplineDropdown.classList.add('hidden');
+            // Ensure hidden field is updated
+            disciplineHidden.value = this.value.trim();
+        }, 200);
+    });
 }
 
 function loadCommandsForZone(zoneId, savedCommandId = null) {
@@ -927,11 +955,12 @@ function validateStep2() {
         const entryId = card.dataset.entryId;
         const university = card.querySelector('.education-university');
         const qualification = card.querySelector('.education-qualification');
+        const yearObtained = card.querySelector('.education-year-obtained');
         
         if (!university || !university.value.trim()) {
             const errorSpan = university?.parentElement?.querySelector('.error-message');
             if (errorSpan) {
-                errorSpan.textContent = 'University is required';
+                errorSpan.textContent = 'Institution is required';
                 errorSpan.classList.remove('hidden');
                 university?.classList.add('border-danger');
             }
@@ -945,6 +974,17 @@ function validateStep2() {
                 errorSpan.textContent = 'Entry Qualification is required';
                 errorSpan.classList.remove('hidden');
                 qualification?.classList.add('border-danger');
+            }
+            isValid = false;
+            hasEducationError = true;
+        }
+        
+        if (!yearObtained || !yearObtained.value.trim()) {
+            const errorSpan = yearObtained?.parentElement?.querySelector('.error-message');
+            if (errorSpan) {
+                errorSpan.textContent = 'Year Obtained is required';
+                errorSpan.classList.remove('hidden');
+                yearObtained?.classList.add('border-danger');
             }
             isValid = false;
             hasEducationError = true;
@@ -1060,7 +1100,7 @@ document.querySelectorAll('#recruit-step2-form input, #recruit-step2-form select
         clearError(this.name);
         // Clear education field errors
         const errorSpan = this.parentElement?.querySelector('.error-message');
-        if (errorSpan && this.classList.contains('education-university') || this.classList.contains('education-qualification')) {
+        if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
             errorSpan.textContent = '';
             errorSpan.classList.add('hidden');
             this.classList.remove('border-danger');
@@ -1070,7 +1110,7 @@ document.querySelectorAll('#recruit-step2-form input, #recruit-step2-form select
         clearError(this.name);
         // Clear education field errors
         const errorSpan = this.parentElement?.querySelector('.error-message');
-        if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification'))) {
+        if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
             errorSpan.textContent = '';
             errorSpan.classList.add('hidden');
             this.classList.remove('border-danger');

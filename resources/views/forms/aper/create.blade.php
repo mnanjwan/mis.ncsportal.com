@@ -74,7 +74,7 @@
         @include('forms.aper.partials.part1-personal-records', ['formData' => $formData ?? [], 'officer' => $officer])
         
         <!-- Part 2: Leave Records, Target Setting, Job Description -->
-        @include('forms.aper.partials.part2-leave-targets-job', ['formData' => $formData ?? []])
+        @include('forms.aper.partials.part2-leave-targets-job', ['formData' => $formData ?? [], 'activeTimeline' => $activeTimeline])
         
         <!-- Part 3: Training and Job Performance -->
         @include('forms.aper.partials.part3-training-performance', ['formData' => $formData ?? []])

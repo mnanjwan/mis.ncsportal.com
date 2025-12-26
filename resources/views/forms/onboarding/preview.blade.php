@@ -86,7 +86,7 @@
                                         <strong>Education:</strong>
                                         <ul class="list-disc list-inside mt-2">
                                             @foreach($step2['education'] as $edu)
-                                            <li>{{ $edu['university'] ?? 'N/A' }} - {{ $edu['qualification'] ?? 'N/A' }} @if(!empty($edu['discipline'])) ({{ $edu['discipline'] }}) @endif</li>
+                                            <li>{{ $edu['university'] ?? 'N/A' }} - {{ $edu['qualification'] ?? 'N/A' }} @if(!empty($edu['year_obtained'])) ({{ $edu['year_obtained'] }}) @endif @if(!empty($edu['discipline'])) - {{ $edu['discipline'] }} @endif</li>
                                             @endforeach
                                         </ul>
                                     </div>

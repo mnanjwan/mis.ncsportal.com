@@ -78,16 +78,117 @@ class APERFormController extends Controller
                 ->with('error', 'APER form submission period has ended.');
         }
 
+        // Load officer with relationships
+        $officer->load(['presentStation.zone', 'courses', 'leaveApplications.leaveType']);
+
+        // Get zone from present station
+        $zone = $officer->presentStation && $officer->presentStation->zone 
+            ? $officer->presentStation->zone->name 
+            : null;
+
+        // Determine cadre from discipline or other field (you may need to adjust based on your data structure)
+        // For now, we'll check if there's a discipline field that indicates GD/SS
+        $cadre = null;
+        if ($officer->discipline) {
+            // You may need to map discipline to GD/SS based on your business logic
+            // This is a placeholder - adjust based on your actual data
+            $cadre = str_contains(strtoupper($officer->discipline), 'GENERAL') ? 'GD' : 'SS';
+        }
+
+        // Parse qualifications from officer profile
+        $qualifications = [];
+        if ($officer->entry_qualification) {
+            $qualifications[] = [
+                'qualification' => $officer->entry_qualification,
+                'year' => $officer->date_of_first_appointment ? $officer->date_of_first_appointment->format('Y') : null
+            ];
+        }
+        if ($officer->additional_qualification) {
+            // Try to parse additional qualifications if stored as JSON or comma-separated
+            $additionalQuals = json_decode($officer->additional_qualification, true);
+            if (is_array($additionalQuals)) {
+                $qualifications = array_merge($qualifications, $additionalQuals);
+            } else {
+                $qualifications[] = [
+                    'qualification' => $officer->additional_qualification,
+                    'year' => null
+                ];
+            }
+        }
+
+        // Fetch leave records for the year
+        $yearStart = \Carbon\Carbon::create($activeTimeline->year, 1, 1);
+        $yearEnd = \Carbon\Carbon::create($activeTimeline->year, 12, 31);
+        
+        $leaveApplications = $officer->leaveApplications()
+            ->whereBetween('start_date', [$yearStart, $yearEnd])
+            ->orWhereBetween('end_date', [$yearStart, $yearEnd])
+            ->orWhere(function($query) use ($yearStart, $yearEnd) {
+                $query->where('start_date', '<=', $yearStart)
+                      ->where('end_date', '>=', $yearEnd);
+            })
+            ->with('leaveType')
+            ->get();
+
+        // Organize leave records by type
+        $sickLeaveRecords = [];
+        $maternityLeaveRecords = [];
+        $annualCasualLeaveRecords = [];
+
+        foreach ($leaveApplications as $leave) {
+            $leaveTypeName = strtolower($leave->leaveType->name ?? '');
+            $record = [
+                'from' => $leave->start_date->format('Y-m-d'),
+                'to' => $leave->end_date->format('Y-m-d'),
+                'days' => $leave->number_of_days ?? $leave->start_date->diffInDays($leave->end_date) + 1,
+            ];
+
+            if (str_contains($leaveTypeName, 'sick') || str_contains($leaveTypeName, 'hospital')) {
+                $record['type'] = str_contains($leaveTypeName, 'hospital') ? 'Hospitalisation' : 'Sick Leave';
+                $sickLeaveRecords[] = $record;
+            } elseif (str_contains($leaveTypeName, 'maternity')) {
+                $maternityLeaveRecords[] = $record;
+            } elseif (str_contains($leaveTypeName, 'annual') || str_contains($leaveTypeName, 'casual')) {
+                $annualCasualLeaveRecords[] = $record;
+            }
+        }
+
+        // Fetch training courses since appointment
+        $trainingCourses = $officer->courses()
+            ->where('start_date', '>=', $officer->date_of_first_appointment)
+            ->orderBy('start_date', 'desc')
+            ->get()
+            ->map(function($course) {
+                return [
+                    'type' => $course->course_name . ($course->course_type ? ' (' . $course->course_type . ')' : ''),
+                    'where' => 'NCS', // You may want to add a location field to OfficerCourse
+                    'from' => $course->start_date ? $course->start_date->format('Y-m-d') : null,
+                    'to' => $course->end_date ? $course->end_date->format('Y-m-d') : null,
+                ];
+            })
+            ->toArray();
+
         // Pre-fill form with officer data
         $formData = [
             'service_number' => $officer->service_number,
             'surname' => $officer->surname,
             'forenames' => $officer->initials,
+            'department_area' => $officer->presentStation ? $officer->presentStation->name : null,
+            'cadre' => $cadre,
+            'unit' => $officer->unit,
+            'zone' => $zone,
             'date_of_first_appointment' => $officer->date_of_first_appointment,
             'date_of_present_appointment' => $officer->date_of_present_appointment,
             'rank' => $officer->substantive_rank,
             'date_of_birth' => $officer->date_of_birth,
             'state_of_origin' => $officer->state_of_origin,
+            'qualifications' => $qualifications,
+            'sick_leave_records' => $sickLeaveRecords,
+            'maternity_leave_records' => $maternityLeaveRecords,
+            'annual_casual_leave_records' => $annualCasualLeaveRecords,
+            'training_courses' => $trainingCourses,
+            'period_from' => $yearStart->format('Y-m-d'),
+            'period_to' => $yearEnd->format('Y-m-d'),
         ];
 
         return view('forms.aper.create', compact('activeTimeline', 'officer', 'formData'));
@@ -599,7 +700,10 @@ class APERFormController extends Controller
 
         $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer']);
 
-        if ($request->filled('status')) {
+        // By default, show submitted forms and above (not drafts)
+        if (!$request->filled('status')) {
+            $query->whereIn('status', ['SUBMITTED', 'REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER', 'OFFICER_REVIEW', 'ACCEPTED', 'REJECTED']);
+        } elseif ($request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
@@ -683,14 +787,14 @@ class APERFormController extends Controller
 
     private function validateReportingOfficerData(Request $request)
     {
-        return $request->validate([
-            'targets_agreed' => 'nullable|string|max:10',
-            'targets_agreement_details' => 'nullable|string',
-            'duties_agreed' => 'nullable|string|max:10',
-            'duties_agreement_details' => 'nullable|string',
+        $rules = [
+            'targets_agreed' => 'nullable|string|max:10|in:YES,NO',
+            'targets_agreement_details' => 'nullable|string|max:2000',
+            'duties_agreed' => 'nullable|string|max:10|in:YES,NO',
+            'duties_agreement_details' => 'nullable|string|max:2000',
             // Job Assessment grades and comments
-            'job_understanding_grade' => 'nullable|string|max:1',
-            'job_understanding_comment' => 'nullable|string',
+            'job_understanding_grade' => 'nullable|string|max:1|in:A,B,C,D,E,F',
+            'job_understanding_comment' => 'nullable|string|max:2000',
             'knowledge_application_grade' => 'nullable|string|max:1',
             'knowledge_application_comment' => 'nullable|string',
             'accomplishment_grade' => 'nullable|string|max:1',
@@ -755,23 +859,61 @@ class APERFormController extends Controller
             'suggestions_improvements_grade' => 'nullable|string|max:1',
             'suggestions_improvements_comment' => 'nullable|string',
             // Overall Assessment
-            'overall_assessment' => 'nullable|string|max:1',
-            'training_needs_assessment' => 'nullable|string',
-            'general_remarks' => 'nullable|string',
-            'suggest_different_job' => 'nullable|string|max:10',
-            'different_job_details' => 'nullable|string',
-            'suggest_transfer' => 'nullable|string|max:10',
-            'transfer_details' => 'nullable|string',
-            'promotability' => 'nullable|string|max:1',
-            'reporting_officer_declaration' => 'nullable|string',
-        ]);
+            'overall_assessment' => 'nullable|string|max:1|in:A,B,C,D,E,F',
+            'training_needs_assessment' => 'nullable|string|max:2000',
+            'general_remarks' => 'nullable|string|max:2000',
+            'suggest_different_job' => 'nullable|string|max:10|in:YES,NO',
+            'different_job_details' => 'nullable|string|max:2000',
+            'suggest_transfer' => 'nullable|string|max:10|in:YES,NO',
+            'transfer_details' => 'nullable|string|max:2000',
+            'promotability' => 'nullable|string|max:1|in:A,B,C,D,E,F',
+            'reporting_officer_declaration' => 'nullable|string|max:2000',
+        ];
+        
+        // Add validation for all grade fields
+        $gradeFields = [
+            'job_understanding', 'knowledge_application', 'accomplishment', 'judgement', 
+            'work_speed_accuracy', 'written_expression', 'oral_expression', 'staff_relations',
+            'public_relations', 'staff_management', 'quality_of_work', 'productivity',
+            'effective_use_of_data', 'initiative', 'dependability', 'loyalty', 'honesty',
+            'reliability_under_pressure', 'sense_of_responsibility', 'appearance',
+            'punctuality', 'attendance', 'drive_determination', 'resource_utilization',
+            'encourage_standards', 'train_subordinates', 'good_example', 'suggestions_improvements'
+        ];
+        
+        foreach ($gradeFields as $field) {
+            $rules[$field . '_grade'] = 'nullable|string|max:1|in:A,B,C,D,E,F';
+            $rules[$field . '_comment'] = 'nullable|string|max:2000';
+        }
+        
+        return $request->validate($rules);
     }
 
     private function validateCountersigningOfficerData(Request $request)
     {
         return $request->validate([
-            'countersigning_officer_declaration' => 'nullable|string',
+            'countersigning_officer_declaration' => 'required|string|min:50|max:2000',
+        ], [
+            'countersigning_officer_declaration.required' => 'Declaration is required.',
+            'countersigning_officer_declaration.min' => 'Declaration must be at least 50 characters.',
         ]);
+    }
+
+    // PDF Export
+    public function exportPDF($id)
+    {
+        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])->findOrFail($id);
+        
+        // Check access
+        $user = auth()->user();
+        if (!$form->canBeAccessedBy($user) && $form->officer->user_id !== $user->id) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        // For now, return a view. To generate actual PDF, install: composer require barryvdh/laravel-dompdf
+        // Then use: return PDF::loadView('forms.aper.pdf', compact('form'))->download("aper-form-{$form->year}.pdf");
+        
+        return view('forms.aper.pdf', compact('form'));
     }
 }
 

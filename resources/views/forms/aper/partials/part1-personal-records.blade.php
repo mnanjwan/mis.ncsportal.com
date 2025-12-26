@@ -54,11 +54,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="kt-form-label text-sm">Department/Area</label>
-                        <input type="text" name="department_area" class="kt-input" value="{{ old('department_area', $formData['department_area'] ?? '') }}">
+                        <input type="text" name="department_area" class="kt-input" value="{{ old('department_area', $formData['department_area'] ?? '') }}" readonly>
                     </div>
                     <div>
                         <label class="kt-form-label text-sm">Cadre (Specify whether GD or SS)</label>
-                        <select name="cadre" class="kt-input">
+                        <select name="cadre" class="kt-input" readonly>
                             <option value="">Select...</option>
                             <option value="GD" {{ old('cadre', $formData['cadre'] ?? '') == 'GD' ? 'selected' : '' }}>GD</option>
                             <option value="SS" {{ old('cadre', $formData['cadre'] ?? '') == 'SS' ? 'selected' : '' }}>SS</option>
@@ -66,11 +66,11 @@
                     </div>
                     <div>
                         <label class="kt-form-label text-sm">Unit (For Support Staff)</label>
-                        <input type="text" name="unit" class="kt-input" value="{{ old('unit', $formData['unit'] ?? '') }}">
+                        <input type="text" name="unit" class="kt-input" value="{{ old('unit', $formData['unit'] ?? '') }}" readonly>
                     </div>
                     <div>
                         <label class="kt-form-label text-sm">Zone</label>
-                        <input type="text" name="zone" class="kt-input" value="{{ old('zone', $formData['zone'] ?? '') }}">
+                        <input type="text" name="zone" class="kt-input" value="{{ old('zone', $formData['zone'] ?? '') }}" readonly>
                     </div>
                 </div>
             </div>
@@ -109,24 +109,28 @@
             <!-- 3(c) Qualification Held and Year Obtained -->
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label font-semibold">3(c) Qualification Held and Year Obtained</label>
+                <p class="text-xs text-secondary-foreground mb-2">Qualifications are automatically fetched from your profile. You can add more below.</p>
                 <div class="overflow-x-auto">
-                    <table class="kt-table w-full">
+                    <table class="kt-table w-full" id="qualifications-table">
                         <thead>
                             <tr class="border-b border-border">
                                 <th class="text-left py-3 px-4 font-semibold text-sm">Qualification Held (Academic, Professional or Technical)</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm">Year Obtained</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm w-20">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="qualifications-tbody">
                             @php
                                 $qualifications = old('qualifications', $formData['qualifications'] ?? []);
                                 if (is_string($qualifications)) {
                                     $qualifications = json_decode($qualifications, true) ?? [];
                                 }
-                                for ($i = 0; $i < 4; $i++) {
+                                // Ensure at least 4 rows, but allow more
+                                $qualCount = max(4, count($qualifications));
+                                for ($i = 0; $i < $qualCount; $i++) {
                                     $qual = $qualifications[$i] ?? ['qualification' => '', 'year' => ''];
                             @endphp
-                            <tr>
+                            <tr class="qualification-row">
                                 <td class="py-3 px-4">
                                     <input type="text" name="qualifications[{{ $i }}][qualification]" class="kt-input" 
                                            value="{{ $qual['qualification'] ?? '' }}" placeholder="Enter qualification">
@@ -135,12 +139,53 @@
                                     <input type="text" name="qualifications[{{ $i }}][year]" class="kt-input" 
                                            value="{{ $qual['year'] ?? '' }}" placeholder="Year">
                                 </td>
+                                <td class="py-3 px-4">
+                                    @if($i >= 4)
+                                        <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-qualification" onclick="removeQualificationRow(this)">
+                                            <i class="ki-filled ki-cross"></i>
+                                        </button>
+                                    @endif
+                                </td>
                             </tr>
                             @php } @endphp
                         </tbody>
                     </table>
+                    <div class="mt-2">
+                        <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addQualificationRow()">
+                            <i class="ki-filled ki-plus"></i> Add Qualification
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <script>
+            let qualificationIndex = {{ $qualCount }};
+            
+            function addQualificationRow() {
+                const tbody = document.getElementById('qualifications-tbody');
+                const row = document.createElement('tr');
+                row.className = 'qualification-row';
+                row.innerHTML = `
+                    <td class="py-3 px-4">
+                        <input type="text" name="qualifications[${qualificationIndex}][qualification]" class="kt-input" placeholder="Enter qualification">
+                    </td>
+                    <td class="py-3 px-4">
+                        <input type="text" name="qualifications[${qualificationIndex}][year]" class="kt-input" placeholder="Year">
+                    </td>
+                    <td class="py-3 px-4">
+                        <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-qualification" onclick="removeQualificationRow(this)">
+                            <i class="ki-filled ki-cross"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                qualificationIndex++;
+            }
+            
+            function removeQualificationRow(button) {
+                button.closest('tr').remove();
+            }
+            </script>
         </div>
     </div>
 </div>

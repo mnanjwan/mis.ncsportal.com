@@ -1096,6 +1096,7 @@ class DashboardController extends Controller
             'education' => 'required|array|min:1',
             'education.*.university' => 'required|string|max:255',
             'education.*.qualification' => 'required|string|max:255',
+            'education.*.year_obtained' => 'required|integer|min:1950|max:' . date('Y'),
             'education.*.discipline' => 'nullable|string|max:255',
         ]);
 

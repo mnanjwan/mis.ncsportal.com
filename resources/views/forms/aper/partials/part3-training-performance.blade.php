@@ -8,6 +8,7 @@
             <!-- 7. Training Courses/Seminars Attended since Appointment -->
             <div class="flex flex-col gap-4">
                 <h4 class="text-lg font-semibold">7. Training Courses/Seminars Attended since Appointment</h4>
+                <p class="text-sm text-secondary-foreground italic mb-2">Training courses are automatically fetched from your records since appointment. You can review and edit if needed.</p>
                 <div class="overflow-x-auto">
                     <table class="kt-table w-full">
                         <thead>

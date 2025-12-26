@@ -8,6 +8,7 @@
             <!-- 4. Leave Records -->
             <div class="flex flex-col gap-4">
                 <h4 class="text-lg font-semibold">4. Leave Records</h4>
+                <p class="text-sm text-secondary-foreground italic mb-2">Leave records are automatically fetched for {{ $activeTimeline->year ?? date('Y') }}. You can review and edit if needed.</p>
                 
                 <!-- (A) Sick Leave -->
                 <div class="p-4 bg-muted/50 rounded-lg">

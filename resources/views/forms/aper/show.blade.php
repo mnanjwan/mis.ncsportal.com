@@ -36,22 +36,22 @@
                         Status: <span class="kt-badge kt-badge-{{ $statusConfig['class'] }} kt-badge-sm">{{ $statusConfig['label'] }}</span>
                     </p>
                 </div>
-                @if($form->status === 'OFFICER_REVIEW' && $form->officer->user_id === auth()->id())
-                    <div class="flex gap-3">
-                        <form action="{{ route('officer.aper-forms.reject', $form->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to reject this form?')">
-                            @csrf
-                            <button type="button" onclick="showRejectModal()" class="kt-btn kt-btn-danger">
-                                <i class="ki-filled ki-cross"></i> Reject
-                            </button>
-                        </form>
-                        <form action="{{ route('officer.aper-forms.accept', $form->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to accept this form?')">
+                <div class="flex gap-3">
+                    <a href="{{ route('officer.aper-forms.export', $form->id) }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
+                        <i class="ki-filled ki-file-down"></i> Export PDF
+                    </a>
+                    @if($form->status === 'OFFICER_REVIEW' && $form->officer->user_id === auth()->id())
+                        <button type="button" onclick="showRejectModal()" class="kt-btn kt-btn-danger">
+                            <i class="ki-filled ki-cross"></i> Reject
+                        </button>
+                        <form action="{{ route('officer.aper-forms.accept', $form->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to accept this form?')" class="inline">
                             @csrf
                             <button type="submit" class="kt-btn kt-btn-success">
                                 <i class="ki-filled ki-check"></i> Accept
                             </button>
                         </form>
-                    </div>
-                @endif
+                    @endif
+                </div>
             </div>
         </div>
     </div>
