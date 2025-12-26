@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Add New Recruit')
-@section('page-title', 'Add New Recruit')
+@section('title', 'Add New Recruit - Step 1: Personal Information')
+@section('page-title', 'Add New Recruit - Step 1: Personal Information')
 
 @section('breadcrumbs')
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.dashboard') }}">Establishment</a>
@@ -13,6 +13,34 @@
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
+        <!-- Progress Indicator -->
+        <div class="kt-card">
+            <div class="kt-card-content p-4 lg:p-5">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="size-8 rounded-full flex items-center justify-center font-semibold text-sm" style="background-color: #068b57; color: white;">1</div>
+                        <span class="text-xs sm:text-sm font-medium" style="color: #068b57;">Personal Information</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="size-8 rounded-full flex items-center justify-center font-semibold text-sm" style="background-color: #6c757d; color: white;">2</div>
+                        <span class="text-xs sm:text-sm" style="color: #6c757d;">Employment Details</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="size-8 rounded-full flex items-center justify-center font-semibold text-sm" style="background-color: #6c757d; color: white;">3</div>
+                        <span class="text-xs sm:text-sm" style="color: #6c757d;">Banking Information</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="size-8 rounded-full flex items-center justify-center font-semibold text-sm" style="background-color: #6c757d; color: white;">4</div>
+                        <span class="text-xs sm:text-sm" style="color: #6c757d;">Next of Kin</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="size-8 rounded-full flex items-center justify-center font-semibold text-sm" style="background-color: #6c757d; color: white;">5</div>
+                        <span class="text-xs sm:text-sm" style="color: #6c757d;">Preview</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Info Card -->
         <div class="kt-card bg-primary/10 border border-primary/20">
             <div class="kt-card-content p-4">
@@ -21,7 +49,7 @@
                     <div class="flex-1">
                         <p class="text-sm font-medium text-primary mb-1">Establishment - New Recruit Registration</p>
                         <p class="text-xs text-secondary-foreground mb-2">
-                            This form simulates <strong>Onboarding Step 1: Personal Information</strong>. After creating the recruit, you can assign appointment numbers (CDT/RCT) which will be used during training. Service numbers will be assigned after training completion based on performance and rank.
+                            Complete all 4 steps to create a new recruit. After creation, you can assign appointment numbers (CDT/RCT) which will be used during training. Service numbers will be assigned after training completion based on performance and rank.
                         </p>
                         <p class="text-xs text-secondary-foreground">
                             <strong>Note:</strong> Establishment handles <strong>Appointment Number</strong> assignment (CDT/RCT prefixes). HRD handles Service Number assignment for existing officers.
@@ -37,8 +65,8 @@
             </div>
             <div class="kt-card-content">
                 @if($errors->any())
-                    <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
-                        <div class="kt-card-content p-4">
+                <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+                    <div class="kt-card-content p-4">
                         <div class="flex flex-col gap-2">
                             <div class="flex items-center gap-3">
                                 <i class="ki-filled ki-information text-danger text-xl"></i>
@@ -50,13 +78,12 @@
                                 @endforeach
                             </ul>
                         </div>
-                        </div>
                     </div>
+                </div>
                 @endif
 
-                <form action="{{ route('establishment.new-recruits.store') }}" method="POST" id="createRecruitForm">
+                <form action="{{ route('establishment.new-recruits.step1') }}" method="POST" id="createRecruitForm">
                     @csrf
-                    <input type="hidden" name="entry_type" value="single">
 
                     <div class="flex flex-col gap-5">
                         <!-- Appointment Number Info -->
@@ -94,7 +121,7 @@
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Middle Name</label>
                                 <input type="text" name="middle_name" class="kt-input" value="{{ old('middle_name') }}"/>
-                        </div>
+                            </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Sex <span class="text-danger">*</span></label>
                                 <select name="sex" class="kt-input" required>
@@ -115,13 +142,13 @@
                                     <option value="">Select State...</option>
                                 </select>
                                 <span class="error-message text-danger text-sm hidden"></span>
-                        </div>
+                            </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">LGA <span class="text-danger">*</span></label>
                                 <div class="relative">
                                     <input type="text" 
                                            id="lga_search" 
-                                       class="kt-input w-full" 
+                                           class="kt-input w-full" 
                                            placeholder="Select State first, then search LGA..."
                                            autocomplete="off"
                                            readonly>
@@ -129,7 +156,7 @@
                                            name="lga" 
                                            id="lga_hidden" 
                                            value="{{ old('lga') }}"
-                                       required>
+                                           required>
                                     <div id="lga_dropdown" 
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
                                         <!-- Options will be populated by JavaScript -->
@@ -175,7 +202,7 @@
                                 <label class="kt-form-label">Phone Number <span class="text-danger">*</span></label>
                                 <input type="tel" name="phone_number" class="kt-input" value="{{ old('phone_number') }}" required/>
                                 <span class="error-message text-danger text-sm hidden"></span>
-                        </div>
+                            </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Email Address <span class="text-danger">*</span></label>
                                 <input type="email" name="email" class="kt-input" value="{{ old('email') }}" required/>
@@ -190,62 +217,19 @@
                             <label class="kt-form-label">Residential Address <span class="text-danger">*</span></label>
                             <textarea name="residential_address" class="kt-input" rows="3" required>{{ old('residential_address') }}</textarea>
                             <span class="error-message text-danger text-sm hidden"></span>
-                            </div>
-
+                        </div>
+                        
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label">Permanent Home Address <span class="text-danger">*</span></label>
                             <textarea name="permanent_home_address" class="kt-input" rows="3" required>{{ old('permanent_home_address') }}</textarea>
                             <span class="error-message text-danger text-sm hidden"></span>
                         </div>
 
-                        <!-- Employment Details (Required for Appointment Number Assignment) -->
-                        <div class="border-t border-border pt-5">
-                            <h4 class="text-sm font-semibold text-foreground mb-4">Employment Details (For Appointment Number Assignment)</h4>
-                            <div class="grid lg:grid-cols-2 gap-5">
-                                <div class="flex flex-col gap-1">
-                                    <label class="kt-form-label">Date of First Appointment <span class="text-danger">*</span></label>
-                                    <input type="date" name="date_of_first_appointment" class="kt-input" value="{{ old('date_of_first_appointment') }}" required/>
-                                    <span class="error-message text-danger text-sm hidden"></span>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
-                                    <select name="substantive_rank" class="kt-input" required>
-                                        <option value="">Select Rank</option>
-                                        @foreach($ranks ?? [] as $rank)
-                                            <option value="{{ $rank }}" {{ old('substantive_rank') == $rank ? 'selected' : '' }}>
-                                                {{ $rank }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <p class="text-xs text-secondary-foreground mt-1">
-                                        Select from the same ranks used in manning requests
-                                    </p>
-                                    <span class="error-message text-danger text-sm hidden"></span>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
-                                    <select name="salary_grade_level" class="kt-input" required>
-                                        <option value="">Select Grade Level</option>
-                                        @foreach($gradeLevels ?? [] as $gl)
-                                            <option value="{{ $gl }}" {{ old('salary_grade_level') == $gl ? 'selected' : '' }}>
-                                                {{ $gl }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <p class="text-xs text-secondary-foreground mt-1">
-                                        Select the grade level (GL) for this rank. Used to determine CDT vs RCT prefix.
-                                    </p>
-                                    <span class="error-message text-danger text-sm hidden"></span>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Info Box -->
                         <div class="kt-card bg-info/10 border border-info/20">
                             <div class="kt-card-content p-4">
                                 <p class="text-sm text-secondary-foreground">
-                                    <strong>Note:</strong> After creating the recruit, you can assign appointment numbers (CDT/RCT) from the New Recruits page. 
-                                    An onboarding email will be sent to the officer to complete the remaining onboarding steps (Employment Details, Banking, Next of Kin).
+                                    <strong>Note:</strong> Employment details, banking information, and next of kin will be collected in the following steps.
                                 </p>
                             </div>
                         </div>
@@ -254,8 +238,7 @@
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
                             <a href="{{ route('establishment.new-recruits') }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Cancel</a>
                             <button type="submit" class="kt-btn kt-btn-primary w-full sm:flex-1 whitespace-nowrap">
-                                <i class="ki-filled ki-check"></i>
-                                Create Recruit
+                                Next: Employment Details
                             </button>
                         </div>
                     </div>
@@ -471,9 +454,6 @@ function validateForm() {
         'email': 'Email is required',
         'residential_address': 'Residential Address is required',
         'permanent_home_address': 'Permanent Home Address is required',
-        'date_of_first_appointment': 'Date of First Appointment is required',
-        'substantive_rank': 'Substantive Rank is required',
-        'salary_grade_level': 'Salary Grade Level is required',
     };
     
     // Validate required fields

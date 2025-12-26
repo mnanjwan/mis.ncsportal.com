@@ -7,6 +7,7 @@ use App\Models\Officer;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -52,6 +53,18 @@ class LoginController extends Controller
             ]);
         }
 
+        // Invalidate all other sessions for this user
+        if ($user->current_session_id) {
+            DB::table('sessions')
+                ->where('id', $user->current_session_id)
+                ->delete();
+        }
+        
+        // Delete all other sessions for this user
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->delete();
+
         // Update last login
         $user->update(['last_login' => now()]);
 
@@ -59,6 +72,9 @@ class LoginController extends Controller
         Auth::login($user, $request->boolean('remember'));
 
         $request->session()->regenerate();
+        
+        // Store the new session ID as the current active session
+        $user->update(['current_session_id' => $request->session()->getId()]);
 
         // Clear any old intended URL to prevent redirect issues
         $request->session()->forget('url.intended');
@@ -103,6 +119,13 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        $user = Auth::user();
+        
+        // Clear the current session ID
+        if ($user) {
+            $user->update(['current_session_id' => null]);
+        }
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

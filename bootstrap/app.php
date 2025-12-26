@@ -15,7 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'onboarding.complete' => \App\Http\Middleware\EnsureOnboardingComplete::class,
+            'single.session' => \App\Http\Middleware\EnsureSingleSession::class,
         ]);
+        
+        // Add single session middleware to web group after authentication
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureSingleSession::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

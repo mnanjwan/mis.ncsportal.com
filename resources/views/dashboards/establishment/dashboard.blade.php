@@ -63,6 +63,9 @@
                 <a href="{{ route('establishment.new-recruits') }}" class="kt-btn kt-btn-success">
                     <i class="ki-filled ki-user-plus"></i> New Recruits
                 </a>
+                <a href="{{ route('establishment.training-results') }}" class="kt-btn kt-btn-info">
+                    <i class="ki-filled ki-chart-simple"></i> Training Results
+                </a>
             </div>
         </div>
     </div>

@@ -77,7 +77,7 @@
                 <form id="bulkAssignForm" action="{{ route('establishment.assign-appointment-numbers') }}" method="POST" style="display: none;">
                     @csrf
                     <div id="bulkOfficerIdsContainer"></div>
-                    <input type="hidden" name="appointment_number_prefix" id="bulkPrefix" value="APT">
+                    <input type="hidden" name="appointment_number_prefix" id="bulkPrefix" value="">
                 </form>
                 
                 <!-- Table with horizontal scroll wrapper -->
@@ -246,9 +246,18 @@
                     </button>
                 </div>
                 <div class="kt-modal-body py-4 px-5">
-                    <p class="text-sm text-secondary-foreground">
+                    <p class="text-sm text-secondary-foreground mb-3">
                         Assign appointment number to <strong id="modal-recruit-name"></strong>?
                     </p>
+                    <div class="kt-card bg-primary/10 border border-primary/20 p-3">
+                        <div class="flex items-start gap-2">
+                            <i class="ki-filled ki-information text-primary text-sm mt-0.5"></i>
+                            <div class="text-xs text-secondary-foreground">
+                                <p class="font-medium text-primary mb-1">Auto Prefix</p>
+                                <p>Prefix (CDT or RCT) will be automatically determined based on the recruit's rank and GL level.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="kt-modal-footer py-3 px-5 flex items-center justify-end gap-2.5">
                     <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
@@ -257,6 +266,7 @@
                     <form action="{{ route('establishment.assign-appointment-numbers') }}" method="POST" class="inline" id="assignAppointmentForm">
                         @csrf
                         <input type="hidden" name="officer_ids[]" id="modal-officer-id">
+                        <input type="hidden" name="auto_prefix" value="1">
                         <button type="submit" class="kt-btn kt-btn-primary">
                             <i class="ki-filled ki-check"></i>
                             <span>Assign</span>
@@ -381,19 +391,44 @@
                     <p class="text-sm text-secondary-foreground mb-3">
                         Assign appointment numbers to <strong id="bulk-modal-count">0</strong> selected recruit(s)?
                     </p>
+                    <div class="kt-card bg-primary/10 border border-primary/20 p-3 mb-3">
+                        <div class="flex items-start gap-2">
+                            <i class="ki-filled ki-information text-primary text-sm mt-0.5"></i>
+                            <div class="text-xs text-secondary-foreground">
+                                <p class="font-medium text-primary mb-1">Auto Prefix Assignment</p>
+                                <p>Prefixes (CDT or RCT) will be automatically determined based on rank and GL level:</p>
+                                <ul class="list-disc list-inside mt-1 space-y-0.5">
+                                    <li>ASC II GL 08+ → CDT</li>
+                                    <li>IC GL 07- → RCT</li>
+                                    <li>AIC → RCT</li>
+                                    <li>DSC → CDT</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                     <div>
-                        <label for="bulk-prefix-input" class="block text-sm font-medium text-foreground mb-2">
-                            Appointment Number Prefix <span class="text-danger">*</span>
+                        <label class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" 
+                                   id="auto-prefix-checkbox" 
+                                   checked
+                                   class="kt-checkbox"
+                                   onchange="togglePrefixInput()">
+                            <span class="text-sm font-medium text-foreground">Auto-determine prefix based on rank</span>
+                        </label>
+                        <div id="manual-prefix-container" class="hidden">
+                            <label for="bulk-prefix-input" class="block text-sm font-medium text-foreground mb-2">
+                                Manual Prefix (Optional)
                         </label>
                         <input type="text" 
                                id="bulk-prefix-input" 
-                               value="APT" 
+                                   value="" 
                                maxlength="20"
                                class="kt-input w-full"
-                               placeholder="e.g., APT">
+                                   placeholder="e.g., CDT, RCT">
                         <p class="text-xs text-secondary-foreground mt-1">
-                            Numbers will be generated sequentially (e.g., APT0001, APT0002, ...)
+                                Leave empty to use auto prefix. Numbers will be generated sequentially per prefix.
                         </p>
+                        </div>
                     </div>
                 </div>
                 <div class="kt-modal-footer py-3 px-5 flex items-center justify-end gap-2.5">
@@ -493,10 +528,24 @@
                 }
             }
 
+            function togglePrefixInput() {
+                const autoCheckbox = document.getElementById('auto-prefix-checkbox');
+                const manualContainer = document.getElementById('manual-prefix-container');
+                const prefixInput = document.getElementById('bulk-prefix-input');
+                
+                if (autoCheckbox.checked) {
+                    manualContainer.classList.add('hidden');
+                    prefixInput.value = '';
+                } else {
+                    manualContainer.classList.remove('hidden');
+                }
+            }
+
             function submitBulkAssign() {
                 const selected = document.querySelectorAll('.recruit-checkbox:checked');
                 const officerIds = Array.from(selected).map(cb => cb.value);
-                const prefix = document.getElementById('bulk-prefix-input').value.trim() || 'APT';
+                const autoPrefix = document.getElementById('auto-prefix-checkbox').checked;
+                const manualPrefix = document.getElementById('bulk-prefix-input').value.trim();
 
                 if (officerIds.length === 0) {
                     alert('Please select at least one recruit.');
@@ -516,8 +565,19 @@
                     container.appendChild(input);
                 });
 
-                // Set prefix
-                document.getElementById('bulkPrefix').value = prefix;
+                // Set auto prefix flag
+                const autoInput = document.createElement('input');
+                autoInput.type = 'hidden';
+                autoInput.name = 'auto_prefix';
+                autoInput.value = autoPrefix ? '1' : '0';
+                container.appendChild(autoInput);
+
+                // Set prefix (only if manual override provided)
+                if (!autoPrefix && manualPrefix) {
+                    document.getElementById('bulkPrefix').value = manualPrefix;
+                } else {
+                    document.getElementById('bulkPrefix').value = '';
+                }
 
                 // Submit form
                 document.getElementById('bulkAssignForm').submit();

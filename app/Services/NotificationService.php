@@ -161,6 +161,27 @@ class NotificationService
     }
 
     /**
+     * Notify TRADOC about new recruit created
+     */
+    public function notifyNewRecruit($recruit): array
+    {
+        $users = User::whereHas('roles', function ($query) {
+            $query->where('name', 'TRADOC')->where('is_active', true);
+        })->where('is_active', true)->get();
+        
+        $recruitName = "{$recruit->initials} {$recruit->surname}";
+        
+        return $this->notifyMany(
+            $users,
+            'new_recruit_created',
+            'New Recruit Created',
+            "A new recruit {$recruitName} has been created. Appointment number will be assigned by Establishment.",
+            'officer',
+            $recruit->id
+        );
+    }
+
+    /**
      * Notify TRADOC about new recruits ready for training
      */
     public function notifyRecruitsReadyForTraining(array|\Illuminate\Database\Eloquent\Collection $recruits): array

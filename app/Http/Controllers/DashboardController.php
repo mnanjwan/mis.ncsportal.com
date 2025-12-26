@@ -846,7 +846,11 @@ class DashboardController extends Controller
 
     public function newRecruits(Request $request)
     {
-        $query = Officer::whereNull('service_number')
+        $query = Officer::where(function($q) {
+                $q->whereNull('service_number')
+                  ->orWhere('service_number', '')
+                  ->orWhere('service_number', 'NCS'); // Handle edge case where mutator set it to "NCS"
+            })
             ->where('is_active', true)
             ->where('is_deceased', false);
 

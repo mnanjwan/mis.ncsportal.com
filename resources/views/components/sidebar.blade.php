@@ -89,6 +89,7 @@
                 ],
                 ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
                 ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
                 [
                     'title' => 'Settings',
                     'icon' => 'ki-filled ki-setting-2',
@@ -125,6 +126,8 @@
                     ]
                 ],
                 ['icon' => 'ki-filled ki-calendar-2', 'title' => 'Emolument Timeline', 'href' => route('hrd.emolument-timeline')],
+                ['icon' => 'ki-filled ki-calendar-2', 'title' => 'APER Timeline', 'href' => route('hrd.aper-timeline')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('hrd.aper-forms')],
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('hrd.manning-requests')],
                 ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('hrd.courses')],
@@ -184,6 +187,7 @@
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
             ];
             break;
         case 'Assessor':
@@ -255,8 +259,7 @@
         case 'TRADOC':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('tradoc.dashboard')],
-                ['icon' => 'ki-filled ki-file-up', 'title' => 'Upload Training Results', 'href' => route('tradoc.upload')],
-                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Sorted Results', 'href' => route('tradoc.sorted-results')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Upload Results', 'href' => route('tradoc.upload')],
             ];
             break;
         case 'ICT':

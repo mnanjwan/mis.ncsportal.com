@@ -111,18 +111,26 @@
 **Access Level:** New recruitment and service numbers
 
 **Core Functions:**
-1. Assign New Appointment Numbers to new recruits
-2. Receive sorted training results from TRADOC
-3. Enter last available service number in system
-4. Allocate Service Number to new officers based on training performance (highest scorer gets first available number, next scorer gets next number, etc.)
-5. Maintain service number registry
-6. Process new recruit documentation
-7. Create initial officer records
-8. Coordinate recruitment exercises
-9. Process appointment letters
-10. Assign initial ranks to new officers
-11. Ensure unique identification for all officers
-12. Generate service number assignment reports
+1. Assign New Appointment Numbers to new recruits with automatic prefix assignment:
+   - **CDT prefix** for ASC II GL 08 and above, AIC, DSC ranks
+   - **RCT prefix** for IC GL 07 and below ranks
+   - Prefix automatically determined based on rank and GL level
+   - Sequential numbering per prefix (e.g., CDT00001, CDT00002, RCT00001, RCT00002)
+2. Receive sorted training results from TRADOC (grouped by rank)
+3. Allocate Service Numbers grouped by rank:
+   - Each rank maintains its own service number sequence
+   - Within each rank, service numbers assigned based on training performance (highest to lowest)
+   - System automatically tracks last service number per rank
+   - Service numbers continue from last number for that specific rank
+4. Maintain service number registry per rank
+5. Process new recruit documentation
+6. Create initial officer records
+7. Coordinate recruitment exercises
+8. Process appointment letters
+9. Assign initial ranks to new officers
+10. Ensure unique identification for all officers
+11. Generate service number assignment reports by rank
+12. View rank-based assignment previews before processing
 
 ### Accounts - Financial Processor
 **Primary Role:** Payment processing and financial management
@@ -457,18 +465,23 @@ The system is organized into the following zones:
 ### 2. Officers Onboarding Workflow
 
 **For New Recruits:**
-1. **Unit assigns Appointment Number** - The Unit gives the officers a New Appointment Number (not service number yet)
-2. **System generates link** - System generates onboarding link
-3. **Email sent** - An email is sent to the officer for onboarding (At this point the Officer uses his personal email)
-4. **Officer receives email** - Officer receives email and clicks link
-5. **Officer fills information** - Officers will fill the following information in multi-step form:
+1. **Establishment creates recruit** - Establishment creates new recruit record with rank and GL level
+2. **Automatic appointment number assignment** - System automatically assigns appointment number with prefix based on rank:
+   - **CDT prefix** for ASC II GL 08+, DSC ranks (e.g., CDT00001, CDT00002)
+   - **RCT prefix** for IC GL 07-, AIC ranks (e.g., RCT00001, RCT00002)
+   - Sequential numbering per prefix
+   - Used throughout training period
+3. **System generates link** - System generates onboarding link
+4. **Email sent** - An email is sent to the officer for onboarding (At this point the Officer uses his personal email)
+5. **Officer receives email** - Officer receives email and clicks link
+6. **Officer fills information** - Officers will fill the following information in multi-step form:
    - Step 1: Personal Information
    - Step 2: Employment Details
    - Step 3: Banking and Pension
    - Step 4: Next of Kin and Documents
    
    **Complete Field List:**
-   - Service Number
+   - Service Number (assigned after training)
    - Initials
    - Surname
    - Sex
@@ -501,17 +514,21 @@ The system is organized into the following zones:
    - Interdicted
    - Suspended
    - Quartered
-3. **Officer accepts disclaimer** - Officer accepts disclaimer about false information with caveat: "Any false information provided by you shall be subject to severe disciplinary actions which may include and not be limited to dismissal"
-4. **Upload documents** - Officers must upload credentials and documents preferably in JPEG to save space
-5. **Caveat displayed** - System displays caveat: "Any false information provided by you can lead to Dismissal for Forgery under the PSR Rules"
-6. **Training Phase** - Officers undergo training
-7. **TRADOC uploads results** - After training, TRADOC uploads officers results in CSV format where they will sort highest to lowest according to new appointment number
-8. **Establishment receives sorted list** - This is sent to establishment unit again
-9. **Establishment enters last service number** - Establishment will enter the last available service number
-10. **Service number generation** - The service numbers will be generated from +1 based on sorted performance (highest scorer gets first available number, next scorer gets next number, etc.)
-11. **ICT creates email** - ICT will create new email addresses for them on the customs.gov.ng domain
-12. **ICT deletes personal email** - ICT deletes the former personal email address
-13. **System creates account** - System creates account and assigns to command chat
+7. **Officer accepts disclaimer** - Officer accepts disclaimer about false information with caveat: "Any false information provided by you shall be subject to severe disciplinary actions which may include and not be limited to dismissal"
+8. **Upload documents** - Officers must upload credentials and documents preferably in JPEG to save space
+9. **Caveat displayed** - System displays caveat: "Any false information provided by you can lead to Dismissal for Forgery under the PSR Rules"
+10. **Training Phase** - Officers undergo training using their appointment numbers (CDT/RCT prefixes)
+11. **TRADOC uploads results** - After training, TRADOC uploads officers results in CSV format with substantive rank included, sorted by performance (highest to lowest)
+12. **System groups by rank** - System automatically groups training results by officer's substantive rank
+13. **Establishment receives grouped list** - Establishment receives training results grouped by rank, sorted by performance within each rank
+14. **Rank-based service number assignment** - System assigns service numbers grouped by rank:
+    - Each rank maintains its own service number sequence
+    - Within each rank, service numbers assigned based on performance (highest to lowest)
+    - System automatically tracks last service number per rank
+    - Service numbers continue from last number for that specific rank
+15. **ICT creates email** - ICT will create new email addresses for them on the customs.gov.ng domain
+16. **ICT deletes personal email** - ICT deletes the former personal email address
+17. **System creates account** - System creates account and assigns to command chat
 
 **For Existing Officers:**
 1. **HRD initiates** - HRD initiates onboarding
@@ -748,15 +765,37 @@ The Eligibility List carries the following fields:
 
 ### 9. Service Number Allocation Workflow
 
-**For New Recruits (Performance-Based):**
-1. **TRADOC uploads results** - After training, TRADOC uploads results in CSV format sorted by performance (highest to lowest by appointment number)
-2. **Establishment receives sorted list** - Establishment receives the sorted list from TRADOC
-3. **Establishment enters last service number** - Establishment enters the last available service number in the system
-4. **Performance-based assignment** - System assigns service numbers based on sorted performance:
-   - Highest scorer (100%) gets first available service number (e.g., NCS10001)
-   - Next scorer (99%) gets next service number (e.g., NCS10002)
-   - And so on sequentially
-5. **Pattern precedence** - This performance-based flow takes precedence for new recruits
+**Appointment Number Assignment (Training Phase):**
+1. **Establishment creates new recruits** - Establishment creates new officer records with rank and GL level
+2. **Automatic prefix assignment** - System automatically assigns appointment number prefix based on rank and GL level:
+   - **CDT prefix** for:
+     - ASC II GL 08 and above
+     - DSC ranks
+   - **RCT prefix** for:
+     - IC GL 07 and below
+     - AIC ranks
+3. **Sequential numbering per prefix** - Each prefix maintains its own sequence:
+   - IC: RCT00001, RCT00002, RCT00003...
+   - ASC II: CDT00003, CDT00004...
+   - AIC: RCT00005, RCT00006...
+   - DSC: CDT00007, CDT00008...
+4. **Used during training** - These appointment numbers are used throughout training period
+
+**Service Number Assignment (Post-Training - Rank-Based):**
+1. **TRADOC uploads results** - After training, TRADOC uploads results in CSV format with officer's substantive rank included
+2. **System groups by rank** - System automatically groups training results by officer's substantive rank
+3. **Establishment receives grouped list** - Establishment receives training results grouped by rank, sorted by performance within each rank
+4. **Rank-based assignment** - System assigns service numbers grouped by rank:
+   - Each rank maintains its own service number sequence
+   - System tracks last service number per rank automatically
+   - Within each rank, service numbers assigned based on performance (highest to lowest)
+   - Example: If IC rank last service number is NCS65000, next IC officer gets NCS65001
+   - Example: If ASC II rank last service number is NCS65200, next ASC II officer gets NCS65201
+5. **Performance-based within rank** - Within each rank:
+   - Highest scorer in that rank gets first available number for that rank
+   - Next scorer in same rank gets next number for that rank
+   - Different ranks have independent sequences
+6. **CSV upload by rank** - TRADOC uploads results grouped by rank, ensuring proper rank-based assignment
 
 **For Existing Officers (Sequential):**
 1. **Establishment allocates** - This is done by establishment unit
@@ -778,17 +817,20 @@ The Eligibility List carries the following fields:
 
 ### 11. TRADOC Training Results Upload Workflow
 
-1. **Training completion** - Officers complete training after onboarding
+1. **Training completion** - Officers complete training after onboarding using their appointment numbers (CDT/RCT prefixes)
 2. **TRADOC prepares CSV** - TRADOC prepares training results in CSV format
 3. **CSV format requirements** - CSV must contain:
-   - Appointment Number
+   - Appointment Number (CDT or RCT prefix)
    - Officer Name
    - Training Score/Percentage
    - Training Status (Pass/Fail)
+   - **Substantive Rank** (automatically populated from officer record)
 4. **TRADOC uploads CSV** - TRADOC uploads the CSV file to the system
 5. **System validates** - System validates CSV format and data
-6. **System sorts by performance** - System automatically sorts officers by performance (highest to lowest) according to appointment number
-7. **System sends to Establishment** - Sorted list is sent to Establishment unit for service number assignment
+6. **System populates rank** - System automatically populates substantive rank from officer record based on appointment number
+7. **System sorts by performance** - System automatically sorts officers by performance (highest to lowest) within each rank
+8. **System groups by rank** - System groups training results by substantive rank for rank-based service number assignment
+9. **System sends to Establishment** - Grouped and sorted list (by rank, then by performance) is sent to Establishment unit for rank-based service number assignment
 
 ### 12. ICT Email Management Workflow
 
@@ -925,20 +967,21 @@ The Eligibility List carries the following fields:
 ### FLOW 4: OFFICER ONBOARDING PROCESS
 
 **For New Recruits:**
-1. Unit assigns New Appointment Number
-2. System generates onboarding link
-3. Email sent to new officer (personal email)
-4. Officer receives email and clicks link
-5. Officer fills onboarding form and uploads credentials
-6. Officer accepts disclaimer about false information
-7. Officers undergo training
-8. TRADOC uploads training results (CSV format, sorted highest to lowest)
-9. Establishment receives sorted list
-10. Establishment enters last available service number
-11. System generates service numbers based on performance (highest scorer gets first number)
-12. ICT creates new email addresses on customs.gov.ng
-13. ICT deletes former personal email addresses
-14. System creates account and assigns to command chat
+1. Establishment creates recruit with rank and GL level
+2. System automatically assigns appointment number with prefix (CDT for ASC II GL 08+, DSC / RCT for IC GL 07-, AIC)
+3. System generates onboarding link
+4. Email sent to new officer (personal email)
+5. Officer receives email and clicks link
+6. Officer fills onboarding form and uploads credentials
+7. Officer accepts disclaimer about false information
+8. Officers undergo training using appointment numbers (CDT/RCT prefixes)
+9. TRADOC uploads training results (CSV format with substantive rank, sorted by performance)
+10. System groups training results by rank
+11. Establishment receives grouped list (by rank, sorted by performance within each rank)
+12. System assigns service numbers grouped by rank (each rank maintains its own sequence, performance-based within rank)
+13. ICT creates new email addresses on customs.gov.ng
+14. ICT deletes former personal email addresses
+15. System creates account and assigns to command chat
 
 **For Existing Officers:**
 1. HRD initiates onboarding
@@ -1351,9 +1394,29 @@ Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notif
 
 ### Service Number Rules
 
-1. **Allocation**
+1. **Appointment Number Assignment (Training Phase)**
+   - Appointment numbers are assigned by Establishment unit with automatic prefix determination
+   - **CDT prefix** assigned for:
+     - ASC II GL 08 and above
+     - DSC ranks
+   - **RCT prefix** assigned for:
+     - IC GL 07 and below
+     - AIC ranks
+   - Sequential numbering per prefix (e.g., CDT00001, CDT00002, RCT00001, RCT00002)
+   - Used throughout training period
+
+2. **Service Number Allocation (Post-Training)**
    - Service Number allocation is done by Establishment unit
-   - New officers start from the last service number + 1 (sequential numbering)
+   - **Rank-based assignment**: Service numbers are assigned grouped by rank
+   - Each rank maintains its own independent service number sequence
+   - System automatically tracks last service number per rank
+   - Within each rank, service numbers assigned based on training performance (highest to lowest)
+   - Example: If IC rank last service number is NCS65000, next IC officer gets NCS65001
+   - Example: If ASC II rank last service number is NCS65200, next ASC II officer gets NCS65201
+   - Different ranks have completely independent sequences
+
+3. **For Existing Officers (Sequential)**
+   - Any new officer documented will start from the last service number + 1 (sequential numbering)
    - Example: If last service number is 57616, new officers will be 57617, 57618, etc.
 
 ### Posting and Transfer Rules

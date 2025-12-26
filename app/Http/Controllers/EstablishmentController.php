@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Helpers\AppointmentNumberHelper;
+use App\Helpers\ServiceNumberHelper;
 
 class EstablishmentController extends Controller
 {
@@ -26,37 +28,44 @@ class EstablishmentController extends Controller
     {
         $results = TrainingResult::sortedByPerformance()
             ->whereNull('service_number')
+            ->where('status', 'PASS')
             ->with(['officer', 'uploadedBy'])
             ->get();
 
-        // Get last service number
+        // Group by rank for display
+        $resultsByRank = $results->groupBy('rank');
+        
+        // Get last service number per rank
+        $lastServiceNumbersByRank = [];
+        foreach ($resultsByRank->keys() as $rank) {
+            $lastServiceNumbersByRank[$rank] = ServiceNumberHelper::getLastServiceNumberForRank($rank);
+        }
+
+        // Get global last service number (for reference)
         $lastServiceNumber = Officer::whereNotNull('service_number')
             ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
             ->value('service_number');
 
-        return view('dashboards.establishment.training-results', compact('results', 'lastServiceNumber'));
+        return view('dashboards.establishment.training-results', compact(
+            'results', 
+            'lastServiceNumber',
+            'resultsByRank',
+            'lastServiceNumbersByRank'
+        ));
     }
 
     /**
      * Show form to enter last service number and assign service numbers
+     * Now groups by rank and assigns service numbers per rank based on performance
      */
     public function assignServiceNumbers(Request $request)
     {
         try {
             $request->validate([
-                'last_service_number' => 'required|string|max:50',
+                'rank_based' => 'nullable|boolean', // If true, assign by rank
             ]);
 
-            $lastServiceNumber = trim($request->last_service_number);
-            
-            // Extract numeric part from last service number (e.g., NCS10001 -> 10001)
-            preg_match('/(\d+)$/', $lastServiceNumber, $matches);
-            if (empty($matches[1])) {
-                Log::warning('Invalid service number format provided', ['number' => $lastServiceNumber]);
-                return back()->with('error', 'Invalid service number format. Must end with numbers (e.g., NCS50001).')->withInput();
-            }
-
-            $lastNumber = (int) $matches[1];
+            $rankBased = $request->input('rank_based', true); // Default to rank-based
 
             DB::beginTransaction();
             
@@ -72,16 +81,46 @@ class EstablishmentController extends Controller
             }
 
             $assigned = 0;
-            $currentNumber = $lastNumber + 1;
+            $rankStats = [];
 
-            foreach ($results as $result) {
+            if ($rankBased) {
+                // Group results by rank
+                $resultsByRank = $results->groupBy('rank');
+
+                foreach ($resultsByRank as $rank => $rankResults) {
+                    // Get last service number for this rank
+                    $lastServiceNumber = ServiceNumberHelper::getLastServiceNumberForRank($rank);
+                    
+                    $startNumber = 1;
+                    if ($lastServiceNumber) {
+                        preg_match('/(\d+)$/', $lastServiceNumber, $matches);
+                        if (!empty($matches[1])) {
+                            $startNumber = (int) $matches[1] + 1;
+                        }
+                    } else {
+                        // If no service numbers exist for this rank, check global last
+                        $globalLast = Officer::whereNotNull('service_number')
+                            ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
+                            ->value('service_number');
+                        
+                        if ($globalLast) {
+                            preg_match('/(\d+)$/', $globalLast, $matches);
+                            $startNumber = !empty($matches[1]) ? (int) $matches[1] + 1 : 1;
+                        }
+                    }
+
+                    $currentNumber = $startNumber;
+                    $rankAssigned = 0;
+
+                    // Assign service numbers to this rank's results (already sorted by performance)
+                    foreach ($rankResults as $result) {
                 // Generate service number: NCS + next number
                 $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
 
                 // Check if service number already exists
                 if (Officer::where('service_number', $serviceNumber)->exists()) {
                     $currentNumber++;
-                    continue;
+                            $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
                 }
 
                 // Update training result with service number
@@ -111,7 +150,58 @@ class EstablishmentController extends Controller
                 }
 
                 $currentNumber++;
+                        $rankAssigned++;
                 $assigned++;
+                    }
+
+                    $rankStats[$rank] = [
+                        'count' => $rankAssigned,
+                        'start' => $startNumber,
+                        'end' => $currentNumber - 1
+                    ];
+                }
+            } else {
+                // Legacy: Global assignment (for backward compatibility)
+                $lastServiceNumber = Officer::whereNotNull('service_number')
+                    ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
+                    ->value('service_number');
+
+                $startNumber = 1;
+                if ($lastServiceNumber) {
+                    preg_match('/(\d+)$/', $lastServiceNumber, $matches);
+                    if (!empty($matches[1])) {
+                        $startNumber = (int) $matches[1] + 1;
+                    }
+                }
+
+                $currentNumber = $startNumber;
+
+                foreach ($results as $result) {
+                    $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
+
+                    if (Officer::where('service_number', $serviceNumber)->exists()) {
+                        $currentNumber++;
+                        $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
+                    }
+
+                    $result->update(['service_number' => $serviceNumber]);
+
+                    if ($result->officer_id) {
+                        $officer = Officer::find($result->officer_id);
+                        if ($officer) {
+                            $officer->update(['service_number' => $serviceNumber]);
+                        }
+                    } else {
+                        $officer = Officer::where('appointment_number', $result->appointment_number)->first();
+                        if ($officer) {
+                            $officer->update(['service_number' => $serviceNumber]);
+                            $result->update(['officer_id' => $officer->id]);
+                        }
+                    }
+
+                    $currentNumber++;
+                    $assigned++;
+                }
             }
 
             DB::commit();
@@ -144,12 +234,21 @@ class EstablishmentController extends Controller
 
             Log::info('Service numbers assigned successfully', [
                 'count' => $assigned,
-                'last_number' => $lastNumber,
-                'started_from' => $currentNumber
+                'rank_based' => $rankBased,
+                'rank_stats' => $rankStats
             ]);
 
+            $message = "Successfully assigned {$assigned} service number(s)";
+            if ($rankBased && !empty($rankStats)) {
+                $message .= " grouped by rank: " . implode(', ', array_map(function($rank, $stats) {
+                    return "{$rank} ({$stats['count']})";
+                }, array_keys($rankStats), $rankStats));
+            } else {
+                $message .= " based on training performance.";
+            }
+
             return redirect()->route('establishment.training-results')
-                ->with('success', "Successfully assigned {$assigned} service number(s) based on training performance.");
+                ->with('success', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             Log::warning('Validation error in service number assignment', ['errors' => $e->errors()]);
@@ -167,9 +266,400 @@ class EstablishmentController extends Controller
     /**
      * Show form to add new recruit
      */
-    public function createRecruit()
+    /**
+     * Get ranks and grade levels (shared helper)
+     */
+    private function getRanksAndGradeLevels()
     {
-        return view('forms.establishment.new-recruit');
+        $ranks = [
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
+        ];
+        
+        $gradeLevels = [
+            'GL 03',
+            'GL 04',
+            'GL 05',
+            'GL 06',
+            'GL 07',
+            'GL 08',
+            'GL 09',
+            'GL 10',
+            'GL 11',
+            'GL 12',
+            'GL 13',
+            'GL 14',
+            'GL 15',
+            'GL 16',
+            'GL 17',
+            'GL 18',
+        ];
+        
+        // Rank to Grade Level mapping
+        $rankToGradeMap = [
+            'CGC' => 'GL 18',
+            'DCG' => 'GL 17',
+            'ACG' => 'GL 16',
+            'CC' => 'GL 15',
+            'DC' => 'GL 14',
+            'AC' => 'GL 13',
+            'CSC' => 'GL 12',
+            'SC' => 'GL 11',
+            'DSC' => 'GL 10',
+            'ASC I' => 'GL 09',
+            'ASC II' => 'GL 08',
+            'IC' => 'GL 07',
+            'AIC' => 'GL 06',
+            'CA I' => 'GL 05',
+            'CA II' => 'GL 04',
+            'CA III' => 'GL 03',
+        ];
+        
+        return compact('ranks', 'gradeLevels', 'rankToGradeMap');
+    }
+
+    /**
+     * Step 1: Personal Information
+     */
+    public function createRecruitStep1()
+    {
+        // Clear any existing session data
+        session()->forget(['recruit_step1', 'recruit_step2', 'recruit_step3', 'recruit_step4']);
+        
+        extract($this->getRanksAndGradeLevels());
+        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels'));
+    }
+
+    /**
+     * Save Step 1: Personal Information
+     */
+    public function saveRecruitStep1(Request $request)
+    {
+        $validated = $request->validate([
+            'initials' => 'required|string|max:50',
+            'surname' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'sex' => 'required|in:M,F',
+            'date_of_birth' => 'required|date',
+            'state_of_origin' => 'required|string|max:255',
+            'lga' => 'required|string|max:255',
+            'geopolitical_zone' => 'required|string|max:255',
+            'marital_status' => 'required|string|max:50',
+            'phone_number' => 'required|string|max:20',
+            'email' => ['required', 'email', 'max:255', 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'],
+            'residential_address' => 'required|string',
+            'permanent_home_address' => 'required|string',
+        ], [
+            'email.email' => 'The email must be a valid email address.',
+            'email.regex' => 'The email format is invalid.',
+        ]);
+
+        // Check if email already exists
+        if (User::where('email', $validated['email'])->exists()) {
+            return back()->with('error', "Email '{$validated['email']}' already exists in the system.")->withInput();
+        }
+
+        if (Officer::where('email', $validated['email'])->exists()) {
+            return back()->with('error', "Email '{$validated['email']}' already exists for an officer.")->withInput();
+        }
+
+        session(['recruit_step1' => $validated]);
+        return redirect()->route('establishment.new-recruits.step2');
+    }
+
+    /**
+     * Step 2: Employment Details
+     */
+    public function createRecruitStep2()
+    {
+        if (!session('recruit_step1')) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete Step 1 first.');
+        }
+
+        extract($this->getRanksAndGradeLevels());
+        $savedData = session('recruit_step2', []);
+        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData'));
+    }
+
+    /**
+     * Save Step 2: Employment Details
+     */
+    public function saveRecruitStep2(Request $request)
+    {
+        if (!session('recruit_step1')) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete Step 1 first.');
+        }
+
+        $validated = $request->validate([
+            'date_of_first_appointment' => 'required|date',
+            'date_of_present_appointment' => 'required|date',
+            'substantive_rank' => 'required|string|max:100',
+            'salary_grade_level' => 'required|string|max:10',
+            'zone_id' => 'required|exists:zones,id',
+            'command_id' => 'required|exists:commands,id',
+            'date_posted_to_station' => 'required|date',
+            'unit' => 'nullable|string|max:255',
+            'education' => 'required|array|min:1',
+            'education.*.university' => 'required|string|max:255',
+            'education.*.qualification' => 'required|string|max:255',
+            'education.*.discipline' => 'nullable|string|max:255',
+        ]);
+
+        session(['recruit_step2' => $validated]);
+        return redirect()->route('establishment.new-recruits.step3');
+    }
+
+    /**
+     * Step 3: Banking Information
+     */
+    public function createRecruitStep3()
+    {
+        if (!session('recruit_step1')) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete Step 1 first.');
+        }
+
+        $savedData = session('recruit_step3', []);
+        return view('forms.establishment.recruit-step3', compact('savedData'));
+    }
+
+    /**
+     * Save Step 3: Banking Information
+     */
+    public function saveRecruitStep3(Request $request)
+    {
+        if (!session('recruit_step1')) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete Step 1 first.');
+        }
+
+        $validated = $request->validate([
+            'bank_name' => 'required|string|max:255',
+            'bank_account_number' => 'required|string|max:10|regex:/^\d{10}$/',
+            'sort_code' => 'nullable|string|max:20',
+            'pfa_name' => 'required|string|max:255',
+            'rsa_number' => 'required|string|max:50|regex:/^PEN\d{12}$/',
+        ]);
+
+        session(['recruit_step3' => $validated]);
+        return redirect()->route('establishment.new-recruits.step4');
+    }
+
+    /**
+     * Step 4: Next of Kin
+     */
+    public function createRecruitStep4()
+    {
+        if (!session('recruit_step1')) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete Step 1 first.');
+        }
+
+        $savedData = session('recruit_step4', []);
+        return view('forms.establishment.recruit-step4', compact('savedData'));
+    }
+
+    /**
+     * Save Step 4: Next of Kin
+     */
+    public function saveRecruitStep4(Request $request)
+    {
+        if (!session('recruit_step1')) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete Step 1 first.');
+        }
+
+        $validated = $request->validate([
+            'next_of_kin' => 'required|array|min:1|max:5',
+            'next_of_kin.*.name' => 'required|string|max:255',
+            'next_of_kin.*.relationship' => 'required|string|max:50',
+            'next_of_kin.*.phone_number' => 'required|string|max:20',
+            'next_of_kin.*.email' => 'nullable|email|max:255',
+            'next_of_kin.*.address' => 'required|string',
+            'next_of_kin.*.is_primary' => 'nullable|in:0,1',
+            'profile_picture_data' => 'required|string',
+            'interdicted' => 'nullable|boolean',
+            'suspended' => 'nullable|boolean',
+            'quartered' => 'nullable|boolean',
+        ]);
+
+        // Validate at least one primary next of kin
+        $hasPrimary = false;
+        foreach ($validated['next_of_kin'] as $nok) {
+            if (isset($nok['is_primary']) && $nok['is_primary'] == '1') {
+                $hasPrimary = true;
+                break;
+            }
+        }
+
+        if (!$hasPrimary) {
+            return back()->withErrors(['next_of_kin' => 'At least one next of kin must be marked as primary.'])->withInput();
+        }
+
+        // Validate profile picture
+        if (empty($validated['profile_picture_data']) || !preg_match('/^data:image\//', $validated['profile_picture_data'])) {
+            return back()->withErrors(['profile_picture_data' => 'Please upload your official passport photo.'])->withInput();
+        }
+
+        session(['recruit_step4' => $validated]);
+        return redirect()->route('establishment.new-recruits.preview');
+    }
+
+    /**
+     * Preview all steps before final submission
+     */
+    public function previewRecruit()
+    {
+        $step1 = session('recruit_step1');
+        $step2 = session('recruit_step2');
+        $step3 = session('recruit_step3');
+        $step4 = session('recruit_step4');
+
+        if (!$step1 || !$step2 || !$step3 || !$step4) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete all steps before preview.');
+        }
+
+        return view('forms.establishment.recruit-preview', compact('step1', 'step2', 'step3', 'step4'));
+    }
+
+    /**
+     * Final submission - Create the recruit
+     */
+    public function finalSubmitRecruit(Request $request)
+    {
+        $step1 = session('recruit_step1');
+        $step2 = session('recruit_step2');
+        $step3 = session('recruit_step3');
+        $step4 = session('recruit_step4');
+
+        if (!$step1 || !$step2 || !$step3 || !$step4) {
+            return redirect()->route('establishment.new-recruits.create')
+                ->with('error', 'Please complete all steps before submitting.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Generate initials from first_name if needed
+            $initials = $step1['initials'];
+            if (empty($initials) && !empty($step1['first_name'])) {
+                $initials = strtoupper(substr($step1['first_name'], 0, 2));
+            }
+
+            // Generate appointment number based on rank and GL level
+            $prefix = AppointmentNumberHelper::getPrefix(
+                $step2['substantive_rank'] ?? '',
+                $step2['salary_grade_level'] ?? null
+            );
+            $appointmentNumber = AppointmentNumberHelper::generateNext($prefix);
+
+            // Create officer record
+            $recruit = Officer::create([
+                'initials' => $initials,
+                'surname' => $step1['surname'],
+                'email' => $step1['email'],
+                'personal_email' => $step1['email'],
+                'sex' => $step1['sex'],
+                'date_of_birth' => $step1['date_of_birth'],
+                'state_of_origin' => $step1['state_of_origin'],
+                'lga' => $step1['lga'],
+                'geopolitical_zone' => $step1['geopolitical_zone'],
+                'marital_status' => $step1['marital_status'],
+                'phone_number' => $step1['phone_number'],
+                'residential_address' => $step1['residential_address'],
+                'permanent_home_address' => $step1['permanent_home_address'],
+                'date_of_first_appointment' => $step2['date_of_first_appointment'],
+                'date_of_present_appointment' => $step2['date_of_present_appointment'],
+                'substantive_rank' => $step2['substantive_rank'],
+                'salary_grade_level' => $step2['salary_grade_level'],
+                'present_station' => $step2['command_id'],
+                'date_posted_to_station' => $step2['date_posted_to_station'],
+                'unit' => $step2['unit'] ?? null,
+                'entry_qualification' => isset($step2['education'][0]) ? $step2['education'][0]['qualification'] : null,
+                'discipline' => isset($step2['education'][0]) ? ($step2['education'][0]['discipline'] ?? null) : null,
+                'additional_qualification' => json_encode($step2['education']),
+                'bank_name' => $step3['bank_name'],
+                'bank_account_number' => $step3['bank_account_number'],
+                'sort_code' => $step3['sort_code'] ?? null,
+                'pfa_name' => $step3['pfa_name'],
+                'rsa_number' => $step3['rsa_number'],
+                'interdicted' => $step4['interdicted'] ?? false,
+                'suspended' => $step4['suspended'] ?? false,
+                'quartered' => $step4['quartered'] ?? false,
+                'appointment_number' => $appointmentNumber, // Auto-assigned based on rank and GL
+                'service_number' => null, // Will be assigned after training
+                'email_status' => 'personal',
+                'is_active' => true,
+                'created_by' => Auth::id(),
+            ]);
+
+            // Handle profile picture upload
+            if (!empty($step4['profile_picture_data'])) {
+                try {
+                    $base64Image = $step4['profile_picture_data'];
+                    if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {
+                        $imageData = base64_decode(preg_replace('/^data:image\/\w+;base64,/', '', $base64Image));
+                        $extension = $matches[1];
+                        $filename = 'profile_' . $recruit->id . '_' . time() . '.' . $extension;
+                        $path = 'officer-profiles/' . $filename;
+                        
+                        \Storage::disk('public')->put($path, $imageData);
+                        $recruit->update(['profile_picture_url' => $path]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Profile picture upload error: ' . $e->getMessage());
+                }
+            }
+
+            // Create next of kin records
+            foreach ($step4['next_of_kin'] as $nokData) {
+                \App\Models\NextOfKin::create([
+                    'officer_id' => $recruit->id,
+                    'name' => $nokData['name'],
+                    'relationship' => $nokData['relationship'],
+                    'phone_number' => $nokData['phone_number'],
+                    'email' => $nokData['email'] ?? null,
+                    'address' => $nokData['address'],
+                    'is_primary' => isset($nokData['is_primary']) && $nokData['is_primary'] == '1',
+                ]);
+            }
+
+            DB::commit();
+
+            // Clear session data
+            session()->forget(['recruit_step1', 'recruit_step2', 'recruit_step3', 'recruit_step4']);
+
+            // Notify TRADOC about new recruit
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyNewRecruit($recruit);
+
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', "Recruit '{$initials} {$recruit->surname}' created successfully with appointment number {$appointmentNumber}. Service number will be assigned after training completion.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Recruit creation error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to create recruit: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     /**
@@ -476,12 +966,25 @@ class EstablishmentController extends Controller
                 return back()->with('error', 'Failed to create recruits: ' . $e->getMessage())->withInput();
             }
         } else {
-            // Single entry
+            // Single entry - matches onboarding Step 1: Personal Information
             $validated = $request->validate([
                 'initials' => 'required|string|max:50',
-                'surname' => 'required|string|max:100',
+                'surname' => 'required|string|max:255',
+                'first_name' => 'required|string|max:255',
+                'middle_name' => 'nullable|string|max:255',
+                'sex' => 'required|in:M,F',
+                'date_of_birth' => 'required|date',
+                'state_of_origin' => 'required|string|max:255',
+                'lga' => 'required|string|max:255',
+                'geopolitical_zone' => 'required|string|max:255',
+                'marital_status' => 'required|string|max:50',
+                'phone_number' => 'required|string|max:20',
                 'email' => ['required', 'email', 'max:255', 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'],
+                'residential_address' => 'required|string',
+                'permanent_home_address' => 'required|string',
+                'date_of_first_appointment' => 'required|date',
                 'substantive_rank' => 'required|string|max:100',
+                'salary_grade_level' => 'required|string|max:10',
             ], [
                 'email.email' => 'The email must be a valid email address.',
                 'email.regex' => 'The email format is invalid. Please use a valid email address (e.g., user@example.com).',
@@ -499,15 +1002,42 @@ class EstablishmentController extends Controller
 
             DB::beginTransaction();
             try {
+                // Create recruit with all Step 1: Personal Information fields
+                // Note: first_name and middle_name are collected but Officer model uses initials and surname
+                // If initials not provided properly, generate from first_name
+                $initials = $validated['initials'];
+                if (empty($initials) && !empty($validated['first_name'])) {
+                    // Generate initials from first name (first 2 letters)
+                    $initials = strtoupper(substr($validated['first_name'], 0, 2));
+                }
+                
                 $recruit = Officer::create([
-                    'initials' => $validated['initials'],
+                    'initials' => $initials,
                     'surname' => $validated['surname'],
                     'email' => $validated['email'],
                     'personal_email' => $validated['email'],
+                    'sex' => $validated['sex'],
+                    'date_of_birth' => $validated['date_of_birth'],
+                    'state_of_origin' => $validated['state_of_origin'],
+                    'lga' => $validated['lga'],
+                    'geopolitical_zone' => $validated['geopolitical_zone'],
+                    'marital_status' => $validated['marital_status'],
+                    'phone_number' => $validated['phone_number'],
+                    'residential_address' => $validated['residential_address'],
+                    'permanent_home_address' => $validated['permanent_home_address'],
+                    'date_of_first_appointment' => $validated['date_of_first_appointment'],
+                    'date_of_present_appointment' => $validated['date_of_first_appointment'],
                     'substantive_rank' => $validated['substantive_rank'],
+                    'salary_grade_level' => $validated['salary_grade_level'],
                     'email_status' => 'personal',
                     'is_active' => true,
                     'created_by' => Auth::id(),
+                    // Fields that will be filled during onboarding Step 2 (Employment Details)
+                    'entry_qualification' => null, // Will be provided during onboarding Step 2
+                    'present_station' => null, // Will be assigned during onboarding Step 2
+                    'date_posted_to_station' => null,
+                    // Service number will be assigned after training completion
+                    'service_number' => null,
                 ]);
 
                 DB::commit();
@@ -699,52 +1229,79 @@ class EstablishmentController extends Controller
 
     /**
      * Assign appointment numbers to new recruits
+     * Automatically assigns CDT or RCT prefix based on rank and GL level
      */
     public function assignAppointmentNumbers(Request $request)
     {
         $request->validate([
             'officer_ids' => 'required|array',
             'officer_ids.*' => 'exists:officers,id',
-            'appointment_number_prefix' => 'nullable|string|max:20',
+            'auto_prefix' => 'nullable|boolean', // If true, auto-determine prefix based on rank
+            'appointment_number_prefix' => 'nullable|string|max:20', // Manual override prefix
         ]);
 
         DB::beginTransaction();
         try {
             $officers = Officer::whereIn('id', $request->officer_ids)
                 ->whereNull('appointment_number')
-                ->whereNull('service_number')
+                ->where(function($q) {
+                    $q->whereNull('service_number')
+                      ->orWhere('service_number', '')
+                      ->orWhere('service_number', 'NCS'); // Handle edge case where mutator set it to "NCS"
+                })
                 ->get();
 
-            $prefix = $request->appointment_number_prefix ?? 'APT';
-            $assigned = 0;
-            $counter = 1;
+            if ($officers->isEmpty()) {
+                DB::rollBack();
+                return back()->with('error', 'No eligible recruits found for appointment number assignment.');
+            }
 
+            $autoPrefix = $request->input('auto_prefix', true); // Default to auto
+            $manualPrefix = $request->input('appointment_number_prefix');
+            
+            $assigned = 0;
+            $prefixCounters = []; // Track counters per prefix
+
+            foreach ($officers as $officer) {
+                // Determine prefix
+                if ($autoPrefix && empty($manualPrefix)) {
+                    // Auto-determine prefix based on rank and GL level
+                    $prefix = AppointmentNumberHelper::getPrefixForOfficer($officer);
+                } else {
+                    // Use manual prefix or fallback to auto if manual not provided
+                    $prefix = $manualPrefix ?? AppointmentNumberHelper::getPrefixForOfficer($officer);
+                }
+
+                // Initialize counter for this prefix if not exists
+                if (!isset($prefixCounters[$prefix])) {
             // Get last appointment number with this prefix
             $lastAppointment = Officer::where('appointment_number', 'like', $prefix . '%')
                 ->orderByRaw("CAST(SUBSTRING(appointment_number, " . (strlen($prefix) + 1) . ") AS UNSIGNED) DESC")
                 ->value('appointment_number');
 
+                    $prefixCounters[$prefix] = 1;
             if ($lastAppointment) {
                 preg_match('/(\d+)$/', $lastAppointment, $matches);
                 if (!empty($matches[1])) {
-                    $counter = (int) $matches[1] + 1;
+                            $prefixCounters[$prefix] = (int) $matches[1] + 1;
+                        }
                 }
             }
 
-            foreach ($officers as $officer) {
-                $appointmentNumber = $prefix . str_pad($counter, 4, '0', STR_PAD_LEFT);
+                // Generate appointment number
+                $appointmentNumber = $prefix . str_pad($prefixCounters[$prefix], 5, '0', STR_PAD_LEFT);
 
                 // Check if appointment number already exists
                 if (Officer::where('appointment_number', $appointmentNumber)->exists()) {
-                    $counter++;
-                    continue;
+                    $prefixCounters[$prefix]++;
+                    $appointmentNumber = $prefix . str_pad($prefixCounters[$prefix], 5, '0', STR_PAD_LEFT);
                 }
 
                 $officer->update([
                     'appointment_number' => $appointmentNumber,
                 ]);
 
-                $counter++;
+                $prefixCounters[$prefix]++;
                 $assigned++;
             }
 
@@ -763,8 +1320,13 @@ class EstablishmentController extends Controller
                 }
             }
 
+            $message = "Successfully assigned {$assigned} appointment number(s).";
+            if ($autoPrefix && empty($manualPrefix)) {
+                $message .= " Prefixes were automatically determined based on rank and GL level.";
+            }
+
             return redirect()->route('establishment.new-recruits')
-                ->with('success', "Successfully assigned {$assigned} appointment number(s).");
+                ->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Establishment appointment number assignment error: ' . $e->getMessage());

@@ -39,10 +39,22 @@
                 <div class="flex items-start gap-3">
                     <i class="ki-filled ki-information text-info text-xl mt-0.5"></i>
                     <div class="flex-1">
-                        <p class="text-sm font-medium text-info mb-1">Service Number Assignment</p>
-                        <p class="text-xs text-secondary-foreground">
-                            These training results are sorted by performance (highest to lowest). Service numbers will be assigned based on this order, with the highest scorer receiving the first available service number.
+                        <p class="text-sm font-medium text-info mb-1">Service Number Assignment (Rank-Based)</p>
+                        <p class="text-xs text-secondary-foreground mb-2">
+                            Service numbers are assigned by rank, with each rank maintaining its own sequence. Within each rank, numbers are assigned based on performance (highest to lowest).
                         </p>
+                        @if(isset($resultsByRank) && $resultsByRank->count() > 0)
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach($resultsByRank as $rank => $rankResults)
+                                    <span class="kt-badge kt-badge-primary kt-badge-sm">
+                                        {{ $rank }}: {{ $rankResults->count() }} officer(s)
+                                        @if(isset($lastServiceNumbersByRank[$rank]))
+                                            (Last: {{ $lastServiceNumbersByRank[$rank] }})
+                                        @endif
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -55,32 +67,53 @@
                     <h3 class="kt-card-title">Assign Service Numbers</h3>
                 </div>
                 <div class="kt-card-content">
-                    <form action="{{ route('establishment.assign-service-numbers') }}" method="POST">
+                    <form action="{{ route('establishment.assign-service-numbers') }}" method="POST" id="assignServiceNumbersForm">
                         @csrf
                         <div class="flex flex-col gap-4">
-                            <div>
-                                <label for="last_service_number" class="block text-sm font-medium text-foreground mb-2">
-                                    Last Service Number <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" 
-                                       id="last_service_number" 
-                                       name="last_service_number" 
-                                       value="{{ $lastServiceNumber ?? '' }}"
-                                       class="kt-input w-full" 
-                                       required
-                                       placeholder="e.g., NCS50001">
-                                <p class="text-xs text-secondary-foreground mt-1">
-                                    Enter the last assigned service number. New numbers will start from +1.
+                            <div class="kt-card bg-primary/10 border border-primary/20 p-4">
+                                <div class="flex items-start gap-3">
+                                    <i class="ki-filled ki-information text-primary text-lg mt-0.5"></i>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-primary mb-1">Rank-Based Assignment</p>
+                                        <p class="text-xs text-secondary-foreground">
+                                            Service numbers will be assigned automatically by rank. Each rank will continue from its last assigned number, and within each rank, officers will be assigned based on their training performance (highest to lowest).
                                 </p>
+                                    </div>
+                                </div>
                             </div>
+
+                            @if(isset($resultsByRank) && $resultsByRank->count() > 0)
+                                <div>
+                                    <p class="text-sm font-medium text-foreground mb-2">Assignment Preview:</p>
+                                    <div class="space-y-2">
+                                        @foreach($resultsByRank as $rank => $rankResults)
+                                            <div class="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                                <span class="text-sm text-foreground">
+                                                    <strong>{{ $rank }}</strong>: {{ $rankResults->count() }} officer(s)
+                                                </span>
+                                                <span class="text-xs text-secondary-foreground">
+                                                    @if(isset($lastServiceNumbersByRank[$rank]))
+                                                        Will start from: NCS{{ str_pad((int)substr($lastServiceNumbersByRank[$rank], 3) + 1, 5, '0', STR_PAD_LEFT) }}
+                                                    @else
+                                                        Will start from: NCS00001
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            <input type="hidden" name="rank_based" value="1">
 
                             <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
                                 <button type="button" 
                                         onclick="showAssignModal()"
                                         class="kt-btn kt-btn-primary">
                                     <i class="ki-filled ki-check"></i>
-                                    Assign Service Numbers
+                                    Assign Service Numbers by Rank
                                 </button>
+                            </div>
                             </div>
                         </form>
                 </div>
@@ -180,22 +213,30 @@
                 </button>
             </div>
             <div class="kt-modal-body py-5 px-5">
-                <p class="text-sm text-secondary-foreground">
-                    Assign service numbers based on training performance? This will assign numbers starting from the next available number. Highest scorer will get the first number.
+                <p class="text-sm text-secondary-foreground mb-3">
+                    Assign service numbers grouped by rank? Each rank will maintain its own sequence, and within each rank, officers will be assigned based on training performance (highest to lowest).
                 </p>
+                @if(isset($resultsByRank) && $resultsByRank->count() > 0)
+                    <div class="bg-muted/50 p-3 rounded mb-3">
+                        <p class="text-xs font-medium text-foreground mb-2">Summary:</p>
+                        <ul class="text-xs text-secondary-foreground space-y-1">
+                            @foreach($resultsByRank as $rank => $rankResults)
+                                <li>
+                                    <strong>{{ $rank }}</strong>: {{ $rankResults->count() }} officer(s)
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </div>
             <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
                 <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true" type="button">
                     Cancel
                 </button>
-                <form action="{{ route('establishment.assign-service-numbers') }}" method="POST" class="inline" id="assignServiceNumbersForm">
-                    @csrf
-                    <input type="hidden" name="last_service_number" id="modal-last-service-number" value="{{ $lastServiceNumber ?? '' }}">
-                    <button type="submit" class="kt-btn kt-btn-primary" id="confirmAssignBtn">
+                <button type="button" onclick="document.getElementById('assignServiceNumbersForm').submit()" class="kt-btn kt-btn-primary" id="confirmAssignBtn">
                         <i class="ki-filled ki-check"></i>
-                        <span>Assign</span>
+                    <span>Assign by Rank</span>
                     </button>
-                </form>
             </div>
         </div>
     </div>
@@ -203,18 +244,6 @@
     @push('scripts')
     <script>
         function showAssignModal() {
-            const lastServiceNumberInput = document.querySelector('input[name="last_service_number"]');
-            if (!lastServiceNumberInput || !lastServiceNumberInput.value) {
-                alert('Please enter the last service number first.');
-                return;
-            }
-            
-            const lastServiceNumber = lastServiceNumberInput.value;
-            const modalInput = document.getElementById('modal-last-service-number');
-            if (modalInput) {
-                modalInput.value = lastServiceNumber;
-            }
-            
             const modal = document.getElementById('assign-confirm-modal');
             if (!modal) {
                 alert('Modal not found');
@@ -235,18 +264,11 @@
             }
         }
         
-        // Handle modal form submission
+        // Handle form submission
         document.addEventListener('DOMContentLoaded', function() {
             const assignForm = document.getElementById('assignServiceNumbersForm');
             if (assignForm) {
                 assignForm.addEventListener('submit', function(e) {
-                    const input = document.getElementById('modal-last-service-number');
-                    if (!input || !input.value || input.value.trim() === '') {
-                        e.preventDefault();
-                        alert('Please enter the last service number.');
-                        return false;
-                    }
-                    
                     // Disable submit button to prevent double submission
                     const submitBtn = document.getElementById('confirmAssignBtn');
                     if (submitBtn) {

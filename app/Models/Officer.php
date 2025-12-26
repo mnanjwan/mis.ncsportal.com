@@ -112,6 +112,12 @@ class Officer extends Model
     // Mutators - Ensure service number always starts with NCS
     public function setServiceNumberAttribute($value)
     {
+        // Handle null or empty values
+        if (empty($value) || is_null($value)) {
+            $this->attributes['service_number'] = null;
+            return;
+        }
+        
         // Remove any existing NCS prefix to avoid duplication
         $value = preg_replace('/^NCS/i', '', $value);
         // Add NCS prefix

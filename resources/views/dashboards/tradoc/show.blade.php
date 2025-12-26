@@ -43,8 +43,11 @@
         </div>
         <div class="kt-card-content p-4">
             <div class="bg-muted/30 rounded border border-input p-3">
-                <pre class="text-xs font-mono text-foreground overflow-x-auto">{{ $result->appointment_number }},{{ $result->officer_name }},{{ $result->training_score }},{{ $result->status }}</pre>
+                <pre class="text-xs font-mono text-foreground overflow-x-auto">{{ $result->appointment_number }},{{ $result->officer_name }},{{ $result->training_score }}</pre>
             </div>
+            <p class="text-xs text-secondary-foreground mt-2">
+                <strong>Status:</strong> {{ $result->status }} (Auto-determined: Score >= 50 = PASS, Score < 50 = FAIL)
+            </p>
             <p class="text-xs text-secondary-foreground mt-2">
                 This represents how this record would appear in the CSV file.
             </p>

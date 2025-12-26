@@ -29,6 +29,8 @@ use App\Http\Controllers\TRADOCController;
 use App\Http\Controllers\ICTController;
 use App\Http\Controllers\EstablishmentController;
 use App\Http\Controllers\CGCPreretirementLeaveController;
+use App\Http\Controllers\APERTimelineController;
+use App\Http\Controllers\APERFormController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -84,13 +86,22 @@ Route::middleware('auth')->group(function () {
         Route::put('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'update'])->name('next-of-kin.update');
         Route::delete('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'destroy'])->name('next-of-kin.destroy');
         Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
-        Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
-        Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
-        
-        // Quarter Allocation Accept/Reject
-        Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation'])->name('quarters.allocations.accept');
-        Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation'])->name('quarters.allocations.reject');
-    });
+                Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
+                Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
+                
+                // Quarter Allocation Accept/Reject
+                Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation'])->name('quarters.allocations.accept');
+                Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation'])->name('quarters.allocations.reject');
+                
+                // APER Forms
+                Route::get('/aper-forms', [APERFormController::class, 'index'])->name('aper-forms');
+                Route::get('/aper-forms/create', [APERFormController::class, 'create'])->name('aper-forms.create');
+                Route::post('/aper-forms', [APERFormController::class, 'store'])->name('aper-forms.store');
+                Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
+                Route::post('/aper-forms/{id}/submit', [APERFormController::class, 'submit'])->name('aper-forms.submit');
+                Route::post('/aper-forms/{id}/accept', [APERFormController::class, 'accept'])->name('aper-forms.accept');
+                Route::post('/aper-forms/{id}/reject', [APERFormController::class, 'reject'])->name('aper-forms.reject');
+            });
 
     // HRD Routes
     Route::prefix('hrd')->name('hrd.')->middleware('role:HRD')->group(function () {
@@ -100,11 +111,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
         Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');
 
-        Route::get('/emolument-timeline', [EmolumentTimelineController::class, 'index'])->name('emolument-timeline');
-        Route::get('/emolument-timeline/create', [EmolumentTimelineController::class, 'create'])->name('emolument-timeline.create');
-        Route::post('/emolument-timeline', [EmolumentTimelineController::class, 'store'])->name('emolument-timeline.store');
-        Route::get('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extend'])->name('emolument-timeline.extend');
-        Route::post('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extendStore'])->name('emolument-timeline.extend.store');
+                Route::get('/emolument-timeline', [EmolumentTimelineController::class, 'index'])->name('emolument-timeline');
+                Route::get('/emolument-timeline/create', [EmolumentTimelineController::class, 'create'])->name('emolument-timeline.create');
+                Route::post('/emolument-timeline', [EmolumentTimelineController::class, 'store'])->name('emolument-timeline.store');
+                Route::get('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extend'])->name('emolument-timeline.extend');
+                Route::post('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extendStore'])->name('emolument-timeline.extend.store');
+
+                // APER Timeline Management
+                Route::get('/aper-timeline', [APERTimelineController::class, 'index'])->name('aper-timeline');
+                Route::get('/aper-timeline/create', [APERTimelineController::class, 'create'])->name('aper-timeline.create');
+                Route::post('/aper-timeline', [APERTimelineController::class, 'store'])->name('aper-timeline.store');
+                Route::get('/aper-timeline/{id}/extend', [APERTimelineController::class, 'extend'])->name('aper-timeline.extend');
+                Route::post('/aper-timeline/{id}/extend', [APERTimelineController::class, 'extendStore'])->name('aper-timeline.extend.store');
+                
+                // APER Forms Management
+                Route::get('/aper-forms', [APERFormController::class, 'hrdIndex'])->name('aper-forms');
+                Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
+                Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
 
         // Staff Orders - accessible to HRD (Zone Coordinators handled in controller)
         Route::get('/staff-orders', [StaffOrderController::class, 'index'])->name('staff-orders');
@@ -241,10 +264,24 @@ Route::middleware('auth')->group(function () {
         Route::put('/roster/{id}', [DutyRosterController::class, 'update'])->name('roster.update');
         Route::post('/roster/{id}/submit', [DutyRosterController::class, 'submit'])->name('roster.submit');
 
-        Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
-        Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
-        Route::post('/officers/{id}/document', [OfficerController::class, 'document'])->name('officers.document');
-    });
+                Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
+                Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
+                Route::post('/officers/{id}/document', [OfficerController::class, 'document'])->name('officers.document');
+                
+                // APER Forms - Reporting Officer
+                Route::get('/aper-forms/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search');
+                
+                // APER Forms - Reporting Officer (also accessible to Staff Officer)
+                Route::get('/aper-forms/reporting-officer/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.reporting-officer.search');
+                Route::get('/aper-forms/access/{officerId}', [APERFormController::class, 'accessForm'])->name('aper-forms.access');
+                Route::post('/aper-forms/{id}/reporting-officer', [APERFormController::class, 'updateReportingOfficer'])->name('aper-forms.update-reporting-officer');
+                Route::post('/aper-forms/{id}/complete-reporting-officer', [APERFormController::class, 'completeReportingOfficer'])->name('aper-forms.complete-reporting-officer');
+                
+                // APER Forms - Countersigning Officer
+                Route::get('/aper-forms/countersigning/{id}', [APERFormController::class, 'accessCountersigningForm'])->name('aper-forms.countersigning');
+                Route::post('/aper-forms/{id}/countersigning-officer', [APERFormController::class, 'updateCountersigningOfficer'])->name('aper-forms.update-countersigning-officer');
+                Route::post('/aper-forms/{id}/complete-countersigning-officer', [APERFormController::class, 'completeCountersigningOfficer'])->name('aper-forms.complete-countersigning-officer');
+            });
 
     // Assessor Routes
     Route::prefix('assessor')->name('assessor.')->middleware('role:Assessor')->group(function () {
@@ -352,7 +389,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'establishment'])->name('dashboard');
         Route::get('/service-numbers', [DashboardController::class, 'serviceNumbers'])->name('service-numbers');
         Route::get('/new-recruits', [DashboardController::class, 'newRecruits'])->name('new-recruits');
-        Route::get('/new-recruits/create', [EstablishmentController::class, 'createRecruit'])->name('new-recruits.create');
+        // Multi-step recruit creation
+        Route::get('/new-recruits/create', [EstablishmentController::class, 'createRecruitStep1'])->name('new-recruits.create');
+        Route::post('/new-recruits/step1', [EstablishmentController::class, 'saveRecruitStep1'])->name('new-recruits.step1');
+        Route::get('/new-recruits/step2', [EstablishmentController::class, 'createRecruitStep2'])->name('new-recruits.step2');
+        Route::post('/new-recruits/step2', [EstablishmentController::class, 'saveRecruitStep2'])->name('new-recruits.step2.save');
+        Route::get('/new-recruits/step3', [EstablishmentController::class, 'createRecruitStep3'])->name('new-recruits.step3');
+        Route::post('/new-recruits/step3', [EstablishmentController::class, 'saveRecruitStep3'])->name('new-recruits.step3.save');
+        Route::get('/new-recruits/step4', [EstablishmentController::class, 'createRecruitStep4'])->name('new-recruits.step4');
+        Route::post('/new-recruits/step4', [EstablishmentController::class, 'saveRecruitStep4'])->name('new-recruits.step4.save');
+        Route::get('/new-recruits/preview', [EstablishmentController::class, 'previewRecruit'])->name('new-recruits.preview');
+        Route::post('/new-recruits/final-submit', [EstablishmentController::class, 'finalSubmitRecruit'])->name('new-recruits.final-submit');
+        
+        // Legacy route for backward compatibility
         Route::post('/new-recruits', [EstablishmentController::class, 'storeRecruit'])->name('new-recruits.store');
         Route::delete('/new-recruits/{id}', [EstablishmentController::class, 'deleteRecruit'])->name('new-recruits.delete');
         Route::delete('/new-recruits/bulk/delete', [EstablishmentController::class, 'bulkDeleteRecruits'])->name('new-recruits.bulk-delete');

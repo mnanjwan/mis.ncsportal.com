@@ -17,6 +17,7 @@ class User extends Authenticatable
         'temp_password',
         'is_active',
         'last_login',
+        'current_session_id',
         'created_by',
     ];
 
