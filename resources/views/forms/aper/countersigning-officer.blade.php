@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'APER Form - Countersigning Officer')
-@section('page-title', 'APER Form Countersigning - {{ $form->year }}')
+@section('page-title', 'APER Form Countersigning - ' . $form->year)
 
 @section('breadcrumbs')
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('dashboard') }}">Dashboard</a>

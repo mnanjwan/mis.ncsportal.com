@@ -46,9 +46,30 @@
         <div class="content">
             <h2>{{ $notification->title }}</h2>
             
-            <p>Dear {{ $user->name ?? 'Officer' }},</p>
+            @php
+                $officer = $user->officer ?? null;
+                $officerName = $officer ? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) : ($user->name ?? 'Officer');
+            @endphp
+            
+            <p>Dear {{ $officerName }},</p>
             
             <p>{{ $notification->message }}</p>
+            
+            @if($officer)
+            <div style="background-color: #f8f9fa; border-left: 4px solid #068b57; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin-top: 0;"><strong>Your Service Information:</strong></p>
+                <p style="margin: 8px 0;">
+                    <strong>Service Number:</strong> {{ $officer->service_number ?? 'Pending Assignment' }}<br>
+                    @if($officer->appointment_number)
+                    <strong>Appointment Number:</strong> {{ $officer->appointment_number }}<br>
+                    @endif
+                    <strong>Rank:</strong> {{ $officer->substantive_rank ?? 'N/A' }}<br>
+                    @if($officer->presentStation)
+                    <strong>Command/Station:</strong> {{ $officer->presentStation->name ?? 'N/A' }}<br>
+                    @endif
+                </p>
+            </div>
+            @endif
             
             <p><strong>Your Login Credentials:</strong></p>
             <p>
@@ -60,7 +81,14 @@
                 <strong>⚠️ Important:</strong> For security purposes, please change your password immediately after logging in. You can update your password from your dashboard settings.
             </p>
             
-            <p>You can now log in to your dashboard and access all available features.</p>
+            <p>You can now log in to your dashboard and access all available features including:</p>
+            <ul style="margin: 15px 0; padding-left: 25px;">
+                <li>View and update your profile</li>
+                <li>Apply for leave and passes</li>
+                <li>Raise emolument requests</li>
+                <li>View your service records</li>
+                <li>Manage your account settings</li>
+            </ul>
             
             <p><a href="{{ config('app.url') }}/login" style="display: inline-block; background-color: #068b57; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">Log In to Dashboard</a></p>
             

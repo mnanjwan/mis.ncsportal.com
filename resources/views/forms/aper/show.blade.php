@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'View APER Form')
-@section('page-title', 'View APER Form - {{ $form->year }}')
+@section('page-title', 'View APER Form - ' . $form->year)
 
 @section('breadcrumbs')
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.dashboard') }}">Officer</a>
