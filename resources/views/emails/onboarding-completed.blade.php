@@ -2,106 +2,60 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $notification->title }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-        }
-        .content {
-            text-align: left;
-        }
-        h2 {
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-        p {
-            margin: 15px 0;
-            color: #333333;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #333333;
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="content">
-            <h2>{{ $notification->title }}</h2>
-            
-            @php
-                $officer = $user->officer ?? null;
-                $officerName = $officer ? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) : ($user->name ?? 'Officer');
-            @endphp
-            
-            <p>Dear {{ $officerName }},</p>
-            
-            <p>{{ $notification->message }}</p>
-            
-            @if($officer)
-            <div style="background-color: #f8f9fa; border-left: 4px solid #068b57; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <p style="margin-top: 0;"><strong>Your Service Information:</strong></p>
-                <p style="margin: 8px 0;">
-                    <strong>Service Number:</strong> {{ $officer->service_number ?? 'Pending Assignment' }}<br>
-                    @if($officer->appointment_number)
-                    <strong>Appointment Number:</strong> {{ $officer->appointment_number }}<br>
-                    @endif
-                    <strong>Rank:</strong> {{ $officer->substantive_rank ?? 'N/A' }}<br>
-                    @if($officer->presentStation)
-                    <strong>Command/Station:</strong> {{ $officer->presentStation->name ?? 'N/A' }}<br>
-                    @endif
-                </p>
-            </div>
-            @endif
-            
-            <p><strong>Your Login Credentials:</strong></p>
-            <p>
-                <strong>Email:</strong> {{ $user->email }}<br>
-                <strong>Default Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #068b57;">{{ $tempPassword ?? 'N/A' }}</code>
-            </p>
-            
-            <p style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0;">
-                <strong>⚠️ Important:</strong> For security purposes, please change your password immediately after logging in. You can update your password from your dashboard settings.
-            </p>
-            
-            <p>You can now log in to your dashboard and access all available features including:</p>
-            <ul style="margin: 15px 0; padding-left: 25px;">
-                <li>View and update your profile</li>
-                <li>Apply for leave and passes</li>
-                <li>Raise emolument requests</li>
-                <li>View your service records</li>
-                <li>Manage your account settings</li>
-            </ul>
-            
-            <p><a href="{{ config('app.url') }}/login" style="display: inline-block; background-color: #068b57; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">Log In to Dashboard</a></p>
-            
-            <p>Thank you for completing your onboarding process.</p>
-            
-            <p>Best regards,<br>
-            {{ config('app.name', 'PIS Portal') }} Team</p>
-        </div>
-        
-        <div class="footer">
-            <p>This is an automated notification from {{ config('app.name', 'PIS Portal') }}.</p>
-            <p><a href="{{ config('app.url') }}" style="color: #068b57;">Visit Portal</a></p>
-        </div>
-    </div>
+    <h2>{{ $notification->title }}</h2>
+    
+    @php
+        $officer = $user->officer ?? null;
+        $officerName = $officer ? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) : ($user->name ?? 'Officer');
+    @endphp
+    
+    <p>Dear {{ $officerName }},</p>
+    
+    <p>{{ $notification->message }}</p>
+    
+    @if($officer)
+    <p><strong>Your Service Information:</strong></p>
+    <p>
+        <strong>Service Number:</strong> {{ $officer->service_number ?? 'Pending Assignment' }}<br>
+        @if($officer->appointment_number)
+        <strong>Appointment Number:</strong> {{ $officer->appointment_number }}<br>
+        @endif
+        <strong>Rank:</strong> {{ $officer->substantive_rank ?? 'N/A' }}<br>
+        @if($officer->presentStation)
+        <strong>Command/Station:</strong> {{ $officer->presentStation->name ?? 'N/A' }}<br>
+        @endif
+    </p>
+    @endif
+    
+    <p><strong>Your Login Credentials:</strong></p>
+    <p>
+        <strong>Email:</strong> {{ $user->email }}<br>
+        <strong>Default Password:</strong> {{ $tempPassword ?? 'N/A' }}
+    </p>
+    
+    <p><strong>Important:</strong> For security purposes, please change your password immediately after logging in. You can update your password from your dashboard settings.</p>
+    
+    <p>You can now log in to your dashboard and access all available features including:</p>
+    <ul>
+        <li>View and update your profile</li>
+        <li>Apply for leave and passes</li>
+        <li>Raise emolument requests</li>
+        <li>View your service records</li>
+        <li>Manage your account settings</li>
+    </ul>
+    
+    <p><a href="{{ config('app.url') }}/login">Log In to Dashboard</a></p>
+    
+    <p>Thank you for completing your onboarding process.</p>
+    
+    <p>Best regards,<br>
+    {{ config('app.name', 'PIS Portal') }} Team</p>
+    
+    <hr>
+    <p><small>This is an automated notification from {{ config('app.name', 'PIS Portal') }}.</small><br>
+    <small><a href="{{ config('app.url') }}">Visit Portal</a></small></p>
 </body>
 </html>

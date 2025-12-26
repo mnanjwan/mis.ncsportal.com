@@ -92,18 +92,31 @@
                                     <div><strong>Substantive Rank:</strong> {{ $step2['substantive_rank'] ?? 'N/A' }}</div>
                                     <div><strong>Salary Grade Level:</strong> {{ $step2['salary_grade_level'] ?? 'N/A' }}</div>
                                     <div><strong>Appointment Number:</strong> 
-                                        <span class="text-primary font-semibold">
-                                            @php
-                                                use App\Helpers\AppointmentNumberHelper;
+                                        @php
+                                            use App\Helpers\AppointmentNumberHelper;
+                                            // Check if appointment number already exists (e.g., from officer record)
+                                            $existingAppointmentNumber = $officer->appointment_number ?? null;
+                                            
+                                            if ($existingAppointmentNumber) {
+                                                // Appointment number already assigned
+                                                $displayNumber = $existingAppointmentNumber;
+                                                $showNote = false;
+                                            } else {
+                                                // Preview what will be assigned
                                                 $prefix = AppointmentNumberHelper::getPrefix(
                                                     $step2['substantive_rank'] ?? '',
                                                     $step2['salary_grade_level'] ?? null
                                                 );
-                                                $previewAppointmentNumber = AppointmentNumberHelper::generateNext($prefix);
-                                            @endphp
-                                            {{ $previewAppointmentNumber }}
+                                                $displayNumber = AppointmentNumberHelper::generateNext($prefix);
+                                                $showNote = true;
+                                            }
+                                        @endphp
+                                        <span class="text-primary font-semibold">
+                                            {{ $displayNumber }}
                                         </span>
+                                        @if($showNote)
                                         <span class="text-xs text-muted ml-2">(Will be assigned after creation)</span>
+                                        @endif
                                     </div>
                                     <div><strong>Date Posted to Station:</strong> {{ $step2['date_posted_to_station'] ?? 'N/A' }}</div>
                                     <div><strong>Unit:</strong> {{ $step2['unit'] ?? 'N/A' }}</div>

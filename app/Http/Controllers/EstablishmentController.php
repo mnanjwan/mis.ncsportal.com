@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Helpers\AppointmentNumberHelper;
@@ -651,6 +652,23 @@ class EstablishmentController extends Controller
             // Notify TRADOC about new recruit
             $notificationService = app(NotificationService::class);
             $notificationService->notifyNewRecruit($recruit);
+
+            // Send email to recruit
+            if (!empty($recruit->email)) {
+                try {
+                    Mail::to($recruit->email)->send(new \App\Mail\NewRecruitCreatedMail($recruit));
+                    Log::info('New recruit creation email sent', [
+                        'recruit_id' => $recruit->id,
+                        'email' => $recruit->email,
+                        'appointment_number' => $appointmentNumber
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send new recruit creation email: ' . $e->getMessage(), [
+                        'recruit_id' => $recruit->id,
+                        'email' => $recruit->email
+                    ]);
+                }
+            }
 
             return redirect()->route('establishment.new-recruits')
                 ->with('success', "Recruit '{$initials} {$recruit->surname}' created successfully with appointment number {$appointmentNumber}. Service number will be assigned after training completion.");
