@@ -20,6 +20,21 @@
     <!-- Vite Assets (includes SweetAlert2) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <style>
+        /* Error messages should be red only when visible (not hidden) */
+        .error-message:not(.hidden) {
+            color: #dc3545 !important;
+        }
+        
+        /* Laravel validation errors */
+        .kt-alert-danger,
+        .kt-alert-danger strong,
+        .kt-alert-danger li,
+        .kt-alert-danger p {
+            color: #dc3545 !important;
+        }
+    </style>
+
     @stack('styles')
 </head>
 

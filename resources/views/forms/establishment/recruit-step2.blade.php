@@ -67,12 +67,12 @@
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date of First Appointment <span class="text-danger">*</span></label>
                         <input type="date" name="date_of_first_appointment" class="kt-input" value="{{ old('date_of_first_appointment', $savedData['date_of_first_appointment'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date of Present Appointment <span class="text-danger">*</span></label>
                         <input type="date" name="date_of_present_appointment" class="kt-input" value="{{ old('date_of_present_appointment', $savedData['date_of_present_appointment'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
@@ -84,7 +84,7 @@
                                 </option>
                             @endforeach
                         </select>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
@@ -99,14 +99,14 @@
                         <p class="text-xs text-secondary-foreground mt-1">
                             Grade level will be automatically set based on selected rank
                         </p>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Zone <span class="text-danger">*</span></label>
                         <select name="zone_id" id="zone_id" class="kt-input" required>
                             <option value="">Select Zone...</option>
                         </select>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Command/Present Station <span class="text-danger">*</span></label>
@@ -137,12 +137,12 @@
                                 </button>
                             </div>
                     </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date Posted to Station <span class="text-danger">*</span></label>
                         <input type="date" name="date_posted_to_station" class="kt-input" value="{{ old('date_posted_to_station', $savedData['date_posted_to_station'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Unit</label>
@@ -185,6 +185,19 @@
     .kt-form-label .text-danger,
     label span.text-danger,
     label .text-danger {
+        color: #dc3545 !important;
+    }
+    
+    /* Error messages should be red only when visible (not hidden) */
+    .error-message:not(.hidden) {
+        color: #dc3545 !important;
+    }
+    
+    /* Laravel validation errors */
+    .kt-alert-danger,
+    .kt-alert-danger strong,
+    .kt-alert-danger li,
+    .kt-alert-danger p {
         color: #dc3545 !important;
     }
 </style>
