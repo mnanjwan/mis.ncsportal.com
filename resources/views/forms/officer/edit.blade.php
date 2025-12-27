@@ -158,7 +158,7 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
-                        <select name="substantive_rank" class="kt-input" required>
+                        <select name="substantive_rank" id="substantive_rank" class="kt-input" required>
                             <option value="">Select Rank...</option>
                             @foreach($ranks as $rank)
                             <option value="{{ $rank }}" {{ old('substantive_rank', $officer->substantive_rank) == $rank ? 'selected' : '' }}>{{ $rank }}</option>
@@ -167,7 +167,7 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
-                        <select name="salary_grade_level" class="kt-input" required>
+                        <select name="salary_grade_level" id="salary_grade_level" class="kt-input" required>
                             <option value="">Select Grade Level...</option>
                             @foreach($gradeLevels as $grade)
                             <option value="{{ $grade }}" {{ old('salary_grade_level', $officer->salary_grade_level) == $grade ? 'selected' : '' }}>{{ $grade }}</option>
@@ -392,6 +392,26 @@ const disciplines = [
 
 let educationEntryCount = 0;
 
+// Rank to Grade Level mapping
+const rankToGradeLevel = {
+    'CGC': 'GL 17',
+    'DCG': 'GL 17',
+    'ACG': 'GL 16',
+    'CC': 'GL 15',
+    'DC': 'GL 14',
+    'AC': 'GL 13',
+    'CSC': 'GL 12',
+    'SC': 'GL 11',
+    'DSC': 'GL 10',
+    'ASC I': 'GL 09',
+    'ASC II': 'GL 08',
+    'IC': 'GL 07',
+    'AIC': 'GL 06',
+    'CA I': 'GL 05',
+    'CA II': 'GL 04',
+    'CA III': 'GL 03',
+};
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize LGA dropdown
     initializeLGASection();
@@ -401,6 +421,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
         // Initialize Education section
     initializeEducationSection();
+    
+    // Initialize rank to grade level auto-selection
+    initializeRankToGradeLevel();
     
     // Form submission confirmation
     const form = document.getElementById('officer-edit-form');
@@ -885,6 +908,31 @@ function handleCustomDiscipline(entryId) {
     if (!disciplineCustom || !disciplineFinal) return;
     
     disciplineFinal.value = disciplineCustom.value.trim();
+}
+
+// Rank to Grade Level Functions
+function initializeRankToGradeLevel() {
+    const rankSelect = document.getElementById('substantive_rank');
+    const gradeLevelSelect = document.getElementById('salary_grade_level');
+    
+    if (!rankSelect || !gradeLevelSelect) return;
+    
+    // Set initial grade level if rank is already selected
+    const currentRank = rankSelect.value;
+    if (currentRank && rankToGradeLevel[currentRank]) {
+        gradeLevelSelect.value = rankToGradeLevel[currentRank];
+    }
+    
+    // Listen for rank changes
+    rankSelect.addEventListener('change', function() {
+        const selectedRank = this.value;
+        if (selectedRank && rankToGradeLevel[selectedRank]) {
+            gradeLevelSelect.value = rankToGradeLevel[selectedRank];
+        } else {
+            // If rank is cleared or doesn't have a mapping, clear grade level
+            gradeLevelSelect.value = '';
+        }
+    });
 }
 
 </script>
