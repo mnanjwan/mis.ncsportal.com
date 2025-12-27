@@ -40,3 +40,8 @@ Schedule::call(function () {
 Schedule::command('emolument:extend-timeline')
     ->daily()
     ->at('08:00');
+
+// APER timeline management - check and deactivate expired timelines, send notifications
+Schedule::command('aper:manage-timeline')
+    ->daily()
+    ->at('08:00');

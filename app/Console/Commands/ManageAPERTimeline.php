@@ -4,7 +4,10 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\APERTimeline;
+use App\Models\APERForm;
+use App\Models\Officer;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class ManageAPERTimeline extends Command
@@ -67,7 +70,7 @@ class ManageAPERTimeline extends Command
             }
         }
 
-        // Check for timelines ending soon (within 7 days)
+        // Check for timelines ending soon (within 7 days) and send notifications
         $endingSoon = APERTimeline::where('is_active', true)
             ->where(function ($query) {
                 $query->where(function ($q) {
@@ -83,14 +86,64 @@ class ManageAPERTimeline extends Command
             })
             ->get();
 
-        if ($endingSoon->isNotEmpty()) {
-            $this->warn("Found {$endingSoon->count()} timeline(s) ending within 7 days:");
-            foreach ($endingSoon as $timeline) {
-                $endDate = $timeline->is_extended && $timeline->extension_end_date
-                    ? Carbon::parse($timeline->extension_end_date)
-                    : Carbon::parse($timeline->end_date);
-                $this->line("  - Year {$timeline->year}: ends on {$endDate->format('Y-m-d')}");
+        $notificationsSent = 0;
+        foreach ($endingSoon as $timeline) {
+            $endDate = $timeline->is_extended && $timeline->extension_end_date
+                ? Carbon::parse($timeline->extension_end_date)
+                : Carbon::parse($timeline->end_date);
+            
+            $daysRemaining = Carbon::now()->diffInDays($endDate, false);
+            
+            $this->warn("Timeline for year {$timeline->year} ends on {$endDate->format('Y-m-d')} ({$daysRemaining} days remaining)");
+            
+            // Send notifications to officers who haven't submitted
+            $officers = Officer::whereHas('user', function($query) {
+                $query->whereNotNull('email');
+            })->get();
+            
+            foreach ($officers as $officer) {
+                if (!$officer->user || !$officer->user->email) {
+                    continue;
+                }
+                
+                // Check if officer has submitted form for this timeline
+                $submittedForm = APERForm::where('officer_id', $officer->id)
+                    ->where('timeline_id', $timeline->id)
+                    ->where('status', '!=', 'DRAFT')
+                    ->first();
+                
+                if (!$submittedForm) {
+                    // Check if they have a draft
+                    $draftForm = APERForm::where('officer_id', $officer->id)
+                        ->where('timeline_id', $timeline->id)
+                        ->where('status', 'DRAFT')
+                        ->first();
+                    
+                    try {
+                        Mail::to($officer->user->email)->send(
+                            new \App\Mail\APERTimelineClosingMail(
+                                $officer,
+                                $timeline,
+                                $daysRemaining,
+                                $draftForm ? true : false,
+                                $draftForm ? $draftForm->id : null
+                            )
+                        );
+                        $notificationsSent++;
+                    } catch (\Exception $e) {
+                        $this->error("Failed to send notification to {$officer->user->email}: " . $e->getMessage());
+                        Log::error("Failed to send APER timeline closing notification", [
+                            'officer_id' => $officer->id,
+                            'email' => $officer->user->email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
+        }
+        
+        if ($notificationsSent > 0) {
+            $this->info("Sent {$notificationsSent} deadline reminder notification(s).");
         }
 
         $this->info("Successfully deactivated {$deactivatedCount} timeline(s).");

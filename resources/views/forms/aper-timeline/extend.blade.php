@@ -64,7 +64,7 @@
                 <div class="mb-5 p-4 bg-muted/50 rounded-lg">
                     <p class="text-sm text-secondary-foreground mb-2"><strong>Current Period:</strong></p>
                     <p class="text-sm font-medium text-foreground">
-                        {{ $timeline->start_date->format('d/m/Y') }} - {{ $timeline->end_date->format('d/m/Y') }}
+                        {{ $timeline->start_date->format('d/m/Y H:i') }} - {{ $timeline->end_date->format('d/m/Y H:i') }}
                     </p>
                 </div>
 
@@ -72,21 +72,36 @@
                     @csrf
 
                     <div class="flex flex-col gap-5">
-                        <!-- Extension End Date -->
-                        <div class="flex flex-col gap-1">
-                            <label class="kt-form-label">New End Date <span class="text-danger">*</span></label>
-                            <input type="date" 
-                                   name="extension_end_date" 
-                                   class="kt-input" 
-                                   value="{{ old('extension_end_date') }}"
-                                   min="{{ $timeline->end_date->format('Y-m-d') }}"
-                                   required>
-                            <p class="text-xs text-secondary-foreground mt-1">
-                                Must be after {{ $timeline->end_date->format('d/m/Y') }}
-                            </p>
-                            @error('extension_end_date')
-                                <span class="text-sm text-danger">{{ $message }}</span>
-                            @enderror
+                        <!-- Extension End Date & Time -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">New End Date <span class="text-danger">*</span></label>
+                                <input type="date" 
+                                       name="extension_end_date" 
+                                       id="extension_end_date"
+                                       class="kt-input" 
+                                       value="{{ old('extension_end_date') }}"
+                                       min="{{ $timeline->end_date->format('Y-m-d') }}"
+                                       required>
+                                <p class="text-xs text-secondary-foreground mt-1">
+                                    Must be after {{ $timeline->end_date->format('d/m/Y H:i') }}
+                                </p>
+                                @error('extension_end_date')
+                                    <span class="text-sm text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">New End Time <span class="text-danger">*</span></label>
+                                <input type="time" 
+                                       name="extension_end_time" 
+                                       id="extension_end_time"
+                                       class="kt-input" 
+                                       value="{{ old('extension_end_time', '23:59') }}"
+                                       required>
+                                @error('extension_end_time')
+                                    <span class="text-sm text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
 
                         <!-- Extension Reason -->

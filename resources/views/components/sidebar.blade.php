@@ -125,8 +125,14 @@
                         ['title' => 'Movement Orders', 'href' => route('hrd.movement-orders')],
                     ]
                 ],
-                ['icon' => 'ki-filled ki-calendar-2', 'title' => 'Emolument Timeline', 'href' => route('hrd.emolument-timeline')],
-                ['icon' => 'ki-filled ki-calendar-2', 'title' => 'APER Timeline', 'href' => route('hrd.aper-timeline')],
+                [
+                    'title' => 'Timelines',
+                    'icon' => 'ki-filled ki-calendar-2',
+                    'submenu' => [
+                        ['title' => 'Emolument Timeline', 'href' => route('hrd.emolument-timeline')],
+                        ['title' => 'APER Timeline', 'href' => route('hrd.aper-timeline')],
+                    ]
+                ],
                 ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('hrd.aper-forms')],
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('hrd.manning-requests')],

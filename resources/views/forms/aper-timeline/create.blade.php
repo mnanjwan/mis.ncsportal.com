@@ -81,30 +81,60 @@
                             @enderror
                         </div>
 
-                        <!-- Start Date -->
-                        <div class="flex flex-col gap-1">
-                            <label class="kt-form-label">Start Date <span class="text-danger">*</span></label>
-                            <input type="date" 
-                                   name="start_date" 
-                                   class="kt-input" 
-                                   value="{{ old('start_date') }}"
-                                   required>
-                            @error('start_date')
-                                <span class="text-sm text-danger">{{ $message }}</span>
-                            @enderror
+                        <!-- Start Date & Time -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">Start Date <span class="text-danger">*</span></label>
+                                <input type="date" 
+                                       name="start_date" 
+                                       id="start_date"
+                                       class="kt-input" 
+                                       value="{{ old('start_date') }}"
+                                       required>
+                                @error('start_date')
+                                    <span class="text-sm text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">Start Time <span class="text-danger">*</span></label>
+                                <input type="time" 
+                                       name="start_time" 
+                                       id="start_time"
+                                       class="kt-input" 
+                                       value="{{ old('start_time', '00:00') }}"
+                                       required>
+                                @error('start_time')
+                                    <span class="text-sm text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
 
-                        <!-- End Date -->
-                        <div class="flex flex-col gap-1">
-                            <label class="kt-form-label">End Date <span class="text-danger">*</span></label>
-                            <input type="date" 
-                                   name="end_date" 
-                                   class="kt-input" 
-                                   value="{{ old('end_date') }}"
-                                   required>
-                            @error('end_date')
-                                <span class="text-sm text-danger">{{ $message }}</span>
-                            @enderror
+                        <!-- End Date & Time -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">End Date <span class="text-danger">*</span></label>
+                                <input type="date" 
+                                       name="end_date" 
+                                       id="end_date"
+                                       class="kt-input" 
+                                       value="{{ old('end_date') }}"
+                                       required>
+                                @error('end_date')
+                                    <span class="text-sm text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">End Time <span class="text-danger">*</span></label>
+                                <input type="time" 
+                                       name="end_time" 
+                                       id="end_time"
+                                       class="kt-input" 
+                                       value="{{ old('end_time', '23:59') }}"
+                                       required>
+                                @error('end_time')
+                                    <span class="text-sm text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
 
                         <!-- Description -->

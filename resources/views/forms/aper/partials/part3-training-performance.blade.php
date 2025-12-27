@@ -10,41 +10,61 @@
                 <h4 class="text-lg font-semibold">7. Training Courses/Seminars Attended since Appointment</h4>
                 <p class="text-sm text-secondary-foreground italic mb-2">Training courses are automatically fetched from your records since appointment. You can review and edit if needed.</p>
                 <div class="overflow-x-auto">
-                    <table class="kt-table w-full">
+                    <table class="kt-table w-full" id="training-courses-table">
                         <thead>
                             <tr class="border-b border-border">
                                 <th class="text-left py-2 px-3 text-sm">Type of Training/Seminar</th>
                                 <th class="text-left py-2 px-3 text-sm">Where the Training was Held</th>
                                 <th class="text-left py-2 px-3 text-sm">Period of Training From</th>
                                 <th class="text-left py-2 px-3 text-sm">Period of Training To</th>
+                                <th class="text-left py-2 px-3 text-sm w-20">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @for($i = 0; $i < 8; $i++)
+                        <tbody id="training-courses-tbody">
+                            @php
+                                $trainingCourses = old('training_courses', $formData['training_courses'] ?? []);
+                                // Ensure at least one row is shown, even if empty
+                                if (empty($trainingCourses)) {
+                                    $trainingCourses = [['type' => '', 'where' => '', 'from' => '', 'to' => '']];
+                                }
+                            @endphp
+                            @foreach($trainingCourses as $index => $training)
                                 @php
-                                    $training = old('training_courses.'.$i, $formData['training_courses'][$i] ?? ['type' => '', 'where' => '', 'from' => '', 'to' => '']);
+                                    $training = array_merge(['type' => '', 'where' => '', 'from' => '', 'to' => ''], $training ?? []);
                                 @endphp
-                                <tr>
+                                <tr class="training-row">
                                     <td class="py-2 px-3">
-                                        <input type="text" name="training_courses[{{ $i }}][type]" class="kt-input text-sm" 
+                                        <input type="text" name="training_courses[{{ $index }}][type]" class="kt-input text-sm" 
                                                value="{{ $training['type'] ?? '' }}" placeholder="Training type">
                                     </td>
                                     <td class="py-2 px-3">
-                                        <input type="text" name="training_courses[{{ $i }}][where]" class="kt-input text-sm" 
+                                        <input type="text" name="training_courses[{{ $index }}][where]" class="kt-input text-sm" 
                                                value="{{ $training['where'] ?? '' }}" placeholder="Location">
                                     </td>
                                     <td class="py-2 px-3">
-                                        <input type="date" name="training_courses[{{ $i }}][from]" class="kt-input text-sm" 
+                                        <input type="date" name="training_courses[{{ $index }}][from]" class="kt-input text-sm" 
                                                value="{{ $training['from'] ?? '' }}">
                                     </td>
                                     <td class="py-2 px-3">
-                                        <input type="date" name="training_courses[{{ $i }}][to]" class="kt-input text-sm" 
+                                        <input type="date" name="training_courses[{{ $index }}][to]" class="kt-input text-sm" 
                                                value="{{ $training['to'] ?? '' }}">
                                     </td>
+                                    <td class="py-2 px-3">
+                                        @if($index > 0)
+                                            <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-training-row" onclick="removeTrainingRow(this)">
+                                                <i class="ki-filled ki-cross"></i>
+                                            </button>
+                                        @endif
+                                    </td>
                                 </tr>
-                            @endfor
+                            @endforeach
                         </tbody>
                     </table>
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addTrainingRow()">
+                        <i class="ki-filled ki-plus"></i> Add Training Course
+                    </button>
                 </div>
                 <div>
                     <label class="kt-form-label">Has the past training received by you enhanced your performance and productivity?</label>

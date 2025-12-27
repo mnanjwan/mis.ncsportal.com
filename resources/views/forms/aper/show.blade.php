@@ -37,6 +37,11 @@
                     </p>
                 </div>
                 <div class="flex gap-3">
+                    @if($form->status === 'DRAFT' && $form->officer->user_id === auth()->id())
+                        <a href="{{ route('officer.aper-forms.edit', $form->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                            <i class="ki-filled ki-notepad-edit"></i> Edit Form
+                        </a>
+                    @endif
                     <a href="{{ route('officer.aper-forms.export', $form->id) }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
                         <i class="ki-filled ki-file-down"></i> Export PDF
                     </a>
@@ -126,6 +131,9 @@
             @endif
         </div>
     </div>
+
+    <!-- Declarations Section -->
+    @include('forms.aper.partials.declarations', ['form' => $form])
 </div>
 
 <!-- Reject Modal -->

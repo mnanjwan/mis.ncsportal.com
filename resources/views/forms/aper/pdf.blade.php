@@ -177,28 +177,98 @@
 
     <!-- Declarations -->
     <div class="section footer">
-        <div class="section-title">Declarations</div>
-        @if($form->reporting_officer_declaration)
-            <div class="field-label">Reporting Officer:</div>
-            <div class="field-value">{{ $form->reporting_officer_declaration }}</div>
-            @if($form->reportingOfficer)
-                <div class="field-value"><strong>Signed:</strong> {{ $form->reportingOfficer->email }}</div>
+        <div class="section-title">DECLARATIONS</div>
+        
+        <!-- Officer Declaration -->
+        <div style="margin-bottom: 20px;">
+            <div class="field-label" style="font-weight: bold; font-size: 12px;">DECLARATION</div>
+            <p style="font-style: italic; font-size: 10px; margin-bottom: 10px;">
+                (Comments by the officer on whom the report is rendered)
+            </p>
+            <p style="font-size: 10px; margin-bottom: 10px;">
+                I certify that I have seen the content of this Report and that the reporting officer has discussed them with me. 
+                I have the following comments to make (if no comment, so hereunder):
+            </p>
+            <div class="field-value" style="min-height: 60px; border: 1px solid #ccc; padding: 10px;">
+                {{ $form->officer_comments ?? 'No comments provided.' }}
+            </div>
+            @if($form->officer_signed_at)
+                <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                    <div>
+                        <strong>Date:</strong> {{ $form->officer_signed_at->format('d/m/Y') }}
+                    </div>
+                    <div>
+                        <strong>Signature:</strong> {{ $form->officer->initials }} {{ $form->officer->surname }}
+                    </div>
+                </div>
             @endif
-            @if($form->reporting_officer_signed_at)
-                <div class="field-value"><strong>Date:</strong> {{ $form->reporting_officer_signed_at->format('d/m/Y') }}</div>
-            @endif
-        @endif
+        </div>
 
-        @if($form->countersigning_officer_declaration)
-            <div class="field-label" style="margin-top: 15px;">Countersigning Officer:</div>
-            <div class="field-value">{{ $form->countersigning_officer_declaration }}</div>
-            @if($form->countersigningOfficer)
-                <div class="field-value"><strong>Signed:</strong> {{ $form->countersigningOfficer->email }}</div>
+        <!-- Reporting Officer Declaration -->
+        <div style="margin-bottom: 20px; border-top: 1px solid #000; padding-top: 15px;">
+            <div class="field-label" style="font-weight: bold; font-size: 12px;">DECLARATION BY REPORTING OFFICER</div>
+            @if($form->reporting_officer_declaration)
+                <div class="field-value" style="min-height: 60px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap;">
+                    {{ $form->reporting_officer_declaration }}
+                </div>
+                @if($form->reporting_officer_signed_at)
+                    <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>Date:</strong> {{ $form->reporting_officer_signed_at->format('d/m/Y') }}
+                        </div>
+                        <div>
+                            <strong>Signed By:</strong> {{ $form->reportingOfficerUser ? $form->reportingOfficerUser->email : ($form->reportingOfficer ? $form->reportingOfficer->email : 'N/A') }}
+                        </div>
+                    </div>
+                @endif
+            @else
+                <p style="font-style: italic;">Not yet completed</p>
             @endif
-            @if($form->countersigning_officer_signed_at)
-                <div class="field-value"><strong>Date:</strong> {{ $form->countersigning_officer_signed_at->format('d/m/Y') }}</div>
+        </div>
+
+        <!-- Countersigning Officer Declaration -->
+        <div style="margin-bottom: 20px; border-top: 1px solid #000; padding-top: 15px;">
+            <div class="field-label" style="font-weight: bold; font-size: 12px;">DECLARATION BY COUNTERSIGNING OFFICER</div>
+            @if($form->countersigning_officer_declaration)
+                <div class="field-value" style="min-height: 60px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap;">
+                    {{ $form->countersigning_officer_declaration }}
+                </div>
+                @if($form->countersigning_officer_signed_at)
+                    <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>Date:</strong> {{ $form->countersigning_officer_signed_at->format('d/m/Y') }}
+                        </div>
+                        <div>
+                            <strong>Signed By:</strong> {{ $form->countersigningOfficerUser ? $form->countersigningOfficerUser->email : ($form->countersigningOfficer ? $form->countersigningOfficer->email : 'N/A') }}
+                        </div>
+                    </div>
+                @endif
+            @else
+                <p style="font-style: italic;">Not yet completed</p>
             @endif
-        @endif
+        </div>
+
+        <!-- Head of Department Declaration -->
+        <div style="margin-bottom: 20px; border-top: 1px solid #000; padding-top: 15px;">
+            <div class="field-label" style="font-weight: bold; font-size: 12px;">DECLARATION BY HEAD OF DEPARTMENT</div>
+            @if($form->head_of_department_declaration)
+                <div class="field-value" style="min-height: 60px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap;">
+                    {{ $form->head_of_department_declaration }}
+                </div>
+                @if($form->head_of_department_signed_at)
+                    <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>Date:</strong> {{ $form->head_of_department_signed_at->format('d/m/Y') }}
+                        </div>
+                        <div>
+                            <strong>Signed By:</strong> {{ $form->headOfDepartment ? $form->headOfDepartment->email : 'N/A' }}
+                        </div>
+                    </div>
+                @endif
+            @else
+                <p style="font-style: italic;">Not yet completed</p>
+            @endif
+        </div>
     </div>
 </body>
 </html>

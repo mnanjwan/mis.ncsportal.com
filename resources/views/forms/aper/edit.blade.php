@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Create APER Form')
-@section('page-title', 'Create APER Form')
+@section('title', 'Edit APER Form')
+@section('page-title', 'Edit APER Form')
 
 @section('breadcrumbs')
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.dashboard') }}">Officer</a>
     <span>/</span>
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.aper-forms') }}">APER Forms</a>
     <span>/</span>
-    <span class="text-primary">Create</span>
+    <span class="text-primary">Edit</span>
 @endsection
 
 @section('content')
@@ -66,9 +66,25 @@
         </div>
     </div>
 
+    <!-- Draft Notice -->
+    <div class="kt-card bg-warning/10 border border-warning/20">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-information text-warning text-xl"></i>
+                <div>
+                    <p class="text-sm font-medium text-warning">Editing Draft Form</p>
+                    <p class="text-xs text-secondary-foreground mt-1">
+                        You are editing a draft form. You can save your changes and continue editing, or submit when ready.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Form Card -->
-    <form action="{{ route('officer.aper-forms.store') }}" method="POST" id="aper-form">
+    <form action="{{ route('officer.aper-forms.update', $form->id) }}" method="POST" id="aper-form">
         @csrf
+        @method('PUT')
         
         <!-- Part 1: Personal Records -->
         @include('forms.aper.partials.part1-personal-records', ['formData' => $formData ?? [], 'officer' => $officer])
@@ -83,7 +99,7 @@
         <div class="kt-card">
             <div class="kt-card-content">
                 <div class="flex items-center justify-between pt-4 border-t border-border">
-                    <a href="{{ route('officer.aper-forms') }}" class="kt-btn kt-btn-secondary">
+                    <a href="{{ route('officer.aper-forms.show', $form->id) }}" class="kt-btn kt-btn-secondary">
                         <i class="ki-filled ki-arrow-left"></i> Cancel
                     </a>
                     <div class="flex gap-3">

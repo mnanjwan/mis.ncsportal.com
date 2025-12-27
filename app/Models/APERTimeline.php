@@ -25,9 +25,9 @@ class APERTimeline extends Model
     protected function casts(): array
     {
         return [
-            'start_date' => 'date',
-            'end_date' => 'date',
-            'extension_end_date' => 'date',
+            'start_date' => 'datetime',
+            'end_date' => 'datetime',
+            'extension_end_date' => 'datetime',
             'is_extended' => 'boolean',
             'is_active' => 'boolean',
         ];

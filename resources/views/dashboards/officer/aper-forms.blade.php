@@ -101,12 +101,18 @@
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">
                                             {{ $form->submitted_at ? $form->submitted_at->format('d/m/Y') : '-' }}
                                         </td>
-                                        <td class="py-3 px-4 text-right">
-                                            <a href="{{ route('officer.aper-forms.show', $form->id) }}" 
-                                               class="kt-btn kt-btn-sm kt-btn-ghost">
-                                                View
+                                    <td class="py-3 px-4 text-right">
+                                        @if($form->status === 'DRAFT')
+                                            <a href="{{ route('officer.aper-forms.edit', $form->id) }}" 
+                                               class="kt-btn kt-btn-sm kt-btn-primary">
+                                                <i class="ki-filled ki-notepad-edit"></i> Edit
                                             </a>
-                                        </td>
+                                        @endif
+                                        <a href="{{ route('officer.aper-forms.show', $form->id) }}" 
+                                           class="kt-btn kt-btn-sm kt-btn-ghost">
+                                            View
+                                        </a>
+                                    </td>
                                     </tr>
                                 @endforeach
                             </tbody>

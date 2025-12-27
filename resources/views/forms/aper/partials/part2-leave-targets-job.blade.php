@@ -14,23 +14,31 @@
                 <div class="p-4 bg-muted/50 rounded-lg">
                     <label class="kt-form-label font-semibold mb-3">(A) Total number of days absent on sick leave during the period covered by Report</label>
                     <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+                        <table class="kt-table w-full" id="sick-leave-table">
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-2 px-3 text-sm">Type</th>
                                     <th class="text-left py-2 px-3 text-sm">From</th>
                                     <th class="text-left py-2 px-3 text-sm">To</th>
                                     <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                    <th class="text-left py-2 px-3 text-sm w-20">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @for($i = 0; $i < 3; $i++)
+                            <tbody id="sick-leave-tbody">
+                                @php
+                                    $sickLeaveRecords = old('sick_leave_records', $formData['sick_leave_records'] ?? []);
+                                    // Ensure at least one row is shown, even if empty
+                                    if (empty($sickLeaveRecords)) {
+                                        $sickLeaveRecords = [['type' => '', 'from' => '', 'to' => '', 'days' => '']];
+                                    }
+                                @endphp
+                                @foreach($sickLeaveRecords as $index => $sickLeave)
                                     @php
-                                        $sickLeave = old('sick_leave_records.'.$i, $formData['sick_leave_records'][$i] ?? ['type' => '', 'from' => '', 'to' => '', 'days' => '']);
+                                        $sickLeave = array_merge(['type' => '', 'from' => '', 'to' => '', 'days' => ''], $sickLeave ?? []);
                                     @endphp
-                                    <tr>
+                                    <tr class="leave-row">
                                         <td class="py-2 px-3">
-                                            <select name="sick_leave_records[{{ $i }}][type]" class="kt-input text-sm">
+                                            <select name="sick_leave_records[{{ $index }}][type]" class="kt-input text-sm">
                                                 <option value="">Select...</option>
                                                 <option value="Hospitalisation" {{ ($sickLeave['type'] ?? '') == 'Hospitalisation' ? 'selected' : '' }}>Hospitalisation</option>
                                                 <option value="Treatment Abroad" {{ ($sickLeave['type'] ?? '') == 'Treatment Abroad' ? 'selected' : '' }}>Treatment Received Abroad</option>
@@ -38,18 +46,30 @@
                                             </select>
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="date" name="sick_leave_records[{{ $i }}][from]" class="kt-input text-sm" value="{{ $sickLeave['from'] ?? '' }}">
+                                            <input type="date" name="sick_leave_records[{{ $index }}][from]" class="kt-input text-sm" value="{{ $sickLeave['from'] ?? '' }}">
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="date" name="sick_leave_records[{{ $i }}][to]" class="kt-input text-sm" value="{{ $sickLeave['to'] ?? '' }}">
+                                            <input type="date" name="sick_leave_records[{{ $index }}][to]" class="kt-input text-sm" value="{{ $sickLeave['to'] ?? '' }}">
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="number" name="sick_leave_records[{{ $i }}][days]" class="kt-input text-sm" value="{{ $sickLeave['days'] ?? '' }}" min="0">
+                                            <input type="number" name="sick_leave_records[{{ $index }}][days]" class="kt-input text-sm" value="{{ $sickLeave['days'] ?? '' }}" min="0">
+                                        </td>
+                                        <td class="py-2 px-3">
+                                            @if($index > 0)
+                                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-leave-row" onclick="removeLeaveRow(this, 'sick')">
+                                                    <i class="ki-filled ki-cross"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
-                                @endfor
+                                @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addLeaveRow('sick')">
+                            <i class="ki-filled ki-plus"></i> Add Sick Leave Record
+                        </button>
                     </div>
                 </div>
 
@@ -57,33 +77,53 @@
                 <div class="p-4 bg-muted/50 rounded-lg">
                     <label class="kt-form-label font-semibold mb-3">(B) Maternity Leave</label>
                     <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+                        <table class="kt-table w-full" id="maternity-leave-table">
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-2 px-3 text-sm">From</th>
                                     <th class="text-left py-2 px-3 text-sm">To</th>
                                     <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                    <th class="text-left py-2 px-3 text-sm w-20">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @for($i = 0; $i < 2; $i++)
+                            <tbody id="maternity-leave-tbody">
+                                @php
+                                    $maternityLeaveRecords = old('maternity_leave_records', $formData['maternity_leave_records'] ?? []);
+                                    // Ensure at least one row is shown, even if empty
+                                    if (empty($maternityLeaveRecords)) {
+                                        $maternityLeaveRecords = [['from' => '', 'to' => '', 'days' => '']];
+                                    }
+                                @endphp
+                                @foreach($maternityLeaveRecords as $index => $maternityLeave)
                                     @php
-                                        $maternityLeave = old('maternity_leave_records.'.$i, $formData['maternity_leave_records'][$i] ?? ['from' => '', 'to' => '', 'days' => '']);
+                                        $maternityLeave = array_merge(['from' => '', 'to' => '', 'days' => ''], $maternityLeave ?? []);
                                     @endphp
-                                    <tr>
+                                    <tr class="leave-row">
                                         <td class="py-2 px-3">
-                                            <input type="date" name="maternity_leave_records[{{ $i }}][from]" class="kt-input text-sm" value="{{ $maternityLeave['from'] ?? '' }}">
+                                            <input type="date" name="maternity_leave_records[{{ $index }}][from]" class="kt-input text-sm" value="{{ $maternityLeave['from'] ?? '' }}">
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="date" name="maternity_leave_records[{{ $i }}][to]" class="kt-input text-sm" value="{{ $maternityLeave['to'] ?? '' }}">
+                                            <input type="date" name="maternity_leave_records[{{ $index }}][to]" class="kt-input text-sm" value="{{ $maternityLeave['to'] ?? '' }}">
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="number" name="maternity_leave_records[{{ $i }}][days]" class="kt-input text-sm" value="{{ $maternityLeave['days'] ?? '' }}" min="0">
+                                            <input type="number" name="maternity_leave_records[{{ $index }}][days]" class="kt-input text-sm" value="{{ $maternityLeave['days'] ?? '' }}" min="0">
+                                        </td>
+                                        <td class="py-2 px-3">
+                                            @if($index > 0)
+                                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-leave-row" onclick="removeLeaveRow(this, 'maternity')">
+                                                    <i class="ki-filled ki-cross"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
-                                @endfor
+                                @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addLeaveRow('maternity')">
+                            <i class="ki-filled ki-plus"></i> Add Maternity Leave Record
+                        </button>
                     </div>
                 </div>
 
@@ -91,33 +131,53 @@
                 <div class="p-4 bg-muted/50 rounded-lg">
                     <label class="kt-form-label font-semibold mb-3">(B) (i) Annual Leave (ii) Casual Leave - Total number of days spent on Annual/Casual Leave</label>
                     <div class="overflow-x-auto">
-                        <table class="kt-table w-full">
+                        <table class="kt-table w-full" id="annual-leave-table">
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-2 px-3 text-sm">From</th>
                                     <th class="text-left py-2 px-3 text-sm">To</th>
                                     <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                    <th class="text-left py-2 px-3 text-sm w-20">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @for($i = 0; $i < 2; $i++)
+                            <tbody id="annual-leave-tbody">
+                                @php
+                                    $annualLeaveRecords = old('annual_casual_leave_records', $formData['annual_casual_leave_records'] ?? []);
+                                    // Ensure at least one row is shown, even if empty
+                                    if (empty($annualLeaveRecords)) {
+                                        $annualLeaveRecords = [['from' => '', 'to' => '', 'days' => '']];
+                                    }
+                                @endphp
+                                @foreach($annualLeaveRecords as $index => $annualLeave)
                                     @php
-                                        $annualLeave = old('annual_casual_leave_records.'.$i, $formData['annual_casual_leave_records'][$i] ?? ['from' => '', 'to' => '', 'days' => '']);
+                                        $annualLeave = array_merge(['from' => '', 'to' => '', 'days' => ''], $annualLeave ?? []);
                                     @endphp
-                                    <tr>
+                                    <tr class="leave-row">
                                         <td class="py-2 px-3">
-                                            <input type="date" name="annual_casual_leave_records[{{ $i }}][from]" class="kt-input text-sm" value="{{ $annualLeave['from'] ?? '' }}">
+                                            <input type="date" name="annual_casual_leave_records[{{ $index }}][from]" class="kt-input text-sm" value="{{ $annualLeave['from'] ?? '' }}">
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="date" name="annual_casual_leave_records[{{ $i }}][to]" class="kt-input text-sm" value="{{ $annualLeave['to'] ?? '' }}">
+                                            <input type="date" name="annual_casual_leave_records[{{ $index }}][to]" class="kt-input text-sm" value="{{ $annualLeave['to'] ?? '' }}">
                                         </td>
                                         <td class="py-2 px-3">
-                                            <input type="number" name="annual_casual_leave_records[{{ $i }}][days]" class="kt-input text-sm" value="{{ $annualLeave['days'] ?? '' }}" min="0">
+                                            <input type="number" name="annual_casual_leave_records[{{ $index }}][days]" class="kt-input text-sm" value="{{ $annualLeave['days'] ?? '' }}" min="0">
+                                        </td>
+                                        <td class="py-2 px-3">
+                                            @if($index > 0)
+                                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger remove-leave-row" onclick="removeLeaveRow(this, 'annual')">
+                                                    <i class="ki-filled ki-cross"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
-                                @endfor
+                                @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addLeaveRow('annual')">
+                            <i class="ki-filled ki-plus"></i> Add Annual/Casual Leave Record
+                        </button>
                     </div>
                 </div>
             </div>
@@ -126,16 +186,41 @@
             <div class="flex flex-col gap-4">
                 <h4 class="text-lg font-semibold">5(A) Target Setting</h4>
                 <p class="text-sm text-secondary-foreground">The Chief Executive in consultation with the Director-General and the Directors set out the following targets for my Division/Branch/section to achieve:</p>
-                <div class="flex flex-col gap-3">
-                    @for($i = 0; $i < 4; $i++)
+                <div class="flex flex-col gap-3" id="division-targets-container">
+                    @php
+                        $divisionTargets = old('division_targets', $formData['division_targets'] ?? []);
+                        // Ensure at least one row is shown, even if empty
+                        if (empty($divisionTargets)) {
+                            $divisionTargets = [''];
+                        }
+                        $divisionTargetCount = count($divisionTargets);
+                    @endphp
+                    @foreach($divisionTargets as $index => $target)
                         @php
-                            $target = old('division_targets.'.$i, $formData['division_targets'][$i] ?? '');
+                            $target = $target ?? '';
                         @endphp
-                        <div>
-                            <label class="kt-form-label text-sm">({{ $i == 0 ? 'I' : ($i == 1 ? 'ii' : ($i == 2 ? 'iii' : 'iv')) }})</label>
-                            <textarea name="division_targets[{{ $i }}]" class="kt-input" rows="2" placeholder="Enter target">{{ $target }}</textarea>
+                        <div class="target-row flex items-start gap-3">
+                            <label class="kt-form-label text-sm pt-2 min-w-[40px]">
+                                (@php
+                                    $romanNumerals = ['I', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
+                                    echo $romanNumerals[$index] ?? ($index + 1);
+                                @endphp)
+                            </label>
+                            <div class="flex-1">
+                                <textarea name="division_targets[{{ $index }}]" class="kt-input" rows="2" placeholder="Enter target">{{ $target }}</textarea>
+                            </div>
+                            @if($index > 0)
+                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger mt-2 remove-target-row" onclick="removeTargetRow(this, 'division')">
+                                    <i class="ki-filled ki-cross"></i>
+                                </button>
+                            @endif
                         </div>
-                    @endfor
+                    @endforeach
+                </div>
+                <div>
+                    <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addTargetRow('division')">
+                        <i class="ki-filled ki-plus"></i> Add Target
+                    </button>
                 </div>
             </div>
 
@@ -143,16 +228,41 @@
             <div class="flex flex-col gap-4">
                 <h4 class="text-lg font-semibold">5(B) Target Setting for the Appraise</h4>
                 <p class="text-sm text-secondary-foreground">The head of the Department in consultation with the Head of my Division/Section/Unit set out the following targets for me to achieve:</p>
-                <div class="flex flex-col gap-3">
-                    @for($i = 0; $i < 5; $i++)
+                <div class="flex flex-col gap-3" id="individual-targets-container">
+                    @php
+                        $individualTargets = old('individual_targets', $formData['individual_targets'] ?? []);
+                        // Ensure at least one row is shown, even if empty
+                        if (empty($individualTargets)) {
+                            $individualTargets = [''];
+                        }
+                        $individualTargetCount = count($individualTargets);
+                    @endphp
+                    @foreach($individualTargets as $index => $target)
                         @php
-                            $target = old('individual_targets.'.$i, $formData['individual_targets'][$i] ?? '');
+                            $target = $target ?? '';
                         @endphp
-                        <div>
-                            <label class="kt-form-label text-sm">({{ $i == 0 ? 'I' : ($i == 1 ? 'ii' : ($i == 2 ? 'iii' : ($i == 3 ? 'iv' : 'v'))) }})</label>
-                            <textarea name="individual_targets[{{ $i }}]" class="kt-input" rows="2" placeholder="Enter target">{{ $target }}</textarea>
+                        <div class="target-row flex items-start gap-3">
+                            <label class="kt-form-label text-sm pt-2 min-w-[40px]">
+                                (@php
+                                    $romanNumerals = ['I', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
+                                    echo $romanNumerals[$index] ?? ($index + 1);
+                                @endphp)
+                            </label>
+                            <div class="flex-1">
+                                <textarea name="individual_targets[{{ $index }}]" class="kt-input" rows="2" placeholder="Enter target">{{ $target }}</textarea>
+                            </div>
+                            @if($index > 0)
+                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger mt-2 remove-target-row" onclick="removeTargetRow(this, 'individual')">
+                                    <i class="ki-filled ki-cross"></i>
+                                </button>
+                            @endif
                         </div>
-                    @endfor
+                    @endforeach
+                </div>
+                <div>
+                    <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" onclick="addTargetRow('individual')">
+                        <i class="ki-filled ki-plus"></i> Add Target
+                    </button>
                 </div>
             </div>
 

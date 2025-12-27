@@ -97,9 +97,12 @@ Route::middleware('auth')->group(function () {
                 Route::get('/aper-forms', [APERFormController::class, 'index'])->name('aper-forms');
                 Route::get('/aper-forms/create', [APERFormController::class, 'create'])->name('aper-forms.create');
                 Route::post('/aper-forms', [APERFormController::class, 'store'])->name('aper-forms.store');
+                Route::get('/aper-forms/{id}/edit', [APERFormController::class, 'edit'])->name('aper-forms.edit');
+                Route::put('/aper-forms/{id}', [APERFormController::class, 'update'])->name('aper-forms.update');
                 Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
                 Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
                 Route::post('/aper-forms/{id}/submit', [APERFormController::class, 'submit'])->name('aper-forms.submit');
+                Route::post('/aper-forms/{id}/update-comments', [APERFormController::class, 'updateComments'])->name('aper-forms.update-comments');
                 Route::post('/aper-forms/{id}/accept', [APERFormController::class, 'accept'])->name('aper-forms.accept');
                 Route::post('/aper-forms/{id}/reject', [APERFormController::class, 'reject'])->name('aper-forms.reject');
             });

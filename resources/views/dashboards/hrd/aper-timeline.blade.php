@@ -66,7 +66,7 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         <span class="text-sm font-medium text-foreground">
-                                            {{ $timeline->start_date->format('d/m/Y') }} - {{ $timeline->end_date->format('d/m/Y') }}
+                                            {{ $timeline->start_date->format('d/m/Y H:i') }} - {{ $timeline->end_date->format('d/m/Y H:i') }}
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
@@ -124,7 +124,7 @@
                                 </div>
                                 <div class="flex flex-col gap-1">
                                     <span class="text-sm font-semibold text-foreground">
-                                        {{ $timeline->year }}: {{ $timeline->start_date->format('d/m/Y') }} - {{ $timeline->end_date->format('d/m/Y') }}
+                                        {{ $timeline->year }}: {{ $timeline->start_date->format('d/m/Y H:i') }} - {{ $timeline->end_date->format('d/m/Y H:i') }}
                                     </span>
                                     <span class="text-xs text-secondary-foreground">
                                         {{ \Illuminate\Support\Str::limit($timeline->description ?? 'No description', 60) }}

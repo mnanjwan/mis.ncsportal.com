@@ -7,6 +7,7 @@ use App\Models\APERTimeline;
 use App\Models\Officer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class APERFormController extends Controller
 {
@@ -57,6 +58,11 @@ class APERFormController extends Controller
             ->first();
 
         if ($existingForm) {
+            // If it's a draft, redirect to edit instead
+            if ($existingForm->status === 'DRAFT') {
+                return redirect()->route('officer.aper-forms.edit', $existingForm->id)
+                    ->with('info', 'You have a draft form for this year. Continue editing below.');
+            }
             return redirect()->route('officer.aper-forms.show', $existingForm->id)
                 ->with('info', 'APER form for this year already exists.');
         }
@@ -154,14 +160,18 @@ class APERFormController extends Controller
         }
 
         // Fetch training courses since appointment
-        $trainingCourses = $officer->courses()
-            ->where('start_date', '>=', $officer->date_of_first_appointment)
-            ->orderBy('start_date', 'desc')
-            ->get()
+        $trainingCoursesQuery = $officer->courses()->orderBy('start_date', 'desc');
+        
+        // Only filter by date_of_first_appointment if it exists
+        if ($officer->date_of_first_appointment) {
+            $trainingCoursesQuery->where('start_date', '>=', $officer->date_of_first_appointment);
+        }
+        
+        $trainingCourses = $trainingCoursesQuery->get()
             ->map(function($course) {
                 return [
                     'type' => $course->course_name . ($course->course_type ? ' (' . $course->course_type . ')' : ''),
-                    'where' => 'NCS', // You may want to add a location field to OfficerCourse
+                    'where' => $course->location ?? 'NCS', // Use location field if available
                     'from' => $course->start_date ? $course->start_date->format('Y-m-d') : null,
                     'to' => $course->end_date ? $course->end_date->format('Y-m-d') : null,
                 ];
@@ -192,6 +202,197 @@ class APERFormController extends Controller
         ];
 
         return view('forms.aper.create', compact('activeTimeline', 'officer', 'formData'));
+    }
+
+    // Officer: Edit existing APER form (only if DRAFT)
+    public function edit($id)
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $form = APERForm::findOrFail($id);
+
+        // Check ownership
+        if ($form->officer_id !== $officer->id) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        // Only allow editing if status is DRAFT
+        if ($form->status !== 'DRAFT') {
+            return redirect()->route('officer.aper-forms.show', $form->id)
+                ->with('error', 'You can only edit draft forms. This form has already been submitted.');
+        }
+
+        // Get timeline and check if editing is still allowed
+        $activeTimeline = $form->timeline;
+
+        if (!$activeTimeline) {
+            return redirect()->route('officer.aper-forms.show', $form->id)
+                ->with('error', 'Timeline not found for this form.');
+        }
+
+        // Do not allow editing if timeline period has ended
+        if (!$activeTimeline->can_submit) {
+            return redirect()->route('officer.aper-forms.show', $form->id)
+                ->with('error', 'APER form submission period has ended. You cannot edit this form.');
+        }
+
+        // Load officer with relationships
+        $officer->load(['presentStation.zone', 'courses', 'leaveApplications.leaveType']);
+
+        // Get zone from present station
+        $zone = $officer->presentStation && $officer->presentStation->zone 
+            ? $officer->presentStation->zone->name 
+            : null;
+
+        // Determine cadre
+        $cadre = null;
+        if ($officer->discipline) {
+            $cadre = str_contains(strtoupper($officer->discipline), 'GENERAL') ? 'GD' : 'SS';
+        }
+
+        // Parse qualifications from form or officer profile
+        $qualifications = $form->qualifications ?? [];
+        if (empty($qualifications)) {
+            if ($officer->entry_qualification) {
+                $qualifications[] = [
+                    'qualification' => $officer->entry_qualification,
+                    'year' => $officer->date_of_first_appointment ? $officer->date_of_first_appointment->format('Y') : null
+                ];
+            }
+            if ($officer->additional_qualification) {
+                $additionalQuals = json_decode($officer->additional_qualification, true);
+                if (is_array($additionalQuals)) {
+                    $qualifications = array_merge($qualifications, $additionalQuals);
+                } else {
+                    $qualifications[] = [
+                        'qualification' => $officer->additional_qualification,
+                        'year' => null
+                    ];
+                }
+            }
+        }
+
+        // Fetch leave records for the year
+        $yearStart = \Carbon\Carbon::create($activeTimeline->year, 1, 1);
+        $yearEnd = \Carbon\Carbon::create($activeTimeline->year, 12, 31);
+        
+        $leaveApplications = $officer->leaveApplications()
+            ->whereBetween('start_date', [$yearStart, $yearEnd])
+            ->orWhereBetween('end_date', [$yearStart, $yearEnd])
+            ->orWhere(function($query) use ($yearStart, $yearEnd) {
+                $query->where('start_date', '<=', $yearStart)
+                      ->where('end_date', '>=', $yearEnd);
+            })
+            ->with('leaveType')
+            ->get();
+
+        // Organize leave records by type
+        $sickLeaveRecords = $form->sick_leave_records ?? [];
+        $maternityLeaveRecords = $form->maternity_leave_records ?? [];
+        $annualCasualLeaveRecords = $form->annual_casual_leave_records ?? [];
+
+        // If form doesn't have leave records, fetch from applications
+        if (empty($sickLeaveRecords) && empty($maternityLeaveRecords) && empty($annualCasualLeaveRecords)) {
+            foreach ($leaveApplications as $leave) {
+                $leaveTypeName = strtolower($leave->leaveType->name ?? '');
+                $record = [
+                    'from' => $leave->start_date->format('Y-m-d'),
+                    'to' => $leave->end_date->format('Y-m-d'),
+                    'days' => $leave->number_of_days ?? $leave->start_date->diffInDays($leave->end_date) + 1,
+                ];
+
+                if (str_contains($leaveTypeName, 'sick') || str_contains($leaveTypeName, 'hospital')) {
+                    $record['type'] = str_contains($leaveTypeName, 'hospital') ? 'Hospitalisation' : 'Sick Leave';
+                    $sickLeaveRecords[] = $record;
+                } elseif (str_contains($leaveTypeName, 'maternity')) {
+                    $maternityLeaveRecords[] = $record;
+                } elseif (str_contains($leaveTypeName, 'annual') || str_contains($leaveTypeName, 'casual')) {
+                    $annualCasualLeaveRecords[] = $record;
+                }
+            }
+        }
+
+        // Fetch training courses since appointment
+        $trainingCourses = $form->training_courses ?? [];
+        if (empty($trainingCourses)) {
+            $trainingCoursesQuery = $officer->courses()->orderBy('start_date', 'desc');
+            
+            // Only filter by date_of_first_appointment if it exists
+            if ($officer->date_of_first_appointment) {
+                $trainingCoursesQuery->where('start_date', '>=', $officer->date_of_first_appointment);
+            }
+            
+            $trainingCourses = $trainingCoursesQuery->get()
+                ->map(function($course) {
+                    return [
+                        'type' => $course->course_name . ($course->course_type ? ' (' . $course->course_type . ')' : ''),
+                        'where' => $course->location ?? 'NCS',
+                        'from' => $course->start_date ? $course->start_date->format('Y-m-d') : null,
+                        'to' => $course->end_date ? $course->end_date->format('Y-m-d') : null,
+                    ];
+                })
+                ->toArray();
+        }
+
+        // Pre-fill form with existing form data
+        $formData = [
+            'service_number' => $form->service_number ?? $officer->service_number,
+            'title' => $form->title,
+            'surname' => $form->surname ?? $officer->surname,
+            'forenames' => $form->forenames ?? $officer->initials,
+            'department_area' => $form->department_area ?? ($officer->presentStation ? $officer->presentStation->name : null),
+            'cadre' => $form->cadre ?? $cadre,
+            'unit' => $form->unit ?? $officer->unit,
+            'zone' => $form->zone ?? $zone,
+            'date_of_first_appointment' => $form->date_of_first_appointment ?? $officer->date_of_first_appointment,
+            'date_of_present_appointment' => $form->date_of_present_appointment ?? $officer->date_of_present_appointment,
+            'rank' => $form->rank ?? $officer->substantive_rank,
+            'hapass' => $form->hapass,
+            'date_of_birth' => $form->date_of_birth ?? $officer->date_of_birth,
+            'state_of_origin' => $form->state_of_origin ?? $officer->state_of_origin,
+            'qualifications' => $qualifications,
+            'sick_leave_records' => $sickLeaveRecords,
+            'maternity_leave_records' => $maternityLeaveRecords,
+            'annual_casual_leave_records' => $annualCasualLeaveRecords,
+            'division_targets' => $form->division_targets ?? [],
+            'individual_targets' => $form->individual_targets ?? [],
+            'project_cost' => $form->project_cost,
+            'completion_time' => $form->completion_time,
+            'quantity_conformity' => $form->quantity_conformity,
+            'quality_conformity' => $form->quality_conformity,
+            'main_duties' => $form->main_duties,
+            'joint_discussion' => $form->joint_discussion,
+            'properly_equipped' => $form->properly_equipped,
+            'equipment_difficulties' => $form->equipment_difficulties,
+            'difficulties_encountered' => $form->difficulties_encountered,
+            'supervisor_assistance_methods' => $form->supervisor_assistance_methods,
+            'periodic_review' => $form->periodic_review,
+            'performance_measure_up' => $form->performance_measure_up,
+            'solution_admonition' => $form->solution_admonition,
+            'final_evaluation' => $form->final_evaluation,
+            'adhoc_duties' => $form->adhoc_duties,
+            'adhoc_affected_duties' => $form->adhoc_affected_duties,
+            'schedule_duty_from' => $form->schedule_duty_from,
+            'schedule_duty_to' => $form->schedule_duty_to,
+            'training_courses' => $trainingCourses,
+            'training_enhanced_performance' => $form->training_enhanced_performance,
+            'satisfactory_jobs' => $form->satisfactory_jobs,
+            'success_failure_causes' => $form->success_failure_causes,
+            'training_needs' => $form->training_needs,
+            'effective_use_capabilities' => $form->effective_use_capabilities,
+            'better_use_abilities' => $form->better_use_abilities,
+            'job_satisfaction' => $form->job_satisfaction,
+            'job_satisfaction_causes' => $form->job_satisfaction_causes,
+            'period_from' => $form->timeline->start_date->format('Y-m-d'),
+            'period_to' => $form->timeline->end_date->format('Y-m-d'),
+        ];
+
+        return view('forms.aper.edit', compact('activeTimeline', 'officer', 'formData', 'form'));
     }
 
     // Officer: Store new APER form
@@ -289,6 +490,21 @@ class APERFormController extends Controller
             }
 
             DB::commit();
+            
+            // Send notification if form was submitted
+            if ($action === 'submit' && $form->officer->user && $form->officer->user->email) {
+                try {
+                    Mail::to($form->officer->user->email)->send(
+                        new \App\Mail\APERFormSubmittedMail($form)
+                    );
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send APER form submitted notification", [
+                        'form_id' => $form->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
             $message = $action === 'submit' 
                 ? 'APER form submitted successfully. Waiting for Reporting Officer assignment.'
                 : 'APER form saved successfully.';
@@ -299,6 +515,111 @@ class APERFormController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to save APER form: ' . $e->getMessage());
+        }
+    }
+
+    // Officer: Update existing APER form (only if DRAFT)
+    public function update(Request $request, $id)
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $form = APERForm::findOrFail($id);
+
+        // Check ownership
+        if ($form->officer_id !== $officer->id) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        // Only allow updating if status is DRAFT
+        if ($form->status !== 'DRAFT') {
+            return redirect()->route('officer.aper-forms.show', $form->id)
+                ->with('error', 'You can only edit draft forms.');
+        }
+
+        $activeTimeline = $form->timeline;
+
+        if (!$activeTimeline) {
+            return redirect()->back()->with('error', 'Timeline not found for this form.');
+        }
+
+        // Do not allow editing or updating if timeline period has ended
+        if (!$activeTimeline->can_submit) {
+            return redirect()->back()->with('error', 'APER form submission period has ended. You cannot edit or update this form.');
+        }
+
+        $action = $request->input('action', 'save');
+
+        $validated = $this->validateFormData($request);
+        
+        // Handle qualifications array
+        if ($request->has('qualifications')) {
+            $qualifications = [];
+            foreach ($request->qualifications as $qual) {
+                if (!empty($qual['qualification']) || !empty($qual['year'])) {
+                    $qualifications[] = $qual;
+                }
+            }
+            $validated['qualifications'] = $qualifications;
+        }
+
+        // Handle leave records arrays
+        if ($request->has('sick_leave_records')) {
+            $validated['sick_leave_records'] = array_filter($request->sick_leave_records ?? [], function($record) {
+                return !empty($record['type']) || !empty($record['from']) || !empty($record['to']);
+            });
+        }
+        if ($request->has('maternity_leave_records')) {
+            $validated['maternity_leave_records'] = array_filter($request->maternity_leave_records ?? [], function($record) {
+                return !empty($record['from']) || !empty($record['to']);
+            });
+        }
+        if ($request->has('annual_casual_leave_records')) {
+            $validated['annual_casual_leave_records'] = array_filter($request->annual_casual_leave_records ?? [], function($record) {
+                return !empty($record['from']) || !empty($record['to']);
+            });
+        }
+
+        // Handle targets arrays
+        if ($request->has('division_targets')) {
+            $validated['division_targets'] = array_filter($request->division_targets ?? []);
+        }
+        if ($request->has('individual_targets')) {
+            $validated['individual_targets'] = array_filter($request->individual_targets ?? []);
+        }
+
+        // Handle training courses array
+        if ($request->has('training_courses')) {
+            $validated['training_courses'] = array_filter($request->training_courses ?? [], function($course) {
+                return !empty($course['type']) || !empty($course['where']);
+            });
+        }
+
+        $status = $action === 'submit' ? 'SUBMITTED' : 'DRAFT';
+
+        DB::beginTransaction();
+        try {
+            $validated['status'] = $status;
+            if ($action === 'submit') {
+                $validated['submitted_at'] = now();
+            }
+            $form->update($validated);
+
+            DB::commit();
+            $message = $action === 'submit' 
+                ? 'APER form submitted successfully. Waiting for Reporting Officer assignment.'
+                : 'APER form updated successfully.';
+            return redirect()->route('officer.aper-forms.show', $form->id)
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update APER form: ' . $e->getMessage());
         }
     }
 
@@ -391,6 +712,20 @@ class APERFormController extends Controller
                         'status' => 'REPORTING_OFFICER',
                     ]);
                     DB::commit();
+                    
+                    // Send notification to reporting officer
+                    if ($user->email) {
+                        try {
+                            Mail::to($user->email)->send(
+                                new \App\Mail\APERReportingOfficerAssignedMail($form, $user)
+                            );
+                        } catch (\Exception $e) {
+                            \Log::error("Failed to send reporting officer assignment notification", [
+                                'form_id' => $form->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 } catch (\Exception $e) {
                     DB::rollBack();
                     return redirect()->back()->with('error', 'Failed to assign reporting officer.');
@@ -551,6 +886,34 @@ class APERFormController extends Controller
         return view('forms.aper.show', compact('form'));
     }
 
+    // Officer: Update Comments
+    public function updateComments(Request $request, $id)
+    {
+        $user = auth()->user();
+        $form = APERForm::findOrFail($id);
+
+        if ($form->officer->user_id !== $user->id || $form->status !== 'OFFICER_REVIEW') {
+            return redirect()->back()->with('error', 'Unauthorized access.');
+        }
+
+        $validated = $request->validate([
+            'officer_comments' => 'nullable|string|max:2000',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $form->update([
+                'officer_comments' => $validated['officer_comments'] ?? null,
+            ]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Comments saved successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to save comments: ' . $e->getMessage());
+        }
+    }
+
     // Officer: Accept APER form
     public function accept($id)
     {
@@ -567,11 +930,27 @@ class APERFormController extends Controller
                 'status' => 'ACCEPTED',
                 'accepted_at' => now(),
                 'officer_reviewed_at' => now(),
+                'officer_signed_at' => now(),
                 'is_rejected' => false,
                 'rejection_reason' => null,
             ]);
 
             DB::commit();
+            
+            // Send notification to officer
+            if ($form->officer->user && $form->officer->user->email) {
+                try {
+                    Mail::to($form->officer->user->email)->send(
+                        new \App\Mail\APERFormAcceptedMail($form)
+                    );
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send APER form accepted notification", [
+                        'form_id' => $form->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
             return redirect()->back()->with('success', 'APER form accepted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -610,6 +989,21 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
+            
+            // Send notification to officer
+            if ($form->officer->user && $form->officer->user->email) {
+                try {
+                    Mail::to($form->officer->user->email)->send(
+                        new \App\Mail\APERFormRejectedMail($form)
+                    );
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send APER form rejected notification", [
+                        'form_id' => $form->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
             return redirect()->back()->with('success', 'APER form rejected. It has been sent back to Reporting Officer for revision.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -646,6 +1040,22 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
+            
+            // Send notification to newly assigned reporting officer
+            $reportingOfficer = \App\Models\User::find($validated['reporting_officer_id']);
+            if ($reportingOfficer && $reportingOfficer->email) {
+                try {
+                    Mail::to($reportingOfficer->email)->send(
+                        new \App\Mail\APERReportingOfficerAssignedMail($form, $reportingOfficer)
+                    );
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send reporting officer reassignment notification", [
+                        'form_id' => $form->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
             return redirect()->back()->with('success', 'Reporting Officer reassigned successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
