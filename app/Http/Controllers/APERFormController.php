@@ -7,7 +7,6 @@ use App\Models\APERTimeline;
 use App\Models\Officer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 class APERFormController extends Controller
 {
@@ -493,16 +492,7 @@ class APERFormController extends Controller
             
             // Send notification if form was submitted
             if ($action === 'submit' && $form->officer->user && $form->officer->user->email) {
-                try {
-                    Mail::to($form->officer->user->email)->send(
-                        new \App\Mail\APERFormSubmittedMail($form)
-                    );
-                } catch (\Exception $e) {
-                    \Log::error("Failed to send APER form submitted notification", [
-                        'form_id' => $form->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                \App\Jobs\SendAPERFormSubmittedMailJob::dispatch($form);
             }
             
             $message = $action === 'submit' 
@@ -715,16 +705,7 @@ class APERFormController extends Controller
                     
                     // Send notification to reporting officer
                     if ($user->email) {
-                        try {
-                            Mail::to($user->email)->send(
-                                new \App\Mail\APERReportingOfficerAssignedMail($form, $user)
-                            );
-                        } catch (\Exception $e) {
-                            \Log::error("Failed to send reporting officer assignment notification", [
-                                'form_id' => $form->id,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
+                        \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $user);
                     }
                 } catch (\Exception $e) {
                     DB::rollBack();
@@ -939,16 +920,7 @@ class APERFormController extends Controller
             
             // Send notification to officer
             if ($form->officer->user && $form->officer->user->email) {
-                try {
-                    Mail::to($form->officer->user->email)->send(
-                        new \App\Mail\APERFormAcceptedMail($form)
-                    );
-                } catch (\Exception $e) {
-                    \Log::error("Failed to send APER form accepted notification", [
-                        'form_id' => $form->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                \App\Jobs\SendAPERFormAcceptedMailJob::dispatch($form);
             }
             
             return redirect()->back()->with('success', 'APER form accepted successfully.');
@@ -992,16 +964,7 @@ class APERFormController extends Controller
             
             // Send notification to officer
             if ($form->officer->user && $form->officer->user->email) {
-                try {
-                    Mail::to($form->officer->user->email)->send(
-                        new \App\Mail\APERFormRejectedMail($form)
-                    );
-                } catch (\Exception $e) {
-                    \Log::error("Failed to send APER form rejected notification", [
-                        'form_id' => $form->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                \App\Jobs\SendAPERFormRejectedMailJob::dispatch($form);
             }
             
             return redirect()->back()->with('success', 'APER form rejected. It has been sent back to Reporting Officer for revision.');
@@ -1044,16 +1007,7 @@ class APERFormController extends Controller
             // Send notification to newly assigned reporting officer
             $reportingOfficer = \App\Models\User::find($validated['reporting_officer_id']);
             if ($reportingOfficer && $reportingOfficer->email) {
-                try {
-                    Mail::to($reportingOfficer->email)->send(
-                        new \App\Mail\APERReportingOfficerAssignedMail($form, $reportingOfficer)
-                    );
-                } catch (\Exception $e) {
-                    \Log::error("Failed to send reporting officer reassignment notification", [
-                        'form_id' => $form->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $reportingOfficer);
             }
             
             return redirect()->back()->with('success', 'Reporting Officer reassigned successfully.');

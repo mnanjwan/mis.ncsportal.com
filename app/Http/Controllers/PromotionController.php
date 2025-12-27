@@ -185,13 +185,25 @@ class PromotionController extends Controller
 
     public function createCriteria()
     {
-        // Get all unique ranks from officers
-        $ranks = \App\Models\Officer::whereNotNull('substantive_rank')
-            ->distinct()
-            ->pluck('substantive_rank')
-            ->filter()
-            ->sort()
-            ->values();
+        // Use standard rank abbreviations (same as manning level)
+        $ranks = [
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
+        ];
         
         return view('forms.promotion.criteria-form', compact('ranks'));
     }
@@ -236,13 +248,25 @@ class PromotionController extends Controller
     {
         $criterion = PromotionEligibilityCriterion::findOrFail($id);
         
-        // Get all unique ranks from officers
-        $ranks = \App\Models\Officer::whereNotNull('substantive_rank')
-            ->distinct()
-            ->pluck('substantive_rank')
-            ->filter()
-            ->sort()
-            ->values();
+        // Use standard rank abbreviations (same as manning level)
+        $ranks = [
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
+        ];
         
         return view('forms.promotion.criteria-form', compact('criterion', 'ranks'));
     }

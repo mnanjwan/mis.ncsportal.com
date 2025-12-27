@@ -7,7 +7,6 @@ use App\Models\APERTimeline;
 use App\Models\APERForm;
 use App\Models\Officer;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class ManageAPERTimeline extends Command
@@ -120,19 +119,17 @@ class ManageAPERTimeline extends Command
                         ->first();
                     
                     try {
-                        Mail::to($officer->user->email)->send(
-                            new \App\Mail\APERTimelineClosingMail(
-                                $officer,
-                                $timeline,
-                                $daysRemaining,
-                                $draftForm ? true : false,
-                                $draftForm ? $draftForm->id : null
-                            )
+                        \App\Jobs\SendAPERTimelineClosingMailJob::dispatch(
+                            $officer,
+                            $timeline,
+                            $daysRemaining,
+                            $draftForm ? true : false,
+                            $draftForm ? $draftForm->id : null
                         );
                         $notificationsSent++;
                     } catch (\Exception $e) {
-                        $this->error("Failed to send notification to {$officer->user->email}: " . $e->getMessage());
-                        Log::error("Failed to send APER timeline closing notification", [
+                        $this->error("Failed to dispatch notification job for {$officer->user->email}: " . $e->getMessage());
+                        Log::error("Failed to dispatch APER timeline closing notification job", [
                             'officer_id' => $officer->id,
                             'email' => $officer->user->email,
                             'error' => $e->getMessage(),
@@ -143,7 +140,7 @@ class ManageAPERTimeline extends Command
         }
         
         if ($notificationsSent > 0) {
-            $this->info("Sent {$notificationsSent} deadline reminder notification(s).");
+            $this->info("Dispatched {$notificationsSent} deadline reminder notification job(s).");
         }
 
         $this->info("Successfully deactivated {$deactivatedCount} timeline(s).");

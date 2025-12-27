@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\APERTimeline;
 use App\Models\Officer;
-use Illuminate\Support\Facades\Mail;
 
 class APERTimelineController extends Controller
 {
@@ -146,22 +145,12 @@ class APERTimelineController extends Controller
         $sent = 0;
         foreach ($officers as $officer) {
             if ($officer->user && $officer->user->email) {
-                try {
-                    Mail::to($officer->user->email)->send(
-                        new \App\Mail\APERTimelineOpenedMail($officer, $timeline)
-                    );
-                    $sent++;
-                } catch (\Exception $e) {
-                    \Log::error("Failed to send APER timeline opened notification", [
-                        'officer_id' => $officer->id,
-                        'email' => $officer->user->email,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                \App\Jobs\SendAPERTimelineOpenedMailJob::dispatch($officer, $timeline);
+                $sent++;
             }
         }
         
-        \Log::info("Sent {$sent} APER timeline opened notifications", [
+        \Log::info("Dispatched {$sent} APER timeline opened notification jobs", [
             'timeline_id' => $timeline->id,
             'year' => $timeline->year,
         ]);
@@ -197,19 +186,17 @@ class APERTimelineController extends Controller
 
                         $daysRemaining = \Carbon\Carbon::now()->diffInDays($endDate, false);
 
-                        Mail::to($officer->user->email)->send(
-                            new \App\Mail\APERTimelineClosingMail(
-                                $officer,
-                                $timeline,
-                                $daysRemaining,
-                                $draftForm ? true : false,
-                                $draftForm ? $draftForm->id : null
-                            )
+                        \App\Jobs\SendAPERTimelineClosingMailJob::dispatch(
+                            $officer,
+                            $timeline,
+                            $daysRemaining,
+                            $draftForm ? true : false,
+                            $draftForm ? $draftForm->id : null
                         );
                         $sent++;
                     }
                 } catch (\Exception $e) {
-                    \Log::error("Failed to send APER timeline extension notification", [
+                    \Log::error("Failed to dispatch APER timeline extension notification job", [
                         'officer_id' => $officer->id,
                         'email' => $officer->user->email,
                         'error' => $e->getMessage(),
@@ -218,7 +205,7 @@ class APERTimelineController extends Controller
             }
         }
         
-        \Log::info("Sent {$sent} APER timeline extension notifications", [
+        \Log::info("Dispatched {$sent} APER timeline extension notification jobs", [
             'timeline_id' => $timeline->id,
             'year' => $timeline->year,
         ]);
