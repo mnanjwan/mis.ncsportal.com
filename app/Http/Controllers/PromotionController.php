@@ -95,12 +95,15 @@ class PromotionController extends Controller
             foreach ($allOfficers as $officer) {
                 $currentRank = $officer->substantive_rank;
                 
-                // Check if criteria exists for this rank
-                if (!$criteria->has($currentRank)) {
+                // Normalize rank to abbreviation format (same as criteria)
+                $normalizedRank = $this->normalizeRankToAbbreviation($currentRank);
+                
+                // Check if criteria exists for this normalized rank
+                if (!$criteria->has($normalizedRank)) {
                     continue; // Skip if no criteria configured for this rank
                 }
                 
-                $criterion = $criteria->get($currentRank);
+                $criterion = $criteria->get($normalizedRank);
                 $yearsInRank = $officer->date_of_present_appointment ? 
                     Carbon::parse($officer->date_of_present_appointment)->diffInYears(now()) : 0;
                 
@@ -309,6 +312,91 @@ class PromotionController extends Controller
                 ->withInput()
                 ->with('error', 'Failed to update criteria: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Normalize rank from full name to abbreviation format
+     * This ensures matching between officer ranks (which may be full names) 
+     * and criteria ranks (which are abbreviations)
+     */
+    private function normalizeRankToAbbreviation($rank)
+    {
+        if (empty($rank)) {
+            return $rank;
+        }
+
+        // Standard rank abbreviations
+        $standardRanks = [
+            'CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC',
+            'CSC', 'SC', 'DSC', 'ASC I', 'ASC II',
+            'IC', 'AIC', 'CA I', 'CA II', 'CA III',
+        ];
+
+        // If already an abbreviation, return as is
+        if (in_array($rank, $standardRanks)) {
+            return $rank;
+        }
+
+        // Mapping from full names to abbreviations
+        $rankMapping = [
+            'Comptroller General of Customs (CGC) GL18' => 'CGC',
+            'Comptroller General' => 'CGC',
+            'Deputy Comptroller General of Customs (DCG) GL17' => 'DCG',
+            'Deputy Comptroller General' => 'DCG',
+            'Assistant Comptroller General (ACG) of Customs GL 16' => 'ACG',
+            'Assistant Comptroller General' => 'ACG',
+            'Comptroller of Customs (CC) GL15' => 'CC',
+            'Comptroller' => 'CC',
+            'Deputy Comptroller of Customs (DC) GL14' => 'DC',
+            'Deputy Comptroller' => 'DC',
+            'Assistant Comptroller of Customs (AC) GL13' => 'AC',
+            'Assistant Comptroller' => 'AC',
+            'Chief Superintendent of Customs (CSC) GL12' => 'CSC',
+            'Chief Superintendent' => 'CSC',
+            'Superintendent of Customs (SC) GL11' => 'SC',
+            'Superintendent' => 'SC',
+            'Deputy Superintendent of Customs (DSC) GL10' => 'DSC',
+            'Deputy Superintendent' => 'DSC',
+            'Assistant Superintendent of Customs Grade I (ASC I) GL 09' => 'ASC I',
+            'Assistant Superintendent Grade I' => 'ASC I',
+            'Assistant Superintendent of Customs Grade II (ASC II) GL 08' => 'ASC II',
+            'Assistant Superintendent Grade II' => 'ASC II',
+            'Assistant Superintendent' => 'ASC I', // Default to ASC I if ambiguous
+            'Inspector of Customs (IC) GL07' => 'IC',
+            'Inspector' => 'IC',
+            'Assistant Inspector of Customs (AIC) GL06' => 'AIC',
+            'Assistant Inspector' => 'AIC',
+            'Customs Assistant I (CA I) GL05' => 'CA I',
+            'Customs Assistant I' => 'CA I',
+            'Customs Assistant II (CA II) GL04' => 'CA II',
+            'Customs Assistant II' => 'CA II',
+            'Customs Assistant III (CA III) GL03' => 'CA III',
+            'Customs Assistant III' => 'CA III',
+            'Customs Assistant' => 'CA I', // Default to CA I if ambiguous
+        ];
+
+        // Check exact match first
+        if (isset($rankMapping[$rank])) {
+            return $rankMapping[$rank];
+        }
+
+        // Try partial matching (case-insensitive)
+        foreach ($rankMapping as $fullName => $abbr) {
+            if (stripos($rank, $fullName) !== false || stripos($fullName, $rank) !== false) {
+                return $abbr;
+            }
+        }
+
+        // If no match found, try to extract abbreviation from parentheses
+        if (preg_match('/\(([A-Z\s]+)\)/', $rank, $matches)) {
+            $abbr = trim($matches[1]);
+            if (in_array($abbr, $standardRanks)) {
+                return $abbr;
+            }
+        }
+
+        // Return original rank if no normalization possible
+        return $rank;
     }
 }
 
