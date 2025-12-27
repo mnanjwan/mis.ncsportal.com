@@ -6,15 +6,15 @@
     <div class="kt-card-content">
         <div class="flex flex-col gap-5">
             <!-- Section 12: Training Needs -->
-            <div>
-                <label class="kt-form-label font-semibold">Section 12: Training Needs</label>
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label font-semibold mb-1">Section 12: Training Needs</label>
                 <p class="text-sm text-secondary-foreground mb-2">Indicate training needs necessary to improve the performance or potential for the officer:</p>
                 <textarea name="training_needs_assessment" class="kt-input" rows="4">{{ old('training_needs_assessment', $form->training_needs_assessment) }}</textarea>
             </div>
 
             <!-- Section 13: General Remarks -->
-            <div>
-                <label class="kt-form-label font-semibold">Section 13: General Remarks</label>
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label font-semibold mb-1">Section 13: General Remarks</label>
                 <p class="text-sm text-secondary-foreground mb-2">
                     Please provide any additional relevant information here drawing attention to any particular strengths or weaknesses 
                     and indicate special aptitudes (if any) demonstrated by the officer
@@ -23,11 +23,11 @@
             </div>
 
             <!-- Section 14: Suggestions -->
-            <div>
-                <label class="kt-form-label font-semibold">Section 14: Do you suggest the officer for;</label>
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label font-semibold mb-1">Section 14: Do you suggest the officer for;</label>
                 <div class="flex flex-col gap-4 mt-3">
-                    <div>
-                        <label class="kt-form-label">(a) A different job in the same grade: Yes/No</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(a) A different job in the same grade: Yes/No</label>
                         <div class="flex flex-col gap-2">
                             <select name="suggest_different_job" class="kt-input">
                                 <option value="">Select...</option>
@@ -37,8 +37,8 @@
                             <textarea name="different_job_details" class="kt-input" rows="2" placeholder="If YES, say which kind of job and give reasons">{{ old('different_job_details', $form->different_job_details) }}</textarea>
                         </div>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(B) Transfer to a job at similar level in another occupational group or cadre? Yes/No.</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(B) Transfer to a job at similar level in another occupational group or cadre? Yes/No.</label>
                         <div class="flex flex-col gap-2">
                             <select name="suggest_transfer" class="kt-input">
                                 <option value="">Select...</option>
@@ -52,8 +52,8 @@
             </div>
 
             <!-- Section 15: Promotability -->
-            <div>
-                <label class="kt-form-label font-semibold">Section 15: Promotability</label>
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label font-semibold mb-1">Section 15: Promotability</label>
                 <p class="text-sm text-secondary-foreground mb-3">Select the appropriate statement:</p>
                 <div class="flex flex-col gap-2">
                     @php
@@ -83,8 +83,8 @@
             </div>
 
             <!-- Declaration -->
-            <div class="border-t border-border pt-4">
-                <label class="kt-form-label font-semibold">Reporting Officer Declaration</label>
+            <div class="border-t border-border pt-4 flex flex-col gap-2">
+                <label class="kt-form-label font-semibold mb-1">Reporting Officer Declaration</label>
                 <textarea name="reporting_officer_declaration" class="kt-input" rows="3" placeholder="Enter declaration statement">{{ old('reporting_officer_declaration', $form->reporting_officer_declaration) }}</textarea>
             </div>
         </div>

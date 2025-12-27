@@ -27,14 +27,17 @@ class EstablishmentController extends Controller
      */
     public function trainingResults()
     {
+        // Show all results (both PASS and FAIL) for visibility
         $results = TrainingResult::sortedByPerformance()
             ->whereNull('service_number')
-            ->where('status', 'PASS')
             ->with(['officer', 'uploadedBy'])
             ->get();
 
-        // Group by rank for display
-        $resultsByRank = $results->groupBy('rank');
+        // Get PASS results only for service number assignment
+        $passResults = $results->where('status', 'PASS');
+        
+        // Group PASS results by rank for assignment preview
+        $resultsByRank = $passResults->groupBy('rank');
         
         // Get last service number per rank
         $lastServiceNumbersByRank = [];
@@ -51,7 +54,8 @@ class EstablishmentController extends Controller
             'results', 
             'lastServiceNumber',
             'resultsByRank',
-            'lastServiceNumbersByRank'
+            'lastServiceNumbersByRank',
+            'passResults'
         ));
     }
 

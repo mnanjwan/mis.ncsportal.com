@@ -6,8 +6,13 @@
     </div>
     <div class="kt-card-content">
         <div class="flex flex-col gap-5">
-            <div>
-                <label class="kt-form-label">(a) Did you and the person reported upon agree on the targets set? YES/NO</label>
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label mb-1">(g) Any other comments on issues not mentioned above</label>
+                <textarea name="other_comments" class="kt-input" rows="4" placeholder="Enter any other comments">{{ old('other_comments', $form->other_comments) }}</textarea>
+            </div>
+            
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label mb-1">(a) Did you and the person reported upon agree on the targets set? YES/NO</label>
                 <select name="targets_agreed" class="kt-input">
                     <option value="">Select...</option>
                     <option value="YES" {{ old('targets_agreed', $form->targets_agreed) == 'YES' ? 'selected' : '' }}>YES</option>
@@ -15,8 +20,8 @@
                 </select>
             </div>
             
-            <div>
-                <label class="kt-form-label">(b) Did you and the person reported upon agree on the main duties performed and the order of importance under the target set? YES/NO</label>
+            <div class="flex flex-col gap-2">
+                <label class="kt-form-label mb-1">(b) Did you and the person reported upon agree on the main duties performed and the order of importance under the target set? YES/NO</label>
                 <div class="flex flex-col gap-2">
                     <select name="duties_agreed" class="kt-input">
                         <option value="">Select...</option>

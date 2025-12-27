@@ -54,13 +54,8 @@ class TrainingResult extends Model
 
     public function scopeSortedByPerformance($query)
     {
-        // Sort by rank only (prefer officer's substantive_rank, fallback to stored rank)
-        return $query->orderByRaw('
-            COALESCE(
-                (SELECT substantive_rank FROM officers WHERE officers.id = training_results.officer_id LIMIT 1),
-                training_results.rank
-            ) ASC
-        ')
+        // Sort by training score (highest to lowest), then by appointment number
+        return $query->orderBy('training_score', 'desc')
             ->orderBy('appointment_number', 'asc');
     }
 }

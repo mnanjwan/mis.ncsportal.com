@@ -61,7 +61,7 @@
         </div>
 
         <!-- Assignment Form -->
-        @if($results->count() > 0)
+        @if(isset($passResults) && $passResults->count() > 0)
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Assign Service Numbers</h3>

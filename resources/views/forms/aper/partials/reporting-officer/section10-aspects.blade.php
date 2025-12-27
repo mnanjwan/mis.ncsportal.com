@@ -140,8 +140,8 @@
             <!-- Sanctions -->
             <div class="flex flex-col gap-4 border-t border-border pt-6">
                 <h4 class="text-lg font-semibold">Section (b) Sanctions</h4>
-                <div>
-                    <label class="kt-form-label">Has any disciplinary action been taken against the officer during the period covered by this report?</label>
+                <div class="flex flex-col gap-2">
+                    <label class="kt-form-label mb-1">Has any disciplinary action been taken against the officer during the period covered by this report?</label>
                     <div class="flex flex-col gap-2">
                         <select name="disciplinary_action" class="kt-input">
                             <option value="">Select...</option>
@@ -156,8 +156,8 @@
             <!-- Rewards -->
             <div class="flex flex-col gap-4 border-t border-border pt-6">
                 <h4 class="text-lg font-semibold">Section (C) REWARD</h4>
-                <div>
-                    <label class="kt-form-label">Has the officer received any special commendation (WRITTEN) during the year for outstanding performance?</label>
+                <div class="flex flex-col gap-2">
+                    <label class="kt-form-label mb-1">Has the officer received any special commendation (WRITTEN) during the year for outstanding performance?</label>
                     <div class="flex flex-col gap-2">
                         <select name="special_commendation" class="kt-input">
                             <option value="">Select...</option>

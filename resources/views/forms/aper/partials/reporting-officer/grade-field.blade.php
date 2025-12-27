@@ -1,6 +1,6 @@
 <!-- Grade Field Component -->
 <div class="flex flex-col gap-2">
-    <label class="kt-form-label">{{ $label }}</label>
+    <label class="kt-form-label mb-1">{{ $label }}</label>
     <div class="flex flex-col md:flex-row gap-4">
         <div class="flex-1">
             <div class="flex items-center gap-4">
@@ -20,8 +20,8 @@
             </div>
         </div>
     </div>
-    <div class="mt-2">
-        <label class="kt-form-label text-sm">Comment/Justification:</label>
+    <div class="mt-2 flex flex-col gap-2">
+        <label class="kt-form-label text-sm mb-1">Comment/Justification:</label>
         <textarea name="{{ $fieldName }}_comment" 
                   class="kt-input" 
                   rows="2" 

@@ -270,20 +270,20 @@
             <div class="flex flex-col gap-4">
                 <h4 class="text-lg font-semibold">5(C) Achievement of Targets</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="kt-form-label">(I) What was the estimated cost of the Project/Assignment/Responsibility set for your Division/Branch/Section?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(I) What was the estimated cost of the Project/Assignment/Responsibility set for your Division/Branch/Section?</label>
                         <input type="text" name="project_cost" class="kt-input" value="{{ old('project_cost', $formData['project_cost'] ?? '') }}">
                     </div>
-                    <div>
-                        <label class="kt-form-label">(ii) What was the agreed time for the completion of the Project/Assignment/Responsibility?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(ii) What was the agreed time for the completion of the Project/Assignment/Responsibility?</label>
                         <input type="text" name="completion_time" class="kt-input" value="{{ old('completion_time', $formData['completion_time'] ?? '') }}">
                     </div>
-                    <div>
-                        <label class="kt-form-label">(iii) Was the quantity of work performed during the period of the report in conformity with the set standard?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(iii) Was the quantity of work performed during the period of the report in conformity with the set standard?</label>
                         <textarea name="quantity_conformity" class="kt-input" rows="3">{{ old('quantity_conformity', $formData['quantity_conformity'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(iv) Did the quality of the Project/Assignment/Responsibility so far completed agreed with the set standard?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(iv) Did the quality of the Project/Assignment/Responsibility so far completed agreed with the set standard?</label>
                         <textarea name="quality_conformity" class="kt-input" rows="3">{{ old('quality_conformity', $formData['quality_conformity'] ?? '') }}</textarea>
                     </div>
                 </div>
@@ -293,20 +293,20 @@
             <div class="flex flex-col gap-4">
                 <h4 class="text-lg font-semibold">(6) Job Description</h4>
                 <div class="flex flex-col gap-4">
-                    <div>
-                        <label class="kt-form-label">(a) State below in order of importance the main duties performed in relation to the targets set during the period of report</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(a) State below in order of importance the main duties performed in relation to the targets set during the period of report</label>
                         <textarea name="main_duties" class="kt-input" rows="6" placeholder="Enter main duties">{{ old('main_duties', $formData['main_duties'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(b) Was there any joint discussion between you and your Supervisor on how to accomplish the targets set?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(b) Was there any joint discussion between you and your Supervisor on how to accomplish the targets set?</label>
                         <select name="joint_discussion" class="kt-input">
                             <option value="">Select...</option>
                             <option value="YES" {{ old('joint_discussion', $formData['joint_discussion'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
                             <option value="NO" {{ old('joint_discussion', $formData['joint_discussion'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(c) Were you properly equipped professionally/Technical/ administratively to perform the jobs Allocated to You. YES/NO. If not what were your difficulties or constraints?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(c) Were you properly equipped professionally/Technical/ administratively to perform the jobs Allocated to You. YES/NO. If not what were your difficulties or constraints?</label>
                         <div class="flex flex-col gap-2">
                             <select name="properly_equipped" class="kt-input">
                                 <option value="">Select...</option>
@@ -316,40 +316,40 @@
                             <textarea name="equipment_difficulties" class="kt-input" rows="3" placeholder="If NO, describe difficulties or constraints">{{ old('equipment_difficulties', $formData['equipment_difficulties'] ?? '') }}</textarea>
                         </div>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(d) In the light of (c) above, state the various difficulties encountered in achieving the set targets and the efforts you and your supervisor put in to rectify them</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(d) In the light of (c) above, state the various difficulties encountered in achieving the set targets and the efforts you and your supervisor put in to rectify them</label>
                         <textarea name="difficulties_encountered" class="kt-input" rows="3">{{ old('difficulties_encountered', $formData['difficulties_encountered'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(e) What were the methods adopted by your supervisor to assist you in solving the difficult problems?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(e) What were the methods adopted by your supervisor to assist you in solving the difficult problems?</label>
                         <textarea name="supervisor_assistance_methods" class="kt-input" rows="3">{{ old('supervisor_assistance_methods', $formData['supervisor_assistance_methods'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(f) Was there any periodic review of the targets set for you by your Supervisor to achieve the desired Goals? (Three months/Six months) respectively:</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(f) Was there any periodic review of the targets set for you by your Supervisor to achieve the desired Goals? (Three months/Six months) respectively:</label>
                         <input type="text" name="periodic_review" class="kt-input" value="{{ old('periodic_review', $formData['periodic_review'] ?? '') }}" placeholder="e.g., Three months, Six months">
                     </div>
-                    <div>
-                        <label class="kt-form-label">(g) After the review, did your performance measure up the prescribed standards set at the beginning of the year?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(g) After the review, did your performance measure up the prescribed standards set at the beginning of the year?</label>
                         <select name="performance_measure_up" class="kt-input">
                             <option value="">Select...</option>
                             <option value="YES" {{ old('performance_measure_up', $formData['performance_measure_up'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
                             <option value="NO" {{ old('performance_measure_up', $formData['performance_measure_up'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(h) If the answer to (g) above is No, state what solution or admonition was given for the shortcomings:</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(h) If the answer to (g) above is No, state what solution or admonition was given for the shortcomings:</label>
                         <textarea name="solution_admonition" class="kt-input" rows="3">{{ old('solution_admonition', $formData['solution_admonition'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(i) Was there any final evaluation of the entire targets at the beginning of the year to evaluate the total Accomplishment of the goals set for your Division/Branch/Section in relation to the achievements of your Ministry/Department's programme for the year?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(i) Was there any final evaluation of the entire targets at the beginning of the year to evaluate the total Accomplishment of the goals set for your Division/Branch/Section in relation to the achievements of your Ministry/Department's programme for the year?</label>
                         <textarea name="final_evaluation" class="kt-input" rows="3">{{ old('final_evaluation', $formData['final_evaluation'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(j) State any adhoc duties performed by you in addition to your normal schedule of duties which were not of a continuous nature</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(j) State any adhoc duties performed by you in addition to your normal schedule of duties which were not of a continuous nature</label>
                         <textarea name="adhoc_duties" class="kt-input" rows="3">{{ old('adhoc_duties', $formData['adhoc_duties'] ?? '') }}</textarea>
                     </div>
-                    <div>
-                        <label class="kt-form-label">(k) Did the performance of these ad hoc duties affect your real duties and if so, did you bring these to the attention of your supervisor?</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(k) Did the performance of these ad hoc duties affect your real duties and if so, did you bring these to the attention of your supervisor?</label>
                         <select name="adhoc_affected_duties" class="kt-input">
                             <option value="">Select...</option>
                             <option value="YES" {{ old('adhoc_affected_duties', $formData['adhoc_affected_duties'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
@@ -357,14 +357,18 @@
                         </select>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="kt-form-label">(l) State the period that you have been on the schedule of duty referred to in (a) above: From</label>
+                        <div class="flex flex-col gap-2">
+                            <label class="kt-form-label mb-1">(l) State the period that you have been on the schedule of duty referred to in (a) above: From</label>
                             <input type="date" name="schedule_duty_from" class="kt-input" value="{{ old('schedule_duty_from', $formData['schedule_duty_from'] ?? '') }}">
                         </div>
-                        <div>
-                            <label class="kt-form-label">To</label>
+                        <div class="flex flex-col gap-2">
+                            <label class="kt-form-label mb-1">To</label>
                             <input type="date" name="schedule_duty_to" class="kt-input" value="{{ old('schedule_duty_to', $formData['schedule_duty_to'] ?? '') }}">
                         </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="kt-form-label mb-1">(m) I have served for over 6 months under: (I) Mr/Mrs.</label>
+                        <input type="text" name="served_under_supervisor" class="kt-input" value="{{ old('served_under_supervisor', $formData['served_under_supervisor'] ?? '') }}" placeholder="Enter supervisor name">
                     </div>
                 </div>
             </div>

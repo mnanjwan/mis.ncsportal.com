@@ -68,8 +68,10 @@ class APERForm extends Model
         'adhoc_affected_duties',
         'schedule_duty_from',
         'schedule_duty_to',
+        'served_under_supervisor',
         // Part 3 fields
         'targets_agreed',
+        'other_comments',
         'targets_agreement_details',
         'duties_agreed',
         'duties_agreement_details',
