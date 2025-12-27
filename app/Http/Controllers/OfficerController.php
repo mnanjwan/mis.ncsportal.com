@@ -290,10 +290,24 @@ class OfficerController extends Controller
             'North Central', 'North East', 'North West', 'South East', 'South South', 'South West'
         ];
         
+        // Use standard rank abbreviations (same as manning level)
         $ranks = [
-            'Assistant Superintendent', 'Deputy Superintendent', 'Superintendent', 'Chief Superintendent',
-            'Assistant Comptroller', 'Deputy Comptroller', 'Comptroller',
-            'Assistant Comptroller General', 'Deputy Comptroller General'
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
         ];
         
         $gradeLevels = ['GL 01', 'GL 02', 'GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08',
