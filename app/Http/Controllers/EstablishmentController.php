@@ -27,17 +27,14 @@ class EstablishmentController extends Controller
      */
     public function trainingResults()
     {
-        // Show all results (both PASS and FAIL) for visibility
+        // Show all results - service numbers will be assigned to everyone based on performance
         $results = TrainingResult::sortedByPerformance()
             ->whereNull('service_number')
             ->with(['officer', 'uploadedBy'])
             ->get();
-
-        // Get PASS results only for service number assignment
-        $passResults = $results->where('status', 'PASS');
         
-        // Group PASS results by rank for assignment preview
-        $resultsByRank = $passResults->groupBy('rank');
+        // Group all results by rank for assignment preview (sorted by performance: highest to lowest)
+        $resultsByRank = $results->groupBy('rank');
         
         // Get last service number per rank
         $lastServiceNumbersByRank = [];
@@ -54,8 +51,7 @@ class EstablishmentController extends Controller
             'results', 
             'lastServiceNumber',
             'resultsByRank',
-            'lastServiceNumbersByRank',
-            'passResults'
+            'lastServiceNumbersByRank'
         ));
     }
 
@@ -75,9 +71,9 @@ class EstablishmentController extends Controller
             DB::beginTransaction();
             
             // Get sorted training results without service numbers
+            // Assign to everyone, sorted by performance (highest to lowest)
             $results = TrainingResult::sortedByPerformance()
                 ->whereNull('service_number')
-                ->where('status', 'PASS') // Only assign to those who passed
                 ->get();
 
             if ($results->isEmpty()) {
@@ -1146,9 +1142,9 @@ class EstablishmentController extends Controller
         try {
             if ($allocationType === 'performance') {
                 // Use training results for performance-based allocation
+                // Assign to everyone, sorted by performance (highest to lowest)
                 $results = TrainingResult::sortedByPerformance()
                     ->whereNull('service_number')
-                    ->where('status', 'PASS')
                     ->get();
 
                 if ($results->isEmpty()) {

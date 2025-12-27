@@ -61,7 +61,7 @@
         </div>
 
         <!-- Assignment Form -->
-        @if(isset($passResults) && $passResults->count() > 0)
+        @if($results->count() > 0)
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Assign Service Numbers</h3>
@@ -76,7 +76,7 @@
                                     <div class="flex-1">
                                         <p class="text-sm font-medium text-primary mb-1">Rank-Based Assignment</p>
                                         <p class="text-xs text-secondary-foreground">
-                                            Service numbers will be assigned automatically by rank. Each rank will continue from its last assigned number, and within each rank, officers will be assigned based on their training performance (highest to lowest).
+                                            Service numbers will be assigned automatically to all officers by rank. Each rank will continue from its last assigned number, and within each rank, officers will be assigned based on their training performance (highest score to lowest score).
                                 </p>
                                     </div>
                                 </div>
@@ -145,9 +145,6 @@
                                         Score
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                        Status
-                                    </th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         Service Number
                                     </th>
                                 </tr>
@@ -173,11 +170,6 @@
                                         </td>
                                         <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="text-sm font-semibold text-foreground">{{ number_format($result->training_score, 2) }}%</span>
-                                        </td>
-                                        <td class="py-3 px-4" style="white-space: nowrap;">
-                                            <span class="kt-badge kt-badge-{{ $result->status === 'PASS' ? 'success' : 'danger' }} kt-badge-sm">
-                                                {{ $result->status }}
-                                            </span>
                                         </td>
                                         <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="text-sm font-mono text-foreground">{{ $result->service_number ?? 'Pending' }}</span>
