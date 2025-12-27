@@ -188,12 +188,9 @@ class PromotionController extends Controller
 
     public function createCriteria()
     {
-        // Use standard rank abbreviations (same as manning level)
+        // Use standard rank abbreviations (excluding top ranks that don't need promotion criteria)
+        // CGC, DCG, ACG, and CC are the highest ranks and don't get promoted further
         $ranks = [
-            'CGC',
-            'DCG',
-            'ACG',
-            'CC',
             'DC',
             'AC',
             'CSC',
@@ -251,12 +248,9 @@ class PromotionController extends Controller
     {
         $criterion = PromotionEligibilityCriterion::findOrFail($id);
         
-        // Use standard rank abbreviations (same as manning level)
+        // Use standard rank abbreviations (excluding top ranks that don't need promotion criteria)
+        // CGC, DCG, ACG, and CC are the highest ranks and don't get promoted further
         $ranks = [
-            'CGC',
-            'DCG',
-            'ACG',
-            'CC',
             'DC',
             'AC',
             'CSC',
