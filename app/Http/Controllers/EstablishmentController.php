@@ -1659,17 +1659,17 @@ class EstablishmentController extends Controller
                         'substantive_rank' => $entry['substantive_rank'],
                         'salary_grade_level' => $entry['salary_grade_level'],
                         'appointment_number' => $appointmentNumber, // Auto-assigned based on rank and GL
-                        'date_of_first_appointment' => now()->toDateString(),
-                        'date_of_present_appointment' => now()->toDateString(),
-                        'sex' => 'M',
-                        'date_of_birth' => '1900-01-01',
-                        'state_of_origin' => 'TBD',
+                        'date_of_first_appointment' => now()->toDateString(), // Placeholder, will be updated during onboarding
+                        'date_of_present_appointment' => now()->toDateString(), // Placeholder
+                        'sex' => 'M', // Default, will be updated during onboarding
+                        'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
+                        'state_of_origin' => 'TBD', // To be provided during onboarding
                         'lga' => 'TBD',
                         'geopolitical_zone' => 'TBD',
-                        'marital_status' => 'Single',
-                        'entry_qualification' => 'TBD',
+                        'marital_status' => 'Single', // Default
+                        'entry_qualification' => 'TBD', // To be provided during onboarding
                         'permanent_home_address' => 'To be provided during onboarding',
-                        'phone_number' => '00000000000',
+                        'phone_number' => '00000000000', // Placeholder
                         'is_active' => true,
                         'is_deceased' => false,
                         'onboarding_status' => 'pending',
@@ -1677,6 +1677,9 @@ class EstablishmentController extends Controller
                         'onboarding_token' => $onboardingToken, // Include token in initial create
                         'created_by' => Auth::id(),
                     ]);
+
+                    // Refresh model to ensure token is loaded
+                    $recruit->refresh();
 
                     $onboardingLink = route('recruit.onboarding.step1', ['token' => $onboardingToken]);
 
