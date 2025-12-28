@@ -182,6 +182,35 @@ class NotificationService
     }
 
     /**
+     * Notify Establishment about recruit onboarding completion
+     */
+    public function notifyRecruitOnboardingCompleted($recruit): array
+    {
+        $users = User::whereHas('roles', function ($query) {
+            $query->where('name', 'Establishment')->where('is_active', true);
+        })->where('is_active', true)->get();
+        
+        $recruitName = trim(($recruit->initials ?? '') . ' ' . ($recruit->surname ?? ''));
+        
+        // Send email to each Establishment user via job
+        foreach ($users as $user) {
+            if ($user->email) {
+                \App\Jobs\SendRecruitOnboardingCompletedMailJob::dispatch($recruit, $user, $recruitName);
+            }
+        }
+        
+        // Also create in-app notifications
+        return $this->notifyMany(
+            $users,
+            'recruit_onboarding_completed',
+            'Recruit Onboarding Completed',
+            "Recruit {$recruitName} has completed onboarding and is ready for verification.",
+            'officer',
+            $recruit->id
+        );
+    }
+
+    /**
      * Notify TRADOC about new recruits ready for training
      */
     public function notifyRecruitsReadyForTraining(array|\Illuminate\Database\Eloquent\Collection $recruits): array

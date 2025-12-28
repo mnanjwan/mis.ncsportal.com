@@ -9,10 +9,16 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Helpers\AppointmentNumberHelper;
 use App\Helpers\ServiceNumberHelper;
+use App\Jobs\SendRecruitOnboardingLinkJob;
+use App\Jobs\SendBulkRecruitOnboardingLinksJob;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class EstablishmentController extends Controller
 {
@@ -32,10 +38,10 @@ class EstablishmentController extends Controller
             ->whereNull('service_number')
             ->with(['officer', 'uploadedBy'])
             ->get();
-        
+
         // Group all results by rank for assignment preview (sorted by performance: highest to lowest)
         $resultsByRank = $results->groupBy('rank');
-        
+
         // Get last service number per rank
         $lastServiceNumbersByRank = [];
         foreach ($resultsByRank->keys() as $rank) {
@@ -48,7 +54,7 @@ class EstablishmentController extends Controller
             ->value('service_number');
 
         return view('dashboards.establishment.training-results', compact(
-            'results', 
+            'results',
             'lastServiceNumber',
             'resultsByRank',
             'lastServiceNumbersByRank'
@@ -69,7 +75,7 @@ class EstablishmentController extends Controller
             $rankBased = $request->input('rank_based', true); // Default to rank-based
 
             DB::beginTransaction();
-            
+
             // Get sorted training results without service numbers
             // Assign to everyone, sorted by performance (highest to lowest)
             $results = TrainingResult::sortedByPerformance()
@@ -91,7 +97,7 @@ class EstablishmentController extends Controller
                 foreach ($resultsByRank as $rank => $rankResults) {
                     // Get last service number for this rank
                     $lastServiceNumber = ServiceNumberHelper::getLastServiceNumberForRank($rank);
-                    
+
                     $startNumber = 1;
                     if ($lastServiceNumber) {
                         preg_match('/(\d+)$/', $lastServiceNumber, $matches);
@@ -103,7 +109,7 @@ class EstablishmentController extends Controller
                         $globalLast = Officer::whereNotNull('service_number')
                             ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
                             ->value('service_number');
-                        
+
                         if ($globalLast) {
                             preg_match('/(\d+)$/', $globalLast, $matches);
                             $startNumber = !empty($matches[1]) ? (int) $matches[1] + 1 : 1;
@@ -115,44 +121,44 @@ class EstablishmentController extends Controller
 
                     // Assign service numbers to this rank's results (already sorted by performance)
                     foreach ($rankResults as $result) {
-                // Generate service number: NCS + next number
-                $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
+                        // Generate service number: NCS + next number
+                        $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
 
-                // Check if service number already exists
-                if (Officer::where('service_number', $serviceNumber)->exists()) {
-                    $currentNumber++;
+                        // Check if service number already exists
+                        if (Officer::where('service_number', $serviceNumber)->exists()) {
+                            $currentNumber++;
                             $serviceNumber = 'NCS' . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
-                }
+                        }
 
-                // Update training result with service number
-                $result->update([
-                    'service_number' => $serviceNumber,
-                ]);
-
-                // Update officer if exists
-                if ($result->officer_id) {
-                    $officer = Officer::find($result->officer_id);
-                    if ($officer) {
-                        $officer->update([
-                            'service_number' => $serviceNumber,
-                        ]);
-                    }
-                } else {
-                    // Try to find officer by appointment number
-                    $officer = Officer::where('appointment_number', $result->appointment_number)->first();
-                    if ($officer) {
-                        $officer->update([
-                            'service_number' => $serviceNumber,
-                        ]);
+                        // Update training result with service number
                         $result->update([
-                            'officer_id' => $officer->id,
+                            'service_number' => $serviceNumber,
                         ]);
-                    }
-                }
 
-                $currentNumber++;
+                        // Update officer if exists
+                        if ($result->officer_id) {
+                            $officer = Officer::find($result->officer_id);
+                            if ($officer) {
+                                $officer->update([
+                                    'service_number' => $serviceNumber,
+                                ]);
+                            }
+                        } else {
+                            // Try to find officer by appointment number
+                            $officer = Officer::where('appointment_number', $result->appointment_number)->first();
+                            if ($officer) {
+                                $officer->update([
+                                    'service_number' => $serviceNumber,
+                                ]);
+                                $result->update([
+                                    'officer_id' => $officer->id,
+                                ]);
+                            }
+                        }
+
+                        $currentNumber++;
                         $rankAssigned++;
-                $assigned++;
+                        $assigned++;
                     }
 
                     $rankStats[$rank] = [
@@ -215,7 +221,7 @@ class EstablishmentController extends Controller
                         $officer = Officer::where('service_number', $result->service_number)->first();
                         if ($officer) {
                             $assignedOfficers[] = $officer;
-                            
+
                             // Notify officer if they have a user account
                             $user = User::where('email', $officer->email)->first();
                             if ($user && $officer->user_id) {
@@ -225,7 +231,7 @@ class EstablishmentController extends Controller
                         }
                     }
                 }
-                
+
                 // Notify ICT about service numbers ready for email creation
                 if (!empty($assignedOfficers)) {
                     $notificationService = app(NotificationService::class);
@@ -241,7 +247,7 @@ class EstablishmentController extends Controller
 
             $message = "Successfully assigned {$assigned} service number(s)";
             if ($rankBased && !empty($rankStats)) {
-                $message .= " grouped by rank: " . implode(', ', array_map(function($rank, $stats) {
+                $message .= " grouped by rank: " . implode(', ', array_map(function ($rank, $stats) {
                     return "{$rank} ({$stats['count']})";
                 }, array_keys($rankStats), $rankStats));
             } else {
@@ -273,10 +279,6 @@ class EstablishmentController extends Controller
     private function getRanksAndGradeLevels()
     {
         $ranks = [
-            'CGC',
-            'DCG',
-            'ACG',
-            'CC',
             'DC',
             'AC',
             'CSC',
@@ -290,7 +292,7 @@ class EstablishmentController extends Controller
             'CA II',
             'CA III',
         ];
-        
+
         $gradeLevels = [
             'GL 03',
             'GL 04',
@@ -309,7 +311,7 @@ class EstablishmentController extends Controller
             'GL 17',
             'GL 18',
         ];
-        
+
         // Rank to Grade Level mapping
         $rankToGradeMap = [
             'CGC' => 'GL 18',
@@ -329,7 +331,7 @@ class EstablishmentController extends Controller
             'CA II' => 'GL 04',
             'CA III' => 'GL 03',
         ];
-        
+
         return compact('ranks', 'gradeLevels', 'rankToGradeMap');
     }
 
@@ -340,7 +342,7 @@ class EstablishmentController extends Controller
     {
         // Clear any existing session data
         session()->forget(['recruit_step1', 'recruit_step2', 'recruit_step3', 'recruit_step4']);
-        
+
         extract($this->getRanksAndGradeLevels());
         return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels'));
     }
@@ -622,7 +624,7 @@ class EstablishmentController extends Controller
                         $extension = $matches[1];
                         $filename = 'profile_' . $recruit->id . '_' . time() . '.' . $extension;
                         $path = 'officer-profiles/' . $filename;
-                        
+
                         \Storage::disk('public')->put($path, $imageData);
                         $recruit->update(['profile_picture_url' => $path]);
                     }
@@ -698,17 +700,17 @@ class EstablishmentController extends Controller
             try {
                 $file = $request->file('csv_file');
                 $lines = file($file->getRealPath(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                
+
                 if (empty($lines)) {
                     DB::rollBack();
                     return back()->with('error', 'CSV file is empty')->withInput();
                 }
-                
+
                 // Parse CSV lines - handle quoted fields properly
                 $data = [];
                 foreach ($lines as $line) {
                     $trimmed = trim($line);
-                    
+
                     // Handle case where entire line is wrapped in quotes (e.g., "col1,col2,col3")
                     if (substr($trimmed, 0, 1) === '"' && substr($trimmed, -1) === '"') {
                         // Remove outer quotes and parse the inner content as CSV
@@ -718,9 +720,9 @@ class EstablishmentController extends Controller
                         // Normal CSV parsing
                         $parsed = str_getcsv($line);
                     }
-                    
+
                     // Clean up each field (trim whitespace and remove any remaining quotes)
-                    $parsed = array_map(function($field) {
+                    $parsed = array_map(function ($field) {
                         $cleaned = trim($field);
                         // Remove surrounding quotes if present
                         if (substr($cleaned, 0, 1) === '"' && substr($cleaned, -1) === '"') {
@@ -728,17 +730,17 @@ class EstablishmentController extends Controller
                         }
                         return trim($cleaned);
                     }, $parsed);
-                    
+
                     // Filter out empty rows
                     if (!empty(array_filter($parsed))) {
                         $data[] = $parsed;
                     }
                 }
-                
+
                 $header = array_shift($data); // Remove header row
 
                 // Normalize header (case-insensitive, trim whitespace, remove quotes)
-                $header = array_map(function($h) {
+                $header = array_map(function ($h) {
                     return strtolower(trim(trim($h), '"'));
                 }, $header);
 
@@ -794,13 +796,13 @@ class EstablishmentController extends Controller
                         $errors[] = "Row {$rowNumber}: Email is required";
                         continue;
                     }
-                    
+
                     // Validate email format strictly
                     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                         $errors[] = "Row {$rowNumber}: Invalid email format '{$email}'. Email must be in a valid format (e.g., user@example.com)";
                         continue;
                     }
-                    
+
                     // Additional validation: check for basic email structure
                     if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
                         $errors[] = "Row {$rowNumber}: Invalid email format '{$email}'. Email must contain @ symbol and a valid domain";
@@ -868,7 +870,7 @@ class EstablishmentController extends Controller
                     'code' => $e->getCode(),
                     'sql' => $e->getSql() ?? 'N/A'
                 ]);
-                
+
                 // Check for unique constraint violations
                 if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'UNIQUE constraint')) {
                     $errorMessage = 'One or more recruits in the CSV file have duplicate email addresses. ';
@@ -877,7 +879,7 @@ class EstablishmentController extends Controller
                     }
                     return back()->with('error', $errorMessage)->withInput();
                 }
-                
+
                 return back()->with('error', 'Failed to process CSV file: ' . $e->getMessage())->withInput();
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -912,7 +914,7 @@ class EstablishmentController extends Controller
                         $errors[] = "Entry " . ($index + 1) . ": Invalid email format '{$email}'. Email must be in a valid format (e.g., user@example.com)";
                         continue;
                     }
-                    
+
                     // Check if email already exists in users or officers table
                     if (User::where('email', $email)->exists()) {
                         $errors[] = "Entry " . ($index + 1) . ": Email '{$email}' already exists in the system (user account)";
@@ -965,7 +967,7 @@ class EstablishmentController extends Controller
                     'code' => $e->getCode(),
                     'sql' => $e->getSql() ?? 'N/A'
                 ]);
-                
+
                 // Check for unique constraint violations
                 if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'UNIQUE constraint')) {
                     $errorMessage = 'One or more recruits have duplicate email addresses. ';
@@ -974,7 +976,7 @@ class EstablishmentController extends Controller
                     }
                     return back()->with('error', $errorMessage)->withInput();
                 }
-                
+
                 return back()->with('error', 'Failed to create recruits: ' . $e->getMessage())->withInput();
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -1029,7 +1031,7 @@ class EstablishmentController extends Controller
                     // Generate initials from first name (first 2 letters)
                     $initials = strtoupper(substr($validated['first_name'], 0, 2));
                 }
-                
+
                 $recruit = Officer::create([
                     'initials' => $initials,
                     'surname' => $validated['surname'],
@@ -1074,7 +1076,7 @@ class EstablishmentController extends Controller
                     'code' => $e->getCode(),
                     'sql' => $e->getSql() ?? 'N/A'
                 ]);
-                
+
                 // Check for unique constraint violations
                 if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'UNIQUE constraint')) {
                     $errorMessage = 'A recruit with this email address already exists in the system.';
@@ -1083,7 +1085,7 @@ class EstablishmentController extends Controller
                     }
                     return back()->with('error', $errorMessage)->withInput();
                 }
-                
+
                 return back()->with('error', 'Failed to add new recruit: ' . $e->getMessage())->withInput();
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -1263,10 +1265,10 @@ class EstablishmentController extends Controller
         try {
             $officers = Officer::whereIn('id', $request->officer_ids)
                 ->whereNull('appointment_number')
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNull('service_number')
-                      ->orWhere('service_number', '')
-                      ->orWhere('service_number', 'NCS'); // Handle edge case where mutator set it to "NCS"
+                        ->orWhere('service_number', '')
+                        ->orWhere('service_number', 'NCS'); // Handle edge case where mutator set it to "NCS"
                 })
                 ->get();
 
@@ -1277,7 +1279,7 @@ class EstablishmentController extends Controller
 
             $autoPrefix = $request->input('auto_prefix', true); // Default to auto
             $manualPrefix = $request->input('appointment_number_prefix');
-            
+
             $assigned = 0;
             $prefixCounters = []; // Track counters per prefix
 
@@ -1293,19 +1295,19 @@ class EstablishmentController extends Controller
 
                 // Initialize counter for this prefix if not exists
                 if (!isset($prefixCounters[$prefix])) {
-            // Get last appointment number with this prefix
-            $lastAppointment = Officer::where('appointment_number', 'like', $prefix . '%')
-                ->orderByRaw("CAST(SUBSTRING(appointment_number, " . (strlen($prefix) + 1) . ") AS UNSIGNED) DESC")
-                ->value('appointment_number');
+                    // Get last appointment number with this prefix
+                    $lastAppointment = Officer::where('appointment_number', 'like', $prefix . '%')
+                        ->orderByRaw("CAST(SUBSTRING(appointment_number, " . (strlen($prefix) + 1) . ") AS UNSIGNED) DESC")
+                        ->value('appointment_number');
 
                     $prefixCounters[$prefix] = 1;
-            if ($lastAppointment) {
-                preg_match('/(\d+)$/', $lastAppointment, $matches);
-                if (!empty($matches[1])) {
+                    if ($lastAppointment) {
+                        preg_match('/(\d+)$/', $lastAppointment, $matches);
+                        if (!empty($matches[1])) {
                             $prefixCounters[$prefix] = (int) $matches[1] + 1;
                         }
+                    }
                 }
-            }
 
                 // Generate appointment number
                 $appointmentNumber = $prefix . str_pad($prefixCounters[$prefix], 5, '0', STR_PAD_LEFT);
@@ -1332,7 +1334,7 @@ class EstablishmentController extends Controller
                     ->whereNotNull('appointment_number')
                     ->whereNull('service_number')
                     ->get();
-                
+
                 if ($assignedOfficers->isNotEmpty()) {
                     $notificationService = app(NotificationService::class);
                     $notificationService->notifyRecruitsReadyForTraining($assignedOfficers->toArray());
@@ -1454,4 +1456,467 @@ class EstablishmentController extends Controller
             return back()->with('error', 'Failed to delete recruits: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Create recruit and initiate onboarding in one step
+     */
+    public function initiateCreateOnboarding(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|max:255|unique:officers,email',
+            'initials' => 'required|string|max:50',
+            'surname' => 'required|string|max:255',
+            'substantive_rank' => 'required|string|max:100',
+            'salary_grade_level' => 'required|string|max:10',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Check if email already exists in users table
+            if (User::where('email', $validated['email'])->exists()) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', "Email '{$validated['email']}' already exists in the system.");
+            }
+
+            // Determine appointment number prefix based on rank and GL level
+            $prefix = AppointmentNumberHelper::getPrefix(
+                $validated['substantive_rank'],
+                $validated['salary_grade_level']
+            );
+
+            // Generate appointment number automatically
+            $appointmentNumber = AppointmentNumberHelper::generateNext($prefix);
+
+            // Generate onboarding token before creating recruit
+            $onboardingToken = Str::random(64);
+
+            // Create recruit record with token
+            $recruit = Officer::create([
+                'initials' => $validated['initials'],
+                'surname' => $validated['surname'],
+                'email' => $validated['email'],
+                'substantive_rank' => $validated['substantive_rank'],
+                'salary_grade_level' => $validated['salary_grade_level'],
+                'appointment_number' => $appointmentNumber, // Auto-assigned based on rank and GL
+                'date_of_first_appointment' => now()->toDateString(), // Placeholder, will be updated during onboarding
+                'date_of_present_appointment' => now()->toDateString(), // Placeholder
+                'sex' => 'M', // Default, will be updated during onboarding
+                'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
+                'state_of_origin' => 'TBD', // To be provided during onboarding
+                'lga' => 'TBD',
+                'geopolitical_zone' => 'TBD',
+                'marital_status' => 'Single', // Default
+                'entry_qualification' => 'TBD', // To be provided during onboarding
+                'permanent_home_address' => 'To be provided during onboarding',
+                'phone_number' => '00000000000', // Placeholder
+                'is_active' => true,
+                'is_deceased' => false,
+                'onboarding_status' => 'pending',
+                'verification_status' => 'pending',
+                'onboarding_token' => $onboardingToken, // Include token in initial create
+                'created_by' => Auth::id(),
+            ]);
+
+            // Refresh model to ensure token is loaded
+            $recruit->refresh();
+
+            // Generate onboarding link (public route)
+            $onboardingLink = route('recruit.onboarding.step1', ['token' => $onboardingToken]);
+
+            // Queue email job (no password needed for recruits)
+            SendRecruitOnboardingLinkJob::dispatch(
+                $recruit,
+                $onboardingLink,
+                trim($validated['initials'] . ' ' . $validated['surname'])
+            );
+
+            DB::commit();
+
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', "Recruit created with appointment number {$appointmentNumber} and onboarding link sent to {$validated['email']}. The recruit will receive an email with instructions.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to create recruit and initiate onboarding', [
+                'error' => $e->getMessage(),
+                'data' => $validated,
+            ]);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create recruit and send onboarding link: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Initiate onboarding for an existing recruit
+     */
+    public function initiateOnboarding(Request $request)
+    {
+        $validated = $request->validate([
+            'recruit_id' => 'required|exists:officers,id',
+        ]);
+
+        try {
+            $recruit = Officer::findOrFail($validated['recruit_id']);
+
+            // Check if recruit already has onboarding completed
+            if ($recruit->onboarding_status === 'completed' || $recruit->onboarding_status === 'verified') {
+                return redirect()->back()
+                    ->with('error', 'This recruit has already completed onboarding.');
+            }
+
+            // Check if email exists
+            if (!$recruit->email) {
+                return redirect()->back()
+                    ->with('error', 'Recruit does not have an email address.');
+            }
+
+            // Generate onboarding token
+            $onboardingToken = Str::random(64);
+            $recruit->update([
+                'onboarding_token' => $onboardingToken,
+                'onboarding_status' => 'pending',
+            ]);
+            $recruit->refresh(); // Ensure token is loaded
+
+            // Generate onboarding link (public route)
+            $onboardingLink = route('recruit.onboarding.step1', ['token' => $onboardingToken]);
+
+            // Queue email job (no password needed for recruits)
+            SendRecruitOnboardingLinkJob::dispatch(
+                $recruit,
+                $onboardingLink,
+                trim(($recruit->initials ?? '') . ' ' . ($recruit->surname ?? ''))
+            );
+
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', "Onboarding link sent to {$recruit->email}. The recruit will receive an email with instructions.");
+        } catch (\Exception $e) {
+            Log::error('Failed to initiate recruit onboarding', [
+                'recruit_id' => $validated['recruit_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()
+                ->with('error', 'Failed to initiate onboarding: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Bulk create recruits and initiate onboarding
+     */
+    public function bulkInitiateOnboarding(Request $request)
+    {
+        $validated = $request->validate([
+            'entries' => 'required|array|max:10',
+            'entries.*.email' => 'required|email|max:255',
+            'entries.*.initials' => 'required|string|max:50',
+            'entries.*.surname' => 'required|string|max:255',
+            'entries.*.substantive_rank' => 'required|string|max:100',
+            'entries.*.salary_grade_level' => 'required|string|max:10',
+        ]);
+
+        $results = [];
+        $successCount = 0;
+        $errorCount = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($validated['entries'] as $index => $entry) {
+                try {
+                    // Check if email already exists
+                    if (
+                        User::where('email', $entry['email'])->exists() ||
+                        Officer::where('email', $entry['email'])->exists()
+                    ) {
+                        $results[] = [
+                            'email' => $entry['email'],
+                            'status' => 'error',
+                            'message' => 'Email already exists'
+                        ];
+                        $errorCount++;
+                        continue;
+                    }
+
+                    // Determine appointment number prefix based on rank and GL level
+                    $prefix = AppointmentNumberHelper::getPrefix(
+                        $entry['substantive_rank'],
+                        $entry['salary_grade_level']
+                    );
+
+                    // Generate appointment number automatically
+                    $appointmentNumber = AppointmentNumberHelper::generateNext($prefix);
+
+                    // Generate onboarding token before creating recruit
+                    $onboardingToken = Str::random(64);
+
+                    // Create recruit record with token
+                    $recruit = Officer::create([
+                        'initials' => $entry['initials'],
+                        'surname' => $entry['surname'],
+                        'email' => $entry['email'],
+                        'substantive_rank' => $entry['substantive_rank'],
+                        'salary_grade_level' => $entry['salary_grade_level'],
+                        'appointment_number' => $appointmentNumber, // Auto-assigned based on rank and GL
+                        'date_of_first_appointment' => now()->toDateString(),
+                        'date_of_present_appointment' => now()->toDateString(),
+                        'sex' => 'M',
+                        'date_of_birth' => '1900-01-01',
+                        'state_of_origin' => 'TBD',
+                        'lga' => 'TBD',
+                        'geopolitical_zone' => 'TBD',
+                        'marital_status' => 'Single',
+                        'entry_qualification' => 'TBD',
+                        'permanent_home_address' => 'To be provided during onboarding',
+                        'phone_number' => '00000000000',
+                        'is_active' => true,
+                        'is_deceased' => false,
+                        'onboarding_status' => 'pending',
+                        'verification_status' => 'pending',
+                        'onboarding_token' => $onboardingToken, // Include token in initial create
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    $onboardingLink = route('recruit.onboarding.step1', ['token' => $onboardingToken]);
+
+                    // Queue email job (no password needed for recruits)
+                    SendRecruitOnboardingLinkJob::dispatch(
+                        $recruit,
+                        $onboardingLink,
+                        trim($entry['initials'] . ' ' . $entry['surname'])
+                    );
+
+                    $results[] = [
+                        'recruit_id' => $recruit->id,
+                        'email' => $entry['email'],
+                        'status' => 'success',
+                        'message' => "Recruit created with appointment number {$appointmentNumber} and onboarding link queued"
+                    ];
+                    $successCount++;
+                } catch (\Exception $e) {
+                    Log::error('Bulk create recruit error', [
+                        'entry' => $entry,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $results[] = [
+                        'recruit_id' => null,
+                        'email' => $entry['email'] ?? 'N/A',
+                        'status' => 'error',
+                        'message' => $e->getMessage()
+                    ];
+                    $errorCount++;
+                }
+            }
+
+            DB::commit();
+
+            $message = "Bulk onboarding initiated: {$successCount} successful, {$errorCount} failed.";
+
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', $message)
+                ->with('bulk_results', $results);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Bulk onboarding transaction error', [
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()
+                ->with('error', 'Failed to process bulk onboarding: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * CSV upload for bulk onboarding
+     */
+    public function csvUploadOnboarding(Request $request)
+    {
+        $validated = $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        try {
+            $file = $request->file('csv_file');
+            $csvData = array_map('str_getcsv', file($file->getRealPath()));
+
+            // Remove header row
+            $headers = array_shift($csvData);
+
+            // Normalize headers
+            $headers = array_map(function ($h) {
+                return trim(strtolower($h));
+            }, $headers);
+
+            // Validate headers
+            $requiredHeaders = ['email', 'initials', 'surname', 'substantive_rank', 'salary_grade_level'];
+            $missingHeaders = array_diff($requiredHeaders, $headers);
+
+            if (!empty($missingHeaders)) {
+                return redirect()->back()
+                    ->with('error', 'CSV file must have columns: ' . implode(', ', $requiredHeaders) . '. Missing: ' . implode(', ', $missingHeaders));
+            }
+
+            $entries = [];
+            $errors = [];
+
+            foreach ($csvData as $rowIndex => $row) {
+                if (count($row) < 5)
+                    continue;
+
+                $entry = [];
+                foreach ($headers as $index => $header) {
+                    $header = trim(strtolower($header));
+                    if (isset($row[$index])) {
+                        $entry[$header] = trim($row[$index]);
+                    }
+                }
+
+                // Validate entry
+                $validator = Validator::make($entry, [
+                    'email' => 'required|email|max:255',
+                    'initials' => 'required|string|max:50',
+                    'surname' => 'required|string|max:255',
+                    'substantive_rank' => 'required|string|max:100',
+                    'salary_grade_level' => 'required|string|max:10',
+                ]);
+
+                if ($validator->fails()) {
+                    $errors[] = "Row " . ($rowIndex + 2) . ": " . implode(', ', $validator->errors()->all());
+                    continue;
+                }
+
+                $entries[] = $entry;
+            }
+
+            if (count($entries) > 10) {
+                return redirect()->back()
+                    ->with('error', 'CSV file contains more than 10 entries. Maximum 10 entries allowed per upload.');
+            }
+
+            if (empty($entries)) {
+                return redirect()->back()
+                    ->with('error', 'No valid entries found in CSV file.');
+            }
+
+            // Process bulk initiate
+            $request->merge(['entries' => $entries]);
+            return $this->bulkInitiateOnboarding($request);
+
+        } catch (\Exception $e) {
+            Log::error('CSV upload onboarding error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to process CSV file: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verify recruit documents and complete onboarding
+     */
+    public function verifyRecruit(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'verification_status' => 'required|in:verified,rejected',
+            'verification_notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $recruit = Officer::findOrFail($id);
+
+            // Check if onboarding is completed
+            if ($recruit->onboarding_status !== 'completed') {
+                return redirect()->back()
+                    ->with('error', 'Recruit must complete onboarding before verification.');
+            }
+
+            $recruit->update([
+                'verification_status' => $validated['verification_status'],
+                'verified_at' => now(),
+                'verification_notes' => $validated['verification_notes'] ?? null,
+                'onboarding_status' => $validated['verification_status'] === 'verified' ? 'verified' : 'completed',
+            ]);
+
+            // Send email notification to recruit via job
+            if ($recruit->email) {
+                \App\Jobs\SendRecruitVerificationMailJob::dispatch(
+                    $recruit,
+                    $validated['verification_status'],
+                    $validated['verification_notes'] ?? null
+                );
+            }
+
+            $statusText = $validated['verification_status'] === 'verified' ? 'verified' : 'rejected';
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', "Recruit has been {$statusText} successfully.");
+        } catch (\Exception $e) {
+            Log::error('Failed to verify recruit', [
+                'recruit_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()
+                ->with('error', 'Failed to verify recruit: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Resend onboarding link
+     */
+    public function resendOnboardingLink($id)
+    {
+        try {
+            $recruit = Officer::findOrFail($id);
+
+            if (!$recruit->email) {
+                return redirect()->back()
+                    ->with('error', 'Recruit does not have an email address.');
+            }
+
+            // Generate new token if doesn't exist
+            if (!$recruit->onboarding_token) {
+                $recruit->update([
+                    'onboarding_token' => Str::random(64),
+                ]);
+            }
+
+            $onboardingLink = route('recruit.onboarding.step1', ['token' => $recruit->onboarding_token]);
+
+            // Queue email job (no password needed for recruits)
+            SendRecruitOnboardingLinkJob::dispatch(
+                $recruit,
+                $onboardingLink,
+                trim(($recruit->initials ?? '') . ' ' . ($recruit->surname ?? ''))
+            );
+
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', "Onboarding link resent to {$recruit->email}.");
+        } catch (\Exception $e) {
+            Log::error('Failed to resend onboarding link', [
+                'recruit_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()
+                ->with('error', 'Failed to resend onboarding link: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * View recruit details with uploaded documents
+     */
+    public function viewRecruit($id)
+    {
+        $recruit = Officer::with(['presentStation.zone', 'nextOfKin', 'documents'])
+            ->findOrFail($id);
+
+        // Load zone and command for display
+        $zone = null;
+        $command = null;
+        if ($recruit->presentStation) {
+            $command = $recruit->presentStation;
+            if ($command->zone) {
+                $zone = $command->zone;
+            }
+        }
+
+        return view('dashboards.establishment.recruit-view', compact('recruit', 'zone', 'command'));
+    }
+
+
 }

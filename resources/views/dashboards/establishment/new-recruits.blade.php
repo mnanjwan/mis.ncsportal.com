@@ -33,6 +33,268 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
+        <!-- Success/Error Messages -->
+        @if(session('bulk_results'))
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Bulk Onboarding Results</h3>
+                </div>
+                <div class="kt-card-content">
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm">Recruit ID</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm">Email</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm">Status</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm">Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(session('bulk_results') as $result)
+                                    <tr class="border-b border-border last:border-0">
+                                        <td class="py-3 px-4 text-sm font-mono">{{ $result['recruit_id'] ?? 'N/A' }}</td>
+                                        <td class="py-3 px-4 text-sm">{{ $result['email'] ?? 'N/A' }}</td>
+                                        <td class="py-3 px-4">
+                                            @if($result['status'] === 'success')
+                                                <span class="kt-badge kt-badge-success">Success</span>
+                                            @else
+                                                <span class="kt-badge kt-badge-danger">Error</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">{{ $result['message'] ?? 'N/A' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Initiate Onboarding Card -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Initiate Onboarding</h3>
+            </div>
+            <div class="kt-card-content">
+                <!-- Tabs for Single vs Bulk -->
+                <div class="flex border-b border-border mb-5">
+                    <button type="button" 
+                            onclick="showTab('single')" 
+                            id="tab-single-btn"
+                            class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary">
+                        Single Entry
+                    </button>
+                    <button type="button" 
+                            onclick="showTab('bulk')" 
+                            id="tab-bulk-btn"
+                            class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-secondary-foreground hover:text-primary">
+                        Bulk Upload (Up to 10)
+                    </button>
+                    <button type="button" 
+                            onclick="showTab('csv')" 
+                            id="tab-csv-btn"
+                            class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-secondary-foreground hover:text-primary">
+                        CSV Upload
+                    </button>
+                </div>
+
+                <!-- Single Entry Form -->
+                <div id="single-tab" class="tab-content">
+                    <form action="{{ route('establishment.onboarding.initiate-create') }}" method="POST" class="space-y-4">
+                        @csrf
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="space-y-2">
+                                <label for="email" class="block text-sm font-medium text-foreground">
+                                    Email Address <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" 
+                                       name="email" 
+                                       id="email"
+                                       value="{{ old('email') }}"
+                                       class="kt-input @error('email') kt-input-error @enderror"
+                                       placeholder="recruit@example.com"
+                                       required>
+                                @error('email')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                                <p class="text-xs text-secondary-foreground">
+                                    Personal email for onboarding link
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="initials" class="block text-sm font-medium text-foreground">
+                                    Initials <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       name="initials" 
+                                       id="initials"
+                                       value="{{ old('initials') }}"
+                                       class="kt-input @error('initials') kt-input-error @enderror"
+                                       placeholder="e.g., J.D"
+                                       maxlength="50"
+                                       required>
+                                @error('initials')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="surname" class="block text-sm font-medium text-foreground">
+                                    Surname <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       name="surname" 
+                                       id="surname"
+                                       value="{{ old('surname') }}"
+                                       class="kt-input @error('surname') kt-input-error @enderror"
+                                       placeholder="e.g., Adeleke"
+                                       maxlength="255"
+                                       required>
+                                @error('surname')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="substantive_rank" class="block text-sm font-medium text-foreground">
+                                    Substantive Rank <span class="text-danger">*</span>
+                                </label>
+                                <select name="substantive_rank" 
+                                       id="substantive_rank"
+                                       class="kt-input @error('substantive_rank') kt-input-error @enderror"
+                                       required>
+                                    <option value="">Select Rank...</option>
+                                    @php
+                                        $ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
+                                    @endphp
+                                    @foreach($ranks as $rank)
+                                        <option value="{{ $rank }}" {{ old('substantive_rank') == $rank ? 'selected' : '' }}>
+                                            {{ $rank }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('substantive_rank')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                                <p class="text-xs text-secondary-foreground">
+                                    Used to determine appointment number prefix (CDT/RCT)
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="salary_grade_level" class="block text-sm font-medium text-foreground">
+                                    Salary Grade Level <span class="text-danger">*</span>
+                                </label>
+                                <select name="salary_grade_level" 
+                                       id="salary_grade_level"
+                                       class="kt-input @error('salary_grade_level') kt-input-error @enderror"
+                                       required>
+                                    <option value="">Select Grade Level...</option>
+                                    @php
+                                        $gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
+                                    @endphp
+                                    @foreach($gradeLevels as $gl)
+                                        <option value="{{ $gl }}" {{ old('salary_grade_level') == $gl ? 'selected' : '' }}>
+                                            {{ $gl }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('salary_grade_level')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                                <p class="text-xs text-secondary-foreground">
+                                    Used with rank to determine CDT vs RCT prefix
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="kt-card bg-info/10 border border-info/20 p-4">
+                            <div class="flex items-start gap-3">
+                                <i class="ki-filled ki-information text-info text-lg mt-0.5"></i>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-info mb-1">What happens next?</p>
+                                    <ul class="text-xs text-secondary-foreground space-y-1 list-disc list-inside">
+                                        <li>A recruit record will be created with the information provided</li>
+                                        <li>An onboarding link will be sent to the email address</li>
+                                        <li>The recruit will complete onboarding steps 1-4 and upload documents</li>
+                                        <li>You can verify their documents after completion</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
+                            <button type="submit" class="kt-btn kt-btn-primary">
+                                <i class="ki-filled ki-send"></i>
+                                Create Recruit & Send Onboarding Link
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bulk Upload Form (Up to 10) -->
+                <div id="bulk-tab" class="tab-content hidden">
+                    <form action="{{ route('establishment.onboarding.bulk-initiate') }}" method="POST" class="space-y-4" id="bulk-form">
+                        @csrf
+                        <div id="bulk-entries" class="space-y-4">
+                            <!-- Entries will be added here -->
+                        </div>
+                        <div class="flex items-center justify-between pt-4 border-t border-border">
+                            <button type="button" onclick="addBulkEntry()" class="kt-btn kt-btn-secondary" id="add-entry-btn">
+                                <i class="ki-filled ki-plus"></i> Add Entry
+                            </button>
+                            <button type="submit" class="kt-btn kt-btn-primary" id="bulk-submit-btn" disabled>
+                                <i class="ki-filled ki-send"></i>
+                                Send Onboarding Links
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- CSV Upload Form -->
+                <div id="csv-tab" class="tab-content hidden">
+                    <form action="{{ route('establishment.onboarding.csv-upload') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        <div class="space-y-2">
+                            <label for="csv_file" class="block text-sm font-medium text-foreground">
+                                CSV File <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" 
+                                   name="csv_file" 
+                                   id="csv_file"
+                                   accept=".csv,.txt"
+                                   class="kt-input @error('csv_file') kt-input-error @enderror"
+                                   required>
+                            @error('csv_file')
+                                <p class="text-sm text-danger">{{ $message }}</p>
+                            @enderror
+                            <p class="text-xs text-secondary-foreground">
+                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>. Maximum 10 entries per upload.
+                            </p>
+                            <div class="mt-2 p-3 bg-muted/50 rounded border border-input">
+                                <p class="text-xs font-semibold mb-2">CSV Format Example:</p>
+                                <pre class="text-xs font-mono">email,initials,surname,substantive_rank,salary_grade_level
+recruit1@example.com,J.D,Adeleke,ASC II,GL 08
+recruit2@example.com,M.K,Smith,IC,GL 07</pre>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
+                            <button type="submit" class="kt-btn kt-btn-primary">
+                                <i class="ki-filled ki-file-up"></i>
+                                Upload CSV
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Actions -->
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-mono">New Recruits</h2>
@@ -122,7 +384,13 @@
                                     </a>
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                    Status
+                                    Appointment Status
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Onboarding Status
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Verification Status
                                 </th>
                                 <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Actions
@@ -178,6 +446,38 @@
                                             <span class="kt-badge kt-badge-secondary kt-badge-sm">Pending Appointment</span>
                                         @endif
                                     </td>
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
+                                        @if($recruit->onboarding_status === 'verified')
+                                            <span class="kt-badge kt-badge-success kt-badge-sm">
+                                                <i class="ki-filled ki-check-circle"></i> Verified
+                                            </span>
+                                        @elseif($recruit->onboarding_status === 'completed')
+                                            <span class="kt-badge kt-badge-info kt-badge-sm">
+                                                <i class="ki-filled ki-check"></i> Completed
+                                            </span>
+                                        @elseif($recruit->onboarding_status === 'in_progress')
+                                            <span class="kt-badge kt-badge-warning kt-badge-sm">
+                                                <i class="ki-filled ki-clock"></i> In Progress
+                                            </span>
+                                        @elseif($recruit->onboarding_status === 'link_sent')
+                                            <span class="kt-badge kt-badge-secondary kt-badge-sm">
+                                                <i class="ki-filled ki-send"></i> Link Sent
+                                            </span>
+                                        @else
+                                            <span class="kt-badge kt-badge-secondary kt-badge-sm">
+                                                <i class="ki-filled ki-information"></i> Pending
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
+                                        @if($recruit->verification_status === 'verified')
+                                            <span class="kt-badge kt-badge-success kt-badge-sm">Verified</span>
+                                        @elseif($recruit->verification_status === 'rejected')
+                                            <span class="kt-badge kt-badge-danger kt-badge-sm">Rejected</span>
+                                        @else
+                                            <span class="kt-badge kt-badge-secondary kt-badge-sm">Pending</span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                         <div class="relative inline-block text-right">
                                             <button type="button" 
@@ -187,7 +487,7 @@
                                                     aria-label="Actions">
                                                 <i class="ki-filled ki-dots-vertical text-lg"></i>
                                             </button>
-                                            <div class="fixed w-48 bg-background border border-border rounded-md shadow-lg z-50 hidden"
+                                            <div class="fixed w-56 bg-background border border-border rounded-md shadow-lg z-50 hidden"
                                                  id="action-menu-{{ $recruit->id }}">
                                                 <div class="py-1">
                                                     @if($canAssign)
@@ -198,10 +498,52 @@
                                                             <span>Assign Appointment</span>
                                                         </button>
                                                     @endif
-                                                    <a href="{{ route('hrd.officers.show', $recruit->id) }}" 
+                                                    @if($recruit->onboarding_status === 'pending' || $recruit->onboarding_status === 'link_sent')
+                                                        <form action="{{ route('establishment.onboarding.initiate') }}" method="POST" class="inline">
+                                                            @csrf
+                                                            <input type="hidden" name="recruit_id" value="{{ $recruit->id }}">
+                                                            <button type="submit" 
+                                                                    onclick="closeActionMenu({{ $recruit->id }});"
+                                                                    class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors flex items-center gap-2">
+                                                                <i class="ki-filled ki-send text-primary"></i>
+                                                                <span>Send Onboarding Link</span>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                    @if($recruit->onboarding_status === 'link_sent' || $recruit->onboarding_status === 'in_progress')
+                                                        <form action="{{ route('establishment.onboarding.resend-link', $recruit->id) }}" method="POST" class="inline">
+                                                            @csrf
+                                                            <button type="submit" 
+                                                                    onclick="closeActionMenu({{ $recruit->id }});"
+                                                                    class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors flex items-center gap-2">
+                                                                <i class="ki-filled ki-arrows-circle text-info"></i>
+                                                                <span>Resend Link</span>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                    @if($recruit->onboarding_status === 'completed' && $recruit->verification_status === 'pending')
+                                                        <a href="{{ route('establishment.new-recruits.view', $recruit->id) }}" 
+                                                           class="block px-4 py-2 text-sm text-info hover:bg-info/10 transition-colors flex items-center gap-2">
+                                                            <i class="ki-filled ki-eye"></i>
+                                                            <span>View Details & Documents</span>
+                                                        </a>
+                                                        <button type="button" 
+                                                                onclick="showVerifyModal({{ $recruit->id }}, '{{ $fullName }}'); closeActionMenu({{ $recruit->id }});"
+                                                                class="w-full text-left px-4 py-2 text-sm text-success hover:bg-success/10 transition-colors flex items-center gap-2">
+                                                            <i class="ki-filled ki-check-circle"></i>
+                                                            <span>Verify Documents</span>
+                                                        </button>
+                                                    @else
+                                                    <a href="{{ route('establishment.new-recruits.view', $recruit->id) }}" 
                                                        class="block px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors flex items-center gap-2">
                                                         <i class="ki-filled ki-eye text-info"></i>
-                                                        <span>View</span>
+                                                        <span>View Details</span>
+                                                    </a>
+                                                    @endif
+                                                    <a href="{{ route('hrd.officers.show', $recruit->id) }}" 
+                                                       class="block px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors flex items-center gap-2">
+                                                        <i class="ki-filled ki-user text-secondary"></i>
+                                                        <span>View in HRD</span>
                                                     </a>
                                                     @if($canAssign && !$recruit->service_number)
                                                         <button type="button" 
@@ -218,7 +560,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-12 text-center">
+                                    <td colspan="8" class="py-12 text-center">
                                         <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                                         <p class="text-secondary-foreground">No new recruits found</p>
                                         <p class="text-sm text-muted-foreground mt-1">Add a new recruit to get started</p>
@@ -373,6 +715,61 @@
             </div>
         </div>
 
+        <!-- Verify Recruit Modal -->
+        <div class="kt-modal" data-kt-modal="true" id="verify-recruit-modal">
+            <div class="kt-modal-content max-w-[500px] top-[20%]">
+                <div class="kt-modal-header py-3 px-5 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
+                            <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-foreground">Verify Recruit Documents</h3>
+                    </div>
+                    <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                        <i class="ki-filled ki-cross"></i>
+                    </button>
+                </div>
+                <form action="" method="POST" id="verifyRecruitForm">
+                    @csrf
+                    <div class="kt-modal-body py-4 px-5">
+                        <p class="text-sm text-secondary-foreground mb-4">
+                            Verify documents for <strong id="verify-recruit-name"></strong>?
+                        </p>
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Verification Status <span class="text-danger">*</span>
+                                </label>
+                                <select name="verification_status" class="kt-input" required>
+                                    <option value="">Select status...</option>
+                                    <option value="verified">Verified</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Verification Notes
+                                </label>
+                                <textarea name="verification_notes" 
+                                         class="kt-input" 
+                                         rows="3"
+                                         placeholder="Optional notes about the verification..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kt-modal-footer py-3 px-5 flex items-center justify-end gap-2.5">
+                        <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                            Cancel
+                        </button>
+                        <button type="submit" class="kt-btn kt-btn-success">
+                            <i class="ki-filled ki-check"></i>
+                            <span>Verify</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Bulk Assign Appointment Modal -->
         <div class="kt-modal" data-kt-modal="true" id="bulk-assign-modal">
             <div class="kt-modal-content max-w-[400px] top-[15%]">
@@ -445,6 +842,216 @@
 
         @push('scripts')
         <script>
+            // Tab management
+            function showTab(tab) {
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                    el.classList.remove('border-primary', 'text-primary');
+                    el.classList.add('border-transparent', 'text-secondary-foreground');
+                });
+
+                // Show selected tab
+                document.getElementById(tab + '-tab').classList.remove('hidden');
+                document.getElementById('tab-' + tab + '-btn').classList.remove('border-transparent', 'text-secondary-foreground');
+                document.getElementById('tab-' + tab + '-btn').classList.add('border-primary', 'text-primary');
+            }
+
+            // Bulk entry management
+            let bulkEntryCount = 0;
+            const maxEntries = 10;
+            const recruits = @json($recruits->items());
+
+            function addBulkEntry() {
+                if (bulkEntryCount >= maxEntries) {
+                    alert('Maximum ' + maxEntries + ' entries allowed');
+                    return;
+                }
+
+                bulkEntryCount++;
+                const ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
+                const gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
+                
+                const entryHtml = `
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-muted/30 rounded border border-input" id="entry-${bulkEntryCount}">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-foreground">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" 
+                                   name="entries[${bulkEntryCount}][email]" 
+                                   class="kt-input"
+                                   placeholder="recruit@example.com"
+                                   required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-foreground">
+                                Initials <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   name="entries[${bulkEntryCount}][initials]" 
+                                   class="kt-input"
+                                   placeholder="J.D"
+                                   maxlength="50"
+                                   required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-foreground">
+                                Surname <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   name="entries[${bulkEntryCount}][surname]" 
+                                   class="kt-input"
+                                   placeholder="Adeleke"
+                                   maxlength="255"
+                                   required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-foreground">
+                                Rank <span class="text-danger">*</span>
+                            </label>
+                            <select name="entries[${bulkEntryCount}][substantive_rank]" 
+                                   class="kt-input entry-rank-select"
+                                   data-entry-index="${bulkEntryCount}"
+                                   required>
+                                <option value="">Select...</option>
+                                ${ranks.map(rank => `<option value="${rank}">${rank}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="space-y-2 flex items-end gap-2">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-foreground">
+                                    GL <span class="text-danger">*</span>
+                                </label>
+                                <select name="entries[${bulkEntryCount}][salary_grade_level]" 
+                                       class="kt-input entry-grade-level-select"
+                                       data-entry-index="${bulkEntryCount}"
+                                       required>
+                                    <option value="">Select...</option>
+                                    ${gradeLevels.map(gl => `<option value="${gl}">${gl}</option>`).join('')}
+                                </select>
+                            </div>
+                            <button type="button" 
+                                    onclick="removeBulkEntry(${bulkEntryCount})" 
+                                    class="kt-btn kt-btn-sm kt-btn-danger">
+                                <i class="ki-filled ki-cross"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('bulk-entries').insertAdjacentHTML('beforeend', entryHtml);
+                
+                // Setup event listener for the new rank select
+                const newRankSelect = document.querySelector(`select[name="entries[${bulkEntryCount}][substantive_rank]"]`);
+                const newGradeLevelSelect = document.querySelector(`select[name="entries[${bulkEntryCount}][salary_grade_level]"]`);
+                
+                if (newRankSelect && newGradeLevelSelect) {
+                    newRankSelect.addEventListener('change', function() {
+                        const selectedRank = this.value;
+                        if (selectedRank && rankToGradeMap[selectedRank]) {
+                            newGradeLevelSelect.value = rankToGradeMap[selectedRank];
+                        } else {
+                            newGradeLevelSelect.value = '';
+                        }
+                    });
+                }
+                
+                updateBulkSubmitButton();
+            }
+
+            function removeBulkEntry(id) {
+                document.getElementById('entry-' + id).remove();
+                bulkEntryCount--;
+                updateBulkSubmitButton();
+            }
+
+            function updateBulkSubmitButton() {
+                const submitBtn = document.getElementById('bulk-submit-btn');
+                const addBtn = document.getElementById('add-entry-btn');
+                
+                if (bulkEntryCount > 0) {
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.disabled = true;
+                }
+                
+                if (bulkEntryCount >= maxEntries) {
+                    addBtn.disabled = true;
+                    addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    addBtn.disabled = false;
+                    addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            // Verify modal
+            function showVerifyModal(recruitId, recruitName) {
+                document.getElementById('verify-recruit-name').textContent = recruitName;
+                document.getElementById('verifyRecruitForm').action = '{{ route("establishment.onboarding.verify", ":id") }}'.replace(':id', recruitId);
+                document.getElementById('view-recruit-details-link').href = '{{ route("establishment.new-recruits.view", ":id") }}'.replace(':id', recruitId);
+                const modal = document.getElementById('verify-recruit-modal');
+                if (typeof KTModal !== 'undefined') {
+                    const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+                    modalInstance.show();
+                } else {
+                    modal.style.display = 'flex';
+                }
+            }
+
+            // Rank to Grade Level mapping
+            const rankToGradeMap = {
+                'DC': 'GL 14',
+                'AC': 'GL 13',
+                'CSC': 'GL 12',
+                'SC': 'GL 11',
+                'DSC': 'GL 10',
+                'ASC I': 'GL 09',
+                'ASC II': 'GL 08',
+                'IC': 'GL 07',
+                'AIC': 'GL 06',
+                'CA I': 'GL 05',
+                'CA II': 'GL 04',
+                'CA III': 'GL 03'
+            };
+
+            // Auto-select grade level when rank is selected
+            function setupRankGradeLevelMapping() {
+                const rankSelect = document.getElementById('substantive_rank');
+                const gradeLevelSelect = document.getElementById('salary_grade_level');
+
+                if (rankSelect && gradeLevelSelect) {
+                    rankSelect.addEventListener('change', function() {
+                        const selectedRank = this.value;
+                        if (selectedRank && rankToGradeMap[selectedRank]) {
+                            gradeLevelSelect.value = rankToGradeMap[selectedRank];
+                        } else {
+                            gradeLevelSelect.value = '';
+                        }
+                    });
+                }
+
+                // Also setup for bulk entries
+                document.addEventListener('change', function(e) {
+                    if (e.target.name && e.target.name.includes('[substantive_rank]')) {
+                        const entryMatch = e.target.name.match(/entries\[(\d+)\]/);
+                        if (entryMatch) {
+                            const entryIndex = entryMatch[1];
+                            const gradeLevelSelect = document.querySelector(`select[name="entries[${entryIndex}][salary_grade_level]"]`);
+                            if (gradeLevelSelect && rankToGradeMap[e.target.value]) {
+                                gradeLevelSelect.value = rankToGradeMap[e.target.value];
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Initialize tabs on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                showTab('single');
+                setupRankGradeLevelMapping();
+            });
+
             // Single assign modal
             function showAssignAppointmentModal(officerId, recruitName) {
                 document.getElementById('modal-officer-id').value = officerId;

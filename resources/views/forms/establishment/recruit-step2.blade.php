@@ -1,15 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
-@section('title', 'Add New Recruit - Step 2: Employment Details')
-@section('page-title', 'Add New Recruit - Step 2: Employment Details')
-
-@section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.dashboard') }}">Establishment</a>
-    <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.new-recruits') }}">New Recruits</a>
-    <span>/</span>
-    <span class="text-primary">Step 2: Employment Details</span>
-@endsection
+@section('title', 'Recruit Onboarding - Step 2: Employment Details')
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
@@ -60,8 +51,9 @@
             </div>
             @endif
             
-            <form id="recruit-step2-form" method="POST" action="{{ route('establishment.new-recruits.step2.save') }}" class="flex flex-col gap-5 w-full overflow-hidden">
+            <form id="recruit-step2-form" method="POST" action="{{ route('recruit.onboarding.step2.save') }}" class="flex flex-col gap-5 w-full overflow-hidden">
                 @csrf
+                <input type="hidden" name="token" value="{{ request('token') ?? session('recruit_onboarding_token') }}">
                 
                 <div class="grid lg:grid-cols-2 gap-5">
                     <div class="flex flex-col gap-1">
@@ -76,67 +68,48 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
-                        <select name="substantive_rank" id="substantive_rank" class="kt-input" required>
-                            <option value="">Select Rank...</option>
-                            @foreach($ranks ?? [] as $rank)
-                                <option value="{{ $rank }}" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == $rank ? 'selected' : '' }}>
-                                    {{ $rank }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @php
+                            $rankValue = old('substantive_rank', $savedData['substantive_rank'] ?? ($recruit && $recruit->substantive_rank ? $recruit->substantive_rank : ''));
+                        @endphp
+                        <input type="text" id="substantive_rank" class="kt-input" value="{{ $rankValue }}" readonly/>
+                        <input type="hidden" name="substantive_rank" value="{{ $rankValue }}">
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
-                        <select name="salary_grade_level" id="salary_grade_level" class="kt-input" required>
-                            <option value="">Select Grade Level...</option>
-                            @foreach($gradeLevels ?? [] as $gl)
-                                <option value="{{ $gl }}" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == $gl ? 'selected' : '' }}>
-                                    {{ $gl }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <p class="text-xs text-secondary-foreground mt-1">
-                            Grade level will be automatically set based on selected rank
-                        </p>
+                        @php
+                            $gradeLevelValue = old('salary_grade_level', $savedData['salary_grade_level'] ?? ($recruit && $recruit->salary_grade_level ? $recruit->salary_grade_level : ''));
+                        @endphp
+                        <input type="text" id="salary_grade_level" class="kt-input" value="{{ $gradeLevelValue }}" readonly/>
+                        <input type="hidden" name="salary_grade_level" value="{{ $gradeLevelValue }}">
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Zone <span class="text-danger">*</span></label>
-                        <select name="zone_id" id="zone_id" class="kt-input" required>
-                            <option value="">Select Zone...</option>
-                        </select>
+                        @php
+                            $zoneId = old('zone_id', $savedData['zone_id'] ?? '');
+                            $zoneName = '';
+                            if ($zoneId && isset($zones)) {
+                                $selectedZone = $zones->firstWhere('id', $zoneId);
+                                $zoneName = $selectedZone ? $selectedZone->name : '';
+                            }
+                        @endphp
+                        <input type="text" id="zone_id_display" class="kt-input" value="{{ $zoneName }}" readonly/>
+                        <input type="hidden" name="zone_id" id="zone_id" value="{{ $zoneId }}" required>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Command/Present Station <span class="text-danger">*</span></label>
-                        <div class="relative">
-                            <input type="text" 
-                                   id="command_search" 
-                                   class="kt-input w-full" 
-                                   placeholder="Select zone first, then search command..."
-                                   autocomplete="off"
-                                   readonly>
-                            <input type="hidden" 
-                                   name="command_id" 
-                                   id="command_id" 
-                                   value="{{ old('command_id', $savedData['command_id'] ?? '') }}"
-                                   required>
-                            <div id="command_dropdown" 
-                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
-                                <!-- Options will be populated by JavaScript -->
-                            </div>
-                        </div>
-                        <div id="selected_command" class="mt-2 p-2 bg-muted/50 rounded-lg hidden">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium" id="selected_command_name"></span>
-                                <button type="button" 
-                                        class="kt-btn kt-btn-sm kt-btn-ghost text-danger"
-                                        onclick="clearCommandSelection()">
-                                    <i class="ki-filled ki-cross"></i>
-                                </button>
-                            </div>
-                    </div>
+                        @php
+                            $commandId = old('command_id', $savedData['command_id'] ?? '');
+                            $commandName = '';
+                            if ($commandId && isset($commands)) {
+                                $selectedCommand = collect($commands)->firstWhere('id', $commandId);
+                                $commandName = $selectedCommand ? $selectedCommand->name : '';
+                            }
+                        @endphp
+                        <input type="text" id="command_display" class="kt-input" value="{{ $commandName }}" readonly/>
+                        <input type="hidden" name="command_id" id="command_id" value="{{ $commandId }}" required>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -170,7 +143,7 @@
                 
                 
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('establishment.new-recruits.create') }}'" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</button>
+                    <a href="{{ route('recruit.onboarding.step1', ['token' => request('token') ?? session('recruit_onboarding_token')]) }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</a>
                     <button type="submit" class="kt-btn kt-btn-primary w-full sm:flex-1 whitespace-nowrap">Next: Banking Information</button>
                 </div>
             </form>
@@ -205,85 +178,9 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-    // Load zones and commands
-    const token = window.API_CONFIG?.token || '{{ auth()->user()?->createToken('token')->plainTextToken ?? '' }}';
-    const savedZoneId = '{{ old('zone_id', $savedData['zone_id'] ?? '') }}';
-    const savedCommandId = '{{ old('command_id', $savedData['command_id'] ?? '') }}';
-    
-    try {
-        // Load zones first
-        const zonesRes = await fetch('/api/v1/zones', {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-        });
-        
-        // Load all commands with zone information
-        const commandsRes = await fetch('/api/v1/commands', {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-        });
-        
-        if (zonesRes.ok && commandsRes.ok) {
-            const zonesData = await zonesRes.json();
-            const commandsData = await commandsRes.json();
-            
-            // Populate zones dropdown
-            const zones = zonesData.data || zonesData; // Handle both response formats
-            if (zones && Array.isArray(zones)) {
-                const zoneSelect = document.getElementById('zone_id');
-                zones.forEach(zone => {
-                    const option = document.createElement('option');
-                    option.value = zone.id;
-                    option.textContent = zone.name;
-                    if (zone.id == savedZoneId) {
-                        option.selected = true;
-                    }
-                    zoneSelect.appendChild(option);
-                });
-            } else {
-                console.error('Zones data format error:', zonesData);
-            }
-            
-            // Store all commands with zone info
-            const commands = commandsData.data || commandsData; // Handle both response formats
-            if (commands && Array.isArray(commands)) {
-                window.allCommands = commands.map(cmd => ({
-                    id: cmd.id,
-                    name: cmd.name,
-                    zone_id: cmd.zone_id || (cmd.zone ? cmd.zone.id : null)
-                }));
-                
-                // If saved zone exists, load commands for that zone
-                if (savedZoneId) {
-                    // Wait a bit for zone select to be populated
-                    setTimeout(() => {
-                        loadCommandsForZone(savedZoneId, savedCommandId);
-                    }, 100);
-                }
-                
-                // Handle zone change
-                const zoneSelect = document.getElementById('zone_id');
-                zoneSelect.addEventListener('change', function() {
-                    const selectedZoneId = this.value;
-                    if (selectedZoneId) {
-                        loadCommandsForZone(selectedZoneId);
-                    } else {
-                        clearCommandSelection();
-                    }
-                });
-            } else {
-                console.error('Commands data format error:', commandsData);
-            }
-        } else {
-            console.error('Error loading zones or commands:', {
-                zones: zonesRes.status,
-                commands: commandsRes.status,
-                zonesText: await zonesRes.text().catch(() => ''),
-                commandsText: await commandsRes.text().catch(() => '')
-            });
-        }
-    } catch (error) {
-        console.error('Error loading zones/commands:', error);
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    // Zone and Command are readonly and pre-populated server-side
+    // No JavaScript needed for these fields
     
     // Initialize education entries
     initializeEducationSection();

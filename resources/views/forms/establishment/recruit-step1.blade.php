@@ -1,15 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
-@section('title', 'Add New Recruit - Step 1: Personal Information')
-@section('page-title', 'Add New Recruit - Step 1: Personal Information')
-
-@section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.dashboard') }}">Establishment</a>
-    <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.new-recruits') }}">New Recruits</a>
-    <span>/</span>
-    <span class="text-primary">Add New Recruit</span>
-@endsection
+@section('title', 'Recruit Onboarding - Step 1: Personal Information')
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
@@ -41,27 +32,17 @@
             </div>
         </div>
 
-        <!-- Info Card -->
-        <div class="kt-card bg-primary/10 border border-primary/20">
-            <div class="kt-card-content p-4">
-                <div class="flex items-start gap-3">
-                    <i class="ki-filled ki-information text-primary text-xl mt-0.5"></i>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-primary mb-1">Establishment - New Recruit Registration</p>
-                        <p class="text-xs text-secondary-foreground mb-2">
-                            Complete all 4 steps to create a new recruit. After creation, you can assign appointment numbers (CDT/RCT) which will be used during training. Service numbers will be assigned after training completion based on performance and rank.
-                        </p>
-                        <p class="text-xs text-secondary-foreground">
-                            <strong>Note:</strong> Establishment handles <strong>Appointment Number</strong> assignment (CDT/RCT prefixes). HRD handles Service Number assignment for existing officers.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="kt-card">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Personal Information</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="kt-card-title">Personal Information</h3>
+                    @if($recruit && $recruit->appointment_number)
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-secondary-foreground">Appointment Number:</span>
+                        <span class="text-lg font-semibold text-primary">{{ $recruit->appointment_number }}</span>
+                    </div>
+                    @endif
+                </div>
             </div>
             <div class="kt-card-content">
                 @if($errors->any())
@@ -82,58 +63,44 @@
                 </div>
                 @endif
 
-                <form action="{{ route('establishment.new-recruits.step1') }}" method="POST" id="createRecruitForm">
+                <form action="{{ route('recruit.onboarding.step1') }}" method="POST" id="createRecruitForm">
                     @csrf
+                    <input type="hidden" name="token" value="{{ request('token') }}">
 
                     <div class="flex flex-col gap-5">
-                        <!-- Appointment Number Info -->
-                        <div class="kt-card bg-info/10 border border-info/20">
-                            <div class="kt-card-content p-4">
-                                <div class="flex items-start gap-3">
-                                    <i class="ki-filled ki-information text-info text-lg mt-0.5"></i>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-medium text-info mb-1">Appointment Number Assignment</p>
-                                        <p class="text-xs text-secondary-foreground">
-                                            Appointment numbers will be automatically assigned with CDT or RCT prefix based on rank and grade level after you create the recruit. You can assign appointment numbers later from the New Recruits list.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Personal Information Fields (Matching Onboarding Step 1) -->
                         <div class="grid lg:grid-cols-2 gap-5">
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Initials <span class="text-danger">*</span></label>
-                                <input type="text" name="initials" class="kt-input" value="{{ old('initials') }}" required/>
+                                <input type="text" name="initials" class="kt-input" value="{{ old('initials', $savedData['initials'] ?? $recruit->initials ?? '') }}" required/>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Surname <span class="text-danger">*</span></label>
-                                <input type="text" name="surname" class="kt-input" value="{{ old('surname') }}" required/>
+                                <input type="text" name="surname" class="kt-input" value="{{ old('surname', $savedData['surname'] ?? $recruit->surname ?? '') }}" required/>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" class="kt-input" value="{{ old('first_name') }}" required/>
+                                <input type="text" name="first_name" class="kt-input" value="{{ old('first_name', $savedData['first_name'] ?? $recruit->first_name ?? '') }}" required/>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Middle Name</label>
-                                <input type="text" name="middle_name" class="kt-input" value="{{ old('middle_name') }}"/>
+                                <input type="text" name="middle_name" class="kt-input" value="{{ old('middle_name', $savedData['middle_name'] ?? $recruit->middle_name ?? '') }}"/>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Sex <span class="text-danger">*</span></label>
                                 <select name="sex" class="kt-input" required>
                                     <option value="">Select...</option>
-                                    <option value="M" {{ old('sex') == 'M' ? 'selected' : '' }}>Male</option>
-                                    <option value="F" {{ old('sex') == 'F' ? 'selected' : '' }}>Female</option>
+                                    <option value="M" {{ old('sex', $savedData['sex'] ?? $recruit->sex ?? '') == 'M' ? 'selected' : '' }}>Male</option>
+                                    <option value="F" {{ old('sex', $savedData['sex'] ?? $recruit->sex ?? '') == 'F' ? 'selected' : '' }}>Female</option>
                                 </select>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Date of Birth <span class="text-danger">*</span></label>
-                                <input type="date" name="date_of_birth" class="kt-input" value="{{ old('date_of_birth') }}" required max="{{ date('Y-m-d', strtotime('-18 years')) }}"/>
+                                <input type="date" name="date_of_birth" class="kt-input" value="{{ old('date_of_birth', $savedData['date_of_birth'] ?? ($recruit->date_of_birth ? \Carbon\Carbon::parse($recruit->date_of_birth)->format('Y-m-d') : '')) }}" required max="{{ date('Y-m-d', strtotime('-18 years')) }}"/>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
@@ -155,7 +122,7 @@
                                     <input type="hidden" 
                                            name="lga" 
                                            id="lga_hidden" 
-                                           value="{{ old('lga') }}"
+                                           value="{{ old('lga', $savedData['lga'] ?? $recruit->lga ?? '') }}"
                                            required>
                                     <div id="lga_dropdown" 
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
@@ -178,12 +145,12 @@
                                 <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
                                 <select name="geopolitical_zone" class="kt-input" required>
                                     <option value="">Select Zone...</option>
-                                    <option value="North Central" {{ old('geopolitical_zone') == 'North Central' ? 'selected' : '' }}>North Central</option>
-                                    <option value="North East" {{ old('geopolitical_zone') == 'North East' ? 'selected' : '' }}>North East</option>
-                                    <option value="North West" {{ old('geopolitical_zone') == 'North West' ? 'selected' : '' }}>North West</option>
-                                    <option value="South East" {{ old('geopolitical_zone') == 'South East' ? 'selected' : '' }}>South East</option>
-                                    <option value="South South" {{ old('geopolitical_zone') == 'South South' ? 'selected' : '' }}>South South</option>
-                                    <option value="South West" {{ old('geopolitical_zone') == 'South West' ? 'selected' : '' }}>South West</option>
+                                    <option value="North Central" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') == 'North Central' ? 'selected' : '' }}>North Central</option>
+                                    <option value="North East" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') == 'North East' ? 'selected' : '' }}>North East</option>
+                                    <option value="North West" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') == 'North West' ? 'selected' : '' }}>North West</option>
+                                    <option value="South East" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') == 'South East' ? 'selected' : '' }}>South East</option>
+                                    <option value="South South" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') == 'South South' ? 'selected' : '' }}>South South</option>
+                                    <option value="South West" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') == 'South West' ? 'selected' : '' }}>South West</option>
                                 </select>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
@@ -191,21 +158,21 @@
                                 <label class="kt-form-label">Marital Status <span class="text-danger">*</span></label>
                                 <select name="marital_status" class="kt-input" required>
                                     <option value="">Select...</option>
-                                    <option value="Single" {{ old('marital_status') == 'Single' ? 'selected' : '' }}>Single</option>
-                                    <option value="Married" {{ old('marital_status') == 'Married' ? 'selected' : '' }}>Married</option>
-                                    <option value="Divorced" {{ old('marital_status') == 'Divorced' ? 'selected' : '' }}>Divorced</option>
-                                    <option value="Widowed" {{ old('marital_status') == 'Widowed' ? 'selected' : '' }}>Widowed</option>
+                                    <option value="Single" {{ old('marital_status', $savedData['marital_status'] ?? $recruit->marital_status ?? '') == 'Single' ? 'selected' : '' }}>Single</option>
+                                    <option value="Married" {{ old('marital_status', $savedData['marital_status'] ?? $recruit->marital_status ?? '') == 'Married' ? 'selected' : '' }}>Married</option>
+                                    <option value="Divorced" {{ old('marital_status', $savedData['marital_status'] ?? $recruit->marital_status ?? '') == 'Divorced' ? 'selected' : '' }}>Divorced</option>
+                                    <option value="Widowed" {{ old('marital_status', $savedData['marital_status'] ?? $recruit->marital_status ?? '') == 'Widowed' ? 'selected' : '' }}>Widowed</option>
                                 </select>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" name="phone_number" class="kt-input" value="{{ old('phone_number') }}" required/>
+                                <input type="tel" name="phone_number" class="kt-input" value="{{ old('phone_number', $savedData['phone_number'] ?? $recruit->phone_number ?? '') }}" required/>
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" name="email" class="kt-input" value="{{ old('email') }}" required/>
+                                <input type="email" name="email" class="kt-input" value="{{ old('email', $savedData['email'] ?? $recruit->email ?? '') }}" required/>
                                 <p class="text-xs text-secondary-foreground mt-1">
                                     Personal email for onboarding
                                 </p>
@@ -215,13 +182,13 @@
                         
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label">Residential Address <span class="text-danger">*</span></label>
-                            <textarea name="residential_address" class="kt-input" rows="3" required>{{ old('residential_address') }}</textarea>
+                            <textarea name="residential_address" class="kt-input" rows="3" required>{{ old('residential_address', $savedData['residential_address'] ?? $recruit->residential_address ?? '') }}</textarea>
                             <span class="error-message text-danger text-sm hidden"></span>
                         </div>
                         
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label">Permanent Home Address <span class="text-danger">*</span></label>
-                            <textarea name="permanent_home_address" class="kt-input" rows="3" required>{{ old('permanent_home_address') }}</textarea>
+                            <textarea name="permanent_home_address" class="kt-input" rows="3" required>{{ old('permanent_home_address', $savedData['permanent_home_address'] ?? $recruit->permanent_home_address ?? '') }}</textarea>
                             <span class="error-message text-danger text-sm hidden"></span>
                         </div>
 
@@ -236,7 +203,6 @@
 
                         <!-- Form Actions -->
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
-                            <a href="{{ route('establishment.new-recruits') }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Cancel</a>
                             <button type="submit" class="kt-btn kt-btn-primary w-full sm:flex-1 whitespace-nowrap">
                                 Next: Employment Details
                             </button>
@@ -307,8 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const states = Object.keys(nigerianStatesLGAs);
     
     const stateSelect = document.getElementById('state-select');
-    const savedState = '{{ old('state_of_origin') }}';
-    const savedLga = '{{ old('lga') }}';
+    const savedState = '{{ old('state_of_origin', $savedData['state_of_origin'] ?? $recruit->state_of_origin ?? '') }}';
+    const savedLga = '{{ old('lga', $savedData['lga'] ?? $recruit->lga ?? '') }}';
     
     states.forEach(state => {
         const option = document.createElement('option');

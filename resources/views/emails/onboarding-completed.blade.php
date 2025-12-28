@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{{ $notification->title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
     <h2>{{ $notification->title }}</h2>
@@ -17,7 +17,7 @@
     <p>{{ $notification->message }}</p>
     
     @if($officer)
-    <p><strong>Your Service Information:</strong></p>
+    <h3>Your Service Information:</h3>
     <p>
         <strong>Service Number:</strong> {{ $officer->service_number ?? 'Pending Assignment' }}<br>
         @if($officer->appointment_number)
@@ -30,7 +30,7 @@
     </p>
     @endif
     
-    <p><strong>Your Login Credentials:</strong></p>
+    <h3>Your Login Credentials:</h3>
     <p>
         <strong>Email:</strong> {{ $user->email }}<br>
         <strong>Default Password:</strong> {{ $tempPassword ?? 'N/A' }}

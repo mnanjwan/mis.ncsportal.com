@@ -28,6 +28,7 @@ use App\Http\Controllers\CommandController;
 use App\Http\Controllers\TRADOCController;
 use App\Http\Controllers\ICTController;
 use App\Http\Controllers\EstablishmentController;
+use App\Http\Controllers\RecruitOnboardingController;
 use App\Http\Controllers\CGCPreretirementLeaveController;
 use App\Http\Controllers\APERTimelineController;
 use App\Http\Controllers\APERFormController;
@@ -54,6 +55,21 @@ Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPass
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
 Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
+
+// Public Recruit Onboarding Routes (Token-based, no auth required)
+Route::prefix('recruit/onboarding')->name('recruit.onboarding.')->group(function () {
+    Route::get('/step1', [RecruitOnboardingController::class, 'step1'])->name('step1');
+    Route::post('/step1', [RecruitOnboardingController::class, 'saveStep1'])->name('step1.save');
+    Route::get('/step2', [RecruitOnboardingController::class, 'step2'])->name('step2');
+    Route::post('/step2', [RecruitOnboardingController::class, 'saveStep2'])->name('step2.save');
+    Route::get('/step3', [RecruitOnboardingController::class, 'step3'])->name('step3');
+    Route::post('/step3', [RecruitOnboardingController::class, 'saveStep3'])->name('step3.save');
+    Route::get('/step4', [RecruitOnboardingController::class, 'step4'])->name('step4');
+    Route::post('/step4', [RecruitOnboardingController::class, 'saveStep4'])->name('step4.save');
+    Route::get('/preview', [RecruitOnboardingController::class, 'preview'])->name('preview');
+    Route::get('/document-preview', [RecruitOnboardingController::class, 'documentPreview'])->name('document-preview');
+    Route::post('/final-submit', [RecruitOnboardingController::class, 'finalSubmit'])->name('final-submit');
+});
 
 // Protected Routes
 Route::middleware('auth')->group(function () {
@@ -415,6 +431,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/training-results', [EstablishmentController::class, 'trainingResults'])->name('training-results');
         Route::post('/assign-service-numbers', [EstablishmentController::class, 'assignServiceNumbers'])->name('assign-service-numbers');
         Route::post('/assign-appointment-numbers', [EstablishmentController::class, 'assignAppointmentNumbers'])->name('assign-appointment-numbers');
+        
+        // Onboarding initiation routes
+        Route::post('/onboarding/initiate-create', [EstablishmentController::class, 'initiateCreateOnboarding'])->name('onboarding.initiate-create');
+        Route::post('/onboarding/initiate', [EstablishmentController::class, 'initiateOnboarding'])->name('onboarding.initiate');
+        Route::post('/onboarding/bulk-initiate', [EstablishmentController::class, 'bulkInitiateOnboarding'])->name('onboarding.bulk-initiate');
+        Route::post('/onboarding/csv-upload', [EstablishmentController::class, 'csvUploadOnboarding'])->name('onboarding.csv-upload');
+        Route::post('/onboarding/{id}/verify', [EstablishmentController::class, 'verifyRecruit'])->name('onboarding.verify');
+        Route::post('/onboarding/{id}/resend-link', [EstablishmentController::class, 'resendOnboardingLink'])->name('onboarding.resend-link');
+        Route::get('/new-recruits/{id}/view', [EstablishmentController::class, 'viewRecruit'])->name('new-recruits.view');
     });
 
     // TRADOC Routes

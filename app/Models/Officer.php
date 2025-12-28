@@ -54,6 +54,13 @@ class Officer extends Model
         'preretirement_leave_status',
         'preretirement_leave_started_at',
         'profile_picture_url',
+        'onboarding_status',
+        'verification_status',
+        'onboarding_token',
+        'onboarding_link_sent_at',
+        'onboarding_completed_at',
+        'verified_at',
+        'verification_notes',
         'created_by',
     ];
 

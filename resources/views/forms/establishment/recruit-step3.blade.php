@@ -1,15 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.public')
 
-@section('title', 'Add New Recruit - Step 3: Banking Information')
-@section('page-title', 'Add New Recruit - Step 3: Banking Information')
-
-@section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.dashboard') }}">Establishment</a>
-    <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('establishment.new-recruits') }}">New Recruits</a>
-    <span>/</span>
-    <span class="text-primary">Step 3: Banking Information</span>
-@endsection
+@section('title', 'Recruit Onboarding - Step 3: Banking Information')
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
@@ -60,8 +51,9 @@
             </div>
             @endif
             
-            <form id="recruit-step3-form" method="POST" action="{{ route('establishment.new-recruits.step3.save') }}" class="flex flex-col gap-5 w-full overflow-hidden">
+            <form id="recruit-step3-form" method="POST" action="{{ route('recruit.onboarding.step3.save') }}" class="flex flex-col gap-5 w-full overflow-hidden">
                 @csrf
+                <input type="hidden" name="token" value="{{ request('token') ?? session('recruit_onboarding_token') }}">
                 
                 <div class="grid lg:grid-cols-2 gap-5">
                     <div class="flex flex-col gap-1">
@@ -142,7 +134,7 @@
                 </div>
                 
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
-                    <button type="button" onclick="window.location.href='{{ route('establishment.new-recruits.step2') }}'" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</button>
+                    <a href="{{ route('recruit.onboarding.step2', ['token' => request('token') ?? session('recruit_onboarding_token')]) }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</a>
                     <button type="submit" class="kt-btn kt-btn-primary w-full sm:flex-1 whitespace-nowrap">Next: Next of Kin</button>
                 </div>
             </form>
