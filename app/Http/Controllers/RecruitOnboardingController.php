@@ -272,6 +272,23 @@ class RecruitOnboardingController extends Controller
             ->where('is_active', true)
             ->first();
         
+        // Populate savedData with recruit data if not already set
+        if ($recruit && empty($savedData['date_of_first_appointment'])) {
+            $savedData['date_of_first_appointment'] = $recruit->date_of_first_appointment ? \Carbon\Carbon::parse($recruit->date_of_first_appointment)->format('Y-m-d') : '';
+        }
+        if ($recruit && empty($savedData['date_of_present_appointment'])) {
+            $savedData['date_of_present_appointment'] = $recruit->date_of_present_appointment ? \Carbon\Carbon::parse($recruit->date_of_present_appointment)->format('Y-m-d') : '';
+        }
+        if ($recruit && empty($savedData['date_posted_to_station'])) {
+            $savedData['date_posted_to_station'] = $recruit->date_posted_to_station ? \Carbon\Carbon::parse($recruit->date_posted_to_station)->format('Y-m-d') : '';
+        }
+        if ($recruit && empty($savedData['command_id'])) {
+            $savedData['command_id'] = $recruit->command_id;
+        }
+        if ($recruit && empty($savedData['unit'])) {
+            $savedData['unit'] = $recruit->unit;
+        }
+        
         // Set default zone and command if not already saved
         if (empty($savedData['zone_id']) && $tradocCommand && $tradocCommand->zone_id) {
             $savedData['zone_id'] = $tradocCommand->zone_id;

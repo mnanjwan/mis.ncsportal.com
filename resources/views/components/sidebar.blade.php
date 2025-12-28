@@ -47,7 +47,7 @@
 
     // Check if onboarding is complete for Officer role
     $onboardingComplete = true;
-    if ($primaryRole === 'Officer') {
+    if ($primaryRole === 'Officer' || $officer) {
         if ($officer) {
             // Reload officer from database to ensure we have latest data (especially after onboarding completion)
             // Use profile photo as indicator - if profile_picture_url exists, onboarding is complete
@@ -59,45 +59,88 @@
         }
     }
 
+    // Check if user is both an officer AND has a role (not just Officer role)
+    $isOfficerWithRole = $officer && $primaryRole !== 'Officer' && in_array($primaryRole, $roles);
+
     // Get menu items based on role
     $menuItems = [];
+    $officerMenuItems = [];
     $dashboardPath = route('dashboard');
+
+    // Define officer menu items (for officers with roles)
+    if ($officer && $onboardingComplete) {
+        $officerMenuItems = [
+            ['icon' => 'ki-filled ki-home-3', 'title' => 'Officer Dashboard', 'href' => route('officer.dashboard')],
+            [
+                'title' => 'Emoluments',
+                'icon' => 'ki-filled ki-wallet',
+                'submenu' => [
+                    ['title' => 'My Emoluments', 'href' => route('officer.emoluments')],
+                    ['title' => 'Raise Emolument', 'href' => route('emolument.raise')],
+                ]
+            ],
+            [
+                'title' => 'Applications',
+                'icon' => 'ki-filled ki-calendar',
+                'submenu' => [
+                    ['title' => 'Leave Applications', 'href' => route('officer.leave-applications')],
+                    ['title' => 'Pass Applications', 'href' => route('officer.pass-applications')],
+                    ['title' => 'Account Changes', 'href' => route('officer.account-change.index')],
+                    ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
+                ]
+            ],
+            ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
+            ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
+            ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
+            [
+                'title' => 'Settings',
+                'icon' => 'ki-filled ki-setting-2',
+                'submenu' => [
+                    ['title' => 'Change Password', 'href' => route('officer.settings')],
+                ]
+            ],
+        ];
+    } elseif ($officer && !$onboardingComplete) {
+        $officerMenuItems = [
+            ['icon' => 'ki-filled ki-user', 'title' => 'Complete Onboarding', 'href' => route('onboarding.step1')],
+        ];
+    }
 
     switch ($primaryRole) {
         case 'Officer':
             if ($onboardingComplete) {
                 // Show full menu for completed onboarding
-            $menuItems = [
-                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('officer.dashboard')],
-                [
-                    'title' => 'Emoluments',
-                    'icon' => 'ki-filled ki-wallet',
-                    'submenu' => [
-                        ['title' => 'My Emoluments', 'href' => route('officer.emoluments')],
-                        ['title' => 'Raise Emolument', 'href' => route('emolument.raise')],
-                    ]
-                ],
-                [
-                    'title' => 'Applications',
-                    'icon' => 'ki-filled ki-calendar',
-                    'submenu' => [
-                        ['title' => 'Leave Applications', 'href' => route('officer.leave-applications')],
-                        ['title' => 'Pass Applications', 'href' => route('officer.pass-applications')],
-                        ['title' => 'Account Changes', 'href' => route('officer.account-change.index')],
-                        ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
-                    ]
-                ],
-                ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
-                ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
-                ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
-                [
-                    'title' => 'Settings',
-                    'icon' => 'ki-filled ki-setting-2',
-                    'submenu' => [
-                        ['title' => 'Change Password', 'href' => route('officer.settings')],
-                    ]
-                ],
-            ];
+                $menuItems = [
+                    ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('officer.dashboard')],
+                    [
+                        'title' => 'Emoluments',
+                        'icon' => 'ki-filled ki-wallet',
+                        'submenu' => [
+                            ['title' => 'My Emoluments', 'href' => route('officer.emoluments')],
+                            ['title' => 'Raise Emolument', 'href' => route('emolument.raise')],
+                        ]
+                    ],
+                    [
+                        'title' => 'Applications',
+                        'icon' => 'ki-filled ki-calendar',
+                        'submenu' => [
+                            ['title' => 'Leave Applications', 'href' => route('officer.leave-applications')],
+                            ['title' => 'Pass Applications', 'href' => route('officer.pass-applications')],
+                            ['title' => 'Account Changes', 'href' => route('officer.account-change.index')],
+                            ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
+                        ]
+                    ],
+                    ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
+                    ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
+                    ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
+                    [
+                        'title' => 'Settings',
+                        'icon' => 'ki-filled ki-setting-2',
+                        'submenu' => [
+                            ['title' => 'Change Password', 'href' => route('officer.settings')],
+                        ]
+                    ],
+                ];
             } else {
                 // Show only onboarding link for incomplete onboarding
                 $menuItems = [
@@ -371,7 +414,13 @@
             data-kt-scrollable-offset="0px" data-kt-scrollable-wrappers="#sidebar_menu">
             <!-- Primary Menu -->
             <div class="mb-5">
-                <h3 class="text-sm text-muted-foreground uppercase ps-5 inline-block mb-3">Menu</h3>
+                <h3 class="text-sm text-muted-foreground uppercase ps-5 inline-block mb-3">
+                    @if($isOfficerWithRole)
+                        {{ $primaryRole }} Menu
+                    @else
+                        Menu
+                    @endif
+                </h3>
                 <div class="kt-menu flex flex-col w-full gap-1.5 px-3.5" data-kt-menu="true"
                     data-kt-menu-accordion-expand-all="false" id="sidebar_primary_menu">
                     @foreach($menuItems as $item)
@@ -432,6 +481,72 @@
                     @endforeach
                 </div>
             </div>
+            
+            @if($isOfficerWithRole && !empty($officerMenuItems))
+                <!-- Officer Menu (for officers with roles) -->
+                <div class="mb-5">
+                    <h3 class="text-sm text-muted-foreground uppercase ps-5 inline-block mb-3">Officer Menu</h3>
+                    <div class="kt-menu flex flex-col w-full gap-1.5 px-3.5" data-kt-menu="true"
+                        data-kt-menu-accordion-expand-all="false" id="sidebar_officer_menu">
+                        @foreach($officerMenuItems as $item)
+                            @if(isset($item['submenu']))
+                                @php
+                                    $hasActiveChild = collect($item['submenu'])->contains(function ($subItem) {
+                                        return request()->url() === url($subItem['href']);
+                                    });
+                                @endphp
+                                <div class="kt-menu-item {{ $hasActiveChild ? 'here show' : '' }}" data-kt-menu-trigger="click"
+                                    onclick="this.classList.toggle('show'); this.classList.toggle('here');">
+                                    <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md" href="javascript:void(0)">
+                                        <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
+                                            <i class="{{ $item['icon'] ?? 'ki-filled ki-menu' }}"></i>
+                                        </span>
+                                        <span class="kt-menu-title text-sm text-foreground font-medium">
+                                            {{ $item['title'] }}
+                                        </span>
+                                        <span class="kt-menu-arrow">
+                                            <i class="ki-filled ki-down text-2xs"></i>
+                                        </span>
+                                    </a>
+                                    <div class="kt-menu-accordion" onclick="event.stopPropagation()">
+                                        @foreach($item['submenu'] as $subItem)
+                                            @php
+                                                $isSubActive = request()->url() === url($subItem['href']);
+                                            @endphp
+                                            <div class="kt-menu-item">
+                                                <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isSubActive ? 'kt-menu-item-active' : '' }}"
+                                                    href="{{ $subItem['href'] }}">
+                                                    <span class="kt-menu-bullet">
+                                                        <span class="bullet bullet-dot"></span>
+                                                    </span>
+                                                    <span class="kt-menu-title text-sm text-foreground font-medium">
+                                                        - {{ $subItem['title'] }}
+                                                    </span>
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @else
+                                @php
+                                    $isActive = request()->url() === url($item['href']);
+                                @endphp
+                                <div class="kt-menu-item">
+                                    <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isActive ? 'kt-menu-item-active' : '' }}"
+                                        href="{{ $item['href'] }}">
+                                        <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
+                                            <i class="{{ $item['icon'] ?? 'ki-filled ki-menu' }}"></i>
+                                        </span>
+                                        <span class="kt-menu-title text-sm text-foreground font-medium">
+                                            {{ $item['title'] }}
+                                        </span>
+                                    </a>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
     <!-- End of Sidebar menu -->

@@ -58,12 +58,20 @@
                 <div class="grid lg:grid-cols-2 gap-5">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date of First Appointment <span class="text-danger">*</span></label>
-                        <input type="date" name="date_of_first_appointment" class="kt-input" value="{{ old('date_of_first_appointment', $savedData['date_of_first_appointment'] ?? '') }}" required/>
+                        @php
+                            $firstAppointment = old('date_of_first_appointment', $savedData['date_of_first_appointment'] ?? ($recruit && $recruit->date_of_first_appointment ? \Carbon\Carbon::parse($recruit->date_of_first_appointment)->format('Y-m-d') : ''));
+                        @endphp
+                        <input type="text" class="kt-input" value="{{ $firstAppointment }}" readonly/>
+                        <input type="hidden" name="date_of_first_appointment" value="{{ $firstAppointment }}">
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date of Present Appointment <span class="text-danger">*</span></label>
-                        <input type="date" name="date_of_present_appointment" class="kt-input" value="{{ old('date_of_present_appointment', $savedData['date_of_present_appointment'] ?? '') }}" required/>
+                        @php
+                            $presentAppointment = old('date_of_present_appointment', $savedData['date_of_present_appointment'] ?? ($recruit && $recruit->date_of_present_appointment ? \Carbon\Carbon::parse($recruit->date_of_present_appointment)->format('Y-m-d') : ''));
+                        @endphp
+                        <input type="text" class="kt-input" value="{{ $presentAppointment }}" readonly/>
+                        <input type="hidden" name="date_of_present_appointment" value="{{ $presentAppointment }}">
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -114,16 +122,21 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date Posted to Station <span class="text-danger">*</span></label>
-                        <input type="date" name="date_posted_to_station" class="kt-input" value="{{ old('date_posted_to_station', $savedData['date_posted_to_station'] ?? '') }}" required/>
+                        @php
+                            $datePosted = old('date_posted_to_station', $savedData['date_posted_to_station'] ?? ($recruit && $recruit->date_posted_to_station ? \Carbon\Carbon::parse($recruit->date_posted_to_station)->format('Y-m-d') : ''));
+                        @endphp
+                        <input type="text" class="kt-input" value="{{ $datePosted }}" readonly/>
+                        <input type="hidden" name="date_posted_to_station" value="{{ $datePosted }}">
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Unit</label>
-                        <select name="unit" class="kt-input">
-                            <option value="">Select Unit...</option>
-                            <option value="General Duty (GD)" {{ old('unit', $savedData['unit'] ?? '') == 'General Duty (GD)' ? 'selected' : '' }}>General Duty (GD)</option>
-                            <option value="Support Staff (SS)" {{ old('unit', $savedData['unit'] ?? '') == 'Support Staff (SS)' ? 'selected' : '' }}>Support Staff (SS)</option>
-                        </select>
+                        @php
+                            $unitValue = old('unit', $savedData['unit'] ?? ($recruit && $recruit->unit ? $recruit->unit : ''));
+                        @endphp
+                        <input type="text" class="kt-input" value="{{ $unitValue }}" readonly/>
+                        <input type="hidden" name="unit" value="{{ $unitValue }}">
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                 </div>
                 
@@ -141,6 +154,23 @@
                     </div>
                 </div>
                 
+                <!-- Document Upload Section -->
+                <div class="flex flex-col gap-1 pt-5 border-t border-input">
+                    <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
+                    <div class="flex flex-col gap-3">
+                        <div class="relative">
+                            <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png"/>
+                            <label for="documents-input" class="kt-btn kt-btn-primary cursor-pointer inline-flex items-center justify-center gap-2">
+                                <i class="ki-filled ki-file-up"></i>
+                                <span id="upload-button-text">Choose Files</span>
+                            </label>
+                        </div>
+                        <div id="selected-files-list" class="flex flex-col gap-2 hidden">
+                            <!-- Selected files will be displayed here -->
+                        </div>
+                        <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space.</small>
+                    </div>
+                </div>
                 
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
                     <a href="{{ route('recruit.onboarding.step1', ['token' => request('token') ?? session('recruit_onboarding_token')]) }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</a>

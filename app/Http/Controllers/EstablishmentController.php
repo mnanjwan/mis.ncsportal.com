@@ -1469,6 +1469,11 @@ class EstablishmentController extends Controller
             'surname' => 'required|string|max:255',
             'substantive_rank' => 'required|string|max:100',
             'salary_grade_level' => 'required|string|max:10',
+            'date_of_first_appointment' => 'required|date',
+            'date_of_present_appointment' => 'required|date',
+            'date_posted_to_station' => 'required|date',
+            'command_id' => 'required|exists:commands,id',
+            'unit' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -1501,8 +1506,11 @@ class EstablishmentController extends Controller
                 'substantive_rank' => $validated['substantive_rank'],
                 'salary_grade_level' => $validated['salary_grade_level'],
                 'appointment_number' => $appointmentNumber, // Auto-assigned based on rank and GL
-                'date_of_first_appointment' => now()->toDateString(), // Placeholder, will be updated during onboarding
-                'date_of_present_appointment' => now()->toDateString(), // Placeholder
+                'date_of_first_appointment' => $validated['date_of_first_appointment'],
+                'date_of_present_appointment' => $validated['date_of_present_appointment'],
+                'date_posted_to_station' => $validated['date_posted_to_station'],
+                'command_id' => $validated['command_id'],
+                'unit' => $validated['unit'] ?? null,
                 'sex' => 'M', // Default, will be updated during onboarding
                 'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
                 'state_of_origin' => 'TBD', // To be provided during onboarding
@@ -1659,8 +1667,11 @@ class EstablishmentController extends Controller
                         'substantive_rank' => $entry['substantive_rank'],
                         'salary_grade_level' => $entry['salary_grade_level'],
                         'appointment_number' => $appointmentNumber, // Auto-assigned based on rank and GL
-                        'date_of_first_appointment' => now()->toDateString(), // Placeholder, will be updated during onboarding
-                        'date_of_present_appointment' => now()->toDateString(), // Placeholder
+                        'date_of_first_appointment' => $entry['date_of_first_appointment'],
+                        'date_of_present_appointment' => $entry['date_of_present_appointment'],
+                        'date_posted_to_station' => $entry['date_posted_to_station'],
+                        'command_id' => $entry['command_id'],
+                        'unit' => $entry['unit'] ?? null,
                         'sex' => 'M', // Default, will be updated during onboarding
                         'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
                         'state_of_origin' => 'TBD', // To be provided during onboarding
@@ -1751,7 +1762,7 @@ class EstablishmentController extends Controller
             }, $headers);
 
             // Validate headers
-            $requiredHeaders = ['email', 'initials', 'surname', 'substantive_rank', 'salary_grade_level'];
+            $requiredHeaders = ['email', 'initials', 'surname', 'substantive_rank', 'salary_grade_level', 'date_of_first_appointment', 'date_of_present_appointment', 'date_posted_to_station', 'command_id'];
             $missingHeaders = array_diff($requiredHeaders, $headers);
 
             if (!empty($missingHeaders)) {
@@ -1763,7 +1774,7 @@ class EstablishmentController extends Controller
             $errors = [];
 
             foreach ($csvData as $rowIndex => $row) {
-                if (count($row) < 5)
+                if (count($row) < 9)
                     continue;
 
                 $entry = [];
@@ -1781,6 +1792,11 @@ class EstablishmentController extends Controller
                     'surname' => 'required|string|max:255',
                     'substantive_rank' => 'required|string|max:100',
                     'salary_grade_level' => 'required|string|max:10',
+                    'date_of_first_appointment' => 'required|date',
+                    'date_of_present_appointment' => 'required|date',
+                    'date_posted_to_station' => 'required|date',
+                    'command_id' => 'required|exists:commands,id',
+                    'unit' => 'nullable|string|max:255',
                 ]);
 
                 if ($validator->fails()) {

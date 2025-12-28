@@ -110,4 +110,63 @@ class User extends Authenticatable
             ->wherePivot('is_active', true)
             ->exists();
     }
+
+    /**
+     * Check if user is an officer
+     */
+    public function isOfficer(): bool
+    {
+        return $this->officer()->exists();
+    }
+
+    /**
+     * Get the officer record associated with this user
+     */
+    public function getOfficer(): ?Officer
+    {
+        return $this->officer;
+    }
+
+    /**
+     * Check if user has a specific role OR is an officer
+     * This allows officers with roles to access both officer and role-specific features
+     */
+    public function hasRoleOrIsOfficer($roleName): bool
+    {
+        return $this->hasRole($roleName) || $this->isOfficer();
+    }
+
+    /**
+     * Check if user has any of the given roles OR is an officer
+     */
+    public function hasAnyRoleOrIsOfficer(array $roleNames): bool
+    {
+        return $this->hasAnyRole($roleNames) || $this->isOfficer();
+    }
+
+    /**
+     * Check if user can access officer features
+     * Returns true if user is an officer (regardless of roles)
+     */
+    public function canAccessOfficerFeatures(): bool
+    {
+        return $this->isOfficer();
+    }
+
+    /**
+     * Check if user can access role-specific features
+     * Returns true if user has the required role (and they may also be an officer)
+     */
+    public function canAccessRoleFeatures($roleName): bool
+    {
+        return $this->hasRole($roleName);
+    }
+
+    /**
+     * Check if user can access role-specific features (any of the given roles)
+     */
+    public function canAccessAnyRoleFeatures(array $roleNames): bool
+    {
+        return $this->hasAnyRole($roleNames);
+    }
 }

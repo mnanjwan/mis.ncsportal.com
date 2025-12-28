@@ -475,11 +475,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show confirmation dialog using SweetAlert2
             Swal.fire({
-                title: 'Create Recruit?',
-                text: 'Are you sure you want to create this recruit? After creation, you can assign appointment numbers (CDT/RCT). This action cannot be undone.',
+                title: 'Submit Application?',
+                text: 'Are you sure this information is correct as any wrong information may lead to termination of appointment and possible prosecution for forgery',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, Create Recruit',
+                confirmButtonText: 'Yes, Submit Application',
                 cancelButtonText: 'Cancel',
                 confirmButtonColor: '#068b57',
                 cancelButtonColor: '#6c757d',

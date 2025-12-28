@@ -645,12 +645,9 @@ class APERFormController extends Controller
     // Reporting Officer: Search for officers to access their APER forms
     public function searchOfficers(Request $request)
     {
-        $user = auth()->user();
-        
-        // Check if user has Reporting Officer role
-        if (!$user->hasRole('Reporting Officer') && !$user->hasRole('HRD') && !$user->hasRole('Staff Officer')) {
-            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
-        }
+        // Allow access if user has Reporting Officer role, HRD role, Staff Officer role, OR is an officer
+        // This ensures officers with roles can access this feature
+        $this->authorizeAnyRoleOrOfficer(['Reporting Officer', 'HRD', 'Staff Officer']);
 
         $query = Officer::query();
 

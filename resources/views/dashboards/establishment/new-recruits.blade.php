@@ -214,6 +214,96 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="date_of_first_appointment" class="block text-sm font-medium text-foreground">
+                                    Date of First Appointment <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="date_of_first_appointment" 
+                                       id="date_of_first_appointment"
+                                       value="{{ old('date_of_first_appointment') }}"
+                                       class="kt-input @error('date_of_first_appointment') kt-input-error @enderror"
+                                       required>
+                                @error('date_of_first_appointment')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="date_of_present_appointment" class="block text-sm font-medium text-foreground">
+                                    Date of Present Appointment <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="date_of_present_appointment" 
+                                       id="date_of_present_appointment"
+                                       value="{{ old('date_of_present_appointment') }}"
+                                       class="kt-input @error('date_of_present_appointment') kt-input-error @enderror"
+                                       required>
+                                @error('date_of_present_appointment')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="date_posted_to_station" class="block text-sm font-medium text-foreground">
+                                    Date Posted to Station <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="date_posted_to_station" 
+                                       id="date_posted_to_station"
+                                       value="{{ old('date_posted_to_station') }}"
+                                       class="kt-input @error('date_posted_to_station') kt-input-error @enderror"
+                                       required>
+                                @error('date_posted_to_station')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="command_id" class="block text-sm font-medium text-foreground">
+                                    Command/Present Station <span class="text-danger">*</span>
+                                </label>
+                                <select name="command_id" 
+                                       id="command_id"
+                                       class="kt-input @error('command_id') kt-input-error @enderror"
+                                       required>
+                                    <option value="">Select Command...</option>
+                                    @php
+                                        $commands = \App\Models\Command::orderBy('name')->get();
+                                    @endphp
+                                    @foreach($commands as $command)
+                                        <option value="{{ $command->id }}" {{ old('command_id') == $command->id ? 'selected' : '' }}>
+                                            {{ $command->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('command_id')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label for="unit" class="block text-sm font-medium text-foreground">
+                                    Unit
+                                </label>
+                                <select name="unit" 
+                                       id="unit"
+                                       class="kt-input @error('unit') kt-input-error @enderror">
+                                    <option value="">Select Unit...</option>
+                                    <option value="General Duty (GD)" {{ old('unit') == 'General Duty (GD)' ? 'selected' : '' }}>General Duty (GD)</option>
+                                    <option value="Support Staff (SS)" {{ old('unit') == 'Support Staff (SS)' ? 'selected' : '' }}>Support Staff (SS)</option>
+                                </select>
+                                @error('unit')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div class="kt-card bg-info/10 border border-info/20 p-4">
                             <div class="flex items-start gap-3">
                                 <i class="ki-filled ki-information text-info text-lg mt-0.5"></i>
@@ -275,13 +365,13 @@
                                 <p class="text-sm text-danger">{{ $message }}</p>
                             @enderror
                             <p class="text-xs text-secondary-foreground">
-                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>. Maximum 10 entries per upload.
+                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>, <strong>date_of_first_appointment</strong>, <strong>date_of_present_appointment</strong>, <strong>date_posted_to_station</strong>, <strong>command_id</strong>, <strong>unit</strong> (optional). Maximum 10 entries per upload.
                             </p>
                             <div class="mt-2 p-3 bg-muted/50 rounded border border-input">
                                 <p class="text-xs font-semibold mb-2">CSV Format Example:</p>
-                                <pre class="text-xs font-mono">email,initials,surname,substantive_rank,salary_grade_level
-recruit1@example.com,J.D,Adeleke,ASC II,GL 08
-recruit2@example.com,M.K,Smith,IC,GL 07</pre>
+                                <pre class="text-xs font-mono">email,initials,surname,substantive_rank,salary_grade_level,date_of_first_appointment,date_of_present_appointment,date_posted_to_station,command_id,unit
+recruit1@example.com,J.D,Adeleke,ASC II,GL 08,2024-01-15,2024-01-15,2024-01-20,1,General Duty (GD)
+recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Support Staff (SS)</pre>
                             </div>
                         </div>
                         <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
@@ -872,70 +962,128 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                 const ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
                 const gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
                 
+                const commands = @json(\App\Models\Command::orderBy('name')->get());
+                const commandsOptions = commands.map(cmd => `<option value="${cmd.id}">${cmd.name}</option>`).join('');
+                
                 const entryHtml = `
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-muted/30 rounded border border-input" id="entry-${bulkEntryCount}">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-foreground">
-                                Email <span class="text-danger">*</span>
-                            </label>
-                            <input type="email" 
-                                   name="entries[${bulkEntryCount}][email]" 
-                                   class="kt-input"
-                                   placeholder="recruit@example.com"
-                                   required>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-foreground">
-                                Initials <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" 
-                                   name="entries[${bulkEntryCount}][initials]" 
-                                   class="kt-input"
-                                   placeholder="J.D"
-                                   maxlength="50"
-                                   required>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-foreground">
-                                Surname <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" 
-                                   name="entries[${bulkEntryCount}][surname]" 
-                                   class="kt-input"
-                                   placeholder="Adeleke"
-                                   maxlength="255"
-                                   required>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-foreground">
-                                Rank <span class="text-danger">*</span>
-                            </label>
-                            <select name="entries[${bulkEntryCount}][substantive_rank]" 
-                                   class="kt-input entry-rank-select"
-                                   data-entry-index="${bulkEntryCount}"
-                                   required>
-                                <option value="">Select...</option>
-                                ${ranks.map(rank => `<option value="${rank}">${rank}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="space-y-2 flex items-end gap-2">
-                            <div class="flex-1">
+                    <div class="space-y-4 p-4 bg-muted/30 rounded border border-input" id="entry-${bulkEntryCount}">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div class="space-y-2">
                                 <label class="block text-sm font-medium text-foreground">
-                                    GL <span class="text-danger">*</span>
+                                    Email <span class="text-danger">*</span>
                                 </label>
-                                <select name="entries[${bulkEntryCount}][salary_grade_level]" 
-                                       class="kt-input entry-grade-level-select"
+                                <input type="email" 
+                                       name="entries[${bulkEntryCount}][email]" 
+                                       class="kt-input"
+                                       placeholder="recruit@example.com"
+                                       required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Initials <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       name="entries[${bulkEntryCount}][initials]" 
+                                       class="kt-input"
+                                       placeholder="J.D"
+                                       maxlength="50"
+                                       required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Surname <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       name="entries[${bulkEntryCount}][surname]" 
+                                       class="kt-input"
+                                       placeholder="Adeleke"
+                                       maxlength="255"
+                                       required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Rank <span class="text-danger">*</span>
+                                </label>
+                                <select name="entries[${bulkEntryCount}][substantive_rank]" 
+                                       class="kt-input entry-rank-select"
                                        data-entry-index="${bulkEntryCount}"
                                        required>
                                     <option value="">Select...</option>
-                                    ${gradeLevels.map(gl => `<option value="${gl}">${gl}</option>`).join('')}
+                                    ${ranks.map(rank => `<option value="${rank}">${rank}</option>`).join('')}
                                 </select>
                             </div>
-                            <button type="button" 
-                                    onclick="removeBulkEntry(${bulkEntryCount})" 
-                                    class="kt-btn kt-btn-sm kt-btn-danger">
-                                <i class="ki-filled ki-cross"></i>
-                            </button>
+                            <div class="space-y-2 flex items-end gap-2">
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium text-foreground">
+                                        GL <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="entries[${bulkEntryCount}][salary_grade_level]" 
+                                           class="kt-input entry-grade-level-select"
+                                           data-entry-index="${bulkEntryCount}"
+                                           required>
+                                        <option value="">Select...</option>
+                                        ${gradeLevels.map(gl => `<option value="${gl}">${gl}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <button type="button" 
+                                        onclick="removeBulkEntry(${bulkEntryCount})" 
+                                        class="kt-btn kt-btn-sm kt-btn-danger">
+                                    <i class="ki-filled ki-cross"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Date of First Appointment <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="entries[${bulkEntryCount}][date_of_first_appointment]" 
+                                       class="kt-input"
+                                       required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Date of Present Appointment <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="entries[${bulkEntryCount}][date_of_present_appointment]" 
+                                       class="kt-input"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Date Posted to Station <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       name="entries[${bulkEntryCount}][date_posted_to_station]" 
+                                       class="kt-input"
+                                       required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Command/Present Station <span class="text-danger">*</span>
+                                </label>
+                                <select name="entries[${bulkEntryCount}][command_id]" 
+                                       class="kt-input"
+                                       required>
+                                    <option value="">Select...</option>
+                                    ${commandsOptions}
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-foreground">
+                                    Unit
+                                </label>
+                                <select name="entries[${bulkEntryCount}][unit]" 
+                                       class="kt-input">
+                                    <option value="">Select...</option>
+                                    <option value="General Duty (GD)">General Duty (GD)</option>
+                                    <option value="Support Staff (SS)">Support Staff (SS)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 `;
