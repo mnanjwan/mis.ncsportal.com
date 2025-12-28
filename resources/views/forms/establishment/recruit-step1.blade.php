@@ -36,7 +36,7 @@
             <div class="kt-card-header">
                 <div class="flex items-center justify-between">
                     <h3 class="kt-card-title">Personal Information</h3>
-                    @if($recruit && $recruit->appointment_number)
+                    @if(isset($recruit) && $recruit && $recruit->appointment_number)
                     <div class="flex items-center gap-2">
                         <span class="text-sm text-secondary-foreground">Appointment Number:</span>
                         <span class="text-lg font-semibold text-primary">{{ $recruit->appointment_number }}</span>

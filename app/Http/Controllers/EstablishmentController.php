@@ -344,7 +344,8 @@ class EstablishmentController extends Controller
         session()->forget(['recruit_step1', 'recruit_step2', 'recruit_step3', 'recruit_step4']);
 
         extract($this->getRanksAndGradeLevels());
-        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels'));
+        $recruit = null; // No recruit object for new creation
+        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels', 'recruit'));
     }
 
     /**

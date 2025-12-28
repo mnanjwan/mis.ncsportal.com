@@ -700,16 +700,31 @@ function initializeProfilePictureUpload() {
             // Set up onload handler to show image when loaded
             profileImg.onload = function() {
                 profileImg.classList.remove('hidden');
-                if (profileIcon) profileIcon.classList.add('hidden');
+                profileImg.style.display = 'block';
+                profileImg.style.visibility = 'visible';
+                profileImg.style.opacity = '1';
+                if (profileIcon) {
+                    profileIcon.classList.add('hidden');
+                    profileIcon.style.display = 'none';
+                }
             };
             profileImg.onerror = function() {
                 // If image fails to load, show icon
                 profileImg.classList.add('hidden');
-                if (profileIcon) profileIcon.classList.remove('hidden');
+                profileImg.style.display = 'none';
+                if (profileIcon) {
+                    profileIcon.classList.remove('hidden');
+                    profileIcon.style.display = 'flex';
+                }
             };
             // Trigger load check
-            if (profileImg.complete) {
+            if (profileImg.complete && profileImg.naturalWidth > 0) {
                 profileImg.onload();
+            } else {
+                // Force reload to trigger onload
+                const currentSrc = profileImg.src;
+                profileImg.src = '';
+                profileImg.src = currentSrc;
             }
             // Also set the value in the hidden input
             if (profilePictureData) {
@@ -1037,24 +1052,36 @@ function updateFileDisplay() {
             if (isSaved && isImage && file.temp_path) {
                 // For saved documents, always use server preview URL
                 imageSrc = `/recruit/onboarding/document-preview?path=${encodeURIComponent(file.temp_path)}`;
+                console.log('Setting imageSrc for saved document:', imageSrc, 'isImage:', isImage, 'temp_path:', file.temp_path);
             } else if (!isSaved && isImage && previewUrl) {
                 // For new files, use the blob URL
                 imageSrc = previewUrl;
             }
             
+            console.log('File display:', {
+                name: file.name,
+                type: file.type,
+                isImage: isImage,
+                isSaved: isSaved,
+                temp_path: file.temp_path,
+                imageSrc: imageSrc,
+                previewUrl: previewUrl
+            });
+            
             return `
                 <div class="relative p-3 bg-muted/50 rounded-lg border border-input" data-file-index="${index}">
                     <div class="flex items-start gap-3">
                         ${isImage && imageSrc ? `
-                            <div class="flex-shrink-0">
+                            <div class="flex-shrink-0 relative">
                                 <img src="${imageSrc}" 
                                      alt="${file.name}" 
                                      class="w-20 h-20 object-cover rounded-lg border border-input cursor-pointer hover:opacity-80 transition-opacity"
+                                     style="display: block !important; max-width: 80px !important; max-height: 80px !important; min-width: 80px !important; min-height: 80px !important; width: 80px !important; height: 80px !important; visibility: visible !important; opacity: 1 !important;"
                                      onclick="window.open('${imageSrc}', '_blank')"
                                      title="Click to view full size"
                                      onerror="console.error('Image failed to load:', '${imageSrc}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                     onload="console.log('Image loaded successfully:', '${file.name}');">
-                                <div class="w-20 h-20 hidden items-center justify-center bg-muted rounded-lg border border-input">
+                                     onload="console.log('Image loaded successfully:', '${file.name}'); this.style.display='block'; this.style.visibility='visible'; this.style.opacity='1';">
+                                <div class="w-20 h-20 hidden items-center justify-center bg-muted rounded-lg border border-input" style="display: none;">
                                     <i class="ki-filled ki-file text-primary text-2xl"></i>
                                 </div>
                             </div>

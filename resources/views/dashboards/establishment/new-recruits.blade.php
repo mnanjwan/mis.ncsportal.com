@@ -232,7 +232,7 @@
                         <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
                             <button type="submit" class="kt-btn kt-btn-primary">
                                 <i class="ki-filled ki-send"></i>
-                                Create Recruit & Send Onboarding Link
+                                Create Intake & Send Onboarding Link
                             </button>
                         </div>
                     </form>
@@ -300,7 +300,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
             <h2 class="text-xl font-semibold text-mono">New Recruits</h2>
             <div class="flex items-center gap-3">
                 <a href="{{ route('establishment.new-recruits.create') }}" class="kt-btn kt-btn-primary">
-                    <i class="ki-filled ki-plus"></i> Add New Recruit
+                    <i class="ki-filled ki-plus"></i> Add New Intake
                 </a>
             </div>
         </div>
@@ -312,7 +312,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                     <div class="flex items-center gap-3">
                         <i class="ki-filled ki-check-circle text-primary text-xl"></i>
                         <span class="text-sm font-medium text-foreground">
-                            <span id="selectedCount">0</span> recruit(s) selected
+                            <span id="selectedCount">0</span> intake(s) selected
                         </span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -675,7 +675,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                 </div>
                 <div class="kt-modal-body py-4 px-5">
                     <p class="text-sm text-secondary-foreground mb-3">
-                        Are you sure you want to delete <strong id="bulk-delete-count">0</strong> selected recruit(s)?
+                        Are you sure you want to delete <strong id="bulk-delete-count">0</strong> selected intake(s)?
                     </p>
                     <div class="kt-card bg-warning/10 border border-warning/20 mb-3">
                         <div class="kt-card-content p-3">
@@ -694,7 +694,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                     </div>
                     <div id="bulk-delete-warning" class="hidden">
                         <p class="text-sm text-danger font-medium">
-                            <span id="bulk-delete-excluded-count">0</span> recruit(s) have service numbers and cannot be deleted.
+                            <span id="bulk-delete-excluded-count">0</span> intake(s) have service numbers and cannot be deleted.
                         </p>
                     </div>
                 </div>
@@ -786,7 +786,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                 </div>
                 <div class="kt-modal-body py-4 px-5">
                     <p class="text-sm text-secondary-foreground mb-3">
-                        Assign appointment numbers to <strong id="bulk-modal-count">0</strong> selected recruit(s)?
+                        Assign appointment numbers to <strong id="bulk-modal-count">0</strong> selected intake(s)?
                     </p>
                     <div class="kt-card bg-primary/10 border border-primary/20 p-3 mb-3">
                         <div class="flex items-start gap-2">
@@ -1121,7 +1121,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
             function showBulkAssignModal() {
                 const selected = document.querySelectorAll('.recruit-checkbox:checked');
                 if (selected.length === 0) {
-                    alert('Please select at least one recruit.');
+                    alert('Please select at least one intake.');
                     return;
                 }
 
@@ -1155,7 +1155,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                 const manualPrefix = document.getElementById('bulk-prefix-input').value.trim();
 
                 if (officerIds.length === 0) {
-                    alert('Please select at least one recruit.');
+                    alert('Please select at least one intake.');
                     return;
                 }
 
@@ -1194,7 +1194,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
             function showBulkDeleteModal() {
                 const selected = document.querySelectorAll('.recruit-checkbox:checked');
                 if (selected.length === 0) {
-                    alert('Please select at least one recruit to delete.');
+                    alert('Please select at least one intake to delete.');
                     return;
                 }
 
@@ -1203,7 +1203,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07</pre>
                 const excluded = selected.length - deletable.length;
 
                 if (deletable.length === 0) {
-                    alert('None of the selected recruits can be deleted. Only recruits without service numbers can be deleted.');
+                    alert('None of the selected intakes can be deleted. Only intakes without service numbers can be deleted.');
                     return;
                 }
 
