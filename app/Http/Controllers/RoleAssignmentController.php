@@ -247,11 +247,30 @@ class RoleAssignmentController extends Controller
             'command_id' => 'required|exists:commands,id'
         ]);
 
+        $commandId = (int) $request->command_id;
+
+        // Query officers - handle both integer and string data types for present_station
         $officers = Officer::with(['user', 'presentStation'])
-            ->where('present_station', $request->command_id)
+            ->where(function($query) use ($commandId) {
+                // Match both integer and string versions to handle data type inconsistencies
+                $query->where('present_station', $commandId)
+                      ->orWhere('present_station', (string) $commandId);
+            })
+            ->whereNotNull('present_station') // Exclude officers without a command assignment
             ->orderBy('surname')
             ->orderBy('first_name')
             ->get()
+            ->filter(function($officer) use ($commandId) {
+                // Additional filter to ensure exact match (handles edge cases with type coercion)
+                $presentStation = $officer->present_station;
+                if (!$presentStation) {
+                    return false;
+                }
+                // Normalize both values for comparison
+                $normalizedStation = is_numeric($presentStation) ? (int) $presentStation : $presentStation;
+                $normalizedCommandId = (int) $commandId;
+                return $normalizedStation == $normalizedCommandId;
+            })
             ->map(function($officer) {
                 return [
                     'id' => $officer->id,
@@ -259,7 +278,19 @@ class RoleAssignmentController extends Controller
                     'service_number' => $officer->service_number ?? 'N/A',
                     'rank' => $officer->substantive_rank ?? 'N/A',
                 ];
-            });
+            })
+            ->values(); // Re-index array after filter
+
+        // Log for debugging (helps identify issues on live server)
+        \Log::info('Officers by command query', [
+            'command_id' => $commandId,
+            'command_id_type' => gettype($commandId),
+            'officers_count' => $officers->count(),
+            'total_officers_in_db' => Officer::count(),
+            'officers_with_present_station' => Officer::whereNotNull('present_station')->count(),
+            'officers_matching_command_raw' => Officer::where('present_station', $commandId)->count(),
+            'officers_matching_command_string' => Officer::where('present_station', (string) $commandId)->count(),
+        ]);
 
         return response()->json($officers);
     }
