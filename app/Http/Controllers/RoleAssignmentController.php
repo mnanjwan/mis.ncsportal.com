@@ -271,7 +271,7 @@ class RoleAssignmentController extends Controller
             // Match the exact query pattern used in OfficerController@index
             $officersQuery = Officer::where('present_station', $commandId)
                 ->orderBy('surname')
-                ->orderBy('first_name');
+                ->orderBy('initials');
             
             $officers = $officersQuery->get()->map(function($officer) {
                 if (!$officer) {
@@ -279,7 +279,7 @@ class RoleAssignmentController extends Controller
                 }
                 return [
                     'id' => $officer->id ?? null,
-                    'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '') . ' ' . ($officer->first_name ?? '')),
+                    'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
                     'service_number' => $officer->service_number ?? 'N/A',
                     'rank' => $officer->substantive_rank ?? 'N/A',
                 ];

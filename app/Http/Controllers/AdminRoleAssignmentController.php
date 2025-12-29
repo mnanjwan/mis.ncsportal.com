@@ -174,7 +174,7 @@ class AdminRoleAssignmentController extends Controller
         $officers = Officer::with(['user', 'presentStation'])
             ->where('present_station', $adminCommand->id)
             ->orderBy('surname')
-            ->orderBy('first_name')
+            ->orderBy('initials')
             ->get();
 
         return view('dashboards.admin.assign-role', compact(
