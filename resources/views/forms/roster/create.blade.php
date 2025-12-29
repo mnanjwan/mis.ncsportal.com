@@ -12,6 +12,46 @@
 @endsection
 
 @section('content')
+@if(session('success'))
+    <div class="kt-card bg-success/10 border border-success/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success">{{ session('success') }}</p>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-cross-circle text-danger text-xl"></i>
+                <p class="text-sm text-danger">{{ session('error') }}</p>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-cross-circle text-danger text-xl"></i>
+                    <p class="text-sm font-semibold text-danger">Please fix the following errors:</p>
+                </div>
+                <ul class="list-disc list-inside text-sm text-danger ml-8">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    </div>
+@endif
+
 @php
     $user = auth()->user();
     $staffOfficerRole = $user->roles()

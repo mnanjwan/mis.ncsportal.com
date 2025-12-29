@@ -64,41 +64,27 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
-                        <select name="substantive_rank" class="kt-input" required>
+                        <select name="substantive_rank" id="substantive_rank" class="kt-input" required>
                             <option value="">Select Rank...</option>
-                            <option value="Assistant Superintendent" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Assistant Superintendent' ? 'selected' : '' }}>Assistant Superintendent</option>
-                            <option value="Deputy Superintendent" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Deputy Superintendent' ? 'selected' : '' }}>Deputy Superintendent</option>
-                            <option value="Superintendent" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Superintendent' ? 'selected' : '' }}>Superintendent</option>
-                            <option value="Chief Superintendent" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Chief Superintendent' ? 'selected' : '' }}>Chief Superintendent</option>
-                            <option value="Assistant Comptroller" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Assistant Comptroller' ? 'selected' : '' }}>Assistant Comptroller</option>
-                            <option value="Deputy Comptroller" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Deputy Comptroller' ? 'selected' : '' }}>Deputy Comptroller</option>
-                            <option value="Comptroller" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Comptroller' ? 'selected' : '' }}>Comptroller</option>
-                            <option value="Assistant Comptroller General" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Assistant Comptroller General' ? 'selected' : '' }}>Assistant Comptroller General</option>
-                            <option value="Deputy Comptroller General" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == 'Deputy Comptroller General' ? 'selected' : '' }}>Deputy Comptroller General</option>
+                            @php
+                                $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
+                            @endphp
+                            @foreach($ranks as $rank)
+                                <option value="{{ $rank }}" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == $rank ? 'selected' : '' }}>{{ $rank }}</option>
+                            @endforeach
                         </select>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
-                        <select name="salary_grade_level" class="kt-input" required>
+                        <select name="salary_grade_level" id="salary_grade_level" class="kt-input" required>
                             <option value="">Select Grade Level...</option>
-                            <option value="GL 01" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 01' ? 'selected' : '' }}>GL 01</option>
-                            <option value="GL 02" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 02' ? 'selected' : '' }}>GL 02</option>
-                            <option value="GL 03" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 03' ? 'selected' : '' }}>GL 03</option>
-                            <option value="GL 04" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 04' ? 'selected' : '' }}>GL 04</option>
-                            <option value="GL 05" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 05' ? 'selected' : '' }}>GL 05</option>
-                            <option value="GL 06" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 06' ? 'selected' : '' }}>GL 06</option>
-                            <option value="GL 07" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 07' ? 'selected' : '' }}>GL 07</option>
-                            <option value="GL 08" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 08' ? 'selected' : '' }}>GL 08</option>
-                            <option value="GL 09" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 09' ? 'selected' : '' }}>GL 09</option>
-                            <option value="GL 10" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 10' ? 'selected' : '' }}>GL 10</option>
-                            <option value="GL 11" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 11' ? 'selected' : '' }}>GL 11</option>
-                            <option value="GL 12" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 12' ? 'selected' : '' }}>GL 12</option>
-                            <option value="GL 13" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 13' ? 'selected' : '' }}>GL 13</option>
-                            <option value="GL 14" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 14' ? 'selected' : '' }}>GL 14</option>
-                            <option value="GL 15" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 15' ? 'selected' : '' }}>GL 15</option>
-                            <option value="GL 16" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 16' ? 'selected' : '' }}>GL 16</option>
-                            <option value="GL 17" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == 'GL 17' ? 'selected' : '' }}>GL 17</option>
+                            @php
+                                $gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
+                            @endphp
+                            @foreach($gradeLevels as $gl)
+                                <option value="{{ $gl }}" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == $gl ? 'selected' : '' }}>{{ $gl }}</option>
+                            @endforeach
                         </select>
                         <span class="error-message text-sm hidden"></span>
                     </div>
@@ -288,6 +274,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Initialize education entries
     initializeEducationSection();
+    
+    // Initialize rank to grade level auto-mapping
+    initializeRankGradeMapping();
 });
 
 // Nigerian Institutions List (Universities and other institutions)
@@ -1059,6 +1048,54 @@ document.getElementById('onboarding-step2-form').addEventListener('submit', func
     
     this.submit();
 });
+
+// Rank to Grade Level mapping
+const rankToGradeMap = {
+    'CGC': 'GL 18',
+    'DCG': 'GL 17',
+    'ACG': 'GL 16',
+    'CC': 'GL 15',
+    'DC': 'GL 14',
+    'AC': 'GL 13',
+    'CSC': 'GL 12',
+    'SC': 'GL 11',
+    'DSC': 'GL 10',
+    'ASC I': 'GL 09',
+    'ASC II': 'GL 08',
+    'IC': 'GL 07',
+    'AIC': 'GL 06',
+    'CA I': 'GL 05',
+    'CA II': 'GL 04',
+    'CA III': 'GL 03',
+};
+
+// Auto-populate grade level when rank is selected
+function initializeRankGradeMapping() {
+    const rankSelect = document.getElementById('substantive_rank');
+    const gradeLevelSelect = document.getElementById('salary_grade_level');
+    
+    if (rankSelect && gradeLevelSelect) {
+        rankSelect.addEventListener('change', function() {
+            const selectedRank = this.value;
+            
+            if (selectedRank && rankToGradeMap[selectedRank]) {
+                const gradeLevel = rankToGradeMap[selectedRank];
+                gradeLevelSelect.value = gradeLevel;
+                clearError('salary_grade_level');
+                
+                // Trigger change event to ensure form validation recognizes the change
+                gradeLevelSelect.dispatchEvent(new Event('change'));
+            } else if (!selectedRank) {
+                gradeLevelSelect.value = '';
+            }
+        });
+        
+        // Auto-populate on page load if rank is already selected
+        if (rankSelect.value && rankToGradeMap[rankSelect.value]) {
+            gradeLevelSelect.value = rankToGradeMap[rankSelect.value];
+        }
+    }
+}
 
 // Clear errors on input
 document.querySelectorAll('#onboarding-step2-form input, #onboarding-step2-form select').forEach(input => {
