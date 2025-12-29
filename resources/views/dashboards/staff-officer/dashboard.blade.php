@@ -4,6 +4,43 @@
 @section('page-title', 'Staff Officer Dashboard')
 
 @section('content')
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <!-- Pending Queries Review Alert -->
+    @if(isset($pendingReviewQueries) && $pendingReviewQueries->count() > 0)
+        <div class="kt-card mb-5" style="background-color: #fee2e2; border: 2px solid #dc3545;">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-information text-xl" style="color: #dc3545;"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold mb-1" style="color: #b91c1c;">
+                            You have {{ $pendingReviewQueries->count() }} query{{ $pendingReviewQueries->count() !== 1 ? 's' : '' }} pending review that require{{ $pendingReviewQueries->count() === 1 ? 's' : '' }} your attention
+                        </p>
+                        @foreach($pendingReviewQueries as $query)
+                            <p class="text-sm mb-2" style="color: #dc2626;">
+                                Response submitted by {{ $query->officer->initials }} {{ $query->officer->surname }} ({{ $query->officer->service_number }}) on {{ $query->responded_at ? $query->responded_at->format('d/m/Y') : 'N/A' }}
+                            </p>
+                        @endforeach
+                        <a href="{{ route('staff-officer.queries.index') }}?status=PENDING_REVIEW" class="kt-btn kt-btn-sm mt-2" style="background-color: #dc3545; border-color: #dc3545; color: #ffffff;">
+                            <i class="ki-filled ki-question"></i> Review Queries
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
 <div class="grid gap-5 lg:gap-7.5">
     @if(!$command)
         <div class="kt-card">

@@ -39,6 +39,28 @@
 16. Override posting decisions when necessary
 17. System-wide configuration and parameter management
 18. Generate comprehensive system reports
+19. Role Assignments Management: Assign Admin role to officers for specific commands via "Role Assignments Management -> Assign Role to Officer"
+20. View accepted queries in officer profiles (queries accepted by Staff Officers become visible in HRD's view of officer profiles)
+21. View all accepted queries system-wide through dedicated Query Management section
+22. Receive in-app notifications when queries are accepted (no email notifications for HRD)
+23. Filter queries by command and officer for comprehensive disciplinary record review
+
+### Admin - Command Role Assignment Manager
+**Primary Role:** Command-specific role assignment and user management
+
+**Access Level:** Role assignments specific to assigned command only
+
+**Creation:** Admin users are assigned by HRD through Role Assignments Management -> Assign Role to Officer, selecting an officer and assigning them the Admin role for a specific command
+
+**Core Functions (Specific to Assigned Command):**
+1. Role Assignments Staff Officer (within assigned command)
+2. Role Assignments Area Comptroller or Unit Head (within assigned command)
+3. Role Assignments DC Admin (within assigned command)
+4. Manage role assignments within their assigned command only
+5. Assign administrative roles to officers in their assigned command
+6. Update role assignments as needed within command scope
+7. View current role assignments in their assigned command
+8. Maintain role assignment records and audit trail for their command
 
 ### Staff Officer - Administrative Manager
 **Primary Role:** Command-level administration and coordination
@@ -64,6 +86,10 @@
 16. Track officer movements in and out of command
 17. Coordinate with other unit staff officers
 18. Generate command-level reports and statistics
+19. Issue queries to officers within command with written reasons
+20. Review officer responses to queries
+21. Accept or reject query responses (Accepted queries become part of officer's disciplinary record)
+22. Manage query workflow and tracking
 
 ### Building Unit - Accommodation Manager
 **Primary Role:** Officer quarters allocation and management
@@ -234,6 +260,9 @@
 22. Add, edit, or delete Next of KIN details (Name, Relationship, Phone Number, Address, Email) for Welfare verification
 23. View retirement information including calculated retirement date, retirement type (AGE or SVC), and countdown to retirement
 24. Receive and view retirement alerts (3 months before retirement date)
+25. Receive queries from Staff Officer
+26. Respond to queries issued by Staff Officer
+27. View query history and status in personal profile
 
 ### Area Controller (Comptroller) - Senior Validator
 **Primary Role:** Command oversight and final validation authority
@@ -255,6 +284,9 @@
 12. Make strategic decisions for the command
 13. Oversee multiple units within area of responsibility
 14. Review and approve internal movements
+15. View accepted queries for officers in their command (disciplinary record)
+16. Receive email and in-app notifications when queries are accepted in their command
+17. Access query details and disciplinary history for command officers
 
 ### CGC (Comptroller General of Customs) - Preretirement Leave Authority
 **Primary Role:** Strategic oversight and preretirement leave management
@@ -295,6 +327,12 @@
 7. Support Area Controller in administrative functions
 8. Handle routine operational approvals
 9. Maintain approval audit trail
+10. View accepted queries for officers in their command (disciplinary record)
+11. Receive email and in-app notifications when queries are accepted in their command
+12. Access query details and disciplinary history for command officers
+13. Approve duty rosters submitted by Staff Officer (alongside Area Controller)
+14. View pending duty rosters on dashboard for quick actions
+15. Review duty roster details including OIC, 2IC, and all assignments
 
 ### Welfare - Benefits Administrator
 **Primary Role:** Deceased officer management and welfare support
@@ -862,7 +900,77 @@ The Eligibility List carries the following fields:
 4. **System updates records** - If approved, system updates the officer's Next of KIN records
 5. **Officer notified** - Officer receives notification of approval or rejection
 
-### 12. NCS Employee App (Social Media Application) Workflow
+### 12. Query Workflow
+
+**Query Issuance Phase:**
+1. **Staff Officer searches officer** - Staff Officer searches for an officer within their command
+2. **Staff Officer issues query** - Staff Officer issues a query to the officer
+3. **Staff Officer provides writeup** - Staff Officer must provide a written reason(s) for querying the officer
+4. **System sends notification** - System sends email and in-app notification to the officer about the query
+5. **Query status** - Query status is set to PENDING_RESPONSE
+
+**Officer Response Phase:**
+1. **Officer receives notification** - Officer receives email and in-app notification about the query
+2. **Officer views query** - Officer views the query details and reason(s) provided by Staff Officer
+3. **Officer responds** - Officer provides a written response to the query
+4. **Officer submits response** - Officer submits response to the query
+5. **Query status** - Query status changes to PENDING_REVIEW
+
+**Staff Officer Review Phase:**
+1. **Staff Officer receives notification** - Staff Officer receives notification that officer has responded
+2. **Staff Officer reviews response** - Staff Officer reviews the officer's response to the query
+3. **Staff Officer decision** - Staff Officer makes a decision:
+   - **Reject Query** - If satisfied with the officer's response, Staff Officer clicks "Reject Query"
+     - Query is closed and does not go into officer's record
+     - Query status changes to REJECTED
+     - Officer receives notification of query rejection
+   - **Accept Query** - If not satisfied with the officer's response, Staff Officer clicks "Accept Query"
+     - Query becomes part of officer's disciplinary record
+     - Query status changes to ACCEPTED
+     - Query is displayed in officer's profile
+     - Query is displayed in officer's profile in HRD view
+     - Officer receives notification that query has been accepted and added to record
+
+**Record Management:**
+1. **Accepted queries stored** - Accepted queries are permanently stored in officer's disciplinary record
+2. **Profile display** - Accepted queries are visible in:
+   - Officer's personal profile
+   - Officer's profile as viewed by HRD
+   - Officer's profile as viewed by Area Controller
+   - Officer's profile as viewed by DC Admin
+3. **Query history** - All queries (pending, accepted, rejected) are maintained in query history
+4. **Audit trail** - Complete audit trail maintained with timestamps for:
+   - Query issuance date and time
+   - Response submission date and time
+   - Acceptance/rejection date and time
+   - Staff Officer who issued and reviewed the query
+
+**Authority Access:**
+1. **HRD Access** - HRD can view all accepted queries system-wide:
+   - Dedicated Query Management section in sidebar
+   - Filter by command and officer
+   - View queries for all officers across all commands
+   - Access query details and link to officer profiles
+2. **Area Controller Access** - Area Controller can view accepted queries for their command:
+   - Dedicated Query Management section in sidebar
+   - Filter by officer within their command
+   - View queries only for officers in their assigned command
+   - Access query details for command officers
+3. **DC Admin Access** - DC Admin can view accepted queries for their command:
+   - Dedicated Query Management section in sidebar
+   - Filter by officer within their command
+   - View queries only for officers in their assigned command
+   - Access query details for command officers
+
+**Notifications:**
+- Email notifications sent at each stage (query issued, response submitted, query accepted/rejected)
+- In-app notifications for real-time updates
+- Staff Officer receives notifications when officer responds
+- Officer receives notifications for query status changes
+- **Area Controller and DC Admin** receive email and in-app notifications when queries are accepted in their command
+- **HRD** receives in-app notifications only (no email) when queries are accepted anywhere in the system
+
+### 13. NCS Employee App (Social Media Application) Workflow
 
 **Automatic Room Assignment:**
 1. **HRD onboards** - Onboarding is done by HRD
@@ -883,6 +991,29 @@ The Eligibility List carries the following fields:
 - File and document sharing
 - Broadcast messages from HRD
 - Profile picture management
+
+### 14. Admin Role Assignment Workflow
+
+**HRD Assignment Phase:**
+1. **HRD accesses Role Assignments Management** - HRD navigates to Role Assignments Management section
+2. **HRD selects Assign Role to Officer** - HRD selects "Assign Role to Officer" option
+3. **HRD selects officer** - HRD searches and selects the officer to be assigned Admin role
+4. **HRD selects command** - HRD selects the specific command for which the Admin role will be assigned
+5. **HRD assigns Admin role** - HRD assigns the Admin role to the selected officer for the selected command
+6. **System updates records** - System updates officer's role assignment and links Admin role to the command
+7. **Officer notified** - Officer receives notification of Admin role assignment
+
+**Admin Role Activation:**
+1. **Admin accesses system** - Assigned Admin logs into the system
+2. **Admin views command scope** - Admin can only see and manage role assignments for their assigned command
+3. **Admin performs role assignments** - Admin can now assign roles within their command:
+   - Role Assignments Staff Officer
+   - Role Assignments Area Comptroller or Unit Head
+   - Role Assignments DC Admin
+4. **System validates scope** - System ensures Admin can only assign roles within their assigned command
+5. **Audit trail maintained** - All role assignments by Admin are logged with command scope
+
+**Note:** Admin role assignments are command-specific. An Admin assigned to a command can only manage role assignments within that command's scope.
 
 ---
 
@@ -1194,6 +1325,123 @@ The Eligibility List carries the following fields:
 
 ---
 
+### FLOW 13: QUERY PROCESS
+
+**Query Issuance Phase:**
+1. Staff Officer searches for officer within command
+2. Staff Officer issues query with written reason(s)
+3. System sends email and in-app notification to officer
+4. Query status: PENDING_RESPONSE
+
+**Officer Response Phase:**
+1. Officer receives notification (email and in-app)
+2. Officer views query details and reason(s)
+3. Officer provides written response
+4. Officer submits response
+5. Query status: PENDING_REVIEW
+
+**Staff Officer Review Phase:**
+1. Staff Officer receives notification of response
+2. Staff Officer reviews officer's response
+3. Staff Officer makes decision:
+   - **Reject Query** (if satisfied):
+     - Query closed, not added to record
+     - Status: REJECTED
+     - Officer notified
+   - **Accept Query** (if not satisfied):
+     - Query added to officer's disciplinary record
+     - Status: ACCEPTED
+     - Visible in officer's profile and HRD view
+     - Officer notified
+
+**Record Management:**
+1. Accepted queries permanently stored in disciplinary record
+2. Visible in officer profile and HRD profile view
+3. Complete audit trail with timestamps
+4. Query history maintained for all statuses
+
+### FLOW 14: DUTY ROSTER WORKFLOW
+
+**Roster Creation Phase:**
+1. **Staff Officer creates roster** - Staff Officer creates a new duty roster for their command
+2. **Set period** - Staff Officer sets roster period (start and end dates)
+3. **Initial status** - Roster is created with status: DRAFT
+4. **No assignments yet** - Roster can be created without assignments initially
+
+**Assignment Phase:**
+1. **Staff Officer edits roster** - Staff Officer edits the DRAFT roster to add assignments
+2. **Select OIC** - Staff Officer selects Officer in Charge (OIC) - **Required**
+3. **Select 2IC** - Staff Officer selects Second In Command (2IC) - **Optional**
+4. **Add assignments** - Staff Officer adds officer assignments with:
+   - Officer selection
+   - Duty date (must be within roster period)
+   - Shift (optional: Morning, Evening, Night, etc.)
+   - Notes (optional)
+5. **Save assignments** - Staff Officer saves the roster with assignments
+6. **System notifies officers** - **All assigned officers receive email and in-app notifications**:
+   - OIC receives notification indicating they are Officer in Charge
+   - 2IC receives notification indicating they are Second In Command
+   - Other officers receive notification with OIC and 2IC information
+   - Notifications include roster period, command, and role assignment
+
+**Submission Phase:**
+1. **Staff Officer submits** - Staff Officer submits roster for approval (requires at least 1 assignment)
+2. **Status changes** - Roster status changes to SUBMITTED
+3. **System notifies approvers** - **DC Admin and Area Controller receive email and in-app notifications**:
+   - Notification includes command name, period, prepared by, and assignment count
+   - Both DC Admin and Area Controller can approve/reject independently
+4. **Roster becomes read-only** - Staff Officer can view but cannot edit submitted roster
+
+**Approval Phase (Dual Approval):**
+1. **DC Admin reviews** - DC Admin views submitted rosters on dashboard (filtered by command if assigned)
+2. **DC Admin sees details** - DC Admin views:
+   - Command name and period
+   - OIC and 2IC assignments
+   - All officer assignments with dates, shifts, and notes
+   - Prepared by information
+3. **DC Admin approves/rejects** - DC Admin can:
+   - **Approve**: Changes status to APPROVED, sets approved_at timestamp
+   - **Reject**: Requires rejection reason, changes status to REJECTED
+4. **Area Controller reviews** - Area Controller views submitted rosters (all commands)
+5. **Area Controller approves/rejects** - Area Controller can:
+   - **Approve**: Changes status to APPROVED, sets approved_at timestamp
+   - **Reject**: Requires rejection reason, changes status to REJECTED
+6. **Independent approval** - Both DC Admin and Area Controller can approve independently
+   - Either approver can approve the roster
+   - Either approver can reject with reason
+
+**Notification Details:**
+- **When assignments are added/updated**: All assigned officers notified (email + in-app)
+- **When roster is submitted**: DC Admin and Area Controller notified (email + in-app)
+- **Notification content includes**:
+  - Roster period (start - end dates)
+  - Command name
+  - Officer's role (OIC, 2IC, or Regular Officer)
+  - OIC and 2IC names (for regular officers)
+  - Link to view roster details
+
+**Roster Leadership Structure:**
+- **Officer in Charge (OIC)**: Required, primary leadership role
+- **Second In Command (2IC)**: Optional, secondary leadership role
+- **Regular Officers**: All other assigned officers
+- OIC and 2IC are displayed prominently in roster views
+- OIC and 2IC badges shown in assignment tables
+
+**Status Flow:**
+```
+DRAFT → SUBMITTED → APPROVED
+         ↓
+      REJECTED
+```
+
+**Dashboard Integration:**
+- **DC Admin Dashboard**: Shows pending rosters count and recent rosters widget
+- **Area Controller Dashboard**: Shows pending rosters count and recent rosters widget
+- **Quick Actions**: Direct links to review and approve rosters
+- **Real-time Updates**: Dashboard widgets update when new rosters are submitted
+
+---
+
 ## Critical Interaction Points
 
 ### Emolument Chain of Command:
@@ -1216,6 +1464,12 @@ Officer (Submits) → Accounts (Verifies) → System (Updates) → Officer (Noti
 
 ### Next of KIN Change Chain:
 Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notified)
+
+### Query Chain:
+Staff Officer (Issues Query) → Officer (Responds) → Staff Officer (Reviews) → System (Updates Record if Accepted) → Officer & HRD (View in Profile)
+
+### Duty Roster Chain:
+Staff Officer (Creates & Assigns) → System (Notifies All Officers) → Staff Officer (Submits) → System (Notifies DC Admin & Area Controller) → DC Admin/Area Controller (Approve/Reject) → System (Updates Status)
 
 ---
 
@@ -1460,6 +1714,47 @@ Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notif
 
 1. **HRD Authority**
    - HRD can create new types of leave and assign the duration
+
+### Query Management Rules
+
+1. **Query Issuance**
+   - Staff Officer can only issue queries to officers within their assigned command
+   - Staff Officer must provide written reason(s) for issuing a query
+   - Query reason(s) are mandatory and cannot be empty
+
+2. **Query Response**
+   - Officers must respond to queries issued to them
+   - Response is mandatory before Staff Officer can review
+   - Officers can view query history and status in their profile
+
+3. **Query Acceptance/Rejection**
+   - Only Staff Officer who issued the query can accept or reject the response
+   - Rejected queries do not become part of officer's disciplinary record
+   - Accepted queries are permanently added to officer's disciplinary record
+   - Accepted queries are visible in officer's profile and HRD profile view
+
+4. **Query Record Management**
+   - Accepted queries form part of officer's permanent disciplinary record
+   - Query history includes all queries (pending, accepted, rejected)
+   - Complete audit trail maintained with timestamps for all query actions
+   - Queries cannot be deleted once accepted
+
+5. **Notifications**
+   - Email and in-app notifications sent at each stage:
+     - When query is issued to officer
+     - When officer submits response
+     - When Staff Officer accepts or rejects query
+   - Real-time notifications ensure timely communication
+   - **Area Controller and DC Admin** receive email and in-app notifications when queries are accepted in their command
+   - **HRD** receives in-app notifications only (no email) when queries are accepted anywhere in the system
+
+6. **Authority Access to Disciplinary Records**
+   - HRD can view all accepted queries system-wide through dedicated Query Management section
+   - Area Controller can view accepted queries for officers in their assigned command only
+   - DC Admin can view accepted queries for officers in their assigned command only
+   - All accepted queries are displayed in officer profile pages when viewed by HRD, Area Controller, or DC Admin
+   - Command-based roles (Area Controller, DC Admin) are restricted to their command's queries only
+   - HRD has system-wide access to all queries
 
 ---
 

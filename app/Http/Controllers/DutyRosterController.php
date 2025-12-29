@@ -5,14 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class DutyRosterController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth');
-        // Allow both Staff Officer and Area Controller access
-        $this->middleware('role:Staff Officer|Area Controller');
+        // Allow Staff Officer, Area Controller, and DC Admin access
+        $this->middleware('role:Staff Officer|Area Controller|DC Admin');
     }
 
     public function index(Request $request)
@@ -107,7 +108,7 @@ class DutyRosterController extends Controller
 
     public function show($id)
     {
-        $roster = \App\Models\DutyRoster::with(['command', 'assignments.officer', 'preparedBy'])->findOrFail($id);
+        $roster = \App\Models\DutyRoster::with(['command', 'assignments.officer', 'preparedBy', 'oicOfficer', 'secondInCommandOfficer'])->findOrFail($id);
         
         $user = auth()->user();
         $staffOfficerRole = $user->roles()
@@ -174,6 +175,8 @@ class DutyRosterController extends Controller
         }
         
         $request->validate([
+            'oic_officer_id' => 'nullable|exists:officers,id',
+            'second_in_command_officer_id' => 'nullable|exists:officers,id',
             'assignments' => 'nullable|array',
             'assignments.*.officer_id' => 'required|exists:officers,id',
             'assignments.*.duty_date' => 'required|date',
@@ -183,6 +186,22 @@ class DutyRosterController extends Controller
         
         try {
             DB::beginTransaction();
+            
+            // Update OIC and 2IC
+            $roster->update([
+                'oic_officer_id' => $request->oic_officer_id,
+                'second_in_command_officer_id' => $request->second_in_command_officer_id,
+            ]);
+            
+            // Get assigned officer IDs before deleting assignments
+            $assignedOfficerIds = [];
+            if ($request->has('assignments')) {
+                foreach ($request->assignments as $assignment) {
+                    if (!in_array($assignment['officer_id'], $assignedOfficerIds)) {
+                        $assignedOfficerIds[] = $assignment['officer_id'];
+                    }
+                }
+            }
             
             // Delete existing assignments if provided
             if ($request->has('assignments')) {
@@ -200,10 +219,19 @@ class DutyRosterController extends Controller
                 }
             }
             
+            // Refresh roster to get updated relationships
+            $roster->refresh();
+            
+            // Notify all assigned officers
+            if (!empty($assignedOfficerIds)) {
+                $notificationService = app(NotificationService::class);
+                $notificationService->notifyDutyRosterAssigned($roster, $assignedOfficerIds);
+            }
+            
             DB::commit();
             
             return redirect()->route('staff-officer.roster.show', $roster->id)
-                ->with('success', 'Roster updated successfully!');
+                ->with('success', 'Roster updated successfully! All assigned officers have been notified.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -246,8 +274,16 @@ class DutyRosterController extends Controller
                 'status' => 'SUBMITTED',
             ]);
             
+            // Refresh roster to get relationships
+            $roster->refresh();
+            
+            // Notify DC Admins and Area Controllers
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyDutyRosterSubmitted($roster);
+            $notificationService->notifyDutyRosterSubmittedToAreaController($roster);
+            
             return redirect()->route('staff-officer.roster.show', $roster->id)
-                ->with('success', 'Roster submitted successfully! It is now pending DC Admin approval.');
+                ->with('success', 'Roster submitted successfully! It is now pending DC Admin and Area Controller approval.');
                 
         } catch (\Exception $e) {
             Log::error('Failed to submit roster: ' . $e->getMessage());
@@ -271,7 +307,7 @@ class DutyRosterController extends Controller
     
     public function areaControllerShow($id)
     {
-        $roster = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments.officer'])->findOrFail($id);
+        $roster = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer'])->findOrFail($id);
         
         // Only show SUBMITTED rosters
         if ($roster->status !== 'SUBMITTED') {
@@ -339,6 +375,112 @@ class DutyRosterController extends Controller
             $roster->save();
             
             return redirect()->route('area-controller.roster')
+                ->with('success', 'Roster rejected.');
+        } catch (\Exception $e) {
+            Log::error('Failed to reject roster: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to reject roster: ' . $e->getMessage());
+        }
+    }
+
+    // DC Admin Methods
+    public function dcAdminIndex(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Get DC Admin's command
+        $dcAdminRole = $user->roles()
+            ->where('name', 'DC Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $dcAdminRole?->pivot->command_id ?? null;
+        
+        // Get submitted rosters for DC Admin's command
+        $query = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments'])
+            ->where('status', 'SUBMITTED')
+            ->orderBy('created_at', 'desc');
+        
+        // Filter by command if DC Admin is assigned to a command
+        if ($commandId) {
+            $query->where('command_id', $commandId);
+        }
+        
+        $rosters = $query->paginate(20)->withQueryString();
+        
+        return view('dashboards.dc-admin.roster', compact('rosters'));
+    }
+    
+    public function dcAdminShow($id)
+    {
+        $roster = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer'])->findOrFail($id);
+        
+        // Only show SUBMITTED rosters
+        if ($roster->status !== 'SUBMITTED') {
+            abort(403, 'This roster is not pending approval');
+        }
+        
+        return view('dashboards.dc-admin.roster-show', compact('roster'));
+    }
+    
+    public function dcAdminApprove(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        // Check if user is DC Admin
+        if (!$user->hasRole('DC Admin')) {
+            abort(403, 'Only DC Admin can approve rosters');
+        }
+        
+        $roster = \App\Models\DutyRoster::findOrFail($id);
+        
+        // Only allow approving SUBMITTED rosters
+        if ($roster->status !== 'SUBMITTED') {
+            return redirect()->back()
+                ->with('error', 'Only SUBMITTED rosters can be approved.');
+        }
+        
+        try {
+            $roster->status = 'APPROVED';
+            $roster->approved_at = now();
+            $roster->save();
+            
+            return redirect()->route('dc-admin.roster')
+                ->with('success', 'Roster approved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to approve roster: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to approve roster: ' . $e->getMessage());
+        }
+    }
+    
+    public function dcAdminReject(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        // Check if user is DC Admin
+        if (!$user->hasRole('DC Admin')) {
+            abort(403, 'Only DC Admin can reject rosters');
+        }
+        
+        $roster = \App\Models\DutyRoster::findOrFail($id);
+        
+        // Only allow rejecting SUBMITTED rosters
+        if ($roster->status !== 'SUBMITTED') {
+            return redirect()->back()
+                ->with('error', 'Only SUBMITTED rosters can be rejected.');
+        }
+        
+        $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+        
+        try {
+            $roster->status = 'REJECTED';
+            $roster->rejection_reason = $request->rejection_reason;
+            $roster->save();
+            
+            return redirect()->route('dc-admin.roster')
                 ->with('success', 'Roster rejected.');
         } catch (\Exception $e) {
             Log::error('Failed to reject roster: ' . $e->getMessage());

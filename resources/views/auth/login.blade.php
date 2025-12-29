@@ -148,9 +148,12 @@
         </div>
         
         <!-- Copyright -->
-        <div class="text-center mt-6">
+        <div class="text-center mt-6 px-4 py-4 space-y-1">
             <p class="text-xs text-white/80 font-medium tracking-wide">
-                &copy; {{ date('Y') }} Nigeria Customs Service. All rights reserved.
+                &copy; 2025 Nigeria Customs Service. All rights reserved.
+            </p>
+            <p class="text-xs text-white/60 font-medium tracking-wide">
+                Designed by NCS ICT - MOD
             </p>
         </div>
     </div>

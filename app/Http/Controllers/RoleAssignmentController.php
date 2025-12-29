@@ -174,7 +174,8 @@ class RoleAssignmentController extends Controller
             'Staff Officer',
             'Area Controller',
             'DC Admin',
-            'Building Unit'
+            'Building Unit',
+            'Admin'
         ];
 
         return view('dashboards.hrd.role-assignments', compact(
@@ -226,7 +227,8 @@ class RoleAssignmentController extends Controller
             'Staff Officer',
             'Area Controller',
             'DC Admin',
-            'Building Unit'
+            'Building Unit',
+            'Admin'
         ];
 
         return view('dashboards.hrd.assign-role', compact(
@@ -285,7 +287,8 @@ class RoleAssignmentController extends Controller
                             'Staff Officer',
                             'Area Controller',
                             'DC Admin',
-                            'Building Unit'
+                            'Building Unit',
+                            'Admin'
                         ];
                         
                         if (in_array($role->name, $commandBasedRoles) && !$value) {
@@ -394,7 +397,8 @@ class RoleAssignmentController extends Controller
             'Staff Officer',
             'Area Controller',
             'DC Admin',
-            'Building Unit'
+            'Building Unit',
+            'Admin'
         ];
 
         // Validate request

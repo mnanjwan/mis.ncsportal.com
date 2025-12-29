@@ -101,6 +101,22 @@
                                 <label class="text-sm font-medium text-secondary-foreground">Total Assignments</label>
                                 <p class="text-sm text-foreground mt-1">{{ $roster->assignments->count() }}</p>
                             </div>
+                            @if($roster->oicOfficer)
+                            <div>
+                                <label class="text-sm font-medium text-secondary-foreground">Officer in Charge (OIC)</label>
+                                <p class="text-sm text-foreground mt-1">
+                                    {{ $roster->oicOfficer->initials }} {{ $roster->oicOfficer->surname }} ({{ $roster->oicOfficer->service_number }})
+                                </p>
+                            </div>
+                            @endif
+                            @if($roster->secondInCommandOfficer)
+                            <div>
+                                <label class="text-sm font-medium text-secondary-foreground">Second In Command (2IC)</label>
+                                <p class="text-sm text-foreground mt-1">
+                                    {{ $roster->secondInCommandOfficer->initials }} {{ $roster->secondInCommandOfficer->surname }} ({{ $roster->secondInCommandOfficer->service_number }})
+                                </p>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -129,6 +145,11 @@
                                                 <td class="py-3 px-4" style="white-space: nowrap;">
                                                     <span class="text-sm font-medium text-foreground">
                                                         {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
+                                                        @if($roster->oic_officer_id == $assignment->officer_id)
+                                                            <span class="kt-badge kt-badge-success kt-badge-sm ml-2">OIC</span>
+                                                        @elseif($roster->second_in_command_officer_id == $assignment->officer_id)
+                                                            <span class="kt-badge kt-badge-info kt-badge-sm ml-2">2IC</span>
+                                                        @endif
                                                     </span>
                                                     <div class="text-xs text-secondary-foreground">
                                                         {{ $assignment->officer->service_number ?? 'N/A' }}

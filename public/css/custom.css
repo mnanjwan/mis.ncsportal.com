@@ -7,7 +7,6 @@
 /* All icons on the body use the active color */
 body i,
 body [class*="ki-"],
-body .kt-menu-icon,
 body .kt-menu-icon i,
 body .kt-icon,
 body .icon,
@@ -15,6 +14,17 @@ body [class^="ki-"],
 body [class*=" ki-"],
 body .ki-filled,
 body .ki-outline {
+    color: var(--kt-active-color) !important;
+}
+
+/* Ensure menu icons are visible */
+.kt-menu-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+.kt-menu-icon i {
+    display: inline-block;
     color: var(--kt-active-color) !important;
 }
 
@@ -158,4 +168,116 @@ body i.text-secondary-foreground {
 
 #sidebar_footer .kt-btn-icon:hover i {
     color: #ffffff !important;
+}
+
+/* Danger/Error Colors - Red */
+:root {
+    --kt-danger-color: #dc3545;
+    --kt-danger-color-rgb: 220, 53, 69;
+}
+
+/* Danger background colors */
+.bg-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.bg-danger\/10 {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.bg-danger\/20 {
+    background-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+/* Danger text colors */
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-danger-600 {
+    color: #dc2626 !important;
+}
+
+.text-danger-700 {
+    color: #b91c1c !important;
+}
+
+/* Danger border colors */
+.border-danger {
+    border-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+.border-danger\/20 {
+    border-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+.border-danger-500 {
+    border-color: #ef4444 !important;
+}
+
+/* Danger button styles */
+.kt-btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+.kt-btn-danger:hover {
+    background-color: #c82333 !important;
+    border-color: #bd2130 !important;
+}
+
+.kt-btn-danger:focus {
+    background-color: #c82333 !important;
+    border-color: #bd2130 !important;
+}
+
+/* Danger badge styles */
+.kt-badge-danger {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+/* Override icon color for danger elements - ensure red shows */
+/* More specific than body i to override global icon color */
+body .text-danger i,
+body .text-danger .ki-filled,
+body .text-danger .ki-outline,
+body .text-danger [class*="ki-"],
+body .text-danger [class^="ki-"],
+body .text-danger-600 i,
+body .text-danger-600 .ki-filled,
+body .text-danger-700 i,
+body .text-danger-700 .ki-filled {
+    color: #dc3545 !important;
+}
+
+/* Ensure danger icons show red in buttons and badges */
+body .kt-btn-danger i,
+body .kt-btn-danger .ki-filled,
+body .kt-btn-danger .ki-outline,
+body .kt-btn-danger [class*="ki-"],
+body .kt-btn-danger [class^="ki-"] {
+    color: #ffffff !important;
+}
+
+body .kt-badge-danger i,
+body .kt-badge-danger .ki-filled,
+body .kt-badge-danger .ki-outline,
+body .kt-badge-danger [class*="ki-"],
+body .kt-badge-danger [class^="ki-"] {
+    color: #ffffff !important;
+}
+
+/* Override global icon color for elements with inline danger styles */
+body [style*="color: #dc3545"] i,
+body [style*="color: #dc2626"] i,
+body [style*="color: #b91c1c"] i,
+body [style*="color: #dc3545"] .ki-filled,
+body [style*="color: #dc2626"] .ki-filled,
+body [style*="color: #b91c1c"] .ki-filled,
+body [style*="color: #dc3545"] [class*="ki-"],
+body [style*="color: #dc2626"] [class*="ki-"],
+body [style*="color: #b91c1c"] [class*="ki-"] {
+    color: inherit !important;
 }

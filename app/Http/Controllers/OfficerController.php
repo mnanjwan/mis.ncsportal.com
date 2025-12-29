@@ -263,10 +263,16 @@ class OfficerController extends Controller
 
     public function show($id)
     {
-        $officer = \App\Models\Officer::with(['presentStation.zone', 'user', 'nextOfKin', 'documents'])
+        $officer = \App\Models\Officer::with(['presentStation.zone', 'user', 'nextOfKin', 'documents', 'acceptedQueries.issuedBy'])
             ->findOrFail($id);
         
-        return view('dashboards.hrd.officer-show', compact('officer'));
+        // Load accepted queries for display
+        $acceptedQueries = $officer->acceptedQueries()
+            ->with('issuedBy')
+            ->orderBy('reviewed_at', 'desc')
+            ->get();
+        
+        return view('dashboards.hrd.officer-show', compact('officer', 'acceptedQueries'));
     }
 
     public function edit($id)
@@ -495,6 +501,7 @@ class OfficerController extends Controller
                 'pendingAllocations' => collect([]),
                 'recentCourses' => collect([]),
                 'upcomingCourses' => collect([]),
+                'pendingQueries' => collect([]),
             ]);
         }
 
@@ -572,12 +579,20 @@ class OfficerController extends Controller
             ->take(3)
             ->get();
 
+        // 8. Pending Queries (queries that need response)
+        $pendingQueries = \App\Models\Query::where('officer_id', $officer->id)
+            ->where('status', 'PENDING_RESPONSE')
+            ->with(['issuedBy'])
+            ->orderBy('issued_at', 'desc')
+            ->get();
+
         return view('dashboards.officer.dashboard', compact(
             'officer',
             'emolumentStatus',
             'leaveBalance',
             'passStatus',
             'recentApplications',
+            'pendingQueries',
             'activeTimeline',
             'pendingAllocations',
             'recentCourses',

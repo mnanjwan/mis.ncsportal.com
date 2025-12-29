@@ -20,6 +20,7 @@ use App\Models\OfficerPosting;
 use App\Models\AccountChangeRequest;
 use App\Models\NextOfKinChangeRequest;
 use App\Models\DeceasedOfficer;
+use App\Models\Query;
 
 class DashboardController extends Controller
 {
@@ -62,6 +63,7 @@ class DashboardController extends Controller
             'Building Unit',
             'Area Controller',
             'DC Admin',
+            'Admin',
             'Zone Coordinator',
             'Validator',
             'Assessor',
@@ -292,6 +294,14 @@ class DashboardController extends Controller
         $recentLeaveApplications = collect();
         $recentPassApplications = collect();
         $approvedManningRequestsWithMatches = collect();
+        $pendingReviewQueries = collect();
+        
+        // Get pending queries that need Staff Officer review (queries issued by this Staff Officer with PENDING_REVIEW status)
+        $pendingReviewQueries = Query::where('issued_by_user_id', $user->id)
+            ->where('status', 'PENDING_REVIEW')
+            ->with(['officer', 'issuedBy'])
+            ->orderBy('responded_at', 'desc')
+            ->get();
         
         if ($commandId) {
             // Get newly posted officers (not yet documented)
@@ -374,7 +384,8 @@ class DashboardController extends Controller
             'dutyRosterActive',
             'recentLeaveApplications',
             'recentPassApplications',
-            'approvedManningRequestsWithMatches'
+            'approvedManningRequestsWithMatches',
+            'pendingReviewQueries'
         ));
     }
 
@@ -691,7 +702,89 @@ class DashboardController extends Controller
     // DC Admin Dashboard
     public function dcAdmin()
     {
-        return view('dashboards.dc-admin.dashboard');
+        $user = auth()->user();
+        
+        // Get DC Admin's command
+        $dcAdminRole = $user->roles()
+            ->where('name', 'DC Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $dcAdminRole?->pivot->command_id ?? null;
+        
+        // Get pending rosters count
+        $pendingRostersQuery = DutyRoster::where('status', 'SUBMITTED');
+        if ($commandId) {
+            $pendingRostersQuery->where('command_id', $commandId);
+        }
+        $pendingRosters = $pendingRostersQuery->count();
+        
+        // Get recent pending rosters
+        $recentRostersQuery = DutyRoster::with(['command', 'preparedBy'])
+            ->where('status', 'SUBMITTED')
+            ->orderBy('created_at', 'desc')
+            ->limit(5);
+        if ($commandId) {
+            $recentRostersQuery->where('command_id', $commandId);
+        }
+        $recentRosters = $recentRostersQuery->get();
+        
+        return view('dashboards.dc-admin.dashboard', compact('pendingRosters', 'recentRosters'));
+    }
+
+    // Admin Dashboard
+    public function admin()
+    {
+        $user = auth()->user();
+        
+        // Get Admin's assigned command
+        $adminRole = $user->roles()
+            ->where('name', 'Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $adminCommand = null;
+        if ($adminRole && $adminRole->pivot->command_id) {
+            $adminCommand = Command::find($adminRole->pivot->command_id);
+        }
+        
+        // Get statistics for Admin's command
+        $roleAssignmentsCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
+            ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+            ->where('user_roles.is_active', true)
+            ->where('user_roles.command_id', $adminCommand->id ?? 0)
+            ->where('roles.name', '!=', 'Officer')
+            ->distinct()
+            ->count('users.id');
+        
+        $staffOfficersCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
+            ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+            ->where('user_roles.is_active', true)
+            ->where('user_roles.command_id', $adminCommand->id ?? 0)
+            ->where('roles.name', 'Staff Officer')
+            ->count();
+        
+        $areaControllersCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
+            ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+            ->where('user_roles.is_active', true)
+            ->where('user_roles.command_id', $adminCommand->id ?? 0)
+            ->where('roles.name', 'Area Controller')
+            ->count();
+        
+        $dcAdminsCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
+            ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+            ->where('user_roles.is_active', true)
+            ->where('user_roles.command_id', $adminCommand->id ?? 0)
+            ->where('roles.name', 'DC Admin')
+            ->count();
+        
+        return view('dashboards.admin.dashboard', compact(
+            'adminCommand',
+            'roleAssignmentsCount',
+            'staffOfficersCount',
+            'areaControllersCount',
+            'dcAdminsCount'
+        ));
     }
 
     public function dcAdminLeavePass(Request $request)
@@ -1505,6 +1598,7 @@ class DashboardController extends Controller
             'Validator' => 'validator.dashboard',
             'Area Controller' => 'area-controller.dashboard',
             'DC Admin' => 'dc-admin.dashboard',
+            'Admin' => 'admin.dashboard',
             'Zone Coordinator' => 'zone-coordinator.dashboard',
             'Accounts' => 'accounts.dashboard',
             'Board' => 'board.dashboard',

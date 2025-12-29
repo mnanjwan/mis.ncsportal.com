@@ -32,6 +32,9 @@ use App\Http\Controllers\RecruitOnboardingController;
 use App\Http\Controllers\CGCPreretirementLeaveController;
 use App\Http\Controllers\APERTimelineController;
 use App\Http\Controllers\APERFormController;
+use App\Http\Controllers\AdminRoleAssignmentController;
+use App\Http\Controllers\QueryController;
+use App\Http\Controllers\OfficerQueryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -102,6 +105,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'update'])->name('next-of-kin.update');
         Route::delete('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'destroy'])->name('next-of-kin.destroy');
         Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
+        
+        // Query Routes
+        Route::get('/queries', [OfficerQueryController::class, 'index'])->name('queries.index');
+        Route::get('/queries/{id}', [OfficerQueryController::class, 'show'])->name('queries.show');
+        Route::post('/queries/{id}/respond', [OfficerQueryController::class, 'respond'])->name('queries.respond');
+        
                 Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
                 Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
                 
@@ -130,6 +139,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
         Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');
+        
+        // Query Management Routes
+        Route::prefix('queries')->name('queries.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\HrdQueryController::class, 'index'])->name('index');
+            Route::get('/{id}', [\App\Http\Controllers\HrdQueryController::class, 'show'])->name('show');
+        });
 
                 Route::get('/emolument-timeline', [EmolumentTimelineController::class, 'index'])->name('emolument-timeline');
                 Route::get('/emolument-timeline/create', [EmolumentTimelineController::class, 'create'])->name('emolument-timeline.create');
@@ -302,6 +317,14 @@ Route::middleware('auth')->group(function () {
                 Route::get('/aper-forms/countersigning/{id}', [APERFormController::class, 'accessCountersigningForm'])->name('aper-forms.countersigning');
                 Route::post('/aper-forms/{id}/countersigning-officer', [APERFormController::class, 'updateCountersigningOfficer'])->name('aper-forms.update-countersigning-officer');
                 Route::post('/aper-forms/{id}/complete-countersigning-officer', [APERFormController::class, 'completeCountersigningOfficer'])->name('aper-forms.complete-countersigning-officer');
+
+                // Query Management Routes
+                Route::get('/queries', [QueryController::class, 'index'])->name('queries.index');
+                Route::get('/queries/create', [QueryController::class, 'create'])->name('queries.create');
+                Route::post('/queries', [QueryController::class, 'store'])->name('queries.store');
+                Route::get('/queries/{id}', [QueryController::class, 'show'])->name('queries.show');
+                Route::post('/queries/{id}/accept', [QueryController::class, 'accept'])->name('queries.accept');
+                Route::post('/queries/{id}/reject', [QueryController::class, 'reject'])->name('queries.reject');
             });
 
     // Assessor Routes
@@ -344,6 +367,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/roster/{id}', [DutyRosterController::class, 'areaControllerShow'])->name('roster.show');
         Route::post('/roster/{id}/approve', [DutyRosterController::class, 'areaControllerApprove'])->name('roster.approve');
         Route::post('/roster/{id}/reject', [DutyRosterController::class, 'areaControllerReject'])->name('roster.reject');
+        
+        // Query Management Routes
+        Route::prefix('queries')->name('queries.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\AreaControllerQueryController::class, 'index'])->name('index');
+            Route::get('/{id}', [\App\Http\Controllers\AreaControllerQueryController::class, 'show'])->name('show');
+        });
     });
 
     // Zone Coordinator Routes
@@ -367,6 +396,28 @@ Route::middleware('auth')->group(function () {
         Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show'])->name('pass-applications.show');
         Route::post('/pass-applications/{id}/approve', [PassApplicationController::class, 'approve'])->name('pass-applications.approve');
         Route::post('/pass-applications/{id}/reject', [PassApplicationController::class, 'reject'])->name('pass-applications.reject');
+        
+        // Duty Roster Routes
+        Route::get('/roster', [DutyRosterController::class, 'dcAdminIndex'])->name('roster');
+        Route::get('/roster/{id}', [DutyRosterController::class, 'dcAdminShow'])->name('roster.show');
+        Route::post('/roster/{id}/approve', [DutyRosterController::class, 'dcAdminApprove'])->name('roster.approve');
+        Route::post('/roster/{id}/reject', [DutyRosterController::class, 'dcAdminReject'])->name('roster.reject');
+        
+        // Query Management Routes
+        Route::prefix('queries')->name('queries.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\DcAdminQueryController::class, 'index'])->name('index');
+            Route::get('/{id}', [\App\Http\Controllers\DcAdminQueryController::class, 'show'])->name('show');
+        });
+    });
+
+    // Admin Routes
+    Route::prefix('admin')->name('admin.')->middleware('role:Admin')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+        Route::get('/role-assignments', [AdminRoleAssignmentController::class, 'index'])->name('role-assignments');
+        Route::get('/role-assignments/create', [AdminRoleAssignmentController::class, 'create'])->name('role-assignments.create');
+        Route::post('/role-assignments', [AdminRoleAssignmentController::class, 'store'])->name('role-assignments.store');
+        Route::put('/role-assignments/{userId}/{roleId}', [AdminRoleAssignmentController::class, 'update'])->name('role-assignments.update');
+        Route::delete('/role-assignments/{userId}/{roleId}', [AdminRoleAssignmentController::class, 'destroy'])->name('role-assignments.destroy');
     });
 
     // Accounts Routes

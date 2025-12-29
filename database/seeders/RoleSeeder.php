@@ -106,6 +106,12 @@ class RoleSeeder extends Seeder
                 'description' => 'Comptroller General of Customs - Preretirement Leave Authority',
                 'access_level' => 'system_wide',
             ],
+            [
+                'name' => 'Admin',
+                'code' => 'ADMIN',
+                'description' => 'Admin - Command Role Assignment Manager',
+                'access_level' => 'command_level',
+            ],
         ];
 
         foreach ($roles as $role) {

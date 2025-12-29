@@ -367,6 +367,16 @@ class Officer extends Model
         return $this->hasOne(TrainingResult::class);
     }
 
+    public function queries()
+    {
+        return $this->hasMany(Query::class);
+    }
+
+    public function acceptedQueries()
+    {
+        return $this->hasMany(Query::class)->where('status', 'ACCEPTED');
+    }
+
     /**
      * Check if officer has completed onboarding
      * Onboarding is complete when profile picture is uploaded (indicates completion of onboarding form)

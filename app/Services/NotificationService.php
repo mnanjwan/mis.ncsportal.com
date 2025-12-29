@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Notification;
 use App\Models\QuarterRequest;
 use App\Models\User;
+use App\Models\Query;
 use App\Jobs\SendNotificationEmailJob;
 use App\Mail\NotificationMail;
 use Illuminate\Support\Facades\Log;
@@ -1471,6 +1472,395 @@ class NotificationService
             "Your course nomination for '{$course->course_name}' has been marked as completed. Completion date: {$completionDate}. This has been recorded in your service record.",
             'officer_course',
             $course->id
+        );
+    }
+
+    /**
+     * Notify officer about query issued
+     */
+    public function notifyQueryIssued($query, $officer): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $issuedBy = $query->issuedBy;
+        $issuedByName = $issuedBy ? ($issuedBy->name ?? $issuedBy->email) : 'Staff Officer';
+        $issuedDate = $query->issued_at ? \Carbon\Carbon::parse($query->issued_at)->format('d/m/Y') : now()->format('d/m/Y');
+
+        // Create in-app notification
+        $notification = $this->notify(
+            $officer->user,
+            'query_issued',
+            'Query Issued',
+            "A query has been issued to you by {$issuedByName} on {$issuedDate}. Please respond to the query through your dashboard.",
+            'query',
+            $query->id,
+            false // Don't send email via notify method, we'll send custom email
+        );
+
+        // Send custom email via job
+        if ($officer->user->email) {
+            try {
+                \App\Jobs\SendQueryIssuedMailJob::dispatch($query);
+                Log::info('Query issued email job dispatched', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch query issued email job', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $notification;
+    }
+
+    /**
+     * Notify Staff Officer about query response submitted
+     */
+    public function notifyQueryResponseSubmitted($query): ?Notification
+    {
+        $issuedBy = $query->issuedBy;
+        if (!$issuedBy) {
+            return null;
+        }
+
+        $officer = $query->officer;
+        $officerName = $officer ? "{$officer->initials} {$officer->surname}" : 'Officer';
+        $serviceNumber = $officer->service_number ?? 'N/A';
+
+        // Create in-app notification
+        $notification = $this->notify(
+            $issuedBy,
+            'query_response_submitted',
+            'Query Response Submitted',
+            "Officer {$officerName} ({$serviceNumber}) has submitted a response to your query. Please review and accept or reject the response.",
+            'query',
+            $query->id,
+            false // Don't send email via notify method, we'll send custom email
+        );
+
+        // Send custom email via job
+        if ($issuedBy->email) {
+            try {
+                \App\Jobs\SendQueryResponseSubmittedMailJob::dispatch($query);
+                Log::info('Query response submitted email job dispatched', [
+                    'user_id' => $issuedBy->id,
+                    'query_id' => $query->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch query response submitted email job', [
+                    'user_id' => $issuedBy->id,
+                    'query_id' => $query->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $notification;
+    }
+
+    /**
+     * Notify officer about query accepted
+     */
+    public function notifyQueryAccepted($query): ?Notification
+    {
+        $officer = $query->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $issuedDate = $query->issued_at ? \Carbon\Carbon::parse($query->issued_at)->format('d/m/Y') : 'N/A';
+
+        // Create in-app notification for officer
+        $notification = $this->notify(
+            $officer->user,
+            'query_accepted',
+            'Query Accepted',
+            "Your response to the query issued on {$issuedDate} has been reviewed and accepted. This query has been added to your disciplinary record.",
+            'query',
+            $query->id,
+            false // Don't send email via notify method, we'll send custom email
+        );
+
+        // Send custom email via job to officer
+        if ($officer->user->email) {
+            try {
+                \App\Jobs\SendQueryAcceptedMailJob::dispatch($query);
+                Log::info('Query accepted email job dispatched', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch query accepted email job', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Notify Area Controller, DC Admin, and HRD about accepted query
+        $this->notifyAuthoritiesQueryAccepted($query);
+
+        return $notification;
+    }
+
+    /**
+     * Notify Area Controller, DC Admin, and HRD when a query is accepted
+     */
+    private function notifyAuthoritiesQueryAccepted($query): void
+    {
+        $officer = $query->officer;
+        if (!$officer || !$officer->present_station) {
+            return;
+        }
+
+        $commandId = $officer->present_station;
+        $officerName = ($officer->initials ?? '') . ' ' . ($officer->surname ?? '');
+        $serviceNumber = $officer->service_number ?? 'N/A';
+
+        // Get Area Controller for this command
+        $areaControllers = User::whereHas('roles', function($q) use ($commandId) {
+            $q->where('name', 'Area Controller')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $commandId);
+        })->get();
+
+        // Get DC Admin for this command
+        $dcAdmins = User::whereHas('roles', function($q) use ($commandId) {
+            $q->where('name', 'DC Admin')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $commandId);
+        })->get();
+
+        // Get all HRD users
+        $hrdUsers = User::whereHas('roles', function($q) {
+            $q->where('name', 'HRD')
+              ->where('user_roles.is_active', true);
+        })->get();
+
+        // Notify Area Controllers (email + in-app)
+        foreach ($areaControllers as $user) {
+            $this->notify(
+                $user,
+                'query_accepted_authority',
+                'Query Accepted - Disciplinary Record Updated',
+                "A query for Officer {$officerName} ({$serviceNumber}) has been accepted and added to their disciplinary record.",
+                'query',
+                $query->id,
+                true // Send email
+            );
+        }
+
+        // Notify DC Admins (email + in-app)
+        foreach ($dcAdmins as $user) {
+            $this->notify(
+                $user,
+                'query_accepted_authority',
+                'Query Accepted - Disciplinary Record Updated',
+                "A query for Officer {$officerName} ({$serviceNumber}) has been accepted and added to their disciplinary record.",
+                'query',
+                $query->id,
+                true // Send email
+            );
+        }
+
+        // Notify HRD users (in-app only)
+        foreach ($hrdUsers as $user) {
+            $this->notify(
+                $user,
+                'query_accepted_authority',
+                'Query Accepted - Disciplinary Record Updated',
+                "A query for Officer {$officerName} ({$serviceNumber}) has been accepted and added to their disciplinary record.",
+                'query',
+                $query->id,
+                false // In-app only for HRD
+            );
+        }
+    }
+
+    /**
+     * Notify officer about query rejected
+     */
+    public function notifyQueryRejected($query): ?Notification
+    {
+        $officer = $query->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $issuedDate = $query->issued_at ? \Carbon\Carbon::parse($query->issued_at)->format('d/m/Y') : 'N/A';
+
+        // Create in-app notification
+        $notification = $this->notify(
+            $officer->user,
+            'query_rejected',
+            'Query Rejected',
+            "Your response to the query issued on {$issuedDate} has been reviewed and rejected. This query will not be added to your disciplinary record.",
+            'query',
+            $query->id,
+            false // Don't send email via notify method, we'll send custom email
+        );
+
+        // Send custom email via job
+        if ($officer->user->email) {
+            try {
+                \App\Jobs\SendQueryRejectedMailJob::dispatch($query);
+                Log::info('Query rejected email job dispatched', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch query rejected email job', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $notification;
+    }
+
+    /**
+     * Notify officers assigned to duty roster
+     */
+    public function notifyDutyRosterAssigned($roster, array $assignedOfficerIds): array
+    {
+        $notifications = [];
+        $command = $roster->command;
+        $commandName = $command ? $command->name : 'your command';
+        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+        
+        // Get OIC and 2IC names if set
+        $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
+        $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
+
+        foreach ($assignedOfficerIds as $officerId) {
+            $officer = \App\Models\Officer::find($officerId);
+            if (!$officer || !$officer->user) {
+                continue;
+            }
+
+            // Determine role
+            $role = 'Regular Officer';
+            if ($roster->oic_officer_id == $officerId) {
+                $role = 'Officer in Charge (OIC)';
+            } elseif ($roster->second_in_command_officer_id == $officerId) {
+                $role = 'Second In Command (2IC)';
+            }
+
+            $message = "You have been assigned to the duty roster for {$commandName} as {$role}. ";
+            $message .= "Period: {$periodStart} to {$periodEnd}. ";
+            
+            if ($role === 'Officer in Charge (OIC)') {
+                $message .= "You are the Officer in Charge for this roster period.";
+            } elseif ($role === 'Second In Command (2IC)') {
+                $message .= "You are the Second In Command for this roster period.";
+                if ($oicName) {
+                    $message .= " OIC: {$oicName}.";
+                }
+            } else {
+                if ($oicName) {
+                    $message .= "OIC: {$oicName}.";
+                }
+                if ($secondInCommandName) {
+                    $message .= " 2IC: {$secondInCommandName}.";
+                }
+            }
+
+            $notifications[] = $this->notify(
+                $officer->user,
+                'duty_roster_assigned',
+                'Duty Roster Assignment',
+                $message,
+                'duty_roster',
+                $roster->id,
+                true // Send email
+            );
+        }
+
+        return $notifications;
+    }
+
+    /**
+     * Notify DC Admins about submitted duty roster ready for approval
+     */
+    public function notifyDutyRosterSubmitted($roster): array
+    {
+        $command = $roster->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandId = $command->id;
+        $preparedBy = $roster->preparedBy;
+        $preparedByName = $preparedBy ? ($preparedBy->name ?? $preparedBy->email) : 'Staff Officer';
+        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+        $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
+
+        // Get DC Admins for the command
+        $dcAdmins = User::whereHas('roles', function($q) use ($commandId) {
+            $q->where('name', 'DC Admin')
+              ->where('user_roles.is_active', true)
+              ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        if ($dcAdmins->isEmpty()) {
+            return [];
+        }
+
+        return $this->notifyMany(
+            $dcAdmins,
+            'duty_roster_submitted',
+            'Duty Roster Submitted - Requires Approval',
+            "A duty roster for {$command->name} has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Total assignments: {$assignmentsCount}. Please review and approve.",
+            'duty_roster',
+            $roster->id
+        );
+    }
+
+    /**
+     * Notify Area Controllers about submitted duty roster ready for approval
+     */
+    public function notifyDutyRosterSubmittedToAreaController($roster): array
+    {
+        $command = $roster->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandId = $command->id;
+        $preparedBy = $roster->preparedBy;
+        $preparedByName = $preparedBy ? ($preparedBy->name ?? $preparedBy->email) : 'Staff Officer';
+        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+        $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
+
+        // Get Area Controllers (they can approve any roster)
+        $areaControllers = User::whereHas('roles', function($q) {
+            $q->where('name', 'Area Controller')
+              ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        if ($areaControllers->isEmpty()) {
+            return [];
+        }
+
+        return $this->notifyMany(
+            $areaControllers,
+            'duty_roster_submitted',
+            'Duty Roster Submitted - Requires Approval',
+            "A duty roster for {$command->name} has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Total assignments: {$assignmentsCount}. Please review and approve.",
+            'duty_roster',
+            $roster->id
         );
     }
 }

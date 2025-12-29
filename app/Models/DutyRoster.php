@@ -17,6 +17,8 @@ class DutyRoster extends Model
         'approved_by',
         'status',
         'rejection_reason',
+        'oic_officer_id',
+        'second_in_command_officer_id',
     ];
 
     protected function casts(): array
@@ -47,6 +49,16 @@ class DutyRoster extends Model
     public function assignments()
     {
         return $this->hasMany(RosterAssignment::class, 'roster_id');
+    }
+
+    public function oicOfficer()
+    {
+        return $this->belongsTo(Officer::class, 'oic_officer_id');
+    }
+
+    public function secondInCommandOfficer()
+    {
+        return $this->belongsTo(Officer::class, 'second_in_command_officer_id');
     }
 }
 

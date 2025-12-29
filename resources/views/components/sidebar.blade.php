@@ -22,6 +22,7 @@
         'Building Unit',
         'Area Controller',
         'DC Admin',
+        'Admin',
         'Zone Coordinator',
         'Validator',
         'Assessor',
@@ -89,6 +90,7 @@
                     ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
                 ]
             ],
+            ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
             ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
             ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
             ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
@@ -130,6 +132,7 @@
                             ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
                         ]
                     ],
+                    ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
                     ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
                     ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
                     ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
@@ -178,6 +181,7 @@
                 ],
                 ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('hrd.aper-forms')],
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
+                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('hrd.queries.index')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('hrd.manning-requests')],
                 ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('hrd.courses')],
                 [
@@ -235,6 +239,7 @@
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
+                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('staff-officer.queries.index')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
                 ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
             ];
@@ -259,12 +264,28 @@
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('area-controller.manning-level')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('area-controller.roster')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('area-controller.deceased-officers.create')],
+                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('area-controller.queries.index')],
             ];
             break;
         case 'DC Admin':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('dc-admin.dashboard')],
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('dc-admin.leave-pass')],
+                ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('dc-admin.roster')],
+                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('dc-admin.queries.index')],
+            ];
+            break;
+        case 'Admin':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('admin.dashboard')],
+                [
+                    'title' => 'Role Assignments',
+                    'icon' => 'ki-filled ki-profile-user',
+                    'submenu' => [
+                        ['title' => 'View Assignments', 'href' => route('admin.role-assignments')],
+                        ['title' => 'Assign Role', 'href' => route('admin.role-assignments.create')],
+                    ]
+                ],
             ];
             break;
         case 'Accounts':

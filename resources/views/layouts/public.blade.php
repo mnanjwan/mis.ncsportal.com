@@ -77,6 +77,16 @@
     </div>
     <!-- End of Page -->
     
+    <!-- Footer -->
+    <footer class="mt-8 pt-6 pb-6 px-4 border-t border-input">
+        <div class="kt-container-fixed">
+            <div class="flex flex-col items-center justify-center gap-2 text-sm text-secondary-foreground py-4">
+                <div>© 2025 Nigeria Customs Service. All rights reserved.</div>
+                <div>Designed by NCS ICT - MOD</div>
+            </div>
+        </div>
+    </footer>
+    
     <!-- Scripts -->
     <script src="{{ asset('ncs-employee-portal/dist/assets/js/core.bundle.js') }}"></script>
     <script src="{{ asset('ncs-employee-portal/dist/assets/vendors/ktui/ktui.min.js') }}"></script>

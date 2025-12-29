@@ -507,6 +507,61 @@
                 </div>
             </div>
         </div>
+
+        <!-- Queries Section -->
+        <div class="kt-card overflow-hidden">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Disciplinary Record (Accepted Queries)</h3>
+            </div>
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                @if(isset($acceptedQueries) && $acceptedQueries->count() > 0)
+                    <!-- Table with horizontal scroll wrapper -->
+                    <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                        <table class="kt-table" style="min-width: 900px; width: 100%;">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Date Issued</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Issued By</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Reason</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Response</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Date Reviewed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($acceptedQueries as $query)
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50">
+                                        <td class="py-3 px-4">
+                                            {{ $query->issued_at ? $query->issued_at->format('d/m/Y') : 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            {{ $query->issuedBy->name ?? $query->issuedBy->email ?? 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="max-w-xs truncate" title="{{ $query->reason }}">
+                                                {{ Str::limit($query->reason, 50) }}
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="max-w-xs truncate" title="{{ $query->response }}">
+                                                {{ Str::limit($query->response, 50) }}
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            {{ $query->reviewed_at ? $query->reviewed_at->format('d/m/Y') : 'N/A' }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="text-center py-8 text-secondary-foreground">
+                        <i class="ki-filled ki-information-2 text-4xl mb-3"></i>
+                        <p>No accepted queries in disciplinary record.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 
     <style>

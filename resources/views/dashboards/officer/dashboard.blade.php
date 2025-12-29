@@ -21,6 +21,30 @@
         </div>
     @endif
 
+    <!-- Pending Queries Alert -->
+    @if(isset($pendingQueries) && $pendingQueries->count() > 0)
+        <div class="kt-card mb-5" style="background-color: #fee2e2; border: 2px solid #dc3545;">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-information text-xl" style="color: #dc3545;"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold mb-1" style="color: #b91c1c;">
+                            You have {{ $pendingQueries->count() }} pending query{{ $pendingQueries->count() !== 1 ? 's' : '' }} that require{{ $pendingQueries->count() === 1 ? 's' : '' }} your response
+                        </p>
+                        @foreach($pendingQueries as $query)
+                            <p class="text-sm mb-2" style="color: #dc2626;">
+                                Query issued on {{ $query->issued_at ? $query->issued_at->format('d/m/Y') : 'N/A' }} by {{ $query->issuedBy->name ?? $query->issuedBy->email ?? 'Staff Officer' }}
+                            </p>
+                        @endforeach
+                        <a href="{{ route('officer.queries.index') }}" class="kt-btn kt-btn-sm mt-2" style="background-color: #dc3545; border-color: #dc3545; color: #ffffff;">
+                            <i class="ki-filled ki-question"></i> View & Respond to Queries
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Quick Actions Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">

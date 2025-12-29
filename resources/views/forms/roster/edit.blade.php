@@ -48,14 +48,51 @@
             @csrf
             @method('PUT')
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Officer Assignments</h3>
+                <h3 class="kt-card-title">Roster Leadership & Assignments</h3>
                 <div class="kt-card-toolbar">
                     <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" id="add-assignment-btn">
                         <i class="ki-filled ki-plus"></i> Add Assignment
                     </button>
                 </div>
             </div>
-            <div class="kt-card-content">
+            <div class="kt-card-content space-y-6">
+                <!-- Leadership Selection -->
+                <div class="kt-card shadow-none bg-info/10 border border-info/20">
+                    <div class="kt-card-content p-4">
+                        <h4 class="text-sm font-semibold text-foreground mb-4">Roster Leadership</h4>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label font-normal text-mono text-xs">Officer in Charge (OIC) <span class="text-danger">*</span></label>
+                                <select class="kt-input" name="oic_officer_id" required>
+                                    <option value="">Select OIC</option>
+                                    @foreach($officers as $officer)
+                                        <option value="{{ $officer->id }}" {{ $roster->oic_officer_id == $officer->id ? 'selected' : '' }}>
+                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="kt-form-label font-normal text-mono text-xs">Second In Command (2IC)</label>
+                                <select class="kt-input" name="second_in_command_officer_id">
+                                    <option value="">Select 2IC (Optional)</option>
+                                    @foreach($officers as $officer)
+                                        <option value="{{ $officer->id }}" {{ $roster->second_in_command_officer_id == $officer->id ? 'selected' : '' }}>
+                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <p class="text-xs text-secondary-foreground mt-3">
+                            <i class="ki-filled ki-information"></i> OIC and 2IC will be notified along with all assigned officers when the roster is updated.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Assignments Section -->
+                <div>
+                    <h4 class="text-sm font-semibold text-foreground mb-4">Officer Assignments</h4>
                 <div id="assignments-container" class="space-y-4">
                     @if($roster->assignments->count() > 0)
                         @foreach($roster->assignments as $index => $assignment)
@@ -101,6 +138,7 @@
                             </div>
                         @endforeach
                     @endif
+                </div>
                 </div>
             </div>
             <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">
