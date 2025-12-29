@@ -10,100 +10,259 @@
 @endsection
 
 @section('content')
-<div class="grid gap-5 lg:gap-7.5">
-    <div class="kt-card">
-        <div class="kt-card-header">
-            <h3 class="kt-card-title">Search Officers System-Wide</h3>
-        </div>
-        <div class="kt-card-content">
-            <form method="GET" action="{{ route('investigation.search') }}" class="mb-5">
-                <div class="flex gap-3">
-                    <input type="text" 
-                           name="search" 
-                           value="{{ request('search') }}" 
-                           placeholder="Search by service number, name, or email..."
-                           class="kt-input flex-1">
-                    <button type="submit" class="kt-btn kt-btn-primary">
-                        <i class="ki-filled ki-magnifier"></i> Search
-                    </button>
-                </div>
-            </form>
+    <div class="grid gap-5 lg:gap-7.5">
+        <!-- Filters Card -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Filter Officers</h3>
+            </div>
+            <div class="kt-card-content">
+                <form method="GET" action="{{ route('investigation.search') }}" class="flex flex-col gap-4">
+                    <div class="flex flex-col md:flex-row gap-3 items-end">
+                        <!-- Search Input -->
+                        <div class="flex-1 w-full md:min-w-[250px]">
+                            <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
+                            <input type="text" 
+                                   name="search" 
+                                   value="{{ request('search') }}"
+                                   class="kt-input w-full" 
+                                   placeholder="Search by name, service number, or email...">
+                        </div>
 
-            @if($officers->count() > 0)
-                <div class="table-scroll-wrapper overflow-x-auto">
-                    <table class="kt-table" style="min-width: 800px; width: 100%;">
-                        <thead>
-                            <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 font-semibold text-sm">Service Number</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm">Name</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm">Rank</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm">Command</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm">Status</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($officers as $officer)
-                                <tr class="border-b border-border last:border-0 hover:bg-muted/50">
-                                    <td class="py-3 px-4">
-                                        <span class="font-medium">{{ $officer->service_number }}</span>
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <div>
-                                            <span class="font-medium">{{ $officer->initials }} {{ $officer->surname }}</span>
-                                            <div class="text-xs text-muted-foreground">{{ $officer->email }}</div>
-                                        </div>
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ $officer->substantive_rank }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {{ $officer->presentStation->name ?? 'N/A' }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <div class="flex flex-wrap gap-1">
-                                            @if($officer->ongoing_investigation)
-                                                <span class="kt-badge kt-badge-warning">Ongoing Investigation</span>
+                        <!-- Zone Select -->
+                        <div class="w-full md:w-48">
+                            <label class="block text-sm font-medium text-secondary-foreground mb-1">Zone</label>
+                            <select name="zone_id" class="kt-input w-full">
+                                <option value="">All Zones</option>
+                                @foreach($zones as $zone)
+                                    <option value="{{ $zone->id }}" {{ (string)request('zone_id') === (string)$zone->id ? 'selected' : '' }}>
+                                        {{ $zone->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Command Select -->
+                        <div class="w-full md:w-48">
+                            <label class="block text-sm font-medium text-secondary-foreground mb-1">Command</label>
+                            <select name="command_id" class="kt-input w-full">
+                                <option value="">All Commands</option>
+                                @foreach($commands as $command)
+                                    <option value="{{ $command->id }}" {{ (string)request('command_id') === (string)$command->id ? 'selected' : '' }}>
+                                        {{ $command->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button type="submit" class="kt-btn kt-btn-primary">
+                                <i class="ki-filled ki-filter"></i> Filter
+                            </button>
+                            @if(request()->anyFilled(['search', 'zone_id', 'command_id', 'sort_by', 'sort_order']))
+                                <a href="{{ route('investigation.search') }}" class="kt-btn kt-btn-outline">
+                                    Clear
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Officers List Card -->
+        <div class="kt-card overflow-hidden">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Search Officers System-Wide</h3>
+            </div>
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <!-- Table with horizontal scroll wrapper -->
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 900px; width: 100%;">
+                            <thead>
+                                <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_order' => request('sort_by') === 'name' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Officer Details
+                                            @if(request('sort_by') === 'name')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
                                             @endif
-                                            @if($officer->interdicted)
-                                                <span class="kt-badge kt-badge-danger">Interdicted</span>
-                                            @endif
-                                            @if($officer->suspended)
-                                                <span class="kt-badge kt-badge-danger">Suspended</span>
-                                            @endif
-                                            @if(!$officer->ongoing_investigation && !$officer->interdicted && !$officer->suspended)
-                                                <span class="kt-badge kt-badge-success">Clear</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <a href="{{ route('investigation.create', $officer->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                                            <i class="ki-filled ki-plus"></i> Send Invitation
                                         </a>
-                                    </td>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Service Number
+                                            @if(request('sort_by') === 'service_number')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'rank', 'sort_order' => request('sort_by') === 'rank' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Rank
+                                            @if(request('sort_by') === 'rank')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'command', 'sort_order' => request('sort_by') === 'command' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Command
+                                            @if(request('sort_by') === 'command')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'zone', 'sort_order' => request('sort_by') === 'zone' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Zone
+                                            @if(request('sort_by') === 'zone')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        Status
+                                    </th>
+                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        Actions
+                                    </th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                <div class="p-4 border-t border-border">
-                    {{ $officers->links() }}
-                </div>
-            @else
-                <div class="text-center py-12">
-                    <i class="ki-filled ki-magnifier text-4xl text-muted-foreground mb-4"></i>
-                    <p class="text-secondary-foreground">
-                        @if(request('search'))
-                            No officers found matching "{{ request('search') }}"
-                        @else
-                            Enter a search term to find officers
-                        @endif
-                    </p>
-                </div>
-            @endif
+                            </thead>
+                            <tbody>
+                                @forelse($officers as $officer)
+                                    @php
+                                        $initials = $officer->initials ?? '';
+                                        $surname = $officer->surname ?? '';
+                                        $fullName = trim("{$initials} {$surname}");
+                                        $avatarInitials = strtoupper(($initials[0] ?? '') . ($surname[0] ?? ''));
+                                    @endphp
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm" style="flex-shrink: 0;">
+                                                    {{ $avatarInitials }}
+                                                </div>
+                                                <div>
+                                                    <div class="text-sm font-medium text-foreground">{{ $fullName }}</div>
+                                                    <div class="text-xs text-secondary-foreground">{{ $officer->email ?? '' }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <span class="text-sm font-mono text-foreground">
+                                                {{ $officer->service_number ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                            {{ $officer->substantive_rank ?? 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                            {{ $officer->presentStation->name ?? 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                            @if($officer->presentStation && $officer->presentStation->zone)
+                                                {{ $officer->presentStation->zone->name }}
+                                            @else
+                                                <span class="text-secondary-foreground italic">N/A</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            <div class="flex flex-wrap gap-1">
+                                                @if($officer->ongoing_investigation)
+                                                    <span class="kt-badge kt-badge-warning kt-badge-sm">Ongoing Investigation</span>
+                                                @endif
+                                                @if($officer->interdicted)
+                                                    <span class="kt-badge kt-badge-danger kt-badge-sm">Interdicted</span>
+                                                @endif
+                                                @if($officer->suspended)
+                                                    <span class="kt-badge kt-badge-danger kt-badge-sm">Suspended</span>
+                                                @endif
+                                                @if(!$officer->ongoing_investigation && !$officer->interdicted && !$officer->suspended)
+                                                    <span class="kt-badge kt-badge-success kt-badge-sm">Clear</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4 text-right" style="white-space: nowrap;">
+                                            <a href="{{ route('investigation.create', $officer->id) }}" 
+                                               class="kt-btn kt-btn-sm kt-btn-primary">
+                                                <i class="ki-filled ki-plus"></i> Send Invitation
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="py-12 text-center">
+                                            <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                                            <p class="text-secondary-foreground">No officers found</p>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                <!-- Pagination -->
+                @if($officers->hasPages())
+                    <div class="mt-6 pt-4 border-t border-border px-4">
+                        {{ $officers->withQueryString()->links() }}
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
-</div>
+
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
+        }
+
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection
-
-

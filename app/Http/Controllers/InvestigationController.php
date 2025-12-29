@@ -82,9 +82,7 @@ class InvestigationController extends Controller
      */
     public function search(Request $request)
     {
-        $query = Officer::where('is_active', true)
-            ->orderBy('surname')
-            ->orderBy('initials');
+        $query = Officer::where('is_active', true);
 
         // Search filter
         if ($request->filled('search')) {
@@ -97,9 +95,66 @@ class InvestigationController extends Controller
             });
         }
 
+        // Zone filter
+        if ($request->filled('zone_id')) {
+            $query->whereHas('presentStation', function($q) use ($request) {
+                $q->where('zone_id', $request->zone_id);
+            });
+        }
+
+        // Command filter
+        if ($request->filled('command_id')) {
+            $query->where('present_station', $request->command_id);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'surname');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        // Map sort_by to actual column names
+        $sortableColumns = [
+            'service_number' => 'service_number',
+            'name' => 'surname', // Sort by surname for name
+            'rank' => 'substantive_rank',
+            'command' => 'present_station',
+            'zone' => 'present_station', // Sort by command, then we'll need to join for zone name
+        ];
+
+        $column = $sortableColumns[$sortBy] ?? 'surname';
+        $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'asc';
+
+        // Handle zone sorting - need to join with commands and zones
+        if ($sortBy === 'zone') {
+            $query->leftJoin('commands', 'officers.present_station', '=', 'commands.id')
+                  ->leftJoin('zones', 'commands.zone_id', '=', 'zones.id')
+                  ->select('officers.*')
+                  ->orderBy('zones.name', $order)
+                  ->orderBy('commands.name', $order); // Secondary sort by command name
+        } elseif ($sortBy === 'command') {
+            $query->leftJoin('commands', 'officers.present_station', '=', 'commands.id')
+                  ->select('officers.*')
+                  ->orderBy('commands.name', $order);
+        } else {
+            $query->orderBy($column, $order);
+            // Add secondary sort for name
+            if ($sortBy === 'name') {
+                $query->orderBy('initials', $order);
+            }
+        }
+
+        // Get all zones for filter dropdown
+        $zones = \App\Models\Zone::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Get all commands for filter dropdown
+        $commands = \App\Models\Command::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
         $officers = $query->paginate(20)->withQueryString();
 
-        return view('dashboards.investigation.search', compact('officers'));
+        return view('dashboards.investigation.search', compact('officers', 'zones', 'commands'));
     }
 
     /**
@@ -136,7 +191,7 @@ class InvestigationController extends Controller
                 'invited_at' => now(),
             ]);
 
-            // Send notification to officer
+            // Send in-app notification to officer
             if ($officer->user) {
                 $this->notificationService->notify(
                     $officer->user,
@@ -145,8 +200,26 @@ class InvestigationController extends Controller
                     "You have been invited to an investigation hearing. Message: {$request->invitation_message}",
                     'investigation',
                     $investigation->id,
-                    true
+                    false // Don't send email via notify method, we'll send via job
                 );
+            }
+
+            // Send email notification via job
+            if ($officer->user && $officer->user->email) {
+                try {
+                    \App\Jobs\SendInvestigationInvitationMailJob::dispatch($investigation);
+                    \Log::info('Investigation invitation email job dispatched', [
+                        'investigation_id' => $investigation->id,
+                        'officer_id' => $officer->id,
+                        'email' => $officer->user->email,
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to dispatch investigation invitation email job', [
+                        'investigation_id' => $investigation->id,
+                        'officer_id' => $officer->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             DB::commit();
@@ -247,15 +320,36 @@ class InvestigationController extends Controller
             ];
 
             if ($officer->user) {
-                $this->notificationService->notify(
+                // Create in-app notification
+                $notification = $this->notificationService->notify(
                     $officer->user,
                     'investigation_status_changed',
                     'Investigation Status Updated',
                     $statusMessages[$newStatus] . ($request->notes ? " Notes: {$request->notes}" : ''),
                     'investigation',
                     $investigation->id,
-                    true
+                    false // Don't send email via notify method, we'll send via job
                 );
+
+                // Send email notification via job
+                if ($officer->user->email) {
+                    try {
+                        \App\Jobs\SendInvestigationStatusUpdateMailJob::dispatch($notification);
+                        \Log::info('Investigation status update email job dispatched', [
+                            'investigation_id' => $investigation->id,
+                            'notification_id' => $notification->id,
+                            'officer_id' => $officer->id,
+                            'email' => $officer->user->email,
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to dispatch investigation status update email job', [
+                            'investigation_id' => $investigation->id,
+                            'notification_id' => $notification->id,
+                            'officer_id' => $officer->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
@@ -306,15 +400,36 @@ class InvestigationController extends Controller
 
             // Send notification to officer
             if ($officer->user) {
-                $this->notificationService->notify(
+                // Create in-app notification
+                $notification = $this->notificationService->notify(
                     $officer->user,
                     'investigation_resolved',
                     'Investigation Resolved',
                     'Your investigation has been resolved. You are now eligible for promotion again (if other criteria are met).',
                     'investigation',
                     $investigation->id,
-                    true
+                    false // Don't send email via notify method, we'll send via job
                 );
+
+                // Send email notification via job
+                if ($officer->user->email) {
+                    try {
+                        \App\Jobs\SendInvestigationResolvedMailJob::dispatch($notification);
+                        \Log::info('Investigation resolved email job dispatched', [
+                            'investigation_id' => $investigation->id,
+                            'notification_id' => $notification->id,
+                            'officer_id' => $officer->id,
+                            'email' => $officer->user->email,
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to dispatch investigation resolved email job', [
+                            'investigation_id' => $investigation->id,
+                            'notification_id' => $notification->id,
+                            'officer_id' => $officer->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             DB::commit();

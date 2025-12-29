@@ -1419,14 +1419,37 @@ class NotificationService
 
         $dateFormatted = \Carbon\Carbon::parse($dateOfDeath)->format('d/m/Y');
 
-        return $this->notify(
+        // Create in-app notification
+        $notification = $this->notify(
             $officer->user,
             'officer_deceased_reported',
             'Deceased Status Reported',
             "You have been reported as deceased with date of death: {$dateFormatted}. This report is pending validation.",
             'officer',
-            $officer->id
+            $officer->id,
+            false // Don't send email via notify method, we'll send via job
         );
+
+        // Send email via job
+        if ($officer->user->email) {
+            try {
+                \App\Jobs\SendDeceasedOfficerNotificationJob::dispatch($officer, $notification);
+                Log::info('Deceased officer notification email job dispatched', [
+                    'user_id' => $officer->user->id,
+                    'officer_id' => $officer->id,
+                    'notification_id' => $notification->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch deceased officer notification email job', [
+                    'user_id' => $officer->user->id,
+                    'officer_id' => $officer->id,
+                    'notification_id' => $notification->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $notification;
     }
 
     /**
