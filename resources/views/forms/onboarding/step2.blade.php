@@ -1123,5 +1123,3 @@ document.querySelectorAll('#onboarding-step2-form input, #onboarding-step2-form 
 </script>
 @endpush
 @endsection
-
-

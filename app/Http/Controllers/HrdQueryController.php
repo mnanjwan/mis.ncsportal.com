@@ -45,8 +45,11 @@ class HrdQueryController extends Controller
                 ->orWhere('reason', 'like', "%{$search}%")
                 ->orWhere('response', 'like', "%{$search}%")
                 ->orWhereHas('issuedBy', function($userQuery) use ($search) {
-                    $userQuery->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                    $userQuery->where('email', 'like', "%{$search}%");
+                })
+                ->orWhereHas('issuedBy.officer', function($officerQuery) use ($search) {
+                    $officerQuery->where('initials', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%");
                 });
             });
         }
