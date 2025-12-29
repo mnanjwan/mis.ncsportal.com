@@ -78,7 +78,7 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         <a href="{{ route('investigation.create', $officer->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                                            <i class="ki-filled ki-send"></i> Send Invitation
+                                            <i class="ki-filled ki-plus"></i> Send Invitation
                                         </a>
                                     </td>
                                 </tr>

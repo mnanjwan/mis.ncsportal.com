@@ -76,7 +76,7 @@
 
                     <div class="flex items-center gap-3">
                         <button type="submit" class="kt-btn kt-btn-primary">
-                            <i class="ki-filled ki-send"></i> Send Invitation
+                            <i class="ki-filled ki-plus"></i> Send Invitation
                         </button>
                         <a href="{{ route('investigation.search') }}" class="kt-btn kt-btn-secondary">
                             Cancel

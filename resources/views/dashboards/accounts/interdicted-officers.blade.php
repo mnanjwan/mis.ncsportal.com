@@ -83,7 +83,7 @@
                 </div>
             @else
                 <div class="text-center py-12">
-                    <i class="ki-filled ki-shield-cross text-4xl text-muted-foreground mb-4"></i>
+                    <i class="ki-filled ki-cross-circle text-4xl text-muted-foreground mb-4"></i>
                     <p class="text-secondary-foreground">
                         @if(request('search'))
                             No interdicted officers found matching "{{ request('search') }}"

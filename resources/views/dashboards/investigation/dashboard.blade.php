@@ -15,7 +15,7 @@
                         <span class="text-2xl font-semibold text-mono">{{ $invitedCount }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
-                        <i class="ki-filled ki-send text-2xl text-info"></i>
+                        <i class="ki-filled ki-plus text-2xl text-info"></i>
                     </div>
                 </div>
             </div>
@@ -29,7 +29,7 @@
                         <span class="text-2xl font-semibold text-mono">{{ $ongoingCount }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
-                        <i class="ki-filled ki-file-search text-2xl text-warning"></i>
+                        <i class="ki-filled ki-time text-2xl text-warning"></i>
                     </div>
                 </div>
             </div>
@@ -43,7 +43,7 @@
                         <span class="text-2xl font-semibold text-mono">{{ $interdictedCount }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-danger/10">
-                        <i class="ki-filled ki-shield-cross text-2xl text-danger"></i>
+                        <i class="ki-filled ki-cross-circle text-2xl text-danger"></i>
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                         <span class="text-2xl font-semibold text-mono">{{ $suspendedCount }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-danger/10">
-                        <i class="ki-filled ki-pause-circle text-2xl text-danger"></i>
+                        <i class="ki-filled ki-lock text-2xl text-danger"></i>
                     </div>
                 </div>
             </div>
@@ -85,7 +85,7 @@
                         <span class="text-2xl font-semibold text-mono">{{ $totalInvestigations }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
-                        <i class="ki-filled ki-file-search text-2xl text-primary"></i>
+                        <i class="ki-filled ki-document text-2xl text-primary"></i>
                     </div>
                 </div>
             </div>
@@ -103,7 +103,7 @@
                     <i class="ki-filled ki-magnifier"></i> Search Officers
                 </a>
                 <a href="{{ route('investigation.index') }}" class="kt-btn kt-btn-secondary">
-                    <i class="ki-filled ki-file-search"></i> View All Investigations
+                    <i class="ki-filled ki-document"></i> View All Investigations
                 </a>
             </div>
         </div>

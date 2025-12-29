@@ -343,7 +343,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('investigation.dashboard')],
                 ['icon' => 'ki-filled ki-magnifier', 'title' => 'Search Officers', 'href' => route('investigation.search')],
-                ['icon' => 'ki-filled ki-file-search', 'title' => 'Investigations', 'href' => route('investigation.index')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'Investigations', 'href' => route('investigation.index')],
             ];
             break;
         default:

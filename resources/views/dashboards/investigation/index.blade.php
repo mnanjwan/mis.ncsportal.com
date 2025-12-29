@@ -124,7 +124,7 @@
                 </div>
             @else
                 <div class="text-center py-12">
-                    <i class="ki-filled ki-file-search text-4xl text-muted-foreground mb-4"></i>
+                    <i class="ki-filled ki-document text-4xl text-muted-foreground mb-4"></i>
                     <p class="text-secondary-foreground">No investigations found</p>
                     <a href="{{ route('investigation.search') }}" class="kt-btn kt-btn-primary mt-4">
                         <i class="ki-filled ki-magnifier"></i> Search Officers
