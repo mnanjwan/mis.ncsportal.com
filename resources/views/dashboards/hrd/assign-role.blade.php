@@ -33,7 +33,7 @@
                                             <span class="font-medium">{{ $role }}</span>@if(!$loop->last), @endif
                                         @endforeach
                                     </li>
-                                    <li><strong>Independent Roles</strong> don't need a command: HRD, Establishment, Accounts, Board, Welfare, Officer</li>
+                                    <li><strong>Independent Roles</strong> don't need a command: HRD, Establishment, Accounts, Board, Welfare, Investigation Unit, Officer</li>
                                     <li>Select a command first to see officers in that command</li>
                                     <li>If an officer doesn't have a user account, one will be created automatically</li>
                                 </ul>

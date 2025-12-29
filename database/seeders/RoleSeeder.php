@@ -83,7 +83,7 @@ class RoleSeeder extends Seeder
                 'access_level' => 'system_wide',
             ],
             [
-                'name' => 'Zone Coordinator',
+                'name' => 'Zonal Coordinator',
                 'code' => 'ZONE_COORDINATOR',
                 'description' => 'Zone Coordinator - Zonal Posting Manager',
                 'access_level' => 'zone_level',
@@ -98,6 +98,12 @@ class RoleSeeder extends Seeder
                 'name' => 'ICT',
                 'code' => 'ICT',
                 'description' => 'ICT - Information and Communication Technology',
+                'access_level' => 'system_wide',
+            ],
+            [
+                'name' => 'Investigation Unit',
+                'code' => 'INVESTIGATION_UNIT',
+                'description' => 'Investigation Unit - Disciplinary Investigation Manager',
                 'access_level' => 'system_wide',
             ],
             [
