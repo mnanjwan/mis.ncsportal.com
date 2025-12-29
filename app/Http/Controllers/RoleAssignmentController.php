@@ -243,39 +243,72 @@ class RoleAssignmentController extends Controller
      */
     public function getOfficersByCommand(Request $request)
     {
-        $request->validate([
-            'command_id' => 'required|exists:commands,id'
-        ]);
-
         try {
-            $commandId = $request->command_id;
+            // Validate request - accept both string and integer
+            $validated = $request->validate([
+                'command_id' => 'required'
+            ]);
+
+            $commandId = (int) $validated['command_id'];
+            
+            if ($commandId <= 0) {
+                return response()->json([
+                    'error' => 'Invalid command ID',
+                    'message' => 'Command ID must be a positive integer'
+                ], 422);
+            }
+
+            // Verify command exists
+            $commandExists = Command::where('id', $commandId)->exists();
+            if (!$commandExists) {
+                return response()->json([
+                    'error' => 'Command not found',
+                    'message' => "Command with ID {$commandId} does not exist"
+                ], 404);
+            }
 
             // Query officers exactly like the Officers List does - simple and direct
             // Match the exact query pattern used in OfficerController@index
-            $officers = Officer::where('present_station', $commandId)
+            $officersQuery = Officer::where('present_station', $commandId)
                 ->orderBy('surname')
-                ->orderBy('first_name')
-                ->get()
-                ->map(function($officer) {
-                    return [
-                        'id' => $officer->id,
-                        'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '') . ' ' . ($officer->first_name ?? '')),
-                        'service_number' => $officer->service_number ?? 'N/A',
-                        'rank' => $officer->substantive_rank ?? 'N/A',
-                    ];
-                });
+                ->orderBy('first_name');
+            
+            $officers = $officersQuery->get()->map(function($officer) {
+                if (!$officer) {
+                    return null;
+                }
+                return [
+                    'id' => $officer->id ?? null,
+                    'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '') . ' ' . ($officer->first_name ?? '')),
+                    'service_number' => $officer->service_number ?? 'N/A',
+                    'rank' => $officer->substantive_rank ?? 'N/A',
+                ];
+            })->filter()->values();
 
             return response()->json($officers);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in getOfficersByCommand', [
+                'errors' => $e->errors(),
+                'request' => $request->all()
+            ]);
+            
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             \Log::error('Error fetching officers by command', [
                 'command_id' => $request->command_id ?? null,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
                 'error' => 'Failed to fetch officers',
-                'message' => $e->getMessage()
+                'message' => config('app.debug') ? $e->getMessage() : 'An error occurred while fetching officers'
             ], 500);
         }
     }
