@@ -247,38 +247,37 @@ class RoleAssignmentController extends Controller
             'command_id' => 'required|exists:commands,id'
         ]);
 
-        $commandId = $request->command_id;
+        try {
+            $commandId = $request->command_id;
 
-        // Query officers exactly like the Officers List does - simple and direct
-        // Match the exact query pattern used in OfficerController@index
-        $officers = Officer::with(['user', 'presentStation'])
-            ->where('present_station', $commandId)
-            ->orderBy('surname')
-            ->orderBy('first_name')
-            ->get()
-            ->map(function($officer) {
-                return [
-                    'id' => $officer->id,
-                    'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '') . ' ' . ($officer->first_name ?? '')),
-                    'service_number' => $officer->service_number ?? 'N/A',
-                    'rank' => $officer->substantive_rank ?? 'N/A',
-                ];
-            });
+            // Query officers exactly like the Officers List does - simple and direct
+            // Match the exact query pattern used in OfficerController@index
+            $officers = Officer::where('present_station', $commandId)
+                ->orderBy('surname')
+                ->orderBy('first_name')
+                ->get()
+                ->map(function($officer) {
+                    return [
+                        'id' => $officer->id,
+                        'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '') . ' ' . ($officer->first_name ?? '')),
+                        'service_number' => $officer->service_number ?? 'N/A',
+                        'rank' => $officer->substantive_rank ?? 'N/A',
+                    ];
+                });
 
-        // Log for debugging (helps identify issues on live server)
-        \Log::info('Officers by command query', [
-            'command_id' => $commandId,
-            'command_id_type' => gettype($commandId),
-            'officers_count' => $officers->count(),
-            'query_used' => 'present_station = ' . $commandId,
-            'sample_officer' => $officers->first() ? [
-                'id' => $officers->first()['id'],
-                'name' => $officers->first()['name'],
-                'present_station_from_db' => Officer::find($officers->first()['id'])?->present_station,
-            ] : null,
-        ]);
-
-        return response()->json($officers);
+            return response()->json($officers);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching officers by command', [
+                'command_id' => $request->command_id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to fetch officers',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
