@@ -53,17 +53,34 @@ class LoginController extends Controller
             ]);
         }
 
-        // Invalidate all other sessions for this user
+        // Check if user has an active session on another device
         if ($user->current_session_id) {
-            DB::table('sessions')
+            // Check if the session still exists and is valid
+            $existingSession = DB::table('sessions')
                 ->where('id', $user->current_session_id)
-                ->delete();
+                ->where('user_id', $user->id)
+                ->first();
+            
+            // Check if session is still active (not expired)
+            $sessionLifetime = config('session.lifetime', 120); // minutes
+            $isSessionActive = false;
+            
+            if ($existingSession) {
+                $lastActivity = $existingSession->last_activity;
+                $expiresAt = $lastActivity + ($sessionLifetime * 60); // Convert to seconds
+                $isSessionActive = time() < $expiresAt;
+            }
+            
+            // If there's an active session, prevent login
+            if ($isSessionActive) {
+                throw ValidationException::withMessages([
+                    'username' => ['You have been Logged in on another device.'],
+                ]);
+            } else {
+                // Session expired, clear it
+                $user->update(['current_session_id' => null]);
+            }
         }
-        
-        // Delete all other sessions for this user
-        DB::table('sessions')
-            ->where('user_id', $user->id)
-            ->delete();
 
         // Update last login
         $user->update(['last_login' => now()]);
