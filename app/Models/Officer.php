@@ -46,6 +46,7 @@ class Officer extends Model
         'unit',
         'interdicted',
         'suspended',
+        'ongoing_investigation',
         'dismissed',
         'quartered',
         'is_deceased',
@@ -74,6 +75,7 @@ class Officer extends Model
             'deceased_date' => 'date',
             'interdicted' => 'boolean',
             'suspended' => 'boolean',
+            'ongoing_investigation' => 'boolean',
             'dismissed' => 'boolean',
             'quartered' => 'boolean',
             'is_deceased' => 'boolean',
@@ -375,6 +377,18 @@ class Officer extends Model
     public function acceptedQueries()
     {
         return $this->hasMany(Query::class)->where('status', 'ACCEPTED');
+    }
+
+    public function investigations()
+    {
+        return $this->hasMany(Investigation::class);
+    }
+
+    public function currentInvestigation()
+    {
+        return $this->hasOne(Investigation::class)
+            ->whereIn('status', ['INVITED', 'ONGOING_INVESTIGATION', 'INTERDICTED', 'SUSPENDED'])
+            ->latest();
     }
 
     /**

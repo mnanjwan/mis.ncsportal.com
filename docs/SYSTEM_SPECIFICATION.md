@@ -39,7 +39,7 @@
 16. Override posting decisions when necessary
 17. System-wide configuration and parameter management
 18. Generate comprehensive system reports
-19. Role Assignments Management: Assign Admin role to officers for specific commands via "Role Assignments Management -> Assign Role to Officer"
+19. Role Assignments Management: Assign roles to officers for specific commands via "Role Assignments Management -> Assign Role to Officer" (including Admin, Investigation Unit, and other roles)
 20. View accepted queries in officer profiles (queries accepted by Staff Officers become visible in HRD's view of officer profiles)
 21. View all accepted queries system-wide through dedicated Query Management section
 22. Receive in-app notifications when queries are accepted (no email notifications for HRD)
@@ -61,6 +61,8 @@
 6. Update role assignments as needed within command scope
 7. View current role assignments in their assigned command
 8. Maintain role assignment records and audit trail for their command
+
+**Note:** Investigation Unit role assignments are managed exclusively by HRD, not by Admin role assignment managers.
 
 ### Staff Officer - Administrative Manager
 **Primary Role:** Command-level administration and coordination
@@ -170,16 +172,17 @@
    - PFA (Pension Fund Administrator)
    - Retirement Savings Account (RSA)
 2. Generate list of deceased officers (This list is from Welfare Unit)
-3. Extract payment data: Bank Name, Account Number, PFA, RSA
-4. Process salary payments and remittances
-5. Calculate and process death benefits
-6. Process pension remittances
-7. Generate payment reports and reconciliations
-8. Maintain financial audit trails
-9. Handle payment exceptions and corrections
-10. Generate payroll and financial statistics
-11. Verify and approve account number changes submitted by officers
-12. Verify and approve RSA PIN number changes submitted by officers (RSA PIN has the prefix PEN)
+3. Generate list of interdicted officers (Officers placed on interdiction by Investigation Unit)
+4. Extract payment data: Bank Name, Account Number, PFA, RSA
+5. Process salary payments and remittances
+6. Calculate and process death benefits
+7. Process pension remittances
+8. Generate payment reports and reconciliations
+9. Maintain financial audit trails
+10. Handle payment exceptions and corrections
+11. Generate payroll and financial statistics
+12. Verify and approve account number changes submitted by officers
+13. Verify and approve RSA PIN number changes submitted by officers (RSA PIN has the prefix PEN)
 
 ### Board (Promotion Board) - Career Progression Manager
 **Primary Role:** Management of promotions and rank changes
@@ -412,6 +415,34 @@
 4. Track email account status
 5. Generate email account reports
 6. Coordinate email creation with service number assignment
+
+### Investigation Unit - Disciplinary Investigation Manager
+**Primary Role:** Officer investigation and disciplinary status management
+
+**Access Level:** System-wide officer investigation and disciplinary actions
+
+**Core Functions:**
+1. Search any officer system-wide by service number, name, or email
+2. Send investigation invitation message to officers (email and in-app notification)
+3. Place officers on investigation status:
+   - **Ongoing Investigation** - Officer is under investigation
+   - **Interdiction** - Officer is interdicted (prevents promotion eligibility)
+   - **Suspension** - Officer is suspended (prevents promotion eligibility)
+4. View investigation history and status for all officers
+5. Track investigation dates and outcomes
+6. Manage investigation records and documentation
+7. Update investigation status as cases progress
+8. Remove investigation status when cases are resolved
+
+**Investigation Status Impact:**
+- Officers with **Ongoing Investigation**, **Interdiction**, or **Suspension** status cannot appear on the Promotion Eligibility List
+- Officers with **Interdiction** status appear on Accounts unit's interdicted officers list
+- Investigation status affects officer's eligibility for promotions and other career progression activities
+
+**Notification System:**
+- Officers receive email and in-app notifications when investigation invitation is sent
+- Officers receive notifications when investigation status changes
+- System automatically updates promotion eligibility lists when investigation status changes
 
 ### Zone Coordinator - Zonal Posting Manager
 **Primary Role:** Zonal-level officer posting management
@@ -710,11 +741,11 @@ The system is organized into the following zones:
 1. **System checks eligibility** - System automatically checks eligibility
 2. **System checks exclusions** - The system will check if the officer has been:
    - Officers not meeting time in rank
-   - Interdicted (set by Discipline seat)
-   - Suspended (set by Discipline seat)
+   - Interdicted (set by Investigation Unit)
+   - Suspended (set by Investigation Unit)
    - Dismissed (set by Discipline seat)
-   - Officers under investigation
-   - Has a pending investigation issue (set by the investigation seat)
+   - Officers under investigation (ongoing_investigation set by Investigation Unit)
+   - Has a pending investigation issue (set by Investigation Unit)
    - Deceased (set by Welfare seat)
 3. **Excluded officers** - The above category of officers won't feature on the Eligibility List even if they are due for promotion
 4. **System generates list** - System generates eligibility list
@@ -900,7 +931,50 @@ The Eligibility List carries the following fields:
 4. **System updates records** - If approved, system updates the officer's Next of KIN records
 5. **Officer notified** - Officer receives notification of approval or rejection
 
-### 12. Query Workflow
+### 12. Investigation Workflow
+
+**Investigation Invitation Phase:**
+1. **Investigation Officer searches** - Investigation Officer searches for any officer system-wide by service number, name, or email
+2. **Investigation Officer selects officer** - Investigation Officer selects the officer to investigate
+3. **Investigation Officer sends invitation** - Investigation Officer sends investigation invitation message to the officer
+4. **System sends notifications** - System sends email and in-app notification to the officer about the investigation invitation
+5. **Investigation record created** - System creates investigation record with status: INVITED
+
+**Investigation Status Management Phase:**
+1. **Investigation Officer reviews case** - Investigation Officer reviews investigation details
+2. **Investigation Officer updates status** - Investigation Officer can place officer on one of the following statuses:
+   - **Ongoing Investigation** - Officer is actively under investigation (ongoing_investigation = true)
+   - **Interdiction** - Officer is interdicted (interdicted = true)
+   - **Suspension** - Officer is suspended (suspended = true)
+3. **System updates officer record** - System updates officer's investigation status in database
+4. **System sends notification** - Officer receives email and in-app notification about status change
+5. **System updates promotion eligibility** - System automatically excludes officer from promotion eligibility lists if status is Ongoing Investigation, Interdiction, or Suspension
+6. **Accounts receives interdiction list** - If officer is interdicted, they appear on Accounts unit's interdicted officers list
+
+**Investigation Resolution Phase:**
+1. **Investigation Officer resolves case** - Investigation Officer can remove investigation status when case is resolved
+2. **System updates status** - System updates officer record (ongoing_investigation = false, interdicted = false, suspended = false)
+3. **System sends notification** - Officer receives notification about status removal
+4. **System updates promotion eligibility** - Officer becomes eligible for promotion again (if other criteria met)
+5. **Investigation record closed** - Investigation record is marked as resolved with resolution date
+
+**Investigation History:**
+- All investigation records are maintained with complete audit trail
+- Investigation history includes: invitation date, status changes, resolution date, investigation officer details
+- Investigation records are visible to Investigation Unit and HRD
+- Officers can view their own investigation status and history
+
+**Impact on Promotion Eligibility:**
+- Officers with Ongoing Investigation, Interdiction, or Suspension status are automatically excluded from Promotion Eligibility Lists
+- System checks these statuses when generating eligibility lists
+- Status changes automatically trigger re-evaluation of promotion eligibility
+
+**Impact on Accounts:**
+- Interdicted officers appear on Accounts unit's interdicted officers list
+- Accounts can generate reports of all interdicted officers
+- Interdiction status affects payment processing and financial records
+
+### 13. Query Workflow
 
 **Query Issuance Phase:**
 1. **Staff Officer searches officer** - Staff Officer searches for an officer within their command
@@ -970,7 +1044,7 @@ The Eligibility List carries the following fields:
 - **Area Controller and DC Admin** receive email and in-app notifications when queries are accepted in their command
 - **HRD** receives in-app notifications only (no email) when queries are accepted anywhere in the system
 
-### 13. NCS Employee App (Social Media Application) Workflow
+### 14. NCS Employee App (Social Media Application) Workflow
 
 **Automatic Room Assignment:**
 1. **HRD onboards** - Onboarding is done by HRD
@@ -992,7 +1066,7 @@ The Eligibility List carries the following fields:
 - Broadcast messages from HRD
 - Profile picture management
 
-### 14. Admin Role Assignment Workflow
+### 15. Admin Role Assignment Workflow
 
 **HRD Assignment Phase:**
 1. **HRD accesses Role Assignments Management** - HRD navigates to Role Assignments Management section
@@ -1325,7 +1399,35 @@ The Eligibility List carries the following fields:
 
 ---
 
-### FLOW 13: QUERY PROCESS
+### FLOW 13: INVESTIGATION PROCESS
+
+**Investigation Invitation Phase:**
+1. Investigation Officer searches for officer system-wide
+2. Investigation Officer selects officer and sends investigation invitation message
+3. System sends email and in-app notification to officer
+4. Investigation record created with INVITED status
+
+**Investigation Status Management Phase:**
+1. Investigation Officer reviews case and updates status:
+   - Ongoing Investigation (ongoing_investigation = true)
+   - Interdiction (interdicted = true)
+   - Suspension (suspended = true)
+2. System updates officer record and sends notification
+3. System automatically excludes officer from promotion eligibility lists
+4. If interdicted, officer appears on Accounts interdicted officers list
+
+**Investigation Resolution Phase:**
+1. Investigation Officer resolves case and removes status
+2. System updates officer record and sends notification
+3. Officer becomes eligible for promotion again (if other criteria met)
+4. Investigation record marked as resolved
+
+**Impact:**
+- Officers with investigation statuses cannot appear on Promotion Eligibility Lists
+- Interdicted officers appear on Accounts unit's interdicted officers list
+- Status changes trigger automatic re-evaluation of promotion eligibility
+
+### FLOW 14: QUERY PROCESS
 
 **Query Issuance Phase:**
 1. Staff Officer searches for officer within command
@@ -1360,7 +1462,7 @@ The Eligibility List carries the following fields:
 3. Complete audit trail with timestamps
 4. Query history maintained for all statuses
 
-### FLOW 14: DUTY ROSTER WORKFLOW
+### FLOW 15: DUTY ROSTER WORKFLOW
 
 **Roster Creation Phase:**
 1. **Staff Officer creates roster** - Staff Officer creates a new duty roster for their command
@@ -1467,6 +1569,9 @@ Officer (Manages) → Welfare (Verifies) → System (Updates) → Officer (Notif
 
 ### Query Chain:
 Staff Officer (Issues Query) → Officer (Responds) → Staff Officer (Reviews) → System (Updates Record if Accepted) → Officer & HRD (View in Profile)
+
+### Investigation Chain:
+Investigation Unit (Sends Invitation) → Officer (Receives Notification) → Investigation Unit (Places on Status) → System (Updates Officer Record) → System (Excludes from Promotion Eligibility) → Accounts (Receives Interdicted List if Interdicted)
 
 ### Duty Roster Chain:
 Staff Officer (Creates & Assigns) → System (Notifies All Officers) → Staff Officer (Submits) → System (Notifies DC Admin & Area Controller) → DC Admin/Area Controller (Approve/Reject) → System (Updates Status)
@@ -1620,14 +1725,37 @@ Staff Officer (Creates & Assigns) → System (Notifies All Officers) → Staff O
    - **Default Status:** All officers are automatically placed on preretirement leave unless CGC approves them to work
    - **CGC Authority:** CGC has exclusive authority to search officers, review preretirement status, and approve exceptions
 
+### Investigation Rules
+
+1. **Investigation Status Management**
+   - Investigation Unit can search any officer system-wide
+   - Investigation Unit can send investigation invitation messages to officers
+   - Investigation Unit can place officers on the following statuses:
+     - **Ongoing Investigation** (ongoing_investigation = true)
+     - **Interdiction** (interdicted = true)
+     - **Suspension** (suspended = true)
+   - Officers receive email and in-app notifications when investigation status changes
+   - Investigation records maintain complete audit trail with timestamps
+
+2. **Investigation Status Impact**
+   - Officers with Ongoing Investigation, Interdiction, or Suspension cannot appear on Promotion Eligibility Lists
+   - Interdicted officers appear on Accounts unit's interdicted officers list
+   - Investigation status changes automatically trigger re-evaluation of promotion eligibility
+   - Investigation status affects officer's career progression activities
+
+3. **Investigation Resolution**
+   - Investigation Unit can remove investigation status when cases are resolved
+   - Officers become eligible for promotion again after status removal (if other criteria met)
+   - Investigation records are maintained permanently for audit purposes
+
 ### Promotion Rules
 
 1. **Eligibility Exclusions**
    - Officers with the following statuses will NOT feature on the Eligibility List even if they are due for promotion:
-     - Interdicted (set by Discipline seat)
-     - Suspended (set by Discipline seat)
+     - Interdicted (set by Investigation Unit)
+     - Suspended (set by Investigation Unit)
      - Dismissed (set by Discipline seat)
-     - Has a pending investigation issue (set by the investigation seat)
+     - Has ongoing investigation (ongoing_investigation set by Investigation Unit)
      - Deceased (set by Welfare seat)
 
 2. **Rank Changes**

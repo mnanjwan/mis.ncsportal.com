@@ -35,6 +35,7 @@ use App\Http\Controllers\APERFormController;
 use App\Http\Controllers\AdminRoleAssignmentController;
 use App\Http\Controllers\QueryController;
 use App\Http\Controllers\OfficerQueryController;
+use App\Http\Controllers\InvestigationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -431,6 +432,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/emoluments/bulk-process', [EmolumentController::class, 'bulkProcess'])->name('emoluments.bulk-process');
         Route::get('/deceased-officers', [DeceasedOfficerController::class, 'index'])->name('deceased-officers');
         Route::get('/deceased-officers/{id}', [DeceasedOfficerController::class, 'show'])->name('deceased-officers.show');
+        Route::get('/interdicted-officers', [DashboardController::class, 'interdictedOfficers'])->name('interdicted-officers');
         Route::get('/account-change-requests', [AccountChangeRequestController::class, 'pending'])->name('account-change.pending');
         Route::get('/account-change-requests/{id}', [AccountChangeRequestController::class, 'show'])->name('account-change.show');
         Route::post('/account-change-requests/{id}/approve', [AccountChangeRequestController::class, 'approve'])->name('account-change.approve');
@@ -526,6 +528,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/deceased-officers/{id}/report', [DeceasedOfficerController::class, 'generateReport'])->name('deceased-officers.report');
         Route::get('/deceased-officers/{id}/export', [DeceasedOfficerController::class, 'export'])->name('deceased-officers.export');
         Route::post('/deceased-officers/{id}/mark-benefits-processed', [DeceasedOfficerController::class, 'markBenefitsProcessed'])->name('deceased-officers.mark-benefits-processed');
+    });
+
+    // Investigation Unit Routes
+    Route::prefix('investigation')->name('investigation.')->middleware('role:Investigation Unit')->group(function () {
+        Route::get('/dashboard', [InvestigationController::class, 'index'])->name('dashboard');
+        Route::get('/', [InvestigationController::class, 'index'])->name('index');
+        Route::get('/search', [InvestigationController::class, 'search'])->name('search');
+        Route::get('/create/{officerId}', [InvestigationController::class, 'create'])->name('create');
+        Route::post('/', [InvestigationController::class, 'store'])->name('store');
+        Route::get('/{id}', [InvestigationController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [InvestigationController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [InvestigationController::class, 'update'])->name('update');
+        Route::post('/{id}/resolve', [InvestigationController::class, 'resolve'])->name('resolve');
     });
 
     // Form Routes (Public within auth)

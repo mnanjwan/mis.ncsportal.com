@@ -19,6 +19,7 @@
         'Establishment',
         'TRADOC',
         'ICT',
+        'Investigation Unit',
         'Building Unit',
         'Area Controller',
         'DC Admin',
@@ -294,6 +295,7 @@
                 ['icon' => 'ki-filled ki-people', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Account Change Requests', 'href' => route('accounts.account-change.pending')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
+                ['icon' => 'ki-filled ki-shield-cross', 'title' => 'Interdicted Officers', 'href' => route('accounts.interdicted-officers')],
             ];
             break;
         case 'Board':
@@ -335,6 +337,13 @@
         case 'ICT':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('ict.dashboard')],
+            ];
+            break;
+        case 'Investigation Unit':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('investigation.dashboard')],
+                ['icon' => 'ki-filled ki-magnifier', 'title' => 'Search Officers', 'href' => route('investigation.search')],
+                ['icon' => 'ki-filled ki-file-search', 'title' => 'Investigations', 'href' => route('investigation.index')],
             ];
             break;
         default:

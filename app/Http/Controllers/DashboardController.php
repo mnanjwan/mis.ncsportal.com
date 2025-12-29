@@ -60,6 +60,7 @@ class DashboardController extends Controller
             'Establishment',
             'TRADOC',
             'ICT',
+            'Investigation Unit',
             'Building Unit',
             'Area Controller',
             'DC Admin',
@@ -858,6 +859,29 @@ class DashboardController extends Controller
         return view('dashboards.accounts.deceased-officers-list');
     }
 
+    public function interdictedOfficers(Request $request)
+    {
+        $query = Officer::where('interdicted', true)
+            ->with(['presentStation'])
+            ->orderBy('surname')
+            ->orderBy('initials');
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                  ->orWhere('initials', 'like', "%{$search}%")
+                  ->orWhere('surname', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $officers = $query->paginate(20)->withQueryString();
+
+        return view('dashboards.accounts.interdicted-officers', compact('officers'));
+    }
+
     // Board Dashboard
     public function board()
     {
@@ -1606,6 +1630,7 @@ class DashboardController extends Controller
             'Establishment' => 'establishment.dashboard',
             'TRADOC' => 'tradoc.dashboard',
             'ICT' => 'ict.dashboard',
+            'Investigation Unit' => 'investigation.dashboard',
             'Welfare' => 'welfare.dashboard',
             'CGC' => 'cgc.dashboard',
         ];

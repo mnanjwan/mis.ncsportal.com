@@ -176,13 +176,23 @@ class DutyRosterController extends Controller
         
         $request->validate([
             'oic_officer_id' => 'nullable|exists:officers,id',
-            'second_in_command_officer_id' => 'nullable|exists:officers,id',
+            'second_in_command_officer_id' => 'nullable|exists:officers,id|different:oic_officer_id',
             'assignments' => 'nullable|array',
             'assignments.*.officer_id' => 'required|exists:officers,id',
             'assignments.*.duty_date' => 'required|date',
             'assignments.*.shift' => 'nullable|string|max:50',
             'assignments.*.notes' => 'nullable|string|max:500',
+        ], [
+            'second_in_command_officer_id.different' => 'The Second In Command (2IC) cannot be the same as the Officer in Charge (OIC).',
         ]);
+        
+        // Additional validation: OIC cannot be 2IC
+        if ($request->oic_officer_id && $request->second_in_command_officer_id && 
+            $request->oic_officer_id == $request->second_in_command_officer_id) {
+            return redirect()->back()
+                ->with('error', 'The Officer in Charge (OIC) cannot be the same as the Second In Command (2IC).')
+                ->withInput();
+        }
         
         try {
             DB::beginTransaction();

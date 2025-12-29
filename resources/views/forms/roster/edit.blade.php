@@ -14,6 +14,46 @@
 @endsection
 
 @section('content')
+@if(session('success'))
+    <div class="kt-card bg-success/10 border border-success/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success">{{ session('success') }}</p>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-cross-circle text-danger text-xl"></i>
+                <p class="text-sm text-danger">{{ session('error') }}</p>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-cross-circle text-danger text-xl"></i>
+                    <p class="text-sm font-semibold text-danger">Please fix the following errors:</p>
+                </div>
+                <ul class="list-disc list-inside text-sm text-danger ml-8">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    </div>
+@endif
+
 @if($roster->status !== 'DRAFT')
     <div class="kt-card">
         <div class="kt-card-content">
@@ -63,7 +103,7 @@
                         <div class="grid sm:grid-cols-2 gap-4">
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label font-normal text-mono text-xs">Officer in Charge (OIC) <span class="text-danger">*</span></label>
-                                <select class="kt-input" name="oic_officer_id" required>
+                                <select class="kt-input" name="oic_officer_id" id="oic_officer_id" required>
                                     <option value="">Select OIC</option>
                                     @foreach($officers as $officer)
                                         <option value="{{ $officer->id }}" {{ $roster->oic_officer_id == $officer->id ? 'selected' : '' }}>
@@ -74,7 +114,7 @@
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label font-normal text-mono text-xs">Second In Command (2IC)</label>
-                                <select class="kt-input" name="second_in_command_officer_id">
+                                <select class="kt-input" name="second_in_command_officer_id" id="second_in_command_officer_id">
                                     <option value="">Select 2IC (Optional)</option>
                                     @foreach($officers as $officer)
                                         <option value="{{ $officer->id }}" {{ $roster->second_in_command_officer_id == $officer->id ? 'selected' : '' }}>
@@ -258,9 +298,68 @@ function updateRemoveButtons() {
     });
 }
 
+// Prevent OIC from being selected as 2IC and vice versa
+function updateOic2icOptions() {
+    const oicSelect = document.getElementById('oic_officer_id');
+    const secondIcSelect = document.getElementById('second_in_command_officer_id');
+    
+    const oicValue = oicSelect.value;
+    const secondIcValue = secondIcSelect.value;
+    
+    // Update 2IC options - exclude OIC
+    Array.from(secondIcSelect.options).forEach(option => {
+        if (option.value && option.value === oicValue) {
+            option.disabled = true;
+            option.style.display = 'none';
+            if (secondIcSelect.value === oicValue) {
+                secondIcSelect.value = '';
+            }
+        } else {
+            option.disabled = false;
+            option.style.display = '';
+        }
+    });
+    
+    // Update OIC options - exclude 2IC
+    Array.from(oicSelect.options).forEach(option => {
+        if (option.value && option.value === secondIcValue) {
+            option.disabled = true;
+            option.style.display = 'none';
+            if (oicSelect.value === secondIcValue) {
+                oicSelect.value = '';
+            }
+        } else {
+            option.disabled = false;
+            option.style.display = '';
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-assignment-btn').addEventListener('click', addAssignment);
     updateRemoveButtons();
+    
+    // Add event listeners for OIC and 2IC validation
+    const oicSelect = document.getElementById('oic_officer_id');
+    const secondIcSelect = document.getElementById('second_in_command_officer_id');
+    
+    if (oicSelect && secondIcSelect) {
+        oicSelect.addEventListener('change', updateOic2icOptions);
+        secondIcSelect.addEventListener('change', updateOic2icOptions);
+        updateOic2icOptions(); // Initial check
+    }
+    
+    // Form validation before submit
+    document.getElementById('roster-edit-form').addEventListener('submit', function(e) {
+        const oicValue = oicSelect.value;
+        const secondIcValue = secondIcSelect.value;
+        
+        if (oicValue && secondIcValue && oicValue === secondIcValue) {
+            e.preventDefault();
+            alert('The Officer in Charge (OIC) cannot be the same as the Second In Command (2IC). Please select different officers.');
+            return false;
+        }
+    });
 });
 </script>
 @endpush

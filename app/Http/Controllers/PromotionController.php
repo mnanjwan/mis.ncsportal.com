@@ -72,23 +72,20 @@ class PromotionController extends Controller
             
             // Populate list items - find officers eligible for promotion based on configured criteria
             // Get all active officers with required fields
-            // Exclude officers who are: deceased, interdicted, suspended, dismissed
+            // Exclude officers who are: deceased, interdicted, suspended, dismissed, under investigation
             // Per specification: Officers not meeting time in rank, interdicted, suspended, dismissed,
             // under investigation, or deceased won't feature on the Eligibility List
             $allOfficers = \App\Models\Officer::where('is_active', true)
                 ->where('is_deceased', false)
                 ->where('interdicted', false)
                 ->where('suspended', false)
+                ->where('ongoing_investigation', false)
                 ->where('dismissed', false)
                 ->whereNotNull('substantive_rank')
                 ->whereNotNull('date_of_birth')
                 ->whereNotNull('date_of_first_appointment')
                 ->whereNotNull('date_of_present_appointment')
                 ->get();
-            
-            // Additional exclusion: Officers under investigation
-            // Note: Investigation system integration can be added when available
-            // For now, we exclude based on the above criteria which matches specification requirements
             
             $eligibleOfficers = collect();
             

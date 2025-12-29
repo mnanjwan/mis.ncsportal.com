@@ -10,6 +10,28 @@
 @endsection
 
 @section('content')
+@if(session('success'))
+    <div class="kt-card bg-success/10 border border-success/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                <p class="text-sm text-success">{{ session('success') }}</p>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="kt-card bg-danger/10 border border-danger/20 mb-5">
+        <div class="kt-card-content p-4">
+            <div class="flex items-center gap-3">
+                <i class="ki-filled ki-cross-circle text-danger text-xl"></i>
+                <p class="text-sm text-danger">{{ session('error') }}</p>
+            </div>
+        </div>
+    </div>
+@endif
+
 @if(!$command)
     <div class="kt-card">
         <div class="kt-card-content">
