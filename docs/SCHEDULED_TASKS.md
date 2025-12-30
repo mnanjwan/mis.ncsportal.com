@@ -6,7 +6,7 @@ This document lists all scheduled tasks configured in the application.
 
 | Task | Frequency | Time | Command/Job |
 |------|-----------|------|-------------|
-| Query Expiration Check | Every 15 minutes | - | `queries:check-expired` |
+| Query Expiration Check | Every 3 minutes | - | `queries:check-expired` |
 | Leave Expiry Alerts | Hourly | - | `SendLeaveExpiryAlertsJob` |
 | Pass Expiry Alerts | Hourly | - | `SendPassExpiryAlertsJob` |
 | Retirement Checks | Daily | 08:00 | `CheckRetirementJob` |
@@ -19,7 +19,7 @@ This document lists all scheduled tasks configured in the application.
 
 ### 1. Query Expiration Check
 - **Command**: `php artisan queries:check-expired`
-- **Frequency**: Every 15 minutes
+- **Frequency**: Every 3 minutes
 - **Purpose**: Automatically expires queries that have passed their response deadline
 - **Actions**:
   - Finds queries with `status = 'PENDING_RESPONSE'` and `response_deadline <= now()`

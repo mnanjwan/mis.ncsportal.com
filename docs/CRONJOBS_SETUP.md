@@ -17,7 +17,7 @@ The following tasks are configured in `routes/console.php`:
 5. **Pass Expiry Alerts** - Hourly
 6. **Emolument Timeline Extension** - Daily at 08:00
 7. **APER Timeline Management** - Daily at 08:00
-8. **Query Expiration Check** - Every 15 minutes
+8. **Query Expiration Check** - Every 3 minutes
 
 ## Setup Instructions
 
