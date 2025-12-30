@@ -339,9 +339,7 @@ class DutyRosterController extends Controller
             'second_in_command_officer_id' => 'nullable|exists:officers,id|different:oic_officer_id',
             'assignments' => 'nullable|array',
             'assignments.*.officer_id' => 'required|exists:officers,id',
-            'assignments.*.duty_date' => 'nullable|date',
             'assignments.*.shift' => 'nullable|string|max:50',
-            'assignments.*.notes' => 'nullable|string|max:500',
         ], [
             'second_in_command_officer_id.different' => 'The Second In Command (2IC) cannot be the same as the Officer in Charge (OIC).',
             'unit_custom.required_if' => 'Please enter a unit name when creating a new unit.',
@@ -416,9 +414,7 @@ class DutyRosterController extends Controller
                     \App\Models\RosterAssignment::create([
                         'roster_id' => $roster->id,
                         'officer_id' => $assignment['officer_id'],
-                        'duty_date' => !empty($assignment['duty_date']) ? $assignment['duty_date'] : null,
                         'shift' => $assignment['shift'] ?? null,
-                        'notes' => $assignment['notes'] ?? null,
                     ]);
                 }
             }

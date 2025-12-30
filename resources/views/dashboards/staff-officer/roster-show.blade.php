@@ -167,9 +167,7 @@
                                     <thead>
                                         <tr class="border-b border-border">
                                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Officer</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Duty Date</th>
                                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Shift</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Notes</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -189,13 +187,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                                    {{ $assignment->duty_date ? $assignment->duty_date->format('M d, Y') : 'Not specified' }}
-                                                </td>
-                                                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                     {{ $assignment->shift ?? 'N/A' }}
-                                                </td>
-                                                <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                                    {{ $assignment->notes ?? '-' }}
                                                 </td>
                                             </tr>
                                         @endforeach

@@ -176,11 +176,10 @@
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
                                         <!-- Search Box -->
                                         <div class="p-3 border-b border-input">
-                                            <div class="relative">
-                                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <div class="relative">
                                     <input type="text" 
                                                        id="oic_search_input" 
-                                                       class="kt-input w-full pl-10" 
+                                                       class="kt-input w-full" 
                                                        placeholder="Search officers..."
                                            autocomplete="off">
                                 </div>
@@ -220,11 +219,10 @@
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
                                         <!-- Search Box -->
                                         <div class="p-3 border-b border-input">
-                                            <div class="relative">
-                                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <div class="relative">
                                     <input type="text" 
                                                        id="second_ic_search_input" 
-                                                       class="kt-input w-full pl-10" 
+                                                       class="kt-input w-full" 
                                                        placeholder="Search officers..."
                                            autocomplete="off">
                                 </div>
@@ -287,15 +285,14 @@
                                                     <!-- Search Box -->
                                                     <div class="p-3 border-b border-input">
                                                         <div class="relative">
-                                                            <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                                                             <input type="text" 
                                                                    id="assignment-officer-{{ $index }}-search-input" 
-                                                                   class="kt-input w-full pl-10 assignment-officer-search" 
+                                                                   class="kt-input w-full assignment-officer-search" 
                                                                    placeholder="Search officers..."
                                                                    autocomplete="off"
                                                                    data-assignment-index="{{ $index }}">
-                                                        </div>
-                                                    </div>
+                                            </div>
+                                        </div>
                                                     <!-- Options Container -->
                                                     <div id="assignment-officer-{{ $index }}-options" class="max-h-60 overflow-y-auto assignment-officer-options">
                                                         <div class="p-3 text-sm text-secondary-foreground text-center">
@@ -306,21 +303,9 @@
                                             </div>
                                         </div>
                                         <div class="flex flex-col gap-1">
-                                            <label class="kt-form-label font-normal text-mono text-xs">Duty Date</label>
-                                            <input type="date" class="kt-input" name="assignments[{{ $index }}][duty_date]" 
-                                                   value="{{ $assignment->duty_date ? $assignment->duty_date->format('Y-m-d') : '' }}" 
-                                                   min="{{ $roster->roster_period_start->format('Y-m-d') }}"
-                                                   max="{{ $roster->roster_period_end->format('Y-m-d') }}"/>
-                                        </div>
-                                        <div class="flex flex-col gap-1">
                                             <label class="kt-form-label font-normal text-mono text-xs">Shift</label>
                                             <input type="text" class="kt-input" name="assignments[{{ $index }}][shift]" 
                                                    value="{{ $assignment->shift }}" placeholder="e.g., Morning, Evening, Night"/>
-                                        </div>
-                                        <div class="flex flex-col gap-1">
-                                            <label class="kt-form-label font-normal text-mono text-xs">Notes</label>
-                                            <input type="text" class="kt-input" name="assignments[{{ $index }}][notes]" 
-                                                   value="{{ $assignment->notes }}" placeholder="Optional notes"/>
                                         </div>
                                     </div>
                                 </div>
@@ -774,15 +759,14 @@ function createAssignmentTemplate(index) {
                                 <!-- Search Box -->
                                 <div class="p-3 border-b border-input">
                                     <div class="relative">
-                                        <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                                         <input type="text" 
                                                id="assignment-officer-${index}-search-input" 
-                                               class="kt-input w-full pl-10 assignment-officer-search" 
+                                               class="kt-input w-full assignment-officer-search" 
                                                placeholder="Search officers..."
                                                autocomplete="off"
                                                data-assignment-index="${index}">
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
                                 <!-- Options Container -->
                                 <div id="assignment-officer-${index}-options" class="max-h-60 overflow-y-auto assignment-officer-options">
                                     <div class="p-3 text-sm text-secondary-foreground text-center">
@@ -793,17 +777,8 @@ function createAssignmentTemplate(index) {
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label font-normal text-mono text-xs">Duty Date</label>
-                        <input type="date" class="kt-input" name="assignments[${index}][duty_date]" 
-                               min="${periodStart}" max="${periodEnd}"/>
-                    </div>
-                    <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Shift</label>
                         <input type="text" class="kt-input" name="assignments[${index}][shift]" placeholder="e.g., Morning, Evening, Night"/>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="kt-form-label font-normal text-mono text-xs">Notes</label>
-                        <input type="text" class="kt-input" name="assignments[${index}][notes]" placeholder="Optional notes"/>
                     </div>
                 </div>
             </div>

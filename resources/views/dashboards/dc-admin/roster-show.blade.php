@@ -75,9 +75,7 @@
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Duty Date</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Shift</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Notes</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -91,9 +89,7 @@
                                                 <span class="kt-badge kt-badge-info kt-badge-sm ml-2">2IC</span>
                                             @endif
                                         </td>
-                                        <td class="py-3 px-4 text-sm">{{ $assignment->duty_date ? $assignment->duty_date->format('M d, Y') : 'Not specified' }}</td>
                                         <td class="py-3 px-4 text-sm">{{ $assignment->shift ?? 'N/A' }}</td>
-                                        <td class="py-3 px-4 text-sm">{{ $assignment->notes ?? '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
