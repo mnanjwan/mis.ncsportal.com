@@ -56,7 +56,28 @@ class DutyRosterController extends Controller
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
         $command = $commandId ? \App\Models\Command::find($commandId) : null;
         
-        return view('forms.roster.create', compact('command'));
+        // Get predefined units
+        $predefinedUnits = [
+            'Revenue',
+            'Admin',
+            'Enforcement',
+            'ICT',
+            'Accounts',
+            'Transport and Logistics',
+            'Medical',
+            'Escort',
+            'Guard Duty'
+        ];
+        
+        // Get custom units from database (units that are not in predefined list)
+        $customUnits = \App\Models\DutyRoster::whereNotNull('unit')
+            ->whereNotIn('unit', $predefinedUnits)
+            ->distinct()
+            ->orderBy('unit')
+            ->pluck('unit')
+            ->toArray();
+        
+        return view('forms.roster.create', compact('command', 'predefinedUnits', 'customUnits'));
     }
     
     public function store(Request $request)
@@ -76,6 +97,7 @@ class DutyRosterController extends Controller
         }
         
         $request->validate([
+            'unit' => 'required|string|max:255',
             'roster_period_start' => 'required|date',
             'roster_period_end' => 'required|date|after:roster_period_start',
             'command_id' => 'required|exists:commands,id',
@@ -86,9 +108,25 @@ class DutyRosterController extends Controller
             return redirect()->back()->with('error', 'You can only create rosters for your assigned command.')->withInput();
         }
         
+        // Handle custom unit (if unit is __NEW__, use unit_custom)
+        $unit = $request->unit;
+        if ($unit === '__NEW__' && $request->has('unit_custom')) {
+            $unit = trim($request->unit_custom);
+            if (empty($unit)) {
+                return redirect()->back()->with('error', 'Please enter a unit name.')->withInput();
+            }
+        }
+        
+        // Trim and validate unit
+        $unit = trim($unit);
+        if (empty($unit)) {
+            return redirect()->back()->with('error', 'Unit is required.')->withInput();
+        }
+        
         try {
             \App\Models\DutyRoster::create([
                 'command_id' => $commandId,
+                'unit' => $unit,
                 'roster_period_start' => $request->roster_period_start,
                 'roster_period_end' => $request->roster_period_end,
                 'prepared_by' => $user->id,
@@ -165,7 +203,28 @@ class DutyRosterController extends Controller
         // For OIC/2IC dropdowns, use all officers
         $officers = $allOfficers;
         
-        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers'));
+        // Get predefined units
+        $predefinedUnits = [
+            'Revenue',
+            'Admin',
+            'Enforcement',
+            'ICT',
+            'Accounts',
+            'Transport and Logistics',
+            'Medical',
+            'Escort',
+            'Guard Duty'
+        ];
+        
+        // Get custom units from database (units that are not in predefined list)
+        $customUnits = \App\Models\DutyRoster::whereNotNull('unit')
+            ->whereNotIn('unit', $predefinedUnits)
+            ->distinct()
+            ->orderBy('unit')
+            ->pluck('unit')
+            ->toArray();
+        
+        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers', 'predefinedUnits', 'customUnits'));
     }
     
     public function update(Request $request, $id)
@@ -191,6 +250,8 @@ class DutyRosterController extends Controller
         }
         
         $request->validate([
+            'unit' => 'nullable|string|max:255',
+            'unit_custom' => 'nullable|string|max:255|required_if:unit,__NEW__',
             'oic_officer_id' => 'nullable|exists:officers,id',
             'second_in_command_officer_id' => 'nullable|exists:officers,id|different:oic_officer_id',
             'assignments' => 'nullable|array',
@@ -200,6 +261,7 @@ class DutyRosterController extends Controller
             'assignments.*.notes' => 'nullable|string|max:500',
         ], [
             'second_in_command_officer_id.different' => 'The Second In Command (2IC) cannot be the same as the Officer in Charge (OIC).',
+            'unit_custom.required_if' => 'Please enter a unit name when creating a new unit.',
         ]);
         
         // Additional validation: OIC cannot be 2IC
@@ -213,11 +275,36 @@ class DutyRosterController extends Controller
         try {
             DB::beginTransaction();
             
-            // Update OIC and 2IC
-            $roster->update([
+            // Handle custom unit (if unit is __NEW__, use unit_custom) - same logic as create
+            $unit = $request->input('unit', '');
+            
+            // If unit is __NEW__, get the custom unit value
+            if ($unit === '__NEW__') {
+                if ($request->has('unit_custom') && !empty(trim($request->input('unit_custom')))) {
+                    $unit = trim($request->input('unit_custom'));
+                } else {
+                    DB::rollBack();
+                    return redirect()->back()->with('error', 'Please enter a unit name.')->withInput();
+                }
+            } elseif (!empty($unit) && $unit !== '__NEW__') {
+                // Trim existing unit value
+                $unit = trim($unit);
+            }
+            
+            // Update unit, OIC and 2IC
+            $updateData = [
                 'oic_officer_id' => $request->oic_officer_id,
                 'second_in_command_officer_id' => $request->second_in_command_officer_id,
-            ]);
+            ];
+            
+            // Always update unit if it's provided and not empty
+            // This ensures the unit is updated when user selects a different unit
+            if (!empty($unit)) {
+                $updateData['unit'] = $unit;
+            }
+            // Note: If unit is empty, we don't update it (preserve existing value)
+            
+            $roster->update($updateData);
             
             // Get assigned officer IDs before deleting assignments
             $assignedOfficerIds = [];

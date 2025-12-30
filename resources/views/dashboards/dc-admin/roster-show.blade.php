@@ -25,6 +25,12 @@
         </div>
         <div class="kt-card-content">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                @if($roster->unit)
+                <div>
+                    <label class="text-sm font-medium text-secondary-foreground">Unit</label>
+                    <p class="text-sm text-foreground mt-1 font-semibold">{{ $roster->unit }}</p>
+                </div>
+                @endif
                 <div>
                     <label class="text-sm font-medium text-secondary-foreground">Command</label>
                     <p class="text-sm text-foreground mt-1">{{ $roster->command->name ?? 'N/A' }}</p>

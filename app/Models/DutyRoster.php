@@ -11,6 +11,7 @@ class DutyRoster extends Model
 
     protected $fillable = [
         'command_id',
+        'unit',
         'roster_period_start',
         'roster_period_end',
         'prepared_by',

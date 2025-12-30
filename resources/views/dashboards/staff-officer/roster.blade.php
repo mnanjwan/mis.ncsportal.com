@@ -70,6 +70,9 @@
                             </div>
                             <div class="flex flex-col gap-1">
                                 <span class="text-sm font-semibold text-foreground">
+                                    @if($roster->unit)
+                                        {{ $roster->unit }} - 
+                                    @endif
                                     Roster Period: {{ $roster->roster_period_start->format('M d') }} - {{ $roster->roster_period_end->format('M d, Y') }}
                                 </span>
                                 <span class="text-xs text-secondary-foreground">

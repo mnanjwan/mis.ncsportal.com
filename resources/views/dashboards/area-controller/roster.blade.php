@@ -32,6 +32,7 @@
                     <table class="kt-table w-full">
                         <thead>
                             <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Unit</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Command</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Period</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Prepared By</th>
@@ -42,6 +43,7 @@
                         <tbody>
                             @foreach($rosters as $roster)
                                 <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                    <td class="py-3 px-4 text-sm font-semibold">{{ $roster->unit ?? 'N/A' }}</td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">{{ $roster->command->name ?? 'N/A' }}</td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         {{ $roster->roster_period_start->format('M d') }} - {{ $roster->roster_period_end->format('M d, Y') }}

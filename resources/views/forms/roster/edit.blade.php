@@ -96,6 +96,33 @@
                 </div>
             </div>
             <div class="kt-card-content space-y-6">
+                <!-- Unit Selection -->
+                <div class="flex flex-col gap-1">
+                    <label class="kt-form-label font-normal text-mono">Unit/Title</label>
+                    <div class="flex gap-2">
+                        <select class="kt-input flex-1" name="unit" id="unit-select-edit">
+                            <option value="">Select Unit</option>
+                            @if(isset($predefinedUnits) && count($predefinedUnits) > 0)
+                                <optgroup label="Standard Units">
+                                    @foreach($predefinedUnits as $unit)
+                                        <option value="{{ $unit }}" {{ $roster->unit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                            @if(isset($customUnits) && count($customUnits) > 0)
+                                <optgroup label="Custom Units">
+                                    @foreach($customUnits as $unit)
+                                        <option value="{{ $unit }}" {{ $roster->unit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                            <option value="__NEW__" {{ !in_array($roster->unit, array_merge($predefinedUnits ?? [], $customUnits ?? [])) && $roster->unit ? 'selected' : '' }}>➕ Create New Unit</option>
+                        </select>
+                        <input type="text" class="kt-input flex-1 {{ in_array($roster->unit, array_merge($predefinedUnits ?? [], $customUnits ?? [])) || !$roster->unit ? 'hidden' : '' }}" name="unit_custom" id="unit-custom-input-edit" placeholder="Enter new unit name" value="{{ !in_array($roster->unit, array_merge($predefinedUnits ?? [], $customUnits ?? [])) && $roster->unit ? $roster->unit : old('unit_custom') }}"/>
+                    </div>
+                    <p class="text-xs text-secondary-foreground mt-1">Select a unit from the list or create a new one</p>
+                </div>
+                
                 <!-- Leadership Selection -->
                 <div class="kt-card shadow-none bg-info/10 border border-info/20">
                     <div class="kt-card-content p-4">
@@ -147,14 +174,26 @@
                                     <div class="grid sm:grid-cols-2 gap-4">
                                         <div class="flex flex-col gap-1">
                                             <label class="kt-form-label font-normal text-mono text-xs">Officer <span class="text-danger">*</span></label>
-                                            <select class="kt-input assignment-officer-select" name="assignments[{{ $index }}][officer_id]" required>
-                                                <option value="">Select Officer</option>
-                                                @foreach($officersForAssignments ?? $officers as $officer)
-                                                    <option value="{{ $officer->id }}" {{ $assignment->officer_id == $officer->id ? 'selected' : '' }}>
-                                                        {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                            <div class="relative">
+                                                <input type="text" 
+                                                       class="kt-input officer-search-input" 
+                                                       placeholder="Search officer by name or service number..." 
+                                                       data-select-id="assignment-officer-{{ $index }}"
+                                                       autocomplete="off">
+                                                <select class="kt-input assignment-officer-select" 
+                                                        name="assignments[{{ $index }}][officer_id]" 
+                                                        id="assignment-officer-{{ $index }}"
+                                                        required>
+                                                    <option value="">Select Officer</option>
+                                                    @foreach($officersForAssignments ?? $officers as $officer)
+                                                        <option value="{{ $officer->id }}" 
+                                                                data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
+                                                                {{ $assignment->officer_id == $officer->id ? 'selected' : '' }}>
+                                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                         </div>
                                         <div class="flex flex-col gap-1">
                                             <label class="kt-form-label font-normal text-mono text-xs">Duty Date</label>
@@ -192,6 +231,37 @@
     </div>
 @endif
 
+@push('styles')
+<style>
+    .relative {
+        position: relative;
+    }
+    
+    .officer-search-input {
+        background: white;
+        border: 1px solid #e5e7eb;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .officer-search-input:focus {
+        outline: 2px solid #3b82f6;
+        outline-offset: -2px;
+        z-index: 10;
+    }
+    
+    .assignment-officer-select[size] {
+        margin-top: 0;
+        border-top: none;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+    
+    .assignment-officer-select[size="1"] {
+        margin-top: 0;
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 let assignmentCount = {{ $roster->assignments->count() }};
@@ -215,7 +285,7 @@ function getAvailableOfficersForAssignments() {
 function createAssignmentTemplate(index) {
     const availableOfficers = getAvailableOfficersForAssignments();
     const officersHtml = availableOfficers.map(officer => 
-        `<option value="${officer.id}">${officer.initials} ${officer.surname} (${officer.service_number})</option>`
+        `<option value="${officer.id}" data-search-text="${(officer.initials + ' ' + officer.surname + ' ' + officer.service_number).toLowerCase()}">${officer.initials} ${officer.surname} (${officer.service_number})</option>`
     ).join('');
     
     return `
@@ -230,10 +300,20 @@ function createAssignmentTemplate(index) {
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Officer <span class="text-danger">*</span></label>
-                        <select class="kt-input assignment-officer-select" name="assignments[${index}][officer_id]" required>
-                            <option value="">Select Officer</option>
-                            ${officersHtml}
-                        </select>
+                        <div class="relative">
+                            <input type="text" 
+                                   class="kt-input officer-search-input" 
+                                   placeholder="Search officer by name or service number..." 
+                                   data-select-id="assignment-officer-${index}"
+                                   autocomplete="off">
+                            <select class="kt-input assignment-officer-select" 
+                                    name="assignments[${index}][officer_id]" 
+                                    id="assignment-officer-${index}"
+                                    required>
+                                <option value="">Select Officer</option>
+                                ${officersHtml}
+                            </select>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Duty Date</label>
@@ -398,6 +478,45 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-assignment-btn').addEventListener('click', addAssignment);
     updateRemoveButtons();
     
+    // Unit dropdown handling
+    const unitSelectEdit = document.getElementById('unit-select-edit');
+    const unitCustomInputEdit = document.getElementById('unit-custom-input-edit');
+    
+    if (unitSelectEdit && unitCustomInputEdit) {
+        unitSelectEdit.addEventListener('change', function() {
+            if (this.value === '__NEW__') {
+                unitCustomInputEdit.classList.remove('hidden');
+                unitCustomInputEdit.required = true;
+                unitSelectEdit.required = false;
+                unitCustomInputEdit.focus();
+            } else {
+                unitCustomInputEdit.classList.add('hidden');
+                unitCustomInputEdit.required = false;
+                unitSelectEdit.required = true;
+                if (this.value) {
+                    unitCustomInputEdit.value = '';
+                }
+            }
+        });
+        
+        // Handle form submission - same logic as create form
+        const form = document.getElementById('roster-edit-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (unitSelectEdit.value === '__NEW__') {
+                    if (!unitCustomInputEdit.value.trim()) {
+                        e.preventDefault();
+                        alert('Please enter a unit name');
+                        unitCustomInputEdit.focus();
+                        return false;
+                    }
+                    // Set the custom unit value to the select
+                    unitSelectEdit.value = unitCustomInputEdit.value.trim();
+                }
+            });
+        }
+    }
+    
     // Add event listeners for OIC and 2IC validation
     const oicSelect = document.getElementById('oic_officer_id');
     const secondIcSelect = document.getElementById('second_in_command_officer_id');
@@ -422,6 +541,123 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     });
+
+    // Initialize searchable selects for officer assignments
+    function initializeOfficerSearch() {
+        document.querySelectorAll('.officer-search-input').forEach(searchInput => {
+            const selectId = searchInput.getAttribute('data-select-id');
+            const select = document.getElementById(selectId);
+            
+            if (!select) return;
+            
+            // Hide search input initially
+            searchInput.style.display = 'none';
+            
+            // Show search input when select is clicked/focused
+            select.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                searchInput.style.display = 'block';
+                searchInput.style.position = 'absolute';
+                searchInput.style.top = '0';
+                searchInput.style.left = '0';
+                searchInput.style.width = '100%';
+                searchInput.style.zIndex = '10';
+                searchInput.focus();
+            });
+            
+            select.addEventListener('focus', function() {
+                searchInput.style.display = 'block';
+                searchInput.style.position = 'absolute';
+                searchInput.style.top = '0';
+                searchInput.style.left = '0';
+                searchInput.style.width = '100%';
+                searchInput.style.zIndex = '10';
+            });
+            
+            // Filter options based on search input
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                const options = select.querySelectorAll('option');
+                let visibleCount = 0;
+                
+                options.forEach(option => {
+                    if (option.value === '') {
+                        option.style.display = '';
+                        visibleCount++;
+                        return;
+                    }
+                    
+                    const searchText = option.getAttribute('data-search-text') || option.textContent.toLowerCase();
+                    if (searchText.includes(searchTerm)) {
+                        option.style.display = '';
+                        visibleCount++;
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+                
+                // Expand select to show filtered options
+                if (visibleCount > 1 && searchTerm) {
+                    select.size = Math.min(visibleCount, 10);
+                    select.style.position = 'relative';
+                    select.style.zIndex = '11';
+                } else {
+                    select.size = 1;
+                }
+            });
+            
+            // Handle selection
+            select.addEventListener('change', function() {
+                if (this.value) {
+                    // Update search input to show selected value
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption) {
+                        searchInput.value = selectedOption.textContent;
+                    }
+                    searchInput.style.display = 'none';
+                    select.size = 1;
+                    select.style.position = '';
+                    select.style.zIndex = '';
+                    
+                    // Reset all options visibility
+                    select.querySelectorAll('option').forEach(opt => {
+                        opt.style.display = '';
+                    });
+                }
+            });
+            
+            // Allow keyboard navigation
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                    e.preventDefault();
+                    select.focus();
+                    if (select.size === 1) {
+                        select.size = Math.min(select.querySelectorAll('option:not([style*="display: none"])').length, 10);
+                    }
+                }
+            });
+            
+            // Hide search when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!select.contains(e.target) && !searchInput.contains(e.target)) {
+                    searchInput.style.display = 'none';
+                    select.size = 1;
+                    select.style.position = '';
+                    select.style.zIndex = '';
+                }
+            });
+        });
+    }
+    
+    // Initialize on page load
+    initializeOfficerSearch();
+    
+    // Re-initialize when new assignments are added
+    const originalAddAssignment = window.addAssignment || addAssignment;
+    window.addAssignment = function() {
+        originalAddAssignment();
+        setTimeout(initializeOfficerSearch, 100);
+    };
 });
 </script>
 @endpush

@@ -13,6 +13,7 @@
     
     <h3>Roster Details:</h3>
     <p>
+        <strong>Unit:</strong> {{ $roster->unit ?? 'Not specified' }}<br>
         <strong>Command:</strong> {{ $commandName }}<br>
         <strong>Period:</strong> {{ $periodStart }} to {{ $periodEnd }}<br>
         <strong>Prepared By:</strong> {{ $preparedByName }}<br>

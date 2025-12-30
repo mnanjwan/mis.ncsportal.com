@@ -13,6 +13,7 @@
     
     <h3>Assignment Details:</h3>
     <p>
+        <strong>Unit:</strong> {{ $roster->unit ?? 'Not specified' }}<br>
         <strong>Role:</strong> {{ $role }}<br>
         <strong>Roster Period:</strong> {{ $periodStart }} to {{ $periodEnd }}<br>
         <strong>Service Number:</strong> {{ $officer->service_number }}

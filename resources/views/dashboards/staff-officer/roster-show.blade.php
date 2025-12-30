@@ -48,7 +48,12 @@
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="min-w-0 flex-1">
-                <h1 class="text-2xl font-bold text-foreground">Duty Roster Details</h1>
+                <h1 class="text-2xl font-bold text-foreground">
+                    @if($roster->unit)
+                        {{ $roster->unit }} - 
+                    @endif
+                    Duty Roster Details
+                </h1>
                 <p class="text-sm text-secondary-foreground mt-1">
                     Period: {{ $roster->roster_period_start->format('M d, Y') }} - {{ $roster->roster_period_end->format('M d, Y') }}
                 </p>
@@ -103,6 +108,12 @@
                     </div>
                     <div class="kt-card-content">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @if($roster->unit)
+                            <div>
+                                <label class="text-sm font-medium text-secondary-foreground">Unit</label>
+                                <p class="text-sm text-foreground mt-1 font-semibold">{{ $roster->unit }}</p>
+                            </div>
+                            @endif
                             <div>
                                 <label class="text-sm font-medium text-secondary-foreground">Command</label>
                                 <p class="text-sm text-foreground mt-1">{{ $roster->command->name ?? 'N/A' }}</p>

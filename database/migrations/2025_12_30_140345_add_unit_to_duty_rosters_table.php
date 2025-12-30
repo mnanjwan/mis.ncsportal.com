@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('duty_rosters', function (Blueprint $table) {
-            $table->foreignId('oic_officer_id')->nullable()->after('command_id')->constrained('officers')->nullOnDelete();
-            $table->foreignId('second_in_command_officer_id')->nullable()->after('oic_officer_id')->constrained('officers')->nullOnDelete();
+            $table->string('unit')->nullable()->after('command_id');
         });
     }
 
@@ -23,9 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('duty_rosters', function (Blueprint $table) {
-            $table->dropForeign(['oic_officer_id']);
-            $table->dropForeign(['second_in_command_officer_id']);
-            $table->dropColumn(['oic_officer_id', 'second_in_command_officer_id']);
+            $table->dropColumn('unit');
         });
     }
 };

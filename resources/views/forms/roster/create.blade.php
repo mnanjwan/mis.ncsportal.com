@@ -98,6 +98,32 @@
                 <div class="kt-card-content space-y-5">
                     <input type="hidden" name="command_id" value="{{ $command->id }}"/>
                     
+                    <div class="flex flex-col gap-1">
+                        <label class="kt-form-label font-normal text-mono">Unit/Title <span class="text-danger">*</span></label>
+                        <div class="flex gap-2">
+                            <select class="kt-input flex-1" name="unit" id="unit-select" required>
+                                <option value="">Select Unit</option>
+                                @if(isset($predefinedUnits) && count($predefinedUnits) > 0)
+                                    <optgroup label="Standard Units">
+                                        @foreach($predefinedUnits as $unit)
+                                            <option value="{{ $unit }}" {{ old('unit') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                                @if(isset($customUnits) && count($customUnits) > 0)
+                                    <optgroup label="Custom Units">
+                                        @foreach($customUnits as $unit)
+                                            <option value="{{ $unit }}" {{ old('unit') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                                <option value="__NEW__">➕ Create New Unit</option>
+                            </select>
+                            <input type="text" class="kt-input flex-1 hidden" name="unit_custom" id="unit-custom-input" placeholder="Enter new unit name" value="{{ old('unit_custom') }}"/>
+                        </div>
+                        <p class="text-xs text-secondary-foreground mt-1">Select a unit from the list or create a new one</p>
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label font-normal text-mono">Roster Period Start <span class="text-danger">*</span></label>
@@ -158,5 +184,43 @@
         </div>
     </div>
 @endif
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const unitSelect = document.getElementById('unit-select');
+    const unitCustomInput = document.getElementById('unit-custom-input');
+    
+    unitSelect.addEventListener('change', function() {
+        if (this.value === '__NEW__') {
+            unitCustomInput.classList.remove('hidden');
+            unitCustomInput.required = true;
+            unitSelect.required = false;
+            unitCustomInput.focus();
+        } else {
+            unitCustomInput.classList.add('hidden');
+            unitCustomInput.required = false;
+            unitSelect.required = true;
+            unitCustomInput.value = '';
+        }
+    });
+    
+    // Handle form submission
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        if (unitSelect.value === '__NEW__') {
+            if (!unitCustomInput.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a unit name');
+                unitCustomInput.focus();
+                return false;
+            }
+            // Set the custom unit value to the select
+            unitSelect.value = unitCustomInput.value.trim();
+        }
+    });
+});
+</script>
+@endpush
 @endsection
 

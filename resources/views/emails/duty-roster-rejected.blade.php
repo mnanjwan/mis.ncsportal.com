@@ -14,6 +14,7 @@
     <h2>Roster Details</h2>
     <ul>
         <li><strong>Roster ID:</strong> {{ $rosterId }}</li>
+        <li><strong>Unit:</strong> {{ $roster->unit ?? 'Not specified' }}</li>
         <li><strong>Command:</strong> {{ $commandName }}</li>
         <li><strong>Period:</strong> {{ $periodStart }} to {{ $periodEnd }}</li>
         <li><strong>Rejected By:</strong> {{ $rejectedByName }}</li>
