@@ -49,12 +49,20 @@
 
     // Check if onboarding is complete for Officer role
     $onboardingComplete = true;
+    $isOICOr2IC = false;
     if ($primaryRole === 'Officer' || $officer) {
         if ($officer) {
             // Reload officer from database to ensure we have latest data (especially after onboarding completion)
             // Use profile photo as indicator - if profile_picture_url exists, onboarding is complete
             $officer = \App\Models\Officer::find($officer->id);
             $onboardingComplete = $officer && !empty($officer->profile_picture_url);
+            
+            // Check if officer is OIC or 2IC in an approved duty roster
+            if ($onboardingComplete && $officer->present_station) {
+                $dutyRosterService = app(\App\Services\DutyRosterService::class);
+                $year = date('Y');
+                $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($officer->id, $officer->present_station, $year);
+            }
         } else {
             // No officer record means onboarding is not complete
             $onboardingComplete = false;
@@ -94,7 +102,18 @@
             ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
             ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
             ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
-            ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
+            [
+                'title' => 'APER Forms',
+                'icon' => 'ki-filled ki-document',
+                'submenu' => $isOICOr2IC 
+                    ? [
+                        ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')],
+                        ['title' => 'Search Officers', 'href' => route('officer.aper-forms.search-officers')]
+                      ]
+                    : [
+                        ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')]
+                      ]
+            ],
             [
                 'title' => 'Settings',
                 'icon' => 'ki-filled ki-setting-2',
@@ -136,7 +155,18 @@
                     ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
                     ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
                     ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
-                    ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('officer.aper-forms')],
+                    [
+                        'title' => 'APER Forms',
+                        'icon' => 'ki-filled ki-document',
+                        'submenu' => $isOICOr2IC 
+                            ? [
+                                ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')],
+                                ['title' => 'Search Officers', 'href' => route('officer.aper-forms.search-officers')]
+                              ]
+                            : [
+                                ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')]
+                              ]
+                    ],
                     [
                         'title' => 'Settings',
                         'icon' => 'ki-filled ki-setting-2',

@@ -48,7 +48,7 @@
             </div>
         </div>
         <div class="kt-card-content">
-            <form method="GET" action="{{ route('staff-officer.aper-forms.reporting-officer.search') }}" class="flex gap-3">
+            <form method="GET" action="{{ auth()->user()->hasRole('Staff Officer') || auth()->user()->hasRole('HRD') ? route('staff-officer.aper-forms.reporting-officer.search') : route('officer.aper-forms.search-officers') }}" class="flex gap-3">
                 <input type="text" 
                        name="search" 
                        class="kt-input flex-1" 
@@ -96,7 +96,7 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-4 text-right">
-                                        <a href="{{ route('staff-officer.aper-forms.access', $officer->id) }}" 
+                                        <a href="{{ (auth()->user()->hasRole('Staff Officer') || auth()->user()->hasRole('HRD')) ? route('staff-officer.aper-forms.access', $officer->id) : route('officer.aper-forms.access', $officer->id) }}" 
                                            class="kt-btn kt-btn-sm kt-btn-primary">
                                             <i class="ki-filled ki-document"></i> Create/Access Form
                                         </a>

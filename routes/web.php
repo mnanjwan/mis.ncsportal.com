@@ -125,6 +125,11 @@ Route::middleware('auth')->group(function () {
                 Route::get('/aper-forms', [APERFormController::class, 'index'])->name('aper-forms');
                 Route::get('/aper-forms/create', [APERFormController::class, 'create'])->name('aper-forms.create');
                 Route::post('/aper-forms', [APERFormController::class, 'store'])->name('aper-forms.store');
+                
+                // APER Forms - OIC/2IC: Search for officers to create APER forms (must come before {id} routes)
+                Route::get('/aper-forms/search-officers', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search-officers');
+                Route::get('/aper-forms/access/{officerId}', [APERFormController::class, 'accessForm'])->name('aper-forms.access');
+                
                 Route::get('/aper-forms/{id}/edit', [APERFormController::class, 'edit'])->name('aper-forms.edit');
                 Route::put('/aper-forms/{id}', [APERFormController::class, 'update'])->name('aper-forms.update');
                 Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
@@ -133,6 +138,8 @@ Route::middleware('auth')->group(function () {
                 Route::post('/aper-forms/{id}/update-comments', [APERFormController::class, 'updateComments'])->name('aper-forms.update-comments');
                 Route::post('/aper-forms/{id}/accept', [APERFormController::class, 'accept'])->name('aper-forms.accept');
                 Route::post('/aper-forms/{id}/reject', [APERFormController::class, 'reject'])->name('aper-forms.reject');
+                Route::post('/aper-forms/{id}/reporting-officer', [APERFormController::class, 'updateReportingOfficer'])->name('aper-forms.update-reporting-officer');
+                Route::post('/aper-forms/{id}/complete-reporting-officer', [APERFormController::class, 'completeReportingOfficer'])->name('aper-forms.complete-reporting-officer');
             });
 
     // HRD Routes

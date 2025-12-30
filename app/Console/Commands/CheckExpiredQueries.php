@@ -32,10 +32,10 @@ class CheckExpiredQueries extends Command
     {
         $this->info('Checking for expired queries...');
 
-        // Find queries that are pending response and have passed their deadline
+        // Find queries that are pending response and have reached or passed their deadline
         $expiredQueries = Query::where('status', 'PENDING_RESPONSE')
             ->whereNotNull('response_deadline')
-            ->where('response_deadline', '<', now())
+            ->where('response_deadline', '<=', now())
             ->with(['officer', 'issuedBy'])
             ->get();
 

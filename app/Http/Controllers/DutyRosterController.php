@@ -327,10 +327,20 @@ class DutyRosterController extends Controller
             abort(403, 'You can only edit rosters for your assigned command');
         }
         
-        // Only allow editing DRAFT rosters
-        if ($roster->status !== 'DRAFT') {
-            return redirect()->back()->with('error', 'Only DRAFT rosters can be edited.');
+        // Track if roster was approved (will need to change status back to DRAFT)
+        $wasApproved = $roster->status === 'APPROVED';
+        
+        // Track old assignments before making changes
+        $oldOfficerIds = [];
+        if ($roster->oic_officer_id) {
+            $oldOfficerIds[] = $roster->oic_officer_id;
         }
+        if ($roster->second_in_command_officer_id) {
+            $oldOfficerIds[] = $roster->second_in_command_officer_id;
+        }
+        $oldAssignments = $roster->assignments()->pluck('officer_id')->toArray();
+        $oldOfficerIds = array_merge($oldOfficerIds, $oldAssignments);
+        $oldOfficerIds = array_unique($oldOfficerIds);
         
         $request->validate([
             'unit' => 'nullable|string|max:255',
@@ -351,6 +361,97 @@ class DutyRosterController extends Controller
             return redirect()->back()
                 ->with('error', 'The Officer in Charge (OIC) cannot be the same as the Second In Command (2IC).')
                 ->withInput();
+        }
+        
+        // Check for active APER timeline
+        $activeTimeline = \App\Models\APERTimeline::where('is_active', true)->first();
+        if ($activeTimeline) {
+            $year = $activeTimeline->year;
+            $startDate = "{$year}-01-01";
+            $endDate = "{$year}-12-31";
+            
+            // Check all officers being assigned (including OIC and 2IC)
+            $officersToCheck = [];
+            if ($request->has('assignments')) {
+                foreach ($request->assignments as $assignment) {
+                    if (!empty($assignment['officer_id'])) {
+                        $officersToCheck[] = $assignment['officer_id'];
+                    }
+                }
+            }
+            if ($request->oic_officer_id) {
+                $officersToCheck[] = $request->oic_officer_id;
+            }
+            if ($request->second_in_command_officer_id) {
+                $officersToCheck[] = $request->second_in_command_officer_id;
+            }
+            
+            // Remove duplicates
+            $officersToCheck = array_unique($officersToCheck);
+            
+            // Check each officer if they're already in an approved roster for the active timeline
+            foreach ($officersToCheck as $officerId) {
+                // Skip if this is the same roster being edited
+                $isInCurrentRoster = false;
+                if ($roster->oic_officer_id == $officerId || 
+                    $roster->second_in_command_officer_id == $officerId ||
+                    $roster->assignments()->where('officer_id', $officerId)->exists()) {
+                    $isInCurrentRoster = true;
+                }
+                
+                // Check if officer is in another approved roster for the active timeline
+                $existingRoster = \App\Models\DutyRoster::where('command_id', $commandId)
+                    ->where('status', 'APPROVED')
+                    ->where('id', '!=', $roster->id) // Exclude current roster
+                    ->where(function($query) use ($officerId, $startDate, $endDate) {
+                        // Check if officer is OIC or 2IC with period overlap
+                        $query->where(function($q) use ($officerId, $startDate, $endDate) {
+                            $q->where('oic_officer_id', $officerId)
+                              ->where(function($periodQuery) use ($startDate, $endDate) {
+                                  $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                             ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                             ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
+                                                 $overlapQuery->where('roster_period_start', '<=', $startDate)
+                                                             ->where('roster_period_end', '>=', $endDate);
+                                             });
+                              });
+                        })
+                        ->orWhere(function($q) use ($officerId, $startDate, $endDate) {
+                            $q->where('second_in_command_officer_id', $officerId)
+                              ->where(function($periodQuery) use ($startDate, $endDate) {
+                                  $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                             ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                             ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
+                                                 $overlapQuery->where('roster_period_start', '<=', $startDate)
+                                                             ->where('roster_period_end', '>=', $endDate);
+                                             });
+                              });
+                        })
+                        // Check if officer is in assignments with period overlap
+                        ->orWhere(function($q) use ($officerId, $startDate, $endDate) {
+                            $q->whereHas('assignments', function($assignmentQuery) use ($officerId) {
+                                $assignmentQuery->where('officer_id', $officerId);
+                            })
+                            ->where(function($periodQuery) use ($startDate, $endDate) {
+                                $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                           ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                           ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
+                                               $overlapQuery->where('roster_period_start', '<=', $startDate)
+                                                           ->where('roster_period_end', '>=', $endDate);
+                                           });
+                            });
+                        });
+                    })
+                    ->first();
+                
+                if ($existingRoster && !$isInCurrentRoster) {
+                    $officer = \App\Models\Officer::find($officerId);
+                    $officerName = $officer ? ($officer->initials . ' ' . $officer->surname . ' (' . $officer->service_number . ')') : 'Officer';
+                    return redirect()->back()
+                        ->with('error', "{$officerName} is already assigned to an approved roster for the active APER timeline ({$year}). Please remove them from that roster first or wait until the timeline is inactive.")
+                        ->withInput();
+                }
+            }
         }
         
         try {
@@ -378,6 +479,11 @@ class DutyRosterController extends Controller
                 'second_in_command_officer_id' => $request->second_in_command_officer_id,
             ];
             
+            // If roster was approved, change status back to DRAFT for re-approval
+            if ($wasApproved) {
+                $updateData['status'] = 'DRAFT';
+            }
+            
             // Always update unit if it's provided and not empty
             // This ensures the unit is updated when user selects a different unit
             if (!empty($unit)) {
@@ -387,22 +493,22 @@ class DutyRosterController extends Controller
             
             $roster->update($updateData);
             
-            // Get assigned officer IDs before deleting assignments
-            $assignedOfficerIds = [];
+            // Get new assigned officer IDs
+            $newOfficerIds = [];
             if ($request->has('assignments')) {
                 foreach ($request->assignments as $assignment) {
-                    if (!in_array($assignment['officer_id'], $assignedOfficerIds)) {
-                        $assignedOfficerIds[] = $assignment['officer_id'];
+                    if (!in_array($assignment['officer_id'], $newOfficerIds)) {
+                        $newOfficerIds[] = $assignment['officer_id'];
                     }
                 }
             }
             
-            // Include OIC and 2IC in notifications if they're set
-            if ($request->oic_officer_id && !in_array($request->oic_officer_id, $assignedOfficerIds)) {
-                $assignedOfficerIds[] = $request->oic_officer_id;
+            // Include OIC and 2IC in new officer IDs
+            if ($request->oic_officer_id && !in_array($request->oic_officer_id, $newOfficerIds)) {
+                $newOfficerIds[] = $request->oic_officer_id;
             }
-            if ($request->second_in_command_officer_id && !in_array($request->second_in_command_officer_id, $assignedOfficerIds)) {
-                $assignedOfficerIds[] = $request->second_in_command_officer_id;
+            if ($request->second_in_command_officer_id && !in_array($request->second_in_command_officer_id, $newOfficerIds)) {
+                $newOfficerIds[] = $request->second_in_command_officer_id;
             }
             
             // Delete existing assignments if provided
@@ -423,13 +529,92 @@ class DutyRosterController extends Controller
             $roster->refresh();
             $roster->load(['command', 'assignments', 'oicOfficer', 'secondInCommandOfficer']);
             
-            // Note: No email notifications sent during DRAFT status
-            // Emails will be sent only after approval by DC Admin or Area Controller
+            // Determine which officers were added and removed
+            $addedOfficerIds = array_diff($newOfficerIds, $oldOfficerIds);
+            $removedOfficerIds = array_diff($oldOfficerIds, $newOfficerIds);
+            
+            // Notify only added and removed officers (if roster was approved)
+            if ($wasApproved && (count($addedOfficerIds) > 0 || count($removedOfficerIds) > 0)) {
+                $notificationService = app(NotificationService::class);
+                
+                // Notify added officers
+                foreach ($addedOfficerIds as $officerId) {
+                    $officer = \App\Models\Officer::find($officerId);
+                    if ($officer && $officer->user) {
+                        // Determine role
+                        $role = 'Regular Officer';
+                        if ($roster->oic_officer_id == $officerId) {
+                            $role = 'Officer in Charge (OIC)';
+                        } elseif ($roster->second_in_command_officer_id == $officerId) {
+                            $role = 'Second In Command (2IC)';
+                        }
+                        
+                        // Send assignment email via job
+                        if ($officer->user->email) {
+                            $command = $roster->command;
+                            $commandName = $command ? $command->name : 'your command';
+                            $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+                            $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+                            $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
+                            $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
+                            
+                            try {
+                                \App\Jobs\SendDutyRosterAssignmentMailJob::dispatch(
+                                    $roster,
+                                    $officer,
+                                    $role,
+                                    $commandName,
+                                    $periodStart,
+                                    $periodEnd,
+                                    $oicName,
+                                    $secondInCommandName
+                                );
+                            } catch (\Exception $e) {
+                                Log::error('Failed to dispatch duty roster assignment email for added officer', [
+                                    'officer_id' => $officerId,
+                                    'roster_id' => $roster->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
+                    }
+                }
+                
+                // Notify removed officers
+                foreach ($removedOfficerIds as $officerId) {
+                    $officer = \App\Models\Officer::find($officerId);
+                    if ($officer && $officer->user) {
+                        $command = $roster->command;
+                        $commandName = $command ? $command->name : 'your command';
+                        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+                        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+                        
+                        $notificationService->notify(
+                            $officer->user,
+                            'duty_roster_removed',
+                            'Duty Roster Assignment Removed',
+                            "You have been removed from the duty roster for {$commandName}. Period: {$periodStart} to {$periodEnd}.",
+                            'duty_roster',
+                            $roster->id
+                        );
+                    }
+                }
+            }
             
             DB::commit();
             
+            $successMessage = 'Roster updated successfully!';
+            if ($wasApproved) {
+                $successMessage .= ' The roster status has been reset to DRAFT and requires re-approval.';
+                if (count($addedOfficerIds) > 0 || count($removedOfficerIds) > 0) {
+                    $successMessage .= ' Affected officers have been notified.';
+                }
+            } else {
+                $successMessage .= ' Emails will be sent to assigned officers after approval.';
+            }
+            
             return redirect()->route('staff-officer.roster.show', $roster->id)
-                ->with('success', 'Roster updated successfully! Emails will be sent to assigned officers after approval.');
+                ->with('success', $successMessage);
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -536,6 +721,9 @@ class DutyRosterController extends Controller
         try {
             DB::beginTransaction();
             
+            // Check if this is a re-approval (roster was previously approved)
+            $isReapproval = !is_null($roster->approved_at);
+            
             $roster->status = 'APPROVED';
             $roster->approved_at = now();
             $roster->save();
@@ -544,14 +732,21 @@ class DutyRosterController extends Controller
             $roster->refresh();
             $roster->load(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer']);
             
-            // Notify Staff Officer and send assignment emails to all officers
-            $notificationService = app(NotificationService::class);
-            $notificationService->notifyDutyRosterApproved($roster, $user);
+            // Only notify if this is the first approval (not a re-approval)
+            // If it's a re-approval, affected officers were already notified during edit
+            if (!$isReapproval) {
+                $notificationService = app(NotificationService::class);
+                $notificationService->notifyDutyRosterApproved($roster, $user);
+            }
             
             DB::commit();
             
+            $successMessage = $isReapproval 
+                ? 'Roster re-approved successfully. Affected officers were already notified when the roster was edited.'
+                : 'Roster approved successfully. All assigned officers and Staff Officer have been notified.';
+            
             return redirect()->route('area-controller.roster')
-                ->with('success', 'Roster approved successfully. All assigned officers and Staff Officer have been notified.');
+                ->with('success', $successMessage);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to approve roster: ' . $e->getMessage());
@@ -668,6 +863,9 @@ class DutyRosterController extends Controller
         try {
             DB::beginTransaction();
             
+            // Check if this is a re-approval (roster was previously approved)
+            $isReapproval = !is_null($roster->approved_at);
+            
             $roster->status = 'APPROVED';
             $roster->approved_at = now();
             $roster->save();
@@ -676,14 +874,21 @@ class DutyRosterController extends Controller
             $roster->refresh();
             $roster->load(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer']);
             
-            // Notify Staff Officer and send assignment emails to all officers
-            $notificationService = app(NotificationService::class);
-            $notificationService->notifyDutyRosterApproved($roster, $user);
+            // Only notify if this is the first approval (not a re-approval)
+            // If it's a re-approval, affected officers were already notified during edit
+            if (!$isReapproval) {
+                $notificationService = app(NotificationService::class);
+                $notificationService->notifyDutyRosterApproved($roster, $user);
+            }
             
             DB::commit();
             
+            $successMessage = $isReapproval 
+                ? 'Roster re-approved successfully. Affected officers were already notified when the roster was edited.'
+                : 'Roster approved successfully. All assigned officers and Staff Officer have been notified.';
+            
             return redirect()->route('dc-admin.roster')
-                ->with('success', 'Roster approved successfully. All assigned officers and Staff Officer have been notified.');
+                ->with('success', $successMessage);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to approve roster: ' . $e->getMessage());

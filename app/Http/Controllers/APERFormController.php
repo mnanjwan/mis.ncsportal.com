@@ -336,8 +336,59 @@ class APERFormController extends Controller
                 ->with('error', 'You must be an Officer in Charge (OIC) or Second In Command (2IC) in an approved duty roster to create APER forms.');
         }
 
-        // Query officers - filter by same command
-        $query = Officer::where('present_station', $commandId);
+        // Get the approved roster where the Reporting Officer is OIC or 2IC
+        $startDate = "{$year}-01-01";
+        $endDate = "{$year}-12-31";
+        
+        $approvedRoster = \App\Models\DutyRoster::where('command_id', $commandId)
+            ->where('status', 'APPROVED')
+            ->where(function($query) use ($reportingOfficer, $startDate, $endDate) {
+                $query->where(function($q) use ($reportingOfficer, $startDate, $endDate) {
+                    $q->where('oic_officer_id', $reportingOfficer->id)
+                      ->where(function($periodQuery) use ($startDate, $endDate) {
+                          $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
+                                         $overlapQuery->where('roster_period_start', '<=', $startDate)
+                                                     ->where('roster_period_end', '>=', $endDate);
+                                     });
+                      });
+                })
+                ->orWhere(function($q) use ($reportingOfficer, $startDate, $endDate) {
+                    $q->where('second_in_command_officer_id', $reportingOfficer->id)
+                      ->where(function($periodQuery) use ($startDate, $endDate) {
+                          $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
+                                         $overlapQuery->where('roster_period_start', '<=', $startDate)
+                                                     ->where('roster_period_end', '>=', $endDate);
+                                     });
+                      });
+                });
+            })
+            ->first();
+        
+        if (!$approvedRoster) {
+            return redirect()->route('dashboard')
+                ->with('error', 'You must be an OIC or 2IC in an approved duty roster with an active timeline to search for officers.');
+        }
+        
+        // Get officer IDs from roster assignments (excluding OIC and 2IC)
+        $assignedOfficerIds = $approvedRoster->assignments()
+            ->pluck('officer_id')
+            ->toArray();
+        
+        // Also include OIC and 2IC if they exist
+        if ($approvedRoster->oic_officer_id) {
+            $assignedOfficerIds[] = $approvedRoster->oic_officer_id;
+        }
+        if ($approvedRoster->second_in_command_officer_id) {
+            $assignedOfficerIds[] = $approvedRoster->second_in_command_officer_id;
+        }
+        
+        // Query officers - only those assigned to this roster
+        $query = Officer::whereIn('id', $assignedOfficerIds)
+            ->where('present_station', $commandId);
 
         if ($request->filled('search')) {
             $search = $request->search;

@@ -85,14 +85,15 @@ class Query extends Model
     }
 
     /**
-     * Check if the query deadline has passed
+     * Check if the query deadline has passed or reached
      */
     public function isExpired(): bool
     {
         if (!$this->response_deadline) {
             return false;
         }
-        return now()->isAfter($this->response_deadline);
+        // Check if current time is at or after the deadline (prevents response at exact deadline time)
+        return now()->greaterThanOrEqualTo($this->response_deadline);
     }
 
     /**
