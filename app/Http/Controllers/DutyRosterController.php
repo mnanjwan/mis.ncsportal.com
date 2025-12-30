@@ -240,6 +240,76 @@ class DutyRosterController extends Controller
         return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers', 'allUnits', 'commands', 'commandId'));
     }
     
+    public function getOfficersByCommand(Request $request)
+    {
+        try {
+            // Validate request
+            $validated = $request->validate([
+                'command_id' => 'required'
+            ]);
+
+            $commandId = (int) $validated['command_id'];
+            
+            if ($commandId <= 0) {
+                return response()->json([
+                    'error' => 'Invalid command ID',
+                    'message' => 'Command ID must be a positive integer'
+                ], 422);
+            }
+
+            // Verify command exists
+            $commandExists = \App\Models\Command::where('id', $commandId)->exists();
+            if (!$commandExists) {
+                return response()->json([
+                    'error' => 'Command not found',
+                    'message' => "Command with ID {$commandId} does not exist"
+                ], 404);
+            }
+
+            // Query officers
+            $officersQuery = \App\Models\Officer::where('present_station', $commandId)
+                ->where('is_active', true)
+                ->orderBy('surname')
+                ->orderBy('initials');
+            
+            $officers = $officersQuery->get()->map(function($officer) {
+                if (!$officer) {
+                    return null;
+                }
+                return [
+                    'id' => $officer->id ?? null,
+                    'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
+                    'service_number' => $officer->service_number ?? 'N/A',
+                    'rank' => $officer->substantive_rank ?? 'N/A',
+                ];
+            })->filter()->values();
+
+            return response()->json($officers);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in getOfficersByCommand', [
+                'errors' => $e->errors(),
+                'request' => $request->all()
+            ]);
+            
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching officers by command', [
+                'command_id' => $request->command_id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Server error',
+                'message' => 'An error occurred while fetching officers. Please try again.'
+            ], 500);
+        }
+    }
+    
     public function update(Request $request, $id)
     {
         $roster = \App\Models\DutyRoster::findOrFail($id);

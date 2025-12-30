@@ -178,13 +178,13 @@
                                         <div class="p-3 border-b border-input">
                                             <div class="relative">
                                                 <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                                                <input type="text" 
+                                    <input type="text" 
                                                        id="oic_search_input" 
                                                        class="kt-input w-full pl-10" 
                                                        placeholder="Search officers..."
-                                                       autocomplete="off">
-                                            </div>
-                                        </div>
+                                           autocomplete="off">
+                                </div>
+                            </div>
                                         <!-- Options Container -->
                                         <div id="oic_options" class="max-h-60 overflow-y-auto">
                                             <div class="p-3 text-sm text-secondary-foreground text-center">
@@ -222,12 +222,12 @@
                                         <div class="p-3 border-b border-input">
                                             <div class="relative">
                                                 <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                                                <input type="text" 
+                                    <input type="text" 
                                                        id="second_ic_search_input" 
                                                        class="kt-input w-full pl-10" 
                                                        placeholder="Search officers..."
-                                                       autocomplete="off">
-                                            </div>
+                                           autocomplete="off">
+                                </div>
                                         </div>
                                         <!-- Options Container -->
                                         <div id="second_ic_options" class="max-h-60 overflow-y-auto">
@@ -262,26 +262,47 @@
                                     </div>
                                     <div class="grid sm:grid-cols-2 gap-4">
                                         <div class="flex flex-col gap-1">
-                                            <label class="kt-form-label font-normal text-mono text-xs">Officer <span class="text-danger">*</span></label>
+                                            <label class="block text-sm font-medium mb-1">Officer <span class="text-danger">*</span></label>
                                             <div class="relative">
-                                                <input type="text" 
-                                                       class="kt-input officer-search-input" 
-                                                       placeholder="Search officer by name or service number..." 
-                                                       data-select-id="assignment-officer-{{ $index }}"
-                                                       autocomplete="off">
-                                                <select class="kt-input assignment-officer-select" 
+                                                <input type="hidden" 
                                                         name="assignments[{{ $index }}][officer_id]" 
                                                         id="assignment-officer-{{ $index }}"
+                                                       value="{{ $assignment->officer_id }}"
                                                         required>
-                                                <option value="">Select Officer</option>
-                                                    @foreach($officersForAssignments ?? $officers as $officer)
-                                                        <option value="{{ $officer->id }}" 
-                                                                data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
-                                                                {{ $assignment->officer_id == $officer->id ? 'selected' : '' }}>
-                                                        {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                                <button type="button" 
+                                                        id="assignment-officer-{{ $index }}-trigger" 
+                                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer assignment-officer-trigger"
+                                                        {{ !$commandId ? 'disabled' : '' }}>
+                                                    <span id="assignment-officer-{{ $index }}-text">
+                                                        @if($assignment->officer_id && $assignment->officer)
+                                                            {{ $assignment->officer->initials }} {{ $assignment->officer->surname }} ({{ $assignment->officer->service_number }})
+                                                        @else
+                                                            {{ $commandId ? 'Select Officer' : 'Select command first, then choose officer...' }}
+                                                        @endif
+                                                    </span>
+                                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                                </button>
+                                                <div id="assignment-officer-{{ $index }}-dropdown" 
+                                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden assignment-officer-dropdown">
+                                                    <!-- Search Box -->
+                                                    <div class="p-3 border-b border-input">
+                                                        <div class="relative">
+                                                            <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                                            <input type="text" 
+                                                                   id="assignment-officer-{{ $index }}-search-input" 
+                                                                   class="kt-input w-full pl-10 assignment-officer-search" 
+                                                                   placeholder="Search officers..."
+                                                                   autocomplete="off"
+                                                                   data-assignment-index="{{ $index }}">
+                                                        </div>
+                                                    </div>
+                                                    <!-- Options Container -->
+                                                    <div id="assignment-officer-{{ $index }}-options" class="max-h-60 overflow-y-auto assignment-officer-options">
+                                                        <div class="p-3 text-sm text-secondary-foreground text-center">
+                                                            {{ $commandId ? 'Loading officers...' : 'Select command first' }}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="flex flex-col gap-1">
@@ -481,7 +502,7 @@ function loadOfficersByCommand(commandId) {
     }
     secondIcOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Loading...</div>';
 
-    fetch(`{{ route('hrd.role-assignments.officers-by-command') }}?command_id=${commandId}`, {
+    return fetch(`{{ route('staff-officer.roster.officers-by-command') }}?command_id=${commandId}`, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json'
@@ -491,13 +512,15 @@ function loadOfficersByCommand(commandId) {
     .then(data => {
         officers = data;
         
+        // Calculate initial IDs to use (before the if block)
+        const oicIdToUse = isInitialLoad && commandId == initialCommandId ? initialOicId : null;
+        const secondIcIdToUse = isInitialLoad && commandId == initialCommandId ? initialSecondIcId : null;
+        
         if (data.length > 0) {
             // Populate OIC options
-            const oicIdToUse = isInitialLoad && commandId == initialCommandId ? initialOicId : null;
             renderOfficerOptions(data, oicOptions, oicHiddenInput, oicSelectText, oicDropdown, oicSearchInput, 'oic', oicIdToUse);
             
             // Populate 2IC options
-            const secondIcIdToUse = isInitialLoad && commandId == initialCommandId ? initialSecondIcId : null;
             renderOfficerOptions(data, secondIcOptions, secondIcHiddenInput, secondIcSelectText, secondIcDropdown, secondIcSearchInput, 'second_ic', secondIcIdToUse);
             
             oicInfo.textContent = `${data.length} officer${data.length !== 1 ? 's' : ''} available`;
@@ -541,6 +564,14 @@ function loadOfficersByCommand(commandId) {
         
         // Update assignment dropdowns
         updateAssignmentDropdowns();
+        
+        // Enable assignment triggers
+        document.querySelectorAll('.assignment-officer-trigger').forEach(trigger => {
+            trigger.disabled = false;
+        });
+        
+        // Setup assignment officer dropdowns
+        setupAssignmentOfficerDropdowns();
         
         isInitialLoad = false;
     })
@@ -678,6 +709,20 @@ function clearOfficers() {
     
     officers = [];
     updateAssignmentDropdowns();
+    
+    // Clear all assignment officer dropdowns
+    document.querySelectorAll('.assignment-officer-options').forEach(optionsContainer => {
+        optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Select command first</div>';
+    });
+    
+    document.querySelectorAll('.assignment-officer-trigger').forEach(trigger => {
+        trigger.disabled = true;
+        const assignmentIndex = trigger.id.replace('assignment-officer-', '').replace('-trigger', '');
+        const selectText = document.getElementById(`assignment-officer-${assignmentIndex}-text`);
+        if (selectText) {
+            selectText.textContent = 'Select command first, then choose officer...';
+        }
+    });
 }
 
 // Get officers available for assignments (excludes OIC and 2IC)
@@ -698,11 +743,6 @@ function getAvailableOfficersForAssignments() {
 
 // Assignment template
 function createAssignmentTemplate(index) {
-    const availableOfficers = getAvailableOfficersForAssignments();
-    const officersHtml = availableOfficers.map(officer => 
-        `<option value="${officer.id}" data-search-text="${(officer.initials + ' ' + officer.surname + ' ' + officer.service_number).toLowerCase()}">${officer.initials} ${officer.surname} (${officer.service_number})</option>`
-    ).join('');
-    
     return `
         <div class="kt-card shadow-none bg-muted/30 border border-input" data-assignment-index="${index}">
             <div class="kt-card-content p-4 space-y-4">
@@ -714,20 +754,42 @@ function createAssignmentTemplate(index) {
                 </div>
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label font-normal text-mono text-xs">Officer <span class="text-danger">*</span></label>
+                        <label class="block text-sm font-medium mb-1">Officer <span class="text-danger">*</span></label>
                         <div class="relative">
-                            <input type="text" 
-                                   class="kt-input officer-search-input" 
-                                   placeholder="Search officer by name or service number..." 
-                                   data-select-id="assignment-officer-${index}"
-                                   autocomplete="off">
-                            <select class="kt-input assignment-officer-select" 
+                            <input type="hidden" 
                                     name="assignments[${index}][officer_id]" 
                                     id="assignment-officer-${index}"
                                     required>
-                            <option value="">Select Officer</option>
-                            ${officersHtml}
-                        </select>
+                            <button type="button" 
+                                    id="assignment-officer-${index}-trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer assignment-officer-trigger"
+                                    ${!officers.length ? 'disabled' : ''}>
+                                <span id="assignment-officer-${index}-text">
+                                    ${officers.length ? 'Select Officer' : 'Select command first, then choose officer...'}
+                                </span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="assignment-officer-${index}-dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden assignment-officer-dropdown">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                        <input type="text" 
+                                               id="assignment-officer-${index}-search-input" 
+                                               class="kt-input w-full pl-10 assignment-officer-search" 
+                                               placeholder="Search officers..."
+                                               autocomplete="off"
+                                               data-assignment-index="${index}">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="assignment-officer-${index}-options" class="max-h-60 overflow-y-auto assignment-officer-options">
+                                    <div class="p-3 text-sm text-secondary-foreground text-center">
+                                        ${officers.length ? 'Loading officers...' : 'Select command first'}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -758,6 +820,8 @@ function addAssignment() {
     updateRemoveButtons();
     // Make sure new assignment dropdown excludes OIC/2IC
     updateAssignmentDropdowns();
+    // Setup the new assignment dropdown
+    setupAssignmentOfficerDropdowns();
 }
 
 // Remove assignment
@@ -815,41 +879,170 @@ function updateAssignmentDropdowns() {
     const oicId = oicHiddenInput ? oicHiddenInput.value : null;
     const secondIcId = secondIcHiddenInput ? secondIcHiddenInput.value : null;
     
-    // Use officers from current command if available, otherwise use allOfficers
-    const officersList = officers.length > 0 ? officers : allOfficers;
+    // Get available officers (exclude OIC and 2IC)
+    const availableOfficers = officers.filter(officer => {
+        const officerId = officer.id;
+        return officerId != oicId && officerId != secondIcId;
+    });
     
-    // Update all assignment officer selects
-    document.querySelectorAll('.assignment-officer-select').forEach(select => {
-        const currentValue = select.value;
+    // Update all assignment officer dropdowns
+    document.querySelectorAll('.assignment-officer-options').forEach(optionsContainer => {
+        const assignmentIndex = optionsContainer.id.replace('assignment-officer-', '').replace('-options', '');
+        const hiddenInput = document.getElementById(`assignment-officer-${assignmentIndex}`);
+        const currentValue = hiddenInput ? hiddenInput.value : null;
         
-        // Clear and rebuild options
-        select.innerHTML = '<option value="">Select Officer</option>';
-        
-        officersList.forEach(officer => {
-            // Skip if officer is OIC or 2IC
-            const officerId = officer.id || officer.id;
-            if (officerId == oicId || officerId == secondIcId) {
+        if (availableOfficers.length > 0) {
+            renderAssignmentOfficerOptions(availableOfficers, optionsContainer, hiddenInput, assignmentIndex, currentValue);
+        } else {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers available (OIC and 2IC are excluded)</div>';
+        }
+    });
+}
+
+function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenInput, assignmentIndex, currentValue) {
+    if (officersList.length === 0) {
+        optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers available</div>';
                 return;
             }
             
-            const option = document.createElement('option');
-            option.value = officerId;
-            const name = officer.name || (officer.initials + ' ' + officer.surname);
-            const service = officer.service_number || officer.service_number;
-            option.textContent = `${name} (${service})`;
+    optionsContainer.innerHTML = officersList.map(officer => {
+        const details = officer.service_number !== 'N/A' ? officer.service_number : '';
+        const rank = officer.rank !== 'N/A' ? ' - ' + officer.rank : '';
+        const displayText = officer.name + (details ? ' (' + details + rank + ')' : '');
+        
+        return `
+            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 assignment-officer-option" 
+                 data-id="${officer.id}" 
+                 data-name="${officer.name}"
+                 data-service="${details}"
+                 data-rank="${officer.rank}">
+                <div class="text-sm text-foreground">${officer.name}</div>
+                <div class="text-xs text-secondary-foreground">${details}${rank}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Set current selection if provided
+    if (currentValue) {
+        const currentOfficer = officersList.find(o => o.id == currentValue);
+        if (currentOfficer) {
+            const selectText = document.getElementById(`assignment-officer-${assignmentIndex}-text`);
+            if (selectText) {
+                const details = currentOfficer.service_number !== 'N/A' ? currentOfficer.service_number : '';
+                const rank = currentOfficer.rank !== 'N/A' ? ' - ' + currentOfficer.rank : '';
+                const displayText = currentOfficer.name + (details ? ' (' + details + rank + ')' : '');
+                selectText.textContent = displayText;
+            }
+        }
+    }
+    
+    // Add click handlers
+    optionsContainer.querySelectorAll('.assignment-officer-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            const service = this.dataset.service;
+            const rank = this.dataset.rank;
             
-            // Restore selected value if it's still valid
-            if (currentValue == officerId) {
-                option.selected = true;
+            // Update hidden input
+            if (hiddenInput) {
+                hiddenInput.value = id;
             }
             
-            select.appendChild(option);
+            // Update display text
+            const selectText = document.getElementById(`assignment-officer-${assignmentIndex}-text`);
+            const dropdown = document.getElementById(`assignment-officer-${assignmentIndex}-dropdown`);
+            const searchInput = document.getElementById(`assignment-officer-${assignmentIndex}-search-input`);
+            
+            if (selectText) {
+                const displayText = name + (service !== 'N/A' && service ? ' (' + service + (rank !== 'N/A' ? ' - ' + rank : '') + ')' : '');
+                selectText.textContent = displayText;
+            }
+            
+            // Close dropdown
+            if (dropdown) {
+                dropdown.classList.add('hidden');
+            }
+            
+            // Clear search
+            if (searchInput) {
+                searchInput.value = '';
+            }
+        });
+    });
+}
+
+function setupAssignmentOfficerDropdowns() {
+    // Setup triggers for all assignment officer dropdowns
+    document.querySelectorAll('.assignment-officer-trigger').forEach(trigger => {
+        const assignmentIndex = trigger.id.replace('assignment-officer-', '').replace('-trigger', '');
+        const dropdown = document.getElementById(`assignment-officer-${assignmentIndex}-dropdown`);
+        
+        if (!dropdown) return;
+        
+        // Remove existing listeners by cloning
+        const newTrigger = trigger.cloneNode(true);
+        trigger.parentNode.replaceChild(newTrigger, trigger);
+        
+        newTrigger.addEventListener('click', function(e) {
+            if (this.disabled) return;
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => {
+                    const searchInput = document.getElementById(`assignment-officer-${assignmentIndex}-search-input`);
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }, 100);
+            }
         });
         
-        // If current selection is no longer valid (became OIC/2IC), clear it
-        if (currentValue && (currentValue == oicId || currentValue == secondIcId)) {
-            select.value = '';
+        // Setup search for this assignment
+        const searchInput = document.getElementById(`assignment-officer-${assignmentIndex}-search-input`);
+        if (searchInput) {
+            // Remove existing listeners
+            const newSearchInput = searchInput.cloneNode(true);
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+            
+            newSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const oicHiddenInput = document.getElementById('oic_officer_id');
+                const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+                const oicId = oicHiddenInput ? oicHiddenInput.value : null;
+                const secondIcId = secondIcHiddenInput ? secondIcHiddenInput.value : null;
+                
+                const filtered = officers.filter(officer => {
+                    const officerId = officer.id;
+                    // Exclude OIC and 2IC
+                    if (officerId == oicId || officerId == secondIcId) {
+                        return false;
+                    }
+                    const nameMatch = officer.name.toLowerCase().includes(searchTerm);
+                    const serviceMatch = officer.service_number && officer.service_number.toLowerCase().includes(searchTerm);
+                    const rankMatch = officer.rank && officer.rank.toLowerCase().includes(searchTerm);
+                    return nameMatch || serviceMatch || rankMatch;
+                });
+                
+                const optionsContainer = document.getElementById(`assignment-officer-${assignmentIndex}-options`);
+                const hiddenInput = document.getElementById(`assignment-officer-${assignmentIndex}`);
+                const currentValue = hiddenInput ? hiddenInput.value : null;
+                
+                renderAssignmentOfficerOptions(filtered, optionsContainer, hiddenInput, assignmentIndex, currentValue);
+            });
         }
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.assignment-officer-dropdown').forEach(dropdown => {
+            const assignmentIndex = dropdown.id.replace('assignment-officer-', '').replace('-dropdown', '');
+            const trigger = document.getElementById(`assignment-officer-${assignmentIndex}-trigger`);
+            if (dropdown && !dropdown.contains(e.target) && trigger && !trigger.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
     });
 }
 
@@ -905,6 +1098,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isInitialLoad = true;
         loadOfficersByCommand(initialCommandId);
     }
+    
+    // Initialize assignment dropdowns
+    setupAssignmentOfficerDropdowns();
     
     // Toggle dropdowns for OIC and 2IC
     document.getElementById('oic_select_trigger')?.addEventListener('click', function(e) {

@@ -298,10 +298,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/roster', [DutyRosterController::class, 'index'])->name('roster');
         Route::get('/roster/create', [DutyRosterController::class, 'create'])->name('roster.create');
         Route::post('/roster', [DutyRosterController::class, 'store'])->name('roster.store');
-        Route::get('/roster/{id}', [DutyRosterController::class, 'show'])->name('roster.show');
+        Route::get('/roster/officers-by-command', [DutyRosterController::class, 'getOfficersByCommand'])->name('roster.officers-by-command');
         Route::get('/roster/{id}/edit', [DutyRosterController::class, 'edit'])->name('roster.edit');
         Route::put('/roster/{id}', [DutyRosterController::class, 'update'])->name('roster.update');
         Route::post('/roster/{id}/submit', [DutyRosterController::class, 'submit'])->name('roster.submit');
+        Route::get('/roster/{id}', [DutyRosterController::class, 'show'])->name('roster.show');
 
         // Internal Staff Orders Routes
         Route::get('/internal-staff-orders', [InternalStaffOrderController::class, 'index'])->name('internal-staff-orders.index');
