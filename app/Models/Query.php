@@ -105,6 +105,23 @@ class Query extends Model
     }
 
     /**
+     * Check if query can still accept responses (deadline not reached)
+     */
+    public function canAcceptResponse(): bool
+    {
+        if (!$this->isPendingResponse()) {
+            return false;
+        }
+        
+        if (!$this->response_deadline) {
+            return true; // No deadline set, can always respond
+        }
+        
+        // Check if current time is before the deadline
+        return now()->lessThan($this->response_deadline);
+    }
+
+    /**
      * Get days remaining until deadline
      */
     public function daysUntilDeadline(): ?int

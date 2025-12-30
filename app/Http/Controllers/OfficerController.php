@@ -8,7 +8,11 @@ use App\Models\LeaveApplication;
 use App\Models\PassApplication;
 use App\Models\OfficerQuarter;
 use App\Models\OfficerCourse;
+use App\Models\Query;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OfficerController extends Controller
 {
@@ -580,7 +584,50 @@ class OfficerController extends Controller
             ->get();
 
         // 8. Pending Queries (queries that need response)
-        $pendingQueries = \App\Models\Query::where('officer_id', $officer->id)
+        // First, automatically expire any queries that have passed their deadline
+        $expiredQueries = Query::where('officer_id', $officer->id)
+            ->where('status', 'PENDING_RESPONSE')
+            ->whereNotNull('response_deadline')
+            ->where('response_deadline', '<=', now())
+            ->get();
+
+        if ($expiredQueries->isNotEmpty()) {
+            $notificationService = app(NotificationService::class);
+            
+            foreach ($expiredQueries as $expiredQuery) {
+                try {
+                    DB::beginTransaction();
+
+                    // Update query status to ACCEPTED
+                    $expiredQuery->update([
+                        'status' => 'ACCEPTED',
+                        'reviewed_at' => now(),
+                    ]);
+
+                    // Send notification to officer about automatic expiration
+                    if ($expiredQuery->officer && $expiredQuery->officer->user) {
+                        $notificationService->notifyQueryExpired($expiredQuery);
+                    }
+
+                    DB::commit();
+
+                    Log::info('Query expired automatically on dashboard view', [
+                        'query_id' => $expiredQuery->id,
+                        'officer_id' => $expiredQuery->officer_id,
+                        'deadline' => $expiredQuery->response_deadline,
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Failed to expire query on dashboard view', [
+                        'query_id' => $expiredQuery->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // Now get pending queries (excluding expired ones that were just updated)
+        $pendingQueries = Query::where('officer_id', $officer->id)
             ->where('status', 'PENDING_RESPONSE')
             ->with(['issuedBy'])
             ->orderBy('issued_at', 'desc')

@@ -63,6 +63,10 @@
                     <a href="{{ route('staff-officer.roster.edit', $roster->id) }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-pencil"></i> Edit
                     </a>
+                @elseif($roster->status === 'APPROVED')
+                    <button type="button" class="kt-btn kt-btn-primary" data-kt-modal-toggle="#request-edit-modal">
+                        <i class="ki-filled ki-pencil"></i> Request to Edit
+                    </button>
                 @endif
                 <a href="{{ route('staff-officer.roster') }}" class="kt-btn kt-btn-outline">
                     <i class="ki-filled ki-left"></i> Back
@@ -222,6 +226,10 @@
                                 <a href="{{ route('staff-officer.roster.edit', $roster->id) }}" class="kt-btn kt-btn-primary w-full">
                                     <i class="ki-filled ki-pencil"></i> Edit Roster
                                 </a>
+                            @elseif($roster->status === 'APPROVED')
+                                <button type="button" class="kt-btn kt-btn-primary w-full" data-kt-modal-toggle="#request-edit-modal">
+                                    <i class="ki-filled ki-pencil"></i> Request to Edit
+                                </button>
                             @endif
                             @if($roster->status === 'DRAFT' && $roster->assignments->count() > 0)
                                 <button type="button" class="kt-btn kt-btn-success w-full" data-kt-modal-toggle="#submit-modal">
@@ -303,6 +311,45 @@
                     <i class="ki-filled ki-check"></i> Submit for Approval
                 </button>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Request to Edit Confirmation Modal -->
+<div class="kt-modal" data-kt-modal="true" id="request-edit-modal">
+    <div class="kt-modal-content max-w-[400px]">
+        <div class="kt-modal-header py-4 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
+                    <i class="ki-filled ki-information text-warning text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Request to Edit Roster</h3>
+            </div>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <div class="kt-modal-body py-5 px-5">
+            <p class="text-sm text-secondary-foreground mb-3">
+                You are about to request to edit an approved roster. This will:
+            </p>
+            <ul class="text-sm text-secondary-foreground space-y-2 list-disc list-inside mb-3">
+                <li>Change the roster status back to DRAFT</li>
+                <li>Allow you to make changes to the roster</li>
+                <li>Require re-approval before the changes take effect</li>
+                <li>Notify only officers who are added or removed from the roster</li>
+            </ul>
+            <p class="text-sm text-secondary-foreground">
+                Are you sure you want to proceed?
+            </p>
+        </div>
+        <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+            <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                Cancel
+            </button>
+            <a href="{{ route('staff-officer.roster.edit', $roster->id) }}" class="kt-btn kt-btn-primary">
+                <i class="ki-filled ki-pencil"></i> Proceed to Edit
+            </a>
         </div>
     </div>
 </div>

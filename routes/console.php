@@ -47,5 +47,6 @@ Schedule::command('aper:manage-timeline')
     ->at('08:00');
 
 // Query expiration - check and automatically expire queries that have passed their deadline
+// Run every 3 minutes to ensure timely expiration
 Schedule::command('queries:check-expired')
-    ->hourly();
+    ->everyThreeMinutes();

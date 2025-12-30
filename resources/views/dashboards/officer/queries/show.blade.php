@@ -124,21 +124,56 @@
                     </div>
                 @endif
 
-                @if($query->status === 'PENDING_RESPONSE' && !$query->isOverdue())
+                @php
+                    // Use the helper method for clarity
+                    $canRespond = $query->canAcceptResponse();
+                    $isExpired = $query->status === 'PENDING_RESPONSE' && $query->response_deadline && now()->greaterThanOrEqualTo($query->response_deadline);
+                @endphp
+
+                @if($query->status === 'PENDING_RESPONSE')
                     <div class="border-t border-border pt-5">
                         <h4 class="font-semibold mb-3">Respond to Query</h4>
-                        <form action="{{ route('officer.queries.respond', $query->id) }}" method="POST">
+                        
+                        @if($isExpired)
+                            <div class="kt-card bg-danger/10 border border-danger/20 mb-4">
+                                <div class="kt-card-content p-4">
+                                    <div class="flex items-center gap-3">
+                                        <i class="ki-filled ki-lock text-danger text-xl"></i>
+                                        <div>
+                                            <p class="text-sm font-semibold text-danger">Response Deadline Expired</p>
+                                            <p class="text-sm text-danger">The response deadline has been reached. You can no longer submit a response to this query.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <form action="{{ route('officer.queries.respond', $query->id) }}" method="POST" id="query-response-form">
                             @csrf
                             <div class="mb-4">
                                 <label class="kt-label">Your Response <span class="text-danger">*</span></label>
-                                <textarea name="response" rows="6" class="kt-input @error('response') border-danger @enderror" placeholder="Provide your response to the query..." required>{{ old('response') }}</textarea>
+                                <textarea 
+                                    name="response" 
+                                    rows="6" 
+                                    class="kt-input @error('response') border-danger @enderror" 
+                                    placeholder="Provide your response to the query..." 
+                                    {{ $isExpired ? 'disabled' : 'required' }}
+                                    {{ $isExpired ? 'readonly' : '' }}
+                                >{{ old('response') }}</textarea>
                                 @error('response')
                                     <p class="text-danger text-sm mt-1">{{ $message }}</p>
                                 @enderror
                                 <p class="text-xs text-muted-foreground mt-1">Minimum 10 characters required</p>
                             </div>
                             <div class="flex gap-3">
-                                <button type="submit" class="kt-btn kt-btn-primary">
+                                <button 
+                                    type="submit" 
+                                    class="kt-btn kt-btn-primary {{ $isExpired ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    {{ $isExpired ? 'disabled' : '' }}
+                                    @if($isExpired)
+                                        onclick="event.preventDefault(); return false;"
+                                    @endif
+                                >
                                     <i class="ki-filled ki-check"></i> Submit Response
                                 </button>
                                 <a href="{{ route('officer.queries.index') }}" class="kt-btn kt-btn-secondary">
@@ -158,5 +193,30 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('query-response-form');
+        const submitButton = form?.querySelector('button[type="submit"]');
+        const isExpired = {{ ($isExpired ?? false) ? 'true' : 'false' }};
+        
+        if (form && isExpired) {
+            // Prevent form submission if expired
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('The response deadline has expired. You can no longer submit a response to this query.');
+                return false;
+            });
+            
+            // Ensure button is disabled
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.setAttribute('aria-disabled', 'true');
+            }
+        }
+    });
+</script>
+@endpush
 @endsection
 

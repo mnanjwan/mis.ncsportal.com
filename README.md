@@ -156,12 +156,33 @@ php artisan migrate
 php artisan migrate:rollback
 ```
 
+## Scheduled Tasks (Cron Jobs)
+
+Laravel's task scheduler needs to be set up to run all scheduled tasks. See `docs/CRONJOBS_SETUP.md` for detailed instructions.
+
+**Quick Setup:**
+```bash
+# Run the setup script
+./setup-cron.sh
+
+# Or manually add to crontab
+* * * * * cd /path/to/pisportal && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**Current Scheduled Tasks:**
+- Query expiration check - Every 3 minutes
+- Leave/Pass expiry alerts - Hourly
+- Retirement checks - Daily at 08:00
+- Emolument timeline extension - Daily at 08:00
+- APER timeline management - Daily at 08:00
+
 ## Documentation
 
 - **System Specification**: `docs/SYSTEM_SPECIFICATION.md`
 - **Database Schema**: `docs/DATABASE_SCHEMA.md`
 - **API Specification**: `docs/API_SPECIFICATION.md`
 - **Laravel Setup**: `docs/LARAVEL_SETUP.md`
+- **Cron Jobs Setup**: `docs/CRONJOBS_SETUP.md`
 
 ## Support
 

@@ -30,6 +30,48 @@ class OfficerQueryController extends Controller
             return redirect()->route('dashboard')->with('error', 'Officer record not found.');
         }
 
+        // First, automatically expire any queries that have passed their deadline
+        $expiredQueries = Query::where('officer_id', $officer->id)
+            ->where('status', 'PENDING_RESPONSE')
+            ->whereNotNull('response_deadline')
+            ->where('response_deadline', '<=', now())
+            ->get();
+
+        if ($expiredQueries->isNotEmpty()) {
+            $notificationService = app(NotificationService::class);
+            
+            foreach ($expiredQueries as $expiredQuery) {
+                try {
+                    DB::beginTransaction();
+
+                    // Update query status to ACCEPTED
+                    $expiredQuery->update([
+                        'status' => 'ACCEPTED',
+                        'reviewed_at' => now(),
+                    ]);
+
+                    // Send notification to officer about automatic expiration
+                    if ($expiredQuery->officer && $expiredQuery->officer->user) {
+                        $notificationService->notifyQueryExpired($expiredQuery);
+                    }
+
+                    DB::commit();
+
+                    Log::info('Query expired automatically on index view', [
+                        'query_id' => $expiredQuery->id,
+                        'officer_id' => $expiredQuery->officer_id,
+                        'deadline' => $expiredQuery->response_deadline,
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Failed to expire query on index view', [
+                        'query_id' => $expiredQuery->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
         $query = Query::where('officer_id', $officer->id)
             ->with(['issuedBy'])
             ->orderBy('created_at', 'desc');
@@ -60,6 +102,45 @@ class OfficerQueryController extends Controller
             ->where('officer_id', $officer->id)
             ->findOrFail($id);
 
+        // Automatically expire query if deadline has passed (real-time check)
+        if ($query->status === 'PENDING_RESPONSE' 
+            && $query->response_deadline 
+            && now()->greaterThanOrEqualTo($query->response_deadline)) {
+            
+            try {
+                DB::beginTransaction();
+
+                // Update query status to ACCEPTED (automatically added to disciplinary record)
+                $query->update([
+                    'status' => 'ACCEPTED',
+                    'reviewed_at' => now(),
+                ]);
+
+                // Send notification to officer about automatic expiration
+                if ($query->officer && $query->officer->user) {
+                    $notificationService = app(NotificationService::class);
+                    $notificationService->notifyQueryExpired($query);
+                }
+
+                DB::commit();
+
+                Log::info('Query expired automatically on view', [
+                    'query_id' => $query->id,
+                    'officer_id' => $query->officer_id,
+                    'deadline' => $query->response_deadline,
+                ]);
+
+                // Reload the query to get updated status
+                $query->refresh();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Failed to expire query on view', [
+                    'query_id' => $query->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return view('dashboards.officer.queries.show', compact('query'));
     }
 
@@ -82,14 +163,15 @@ class OfficerQueryController extends Controller
         $query = Query::where('officer_id', $officer->id)
             ->findOrFail($id);
 
-        // Verify query is pending response
-        if (!$query->isPendingResponse()) {
-            return redirect()->back()->with('error', 'Query is not pending response.');
-        }
-
-        // Check if query has expired or reached deadline
-        if ($query->isOverdue()) {
-            return redirect()->back()->with('error', 'The response deadline has been reached or passed. This query can no longer be responded to.');
+        // Verify query can accept response (checks status and deadline)
+        if (!$query->canAcceptResponse()) {
+            if (!$query->isPendingResponse()) {
+                return redirect()->back()->with('error', 'Query is not pending response.');
+            }
+            if ($query->response_deadline && now()->greaterThanOrEqualTo($query->response_deadline)) {
+                return redirect()->back()->with('error', 'The response deadline has been reached or passed. This query can no longer be responded to.');
+            }
+            return redirect()->back()->with('error', 'You cannot respond to this query at this time.');
         }
 
         try {
