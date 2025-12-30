@@ -1000,7 +1000,7 @@ class CompleteSystemSeeder extends Seeder
 3. Maintain accurate records and documentation
 4. Coordinate with team members on operational matters
 5. Report any irregularities or issues to supervisors',
-                        'joint_discussion' => 'Regular discussions held with supervisor on performance and targets',
+                        'joint_discussion' => 'YES',
                         'properly_equipped' => 'Yes',
                         'equipment_difficulties' => 'None',
                         'difficulties_encountered' => 'No significant difficulties encountered',
