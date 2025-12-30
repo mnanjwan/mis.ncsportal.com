@@ -103,19 +103,10 @@
                         <div class="flex gap-2">
                             <select class="kt-input flex-1" name="unit" id="unit-select" required>
                                 <option value="">Select Unit</option>
-                                @if(isset($predefinedUnits) && count($predefinedUnits) > 0)
-                                    <optgroup label="Standard Units">
-                                        @foreach($predefinedUnits as $unit)
-                                            <option value="{{ $unit }}" {{ old('unit') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                @endif
-                                @if(isset($customUnits) && count($customUnits) > 0)
-                                    <optgroup label="Custom Units">
-                                        @foreach($customUnits as $unit)
-                                            <option value="{{ $unit }}" {{ old('unit') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
-                                        @endforeach
-                                    </optgroup>
+                                @if(isset($allUnits) && count($allUnits) > 0)
+                                    @foreach($allUnits as $unit)
+                                        <option value="{{ $unit }}" {{ old('unit') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                    @endforeach
                                 @endif
                                 <option value="__NEW__">➕ Create New Unit</option>
                             </select>

@@ -102,23 +102,14 @@
                     <div class="flex gap-2">
                         <select class="kt-input flex-1" name="unit" id="unit-select-edit">
                             <option value="">Select Unit</option>
-                            @if(isset($predefinedUnits) && count($predefinedUnits) > 0)
-                                <optgroup label="Standard Units">
-                                    @foreach($predefinedUnits as $unit)
-                                        <option value="{{ $unit }}" {{ $roster->unit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
-                                    @endforeach
-                                </optgroup>
+                            @if(isset($allUnits) && count($allUnits) > 0)
+                                @foreach($allUnits as $unit)
+                                    <option value="{{ $unit }}" {{ $roster->unit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                @endforeach
                             @endif
-                            @if(isset($customUnits) && count($customUnits) > 0)
-                                <optgroup label="Custom Units">
-                                    @foreach($customUnits as $unit)
-                                        <option value="{{ $unit }}" {{ $roster->unit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
-                                    @endforeach
-                                </optgroup>
-                            @endif
-                            <option value="__NEW__" {{ !in_array($roster->unit, array_merge($predefinedUnits ?? [], $customUnits ?? [])) && $roster->unit ? 'selected' : '' }}>➕ Create New Unit</option>
+                            <option value="__NEW__" {{ !isset($allUnits) || !in_array($roster->unit, $allUnits) && $roster->unit ? 'selected' : '' }}>➕ Create New Unit</option>
                         </select>
-                        <input type="text" class="kt-input flex-1 {{ in_array($roster->unit, array_merge($predefinedUnits ?? [], $customUnits ?? [])) || !$roster->unit ? 'hidden' : '' }}" name="unit_custom" id="unit-custom-input-edit" placeholder="Enter new unit name" value="{{ !in_array($roster->unit, array_merge($predefinedUnits ?? [], $customUnits ?? [])) && $roster->unit ? $roster->unit : old('unit_custom') }}"/>
+                        <input type="text" class="kt-input flex-1 {{ (isset($allUnits) && in_array($roster->unit, $allUnits)) || !$roster->unit ? 'hidden' : '' }}" name="unit_custom" id="unit-custom-input-edit" placeholder="Enter new unit name" value="{{ (!isset($allUnits) || !in_array($roster->unit, $allUnits)) && $roster->unit ? $roster->unit : old('unit_custom') }}"/>
                     </div>
                     <p class="text-xs text-secondary-foreground mt-1">Select a unit from the list or create a new one</p>
                 </div>

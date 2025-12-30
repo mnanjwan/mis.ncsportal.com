@@ -77,7 +77,11 @@ class DutyRosterController extends Controller
             ->pluck('unit')
             ->toArray();
         
-        return view('forms.roster.create', compact('command', 'predefinedUnits', 'customUnits'));
+        // Merge all units and sort alphabetically
+        $allUnits = array_merge($predefinedUnits, $customUnits);
+        sort($allUnits);
+        
+        return view('forms.roster.create', compact('command', 'allUnits'));
     }
     
     public function store(Request $request)
@@ -224,7 +228,11 @@ class DutyRosterController extends Controller
             ->pluck('unit')
             ->toArray();
         
-        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers', 'predefinedUnits', 'customUnits'));
+        // Merge all units and sort alphabetically
+        $allUnits = array_merge($predefinedUnits, $customUnits);
+        sort($allUnits);
+        
+        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers', 'allUnits'));
     }
     
     public function update(Request $request, $id)
