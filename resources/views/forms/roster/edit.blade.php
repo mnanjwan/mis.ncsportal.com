@@ -89,11 +89,6 @@
             @method('PUT')
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Roster Leadership & Assignments</h3>
-                <div class="kt-card-toolbar">
-                    <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" id="add-assignment-btn">
-                        <i class="ki-filled ki-plus"></i> Add Assignment
-                    </button>
-                </div>
             </div>
             <div class="kt-card-content space-y-6">
                 <!-- Unit Selection -->
@@ -121,25 +116,43 @@
                         <div class="grid sm:grid-cols-2 gap-4">
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label font-normal text-mono text-xs">Officer in Charge (OIC) <span class="text-danger">*</span></label>
-                                <select class="kt-input" name="oic_officer_id" id="oic_officer_id" required>
-                                    <option value="">Select OIC</option>
-                                    @foreach($officers as $officer)
-                                        <option value="{{ $officer->id }}" {{ $roster->oic_officer_id == $officer->id ? 'selected' : '' }}>
-                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative">
+                                    <input type="text" 
+                                           class="kt-input officer-search-input" 
+                                           placeholder="Search officer by name or service number..." 
+                                           data-select-id="oic_officer_id"
+                                           autocomplete="off">
+                                    <select class="kt-input" name="oic_officer_id" id="oic_officer_id" required>
+                                        <option value="">Select OIC</option>
+                                        @foreach($officers as $officer)
+                                            <option value="{{ $officer->id }}" 
+                                                    data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
+                                                    {{ $roster->oic_officer_id == $officer->id ? 'selected' : '' }}>
+                                                {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="kt-form-label font-normal text-mono text-xs">Second In Command (2IC)</label>
-                                <select class="kt-input" name="second_in_command_officer_id" id="second_in_command_officer_id">
-                                    <option value="">Select 2IC (Optional)</option>
-                                    @foreach($officers as $officer)
-                                        <option value="{{ $officer->id }}" {{ $roster->second_in_command_officer_id == $officer->id ? 'selected' : '' }}>
-                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative">
+                                    <input type="text" 
+                                           class="kt-input officer-search-input" 
+                                           placeholder="Search officer by name or service number..." 
+                                           data-select-id="second_in_command_officer_id"
+                                           autocomplete="off">
+                                    <select class="kt-input" name="second_in_command_officer_id" id="second_in_command_officer_id">
+                                        <option value="">Select 2IC (Optional)</option>
+                                        @foreach($officers as $officer)
+                                            <option value="{{ $officer->id }}" 
+                                                    data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
+                                                    {{ $roster->second_in_command_officer_id == $officer->id ? 'selected' : '' }}>
+                                                {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <p class="text-xs text-secondary-foreground mt-3">
@@ -208,7 +221,12 @@
                             </div>
                         @endforeach
                     @endif
-                </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="button" class="kt-btn kt-btn-primary" id="add-assignment-btn">
+                            <i class="ki-filled ki-plus"></i> Add Assignment
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">
