@@ -41,7 +41,7 @@ class APERFormController extends Controller
     // Officers can no longer create their own forms. Forms are created by Reporting Officers.
     public function create()
     {
-        return redirect()->route('officer.aper-forms')
+            return redirect()->route('officer.aper-forms')
             ->with('error', 'APER forms are created by Reporting Officers. Please contact your Reporting Officer (OIC or 2IC) to have your APER form created.');
     }
 
@@ -453,32 +453,32 @@ class APERFormController extends Controller
             }
         } else {
             // Form exists - check access
-            if (!$form->canBeAccessedBy($user)) {
-                // If form is submitted and no reporting officer assigned, assign this user
-                if ($form->status === 'SUBMITTED' && !$form->reporting_officer_id) {
-                    DB::beginTransaction();
-                    try {
-                        $form->update([
-                            'reporting_officer_id' => $user->id,
-                            'status' => 'REPORTING_OFFICER',
-                        ]);
-                        DB::commit();
-                        
-                        if ($user->email) {
-                            \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $user);
-                        }
-                    } catch (\Exception $e) {
-                        DB::rollBack();
-                        return redirect()->back()->with('error', 'Failed to assign reporting officer.');
+        if (!$form->canBeAccessedBy($user)) {
+            // If form is submitted and no reporting officer assigned, assign this user
+            if ($form->status === 'SUBMITTED' && !$form->reporting_officer_id) {
+                DB::beginTransaction();
+                try {
+                    $form->update([
+                        'reporting_officer_id' => $user->id,
+                        'status' => 'REPORTING_OFFICER',
+                    ]);
+                    DB::commit();
+                    
+                    if ($user->email) {
+                        \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $user);
                     }
-                } else {
-                    return redirect()->back()->with('error', 'You do not have access to this APER form.');
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return redirect()->back()->with('error', 'Failed to assign reporting officer.');
                 }
+            } else {
+                return redirect()->back()->with('error', 'You do not have access to this APER form.');
             }
+        }
 
-            // If form was rejected and needs reassignment
-            if ($form->is_rejected && $form->status === 'REPORTING_OFFICER' && $form->reporting_officer_id !== $user->id) {
-                return redirect()->back()->with('error', 'This form has been rejected and needs to be reassigned by HRD or Staff Officer.');
+        // If form was rejected and needs reassignment
+        if ($form->is_rejected && $form->status === 'REPORTING_OFFICER' && $form->reporting_officer_id !== $user->id) {
+            return redirect()->back()->with('error', 'This form has been rejected and needs to be reassigned by HRD or Staff Officer.');
             }
         }
 
@@ -740,7 +740,7 @@ class APERFormController extends Controller
                 DB::rollBack();
                 return redirect()->back()->with('error', 'Staff Officer not found for your command. Please contact HRD.');
             }
-
+            
             $form->update([
                 'status' => 'STAFF_OFFICER_REVIEW', // New status for Staff Officer review
                 'is_rejected' => true,
@@ -757,7 +757,7 @@ class APERFormController extends Controller
             if ($form->officer->user && $form->officer->user->email) {
                 \App\Jobs\SendAPERFormRejectedMailJob::dispatch($form);
             }
-
+            
             // Send notification to Staff Officer
             if ($staffOfficer->email) {
                 \App\Jobs\SendAPERFormRejectedToStaffOfficerMailJob::dispatch($form, $staffOfficer);

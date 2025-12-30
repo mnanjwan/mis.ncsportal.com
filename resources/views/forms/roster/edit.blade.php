@@ -113,46 +113,131 @@
                 <div class="kt-card shadow-none bg-info/10 border border-info/20">
                     <div class="kt-card-content p-4">
                         <h4 class="text-sm font-semibold text-foreground mb-4">Roster Leadership</h4>
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <div class="flex flex-col gap-1">
-                                <label class="kt-form-label font-normal text-mono text-xs">Officer in Charge (OIC) <span class="text-danger">*</span></label>
-                                <div class="relative">
-                                    <input type="text" 
-                                           class="kt-input officer-search-input" 
-                                           placeholder="Search officer by name or service number..." 
-                                           data-select-id="oic_officer_id"
-                                           autocomplete="off">
-                                    <select class="kt-input" name="oic_officer_id" id="oic_officer_id" required>
-                                        <option value="">Select OIC</option>
-                                        @foreach($officers as $officer)
-                                            <option value="{{ $officer->id }}" 
-                                                    data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
-                                                    {{ $roster->oic_officer_id == $officer->id ? 'selected' : '' }}>
-                                                {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                            </option>
-                                        @endforeach
-                                    </select>
+                        
+                        <!-- Command Selection (Searchable) -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1">
+                                Command <span class="text-danger">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" 
+                                       id="command_search" 
+                                       class="kt-input w-full" 
+                                       placeholder="Search command..."
+                                       autocomplete="off">
+                                <input type="hidden" 
+                                       name="command_id" 
+                                       id="command_id"
+                                       value="{{ $commandId }}">
+                                <div id="command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                                    <!-- Options will be populated by JavaScript -->
                                 </div>
                             </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="kt-form-label font-normal text-mono text-xs">Second In Command (2IC)</label>
-                                <div class="relative">
-                                    <input type="text" 
-                                           class="kt-input officer-search-input" 
-                                           placeholder="Search officer by name or service number..." 
-                                           data-select-id="second_in_command_officer_id"
-                                           autocomplete="off">
-                                    <select class="kt-input" name="second_in_command_officer_id" id="second_in_command_officer_id">
-                                        <option value="">Select 2IC (Optional)</option>
-                                        @foreach($officers as $officer)
-                                            <option value="{{ $officer->id }}" 
-                                                    data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
-                                                    {{ $roster->second_in_command_officer_id == $officer->id ? 'selected' : '' }}>
-                                                {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                            </option>
-                                        @endforeach
-                                    </select>
+                            <div id="selected_command" class="mt-2 p-2 bg-muted/50 rounded-lg {{ $commandId ? '' : 'hidden' }}">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-medium" id="selected_command_name">
+                                        @if($commandId && $roster->command)
+                                            {{ $roster->command->name }}{{ $roster->command->code ? ' (' . $roster->command->code . ')' : '' }}
+                                        @endif
+                                    </span>
+                                    <button type="button" 
+                                            id="clear_command" 
+                                            class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
+                                        <i class="ki-filled ki-cross"></i>
+                                    </button>
                                 </div>
+                            </div>
+                            <p class="text-xs text-secondary-foreground mt-1">Select a command to view officers in that command</p>
+                        </div>
+                        
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <!-- OIC Selection -->
+                            <div>
+                                <label class="block text-sm font-medium mb-1">
+                                    Officer in Charge (OIC) <span class="text-danger">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="hidden" name="oic_officer_id" id="oic_officer_id" value="{{ $roster->oic_officer_id }}" required>
+                                    <button type="button" 
+                                            id="oic_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
+                                            {{ !$commandId ? 'disabled' : '' }}>
+                                        <span id="oic_select_text">
+                                            @if($roster->oic_officer_id && $roster->oicOfficer)
+                                                {{ $roster->oicOfficer->initials }} {{ $roster->oicOfficer->surname }} ({{ $roster->oicOfficer->service_number }})
+                                            @else
+                                                {{ $commandId ? 'Select OIC' : 'Select command first, then choose OIC...' }}
+                                            @endif
+                                        </span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="oic_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <!-- Search Box -->
+                                        <div class="p-3 border-b border-input">
+                                            <div class="relative">
+                                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                                <input type="text" 
+                                                       id="oic_search_input" 
+                                                       class="kt-input w-full pl-10" 
+                                                       placeholder="Search officers..."
+                                                       autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <!-- Options Container -->
+                                        <div id="oic_options" class="max-h-60 overflow-y-auto">
+                                            <div class="p-3 text-sm text-secondary-foreground text-center">
+                                                {{ $commandId ? 'Loading officers...' : 'Select command first' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-secondary-foreground mt-1" id="oic_info"></p>
+                            </div>
+                            
+                            <!-- 2IC Selection -->
+                            <div>
+                                <label class="block text-sm font-medium mb-1">
+                                    Second In Command (2IC)
+                                </label>
+                                <div class="relative">
+                                    <input type="hidden" name="second_in_command_officer_id" id="second_in_command_officer_id" value="{{ $roster->second_in_command_officer_id }}">
+                                    <button type="button" 
+                                            id="second_ic_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
+                                            {{ !$commandId ? 'disabled' : '' }}>
+                                        <span id="second_ic_select_text">
+                                            @if($roster->second_in_command_officer_id && $roster->secondInCommandOfficer)
+                                                {{ $roster->secondInCommandOfficer->initials }} {{ $roster->secondInCommandOfficer->surname }} ({{ $roster->secondInCommandOfficer->service_number }})
+                                            @else
+                                                {{ $commandId ? 'Select 2IC (Optional)' : 'Select command first, then choose 2IC...' }}
+                                            @endif
+                                        </span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="second_ic_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <!-- Search Box -->
+                                        <div class="p-3 border-b border-input">
+                                            <div class="relative">
+                                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                                <input type="text" 
+                                                       id="second_ic_search_input" 
+                                                       class="kt-input w-full pl-10" 
+                                                       placeholder="Search officers..."
+                                                       autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <!-- Options Container -->
+                                        <div id="second_ic_options" class="max-h-60 overflow-y-auto">
+                                            <div class="p-3 text-sm text-secondary-foreground text-center">
+                                                {{ $commandId ? 'Loading officers...' : 'Select command first' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-secondary-foreground mt-1" id="second_ic_info"></p>
                             </div>
                         </div>
                         <p class="text-xs text-secondary-foreground mt-3">
@@ -188,15 +273,15 @@
                                                         name="assignments[{{ $index }}][officer_id]" 
                                                         id="assignment-officer-{{ $index }}"
                                                         required>
-                                                    <option value="">Select Officer</option>
+                                                <option value="">Select Officer</option>
                                                     @foreach($officersForAssignments ?? $officers as $officer)
                                                         <option value="{{ $officer->id }}" 
                                                                 data-search-text="{{ strtolower($officer->initials . ' ' . $officer->surname . ' ' . $officer->service_number) }}"
                                                                 {{ $assignment->officer_id == $officer->id ? 'selected' : '' }}>
-                                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
-                                                        </option>
-                                                    @endforeach
-                                                </select>
+                                                        {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                             </div>
                                         </div>
                                         <div class="flex flex-col gap-1">
@@ -278,15 +363,336 @@ const allOfficers = @json($allOfficers ?? $officers);
 const periodStart = '{{ $roster->roster_period_start->format('Y-m-d') }}';
 const periodEnd = '{{ $roster->roster_period_end->format('Y-m-d') }}';
 
+// Commands data
+@php
+    $commandsData = $commands->map(function($command) {
+        return [
+            'id' => $command->id,
+            'name' => $command->name,
+            'code' => $command->code ?? ''
+        ];
+    })->values();
+@endphp
+const commands = @json($commandsData);
+let officers = [];
+const initialCommandId = {{ $commandId ?? 'null' }};
+const initialOicId = {{ $roster->oic_officer_id ?? 'null' }};
+const initialSecondIcId = {{ $roster->second_in_command_officer_id ?? 'null' }};
+let isInitialLoad = true;
+
+// Searchable Select Helper Function (for Command selection)
+function createSearchableSelect(searchInput, hiddenInput, dropdown, selectedDiv, selectedName, options, onSelect, displayFn) {
+    let selectedOption = null;
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filtered = options.filter(opt => {
+            if (displayFn) {
+                return displayFn(opt).toLowerCase().includes(searchTerm);
+            }
+            const nameMatch = opt.name && opt.name.toLowerCase().includes(searchTerm);
+            const codeMatch = opt.code && opt.code.toLowerCase().includes(searchTerm);
+            return nameMatch || codeMatch;
+        });
+
+        if (filtered.length > 0 && searchTerm.length > 0) {
+            dropdown.innerHTML = filtered.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name + (opt.code ? ' (' + opt.code + ')' : ''));
+                return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
+                            'data-id="' + opt.id + '" ' +
+                            'data-name="' + opt.name + '">' +
+                            display +
+                        '</div>';
+            }).join('');
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    dropdown.addEventListener('click', function(e) {
+        const option = e.target.closest('[data-id]');
+        if (option) {
+            selectedOption = options.find(o => o.id == option.dataset.id);
+            if (selectedOption) {
+                hiddenInput.value = selectedOption.id;
+                const display = displayFn ? displayFn(selectedOption) : (selectedOption.name + (selectedOption.code ? ' (' + selectedOption.code + ')' : ''));
+                searchInput.value = display;
+                if (selectedName) {
+                    selectedDiv.querySelector(selectedName).textContent = display;
+                }
+                selectedDiv.classList.remove('hidden');
+                dropdown.classList.add('hidden');
+                if (onSelect) onSelect(selectedOption);
+            }
+        }
+    });
+
+    // Clear selection
+    const clearBtn = selectedDiv.querySelector('button');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            hiddenInput.value = '';
+            searchInput.value = '';
+            selectedDiv.classList.add('hidden');
+            selectedOption = null;
+            if (onSelect) onSelect(null);
+        });
+    }
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+// Load officers by command
+function loadOfficersByCommand(commandId) {
+    const oicSelectTrigger = document.getElementById('oic_select_trigger');
+    const oicSelectText = document.getElementById('oic_select_text');
+    const oicHiddenInput = document.getElementById('oic_officer_id');
+    const oicDropdown = document.getElementById('oic_dropdown');
+    const oicOptions = document.getElementById('oic_options');
+    const oicSearchInput = document.getElementById('oic_search_input');
+    const oicInfo = document.getElementById('oic_info');
+    
+    const secondIcSelectTrigger = document.getElementById('second_ic_select_trigger');
+    const secondIcSelectText = document.getElementById('second_ic_select_text');
+    const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+    const secondIcDropdown = document.getElementById('second_ic_dropdown');
+    const secondIcOptions = document.getElementById('second_ic_options');
+    const secondIcSearchInput = document.getElementById('second_ic_search_input');
+    const secondIcInfo = document.getElementById('second_ic_info');
+    
+    // Update UI to loading state
+    oicSelectText.textContent = 'Loading officers...';
+    oicSelectTrigger.disabled = true;
+    if (!isInitialLoad || commandId != initialCommandId) {
+        oicHiddenInput.value = '';
+    }
+    oicOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Loading...</div>';
+    
+    secondIcSelectText.textContent = 'Loading officers...';
+    secondIcSelectTrigger.disabled = true;
+    if (!isInitialLoad || commandId != initialCommandId) {
+        secondIcHiddenInput.value = '';
+    }
+    secondIcOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Loading...</div>';
+
+    fetch(`{{ route('hrd.role-assignments.officers-by-command') }}?command_id=${commandId}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        officers = data;
+        
+        if (data.length > 0) {
+            // Populate OIC options
+            const oicIdToUse = isInitialLoad && commandId == initialCommandId ? initialOicId : null;
+            renderOfficerOptions(data, oicOptions, oicHiddenInput, oicSelectText, oicDropdown, oicSearchInput, 'oic', oicIdToUse);
+            
+            // Populate 2IC options
+            const secondIcIdToUse = isInitialLoad && commandId == initialCommandId ? initialSecondIcId : null;
+            renderOfficerOptions(data, secondIcOptions, secondIcHiddenInput, secondIcSelectText, secondIcDropdown, secondIcSearchInput, 'second_ic', secondIcIdToUse);
+            
+            oicInfo.textContent = `${data.length} officer${data.length !== 1 ? 's' : ''} available`;
+            oicInfo.classList.remove('text-danger');
+            oicInfo.classList.add('text-secondary-foreground');
+            
+            secondIcInfo.textContent = `${data.length} officer${data.length !== 1 ? 's' : ''} available`;
+            secondIcInfo.classList.remove('text-danger');
+            secondIcInfo.classList.add('text-secondary-foreground');
+            
+            oicSelectTrigger.disabled = false;
+            if (!oicIdToUse) {
+                oicSelectText.textContent = 'Select OIC';
+            }
+            
+            secondIcSelectTrigger.disabled = false;
+            if (!secondIcIdToUse) {
+                secondIcSelectText.textContent = 'Select 2IC (Optional)';
+            }
+        } else {
+            oicOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found in this command.</div>';
+            oicInfo.textContent = 'No officers found in this command.';
+            oicInfo.classList.remove('text-secondary-foreground');
+            oicInfo.classList.add('text-danger');
+            
+            secondIcOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found in this command.</div>';
+            secondIcInfo.textContent = 'No officers found in this command.';
+            secondIcInfo.classList.remove('text-secondary-foreground');
+            secondIcInfo.classList.add('text-danger');
+            
+            oicSelectTrigger.disabled = false;
+            oicSelectText.textContent = 'Select OIC';
+            
+            secondIcSelectTrigger.disabled = false;
+            secondIcSelectText.textContent = 'Select 2IC (Optional)';
+        }
+        
+        // Setup search functionality
+        setupOfficerSearch('oic');
+        setupOfficerSearch('second_ic');
+        
+        // Update assignment dropdowns
+        updateAssignmentDropdowns();
+        
+        isInitialLoad = false;
+    })
+    .catch(error => {
+        console.error('Error loading officers:', error);
+        oicOptions.innerHTML = '<div class="p-3 text-sm text-danger text-center">Error loading officers</div>';
+        oicInfo.textContent = 'Error loading officers. Please try again.';
+        oicInfo.classList.remove('text-secondary-foreground');
+        oicInfo.classList.add('text-danger');
+        oicSelectTrigger.disabled = false;
+        oicSelectText.textContent = 'Error loading officers';
+        
+        secondIcOptions.innerHTML = '<div class="p-3 text-sm text-danger text-center">Error loading officers</div>';
+        secondIcInfo.textContent = 'Error loading officers. Please try again.';
+        secondIcInfo.classList.remove('text-secondary-foreground');
+        secondIcInfo.classList.add('text-danger');
+        secondIcSelectTrigger.disabled = false;
+        secondIcSelectText.textContent = 'Error loading officers';
+    });
+}
+
+function renderOfficerOptions(officersList, optionsContainer, hiddenInput, selectText, dropdown, searchInput, prefix, initialId) {
+    if (officersList.length === 0) {
+        optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found</div>';
+        return;
+    }
+    
+    optionsContainer.innerHTML = officersList.map(officer => {
+        const details = officer.service_number !== 'N/A' ? officer.service_number : '';
+        const rank = officer.rank !== 'N/A' ? ' - ' + officer.rank : '';
+        const displayText = officer.name + (details ? ' (' + details + rank + ')' : '');
+        
+        return `
+            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 officer-option" 
+                 data-id="${officer.id}" 
+                 data-name="${officer.name}"
+                 data-service="${details}"
+                 data-rank="${officer.rank}">
+                <div class="text-sm text-foreground">${officer.name}</div>
+                <div class="text-xs text-secondary-foreground">${details}${rank}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Set initial selection if provided
+    if (initialId) {
+        const initialOfficer = officersList.find(o => o.id == initialId);
+        if (initialOfficer) {
+            hiddenInput.value = initialId;
+            const details = initialOfficer.service_number !== 'N/A' ? initialOfficer.service_number : '';
+            const rank = initialOfficer.rank !== 'N/A' ? ' - ' + initialOfficer.rank : '';
+            const displayText = initialOfficer.name + (details ? ' (' + details + rank + ')' : '');
+            selectText.textContent = displayText;
+        }
+    }
+    
+    // Add click handlers
+    optionsContainer.querySelectorAll('.officer-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            const service = this.dataset.service;
+            const rank = this.dataset.rank;
+            
+            // Update hidden input
+            hiddenInput.value = id;
+            
+            // Update display text
+            const displayText = name + (service !== 'N/A' && service ? ' (' + service + (rank !== 'N/A' ? ' - ' + rank : '') + ')' : '');
+            selectText.textContent = displayText;
+            
+            // Close dropdown
+            dropdown.classList.add('hidden');
+            
+            // Clear search
+            searchInput.value = '';
+            
+            // Update OIC/2IC validation
+            updateOic2icOptions();
+        });
+    });
+}
+
+function setupOfficerSearch(prefix) {
+    const searchInput = document.getElementById(`${prefix}_search_input`);
+    const optionsContainer = document.getElementById(`${prefix}_options`);
+    
+    if (!searchInput || !optionsContainer) return;
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filtered = officers.filter(officer => {
+            const nameMatch = officer.name.toLowerCase().includes(searchTerm);
+            const serviceMatch = officer.service_number && officer.service_number.toLowerCase().includes(searchTerm);
+            const rankMatch = officer.rank && officer.rank.toLowerCase().includes(searchTerm);
+            return nameMatch || serviceMatch || rankMatch;
+        });
+        
+        renderOfficerOptions(filtered, optionsContainer, 
+            document.getElementById(prefix === 'oic' ? 'oic_officer_id' : 'second_in_command_officer_id'),
+            document.getElementById(prefix === 'oic' ? 'oic_select_text' : 'second_ic_select_text'),
+            document.getElementById(prefix === 'oic' ? 'oic_dropdown' : 'second_ic_dropdown'),
+            searchInput, prefix, null);
+    });
+}
+
+function clearOfficers() {
+    const oicSelectTrigger = document.getElementById('oic_select_trigger');
+    const oicSelectText = document.getElementById('oic_select_text');
+    const oicHiddenInput = document.getElementById('oic_officer_id');
+    const oicDropdown = document.getElementById('oic_dropdown');
+    const oicOptions = document.getElementById('oic_options');
+    const oicInfo = document.getElementById('oic_info');
+    
+    const secondIcSelectTrigger = document.getElementById('second_ic_select_trigger');
+    const secondIcSelectText = document.getElementById('second_ic_select_text');
+    const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+    const secondIcDropdown = document.getElementById('second_ic_dropdown');
+    const secondIcOptions = document.getElementById('second_ic_options');
+    const secondIcInfo = document.getElementById('second_ic_info');
+    
+    oicSelectText.textContent = 'Select command first, then choose OIC...';
+    oicSelectTrigger.disabled = true;
+    oicHiddenInput.value = '';
+    oicDropdown.classList.add('hidden');
+    oicOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Select command first</div>';
+    oicInfo.textContent = '';
+    
+    secondIcSelectText.textContent = 'Select command first, then choose 2IC...';
+    secondIcSelectTrigger.disabled = true;
+    secondIcHiddenInput.value = '';
+    secondIcDropdown.classList.add('hidden');
+    secondIcOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Select command first</div>';
+    secondIcInfo.textContent = '';
+    
+    officers = [];
+    updateAssignmentDropdowns();
+}
+
 // Get officers available for assignments (excludes OIC and 2IC)
 function getAvailableOfficersForAssignments() {
-    const oicSelect = document.getElementById('oic_officer_id');
-    const secondIcSelect = document.getElementById('second_in_command_officer_id');
-    const oicId = oicSelect ? oicSelect.value : null;
-    const secondIcId = secondIcSelect ? secondIcSelect.value : null;
+    const oicHiddenInput = document.getElementById('oic_officer_id');
+    const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+    const oicId = oicHiddenInput ? oicHiddenInput.value : null;
+    const secondIcId = secondIcHiddenInput ? secondIcHiddenInput.value : null;
     
-    return allOfficers.filter(officer => {
-        return officer.id != oicId && officer.id != secondIcId;
+    // Use officers from current command if available, otherwise use allOfficers
+    const officersList = officers.length > 0 ? officers : allOfficers;
+    
+    return officersList.filter(officer => {
+        const officerId = officer.id || officer.id;
+        return officerId != oicId && officerId != secondIcId;
     });
 }
 
@@ -319,9 +725,9 @@ function createAssignmentTemplate(index) {
                                     name="assignments[${index}][officer_id]" 
                                     id="assignment-officer-${index}"
                                     required>
-                                <option value="">Select Officer</option>
-                                ${officersHtml}
-                            </select>
+                            <option value="">Select Officer</option>
+                            ${officersHtml}
+                        </select>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -404,32 +810,36 @@ function updateRemoveButtons() {
 
 // Update assignment dropdowns to exclude OIC and 2IC
 function updateAssignmentDropdowns() {
-    const availableOfficers = getAvailableOfficersForAssignments();
-    const availableOfficerIds = availableOfficers.map(o => o.id);
+    const oicHiddenInput = document.getElementById('oic_officer_id');
+    const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+    const oicId = oicHiddenInput ? oicHiddenInput.value : null;
+    const secondIcId = secondIcHiddenInput ? secondIcHiddenInput.value : null;
+    
+    // Use officers from current command if available, otherwise use allOfficers
+    const officersList = officers.length > 0 ? officers : allOfficers;
     
     // Update all assignment officer selects
     document.querySelectorAll('.assignment-officer-select').forEach(select => {
         const currentValue = select.value;
-        const oicSelect = document.getElementById('oic_officer_id');
-        const secondIcSelect = document.getElementById('second_in_command_officer_id');
-        const oicId = oicSelect ? oicSelect.value : null;
-        const secondIcId = secondIcSelect ? secondIcSelect.value : null;
         
         // Clear and rebuild options
         select.innerHTML = '<option value="">Select Officer</option>';
         
-        allOfficers.forEach(officer => {
+        officersList.forEach(officer => {
             // Skip if officer is OIC or 2IC
-            if (officer.id == oicId || officer.id == secondIcId) {
+            const officerId = officer.id || officer.id;
+            if (officerId == oicId || officerId == secondIcId) {
                 return;
             }
             
             const option = document.createElement('option');
-            option.value = officer.id;
-            option.textContent = `${officer.initials} ${officer.surname} (${officer.service_number})`;
+            option.value = officerId;
+            const name = officer.name || (officer.initials + ' ' + officer.surname);
+            const service = officer.service_number || officer.service_number;
+            option.textContent = `${name} (${service})`;
             
             // Restore selected value if it's still valid
-            if (currentValue == officer.id) {
+            if (currentValue == officerId) {
                 option.selected = true;
             }
             
@@ -445,39 +855,20 @@ function updateAssignmentDropdowns() {
 
 // Prevent OIC from being selected as 2IC and vice versa
 function updateOic2icOptions() {
-    const oicSelect = document.getElementById('oic_officer_id');
-    const secondIcSelect = document.getElementById('second_in_command_officer_id');
+    const oicHiddenInput = document.getElementById('oic_officer_id');
+    const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
     
-    const oicValue = oicSelect.value;
-    const secondIcValue = secondIcSelect.value;
+    const oicValue = oicHiddenInput ? oicHiddenInput.value : null;
+    const secondIcValue = secondIcHiddenInput ? secondIcHiddenInput.value : null;
     
-    // Update 2IC options - exclude OIC
-    Array.from(secondIcSelect.options).forEach(option => {
-        if (option.value && option.value === oicValue) {
-            option.disabled = true;
-            option.style.display = 'none';
-            if (secondIcSelect.value === oicValue) {
-                secondIcSelect.value = '';
-            }
-        } else {
-            option.disabled = false;
-            option.style.display = '';
+    // If OIC and 2IC are the same, clear 2IC
+    if (oicValue && secondIcValue && oicValue === secondIcValue) {
+        secondIcHiddenInput.value = '';
+        const secondIcSelectText = document.getElementById('second_ic_select_text');
+        if (secondIcSelectText) {
+            secondIcSelectText.textContent = 'Select 2IC (Optional)';
         }
-    });
-    
-    // Update OIC options - exclude 2IC
-    Array.from(oicSelect.options).forEach(option => {
-        if (option.value && option.value === secondIcValue) {
-            option.disabled = true;
-            option.style.display = 'none';
-            if (oicSelect.value === secondIcValue) {
-                oicSelect.value = '';
-            }
-        } else {
-            option.disabled = false;
-            option.style.display = '';
-        }
-    });
+    }
     
     // Update assignment dropdowns when OIC/2IC changes
     updateAssignmentDropdowns();
@@ -486,6 +877,76 @@ function updateOic2icOptions() {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-assignment-btn').addEventListener('click', addAssignment);
     updateRemoveButtons();
+    
+    // Initialize Command Searchable Select
+    createSearchableSelect(
+        document.getElementById('command_search'),
+        document.getElementById('command_id'),
+        document.getElementById('command_dropdown'),
+        document.getElementById('selected_command'),
+        '#selected_command_name',
+        commands,
+        function(selectedCommand) {
+            if (selectedCommand) {
+                // Load officers for this command
+                loadOfficersByCommand(selectedCommand.id);
+            } else {
+                // Clear officers
+                clearOfficers();
+            }
+        },
+        function(cmd) {
+            return cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
+        }
+    );
+    
+    // Load officers if command is already selected
+    if (initialCommandId) {
+        isInitialLoad = true;
+        loadOfficersByCommand(initialCommandId);
+    }
+    
+    // Toggle dropdowns for OIC and 2IC
+    document.getElementById('oic_select_trigger')?.addEventListener('click', function(e) {
+        if (this.disabled) return;
+        e.stopPropagation();
+        const dropdown = document.getElementById('oic_dropdown');
+        dropdown.classList.toggle('hidden');
+        
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => {
+                document.getElementById('oic_search_input').focus();
+            }, 100);
+        }
+    });
+    
+    document.getElementById('second_ic_select_trigger')?.addEventListener('click', function(e) {
+        if (this.disabled) return;
+        e.stopPropagation();
+        const dropdown = document.getElementById('second_ic_dropdown');
+        dropdown.classList.toggle('hidden');
+        
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => {
+                document.getElementById('second_ic_search_input').focus();
+            }, 100);
+        }
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        const oicDropdown = document.getElementById('oic_dropdown');
+        const oicTrigger = document.getElementById('oic_select_trigger');
+        if (oicDropdown && !oicDropdown.contains(e.target) && !oicTrigger.contains(e.target)) {
+            oicDropdown.classList.add('hidden');
+        }
+        
+        const secondIcDropdown = document.getElementById('second_ic_dropdown');
+        const secondIcTrigger = document.getElementById('second_ic_select_trigger');
+        if (secondIcDropdown && !secondIcDropdown.contains(e.target) && !secondIcTrigger.contains(e.target)) {
+            secondIcDropdown.classList.add('hidden');
+        }
+    });
     
     // Unit dropdown handling
     const unitSelectEdit = document.getElementById('unit-select-edit');
@@ -526,23 +987,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Add event listeners for OIC and 2IC validation
-    const oicSelect = document.getElementById('oic_officer_id');
-    const secondIcSelect = document.getElementById('second_in_command_officer_id');
-    
-    if (oicSelect && secondIcSelect) {
-        oicSelect.addEventListener('change', updateOic2icOptions);
-        secondIcSelect.addEventListener('change', updateOic2icOptions);
-        updateOic2icOptions(); // Initial check - this also calls updateAssignmentDropdowns()
-    } else {
-        // If OIC/2IC selects don't exist, still filter assignments on load
-        updateAssignmentDropdowns();
-    }
-    
     // Form validation before submit
     document.getElementById('roster-edit-form').addEventListener('submit', function(e) {
-        const oicValue = oicSelect.value;
-        const secondIcValue = secondIcSelect.value;
+        const commandId = document.getElementById('command_id') ? document.getElementById('command_id').value : null;
+        const oicHiddenInput = document.getElementById('oic_officer_id');
+        const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+        const oicValue = oicHiddenInput ? oicHiddenInput.value : null;
+        const secondIcValue = secondIcHiddenInput ? secondIcHiddenInput.value : null;
+        
+        if (!commandId) {
+            e.preventDefault();
+            alert('Please select a command.');
+            return false;
+        }
         
         if (oicValue && secondIcValue && oicValue === secondIcValue) {
             e.preventDefault();
@@ -562,6 +1019,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // Hide search input initially
             searchInput.style.display = 'none';
             
+            // Prevent click on search input from bubbling to document
+            searchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.focus();
+            });
+            
+            searchInput.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+            });
+            
+            searchInput.addEventListener('focus', function(e) {
+                e.stopPropagation();
+            });
+            
             // Show search input when select is clicked/focused
             select.addEventListener('mousedown', function(e) {
                 e.preventDefault();
@@ -571,7 +1042,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchInput.style.left = '0';
                 searchInput.style.width = '100%';
                 searchInput.style.zIndex = '10';
-                searchInput.focus();
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 10);
             });
             
             select.addEventListener('focus', function() {
@@ -648,7 +1121,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Hide search when clicking outside
             document.addEventListener('click', function(e) {
-                if (!select.contains(e.target) && !searchInput.contains(e.target)) {
+                // Get the parent container
+                const parentContainer = searchInput.parentElement;
+                
+                // Check if click is outside both select and searchInput and their parent
+                const clickedOnSelect = select.contains(e.target);
+                const clickedOnSearchInput = searchInput === e.target || searchInput.contains(e.target);
+                const clickedOnParent = parentContainer && parentContainer.contains(e.target);
+                
+                // Only hide if click is truly outside
+                if (!clickedOnSelect && !clickedOnSearchInput && !clickedOnParent) {
                     searchInput.style.display = 'none';
                     select.size = 1;
                     select.style.position = '';

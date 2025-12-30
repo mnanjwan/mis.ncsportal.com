@@ -239,6 +239,7 @@
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('staff-officer.leave-pass')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('staff-officer.internal-staff-orders.index')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
                 ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('staff-officer.queries.index')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],

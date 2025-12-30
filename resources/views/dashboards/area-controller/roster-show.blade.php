@@ -105,8 +105,8 @@
             <div class="border-t border-border pt-6 mt-6">
                 <div class="flex gap-3">
                     <button type="button" class="kt-btn kt-btn-success" data-kt-modal-toggle="#approve-modal">
-                        <i class="ki-filled ki-check"></i> Approve
-                    </button>
+                            <i class="ki-filled ki-check"></i> Approve
+                        </button>
                     <button type="button" class="kt-btn kt-btn-danger" onclick="showRejectModal()">
                         <i class="ki-filled ki-cross"></i> Reject
                     </button>

@@ -37,7 +37,7 @@ class DutyRosterController extends Controller
             ->whereYear('roster_period_start', date('Y', strtotime($month . '-01')))
             ->whereMonth('roster_period_start', date('m', strtotime($month . '-01')))
             ->with(['assignments.officer'])
-            ->orderBy('roster_period_start', 'asc')
+            ->orderBy('created_at', 'desc')
             ->get();
         
         return view('dashboards.staff-officer.roster', compact('rosters', 'command', 'month'));
@@ -185,7 +185,12 @@ class DutyRosterController extends Controller
             abort(403, 'You can only edit rosters for your assigned command');
         }
         
-        // Get all officers in the command
+        // Get all commands for Command selection
+        $commands = \App\Models\Command::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        // Get all officers in the command (for initial load if command is pre-selected)
         $allOfficers = \App\Models\Officer::where('present_station', $commandId)
             ->where('is_active', true)
             ->orderBy('surname')
@@ -204,7 +209,7 @@ class DutyRosterController extends Controller
             return in_array($officer->id, $excludedIds);
         });
         
-        // For OIC/2IC dropdowns, use all officers
+        // For OIC/2IC dropdowns, use all officers (will be loaded dynamically based on selected command)
         $officers = $allOfficers;
         
         // Get predefined units
@@ -232,7 +237,7 @@ class DutyRosterController extends Controller
         $allUnits = array_merge($predefinedUnits, $customUnits);
         sort($allUnits);
         
-        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers', 'allUnits'));
+        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers', 'allUnits', 'commands', 'commandId'));
     }
     
     public function update(Request $request, $id)

@@ -79,3 +79,4 @@ class SendRoleAssignedMailJob implements ShouldQueue
 }
 
 
+

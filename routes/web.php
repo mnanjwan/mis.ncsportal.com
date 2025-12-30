@@ -37,6 +37,7 @@ use App\Http\Controllers\QueryController;
 use App\Http\Controllers\OfficerQueryController;
 use App\Http\Controllers\InvestigationController;
 use App\Http\Controllers\PrintController;
+use App\Http\Controllers\InternalStaffOrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -302,7 +303,16 @@ Route::middleware('auth')->group(function () {
         Route::put('/roster/{id}', [DutyRosterController::class, 'update'])->name('roster.update');
         Route::post('/roster/{id}/submit', [DutyRosterController::class, 'submit'])->name('roster.submit');
 
-                Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
+        // Internal Staff Orders Routes
+        Route::get('/internal-staff-orders', [InternalStaffOrderController::class, 'index'])->name('internal-staff-orders.index');
+        Route::get('/internal-staff-orders/create', [InternalStaffOrderController::class, 'create'])->name('internal-staff-orders.create');
+        Route::post('/internal-staff-orders', [InternalStaffOrderController::class, 'store'])->name('internal-staff-orders.store');
+        Route::get('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'show'])->name('internal-staff-orders.show');
+        Route::get('/internal-staff-orders/{id}/edit', [InternalStaffOrderController::class, 'edit'])->name('internal-staff-orders.edit');
+        Route::put('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'update'])->name('internal-staff-orders.update');
+        Route::delete('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'destroy'])->name('internal-staff-orders.destroy');
+
+        Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
                 Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
                 Route::post('/officers/{id}/document', [OfficerController::class, 'document'])->name('officers.document');
                 

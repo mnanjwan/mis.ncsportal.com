@@ -233,8 +233,8 @@
                             @endif
                             @if($roster->status === 'DRAFT' && $roster->assignments->count() > 0)
                                 <button type="button" class="kt-btn kt-btn-success w-full" data-kt-modal-toggle="#submit-modal">
-                                    <i class="ki-filled ki-check"></i> Submit for Approval
-                                </button>
+                                        <i class="ki-filled ki-check"></i> Submit for Approval
+                                    </button>
                             @endif
                         </div>
                     </div>
