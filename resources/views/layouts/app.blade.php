@@ -5,8 +5,8 @@
     <title>@yield('title', 'NCS Employee Portal')</title>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
-    <link href="{{ asset('ncs-employee-portal/dist/assets/media/app/favicon.svg') }}" rel="icon" type="image/svg+xml" />
-    <link href="{{ asset('ncs-employee-portal/dist/assets/media/app/favicon.svg') }}" rel="shortcut icon" />
+    <link href="{{ asset('favicon.ico') }}" rel="icon" type="image/x-icon" />
+    <link href="{{ asset('favicon.ico') }}" rel="shortcut icon" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="{{ asset('ncs-employee-portal/dist/assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />
@@ -69,7 +69,7 @@
             <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
                 <a href="{{ route('dashboard') }}">
                     <img class="size-[34px]"
-                        src="{{ asset('ncs-employee-portal/dist/assets/media/app/portal-logo-circle.svg') }}" />
+                        src="{{ asset('logo.jpg') }}" />
                 </a>
                 <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white -me-2" data-kt-drawer-toggle="#sidebar">
                     <i class="ki-filled ki-menu"></i>

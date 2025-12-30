@@ -114,23 +114,212 @@
         </div>
     </div>
 
-    <!-- Form Content Preview -->
-    <div class="kt-card">
-        <div class="kt-card-header">
-            <h3 class="kt-card-title">Form Content</h3>
-        </div>
-        <div class="kt-card-content">
-            <p class="text-sm text-secondary-foreground">
-                This is a preview of the APER form. The full form content is available to authorized personnel.
-            </p>
-            @if($form->main_duties)
-                <div class="mt-4">
-                    <label class="kt-form-label text-sm">Main Duties</label>
-                    <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->main_duties }}</p>
+    <!-- Form Content - Full Details -->
+    @if($form->status !== 'DRAFT')
+        <!-- Part 1: Personal Records -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">PART 1: PERSONAL RECORDS OF OFFICER</h3>
+            </div>
+            <div class="kt-card-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="kt-form-label text-sm">Service Number</label>
+                        <p class="text-sm text-foreground">{{ $form->service_number ?? $form->officer->service_number }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Title</label>
+                        <p class="text-sm text-foreground">{{ $form->title ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Surname</label>
+                        <p class="text-sm text-foreground">{{ $form->surname ?? $form->officer->surname }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Forenames</label>
+                        <p class="text-sm text-foreground">{{ $form->forenames ?? $form->officer->initials }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Rank</label>
+                        <p class="text-sm text-foreground">{{ $form->rank ?? $form->officer->substantive_rank }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Date of Birth</label>
+                        <p class="text-sm text-foreground">{{ $form->date_of_birth ? $form->date_of_birth->format('d/m/Y') : ($form->officer->date_of_birth ? $form->officer->date_of_birth->format('d/m/Y') : 'N/A') }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Date of First Appointment</label>
+                        <p class="text-sm text-foreground">{{ $form->date_of_first_appointment ? $form->date_of_first_appointment->format('d/m/Y') : ($form->officer->date_of_first_appointment ? $form->officer->date_of_first_appointment->format('d/m/Y') : 'N/A') }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Date of Present Appointment</label>
+                        <p class="text-sm text-foreground">{{ $form->date_of_present_appointment ? $form->date_of_present_appointment->format('d/m/Y') : ($form->officer->date_of_present_appointment ? $form->officer->date_of_present_appointment->format('d/m/Y') : 'N/A') }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">State of Origin</label>
+                        <p class="text-sm text-foreground">{{ $form->state_of_origin ?? $form->officer->state_of_origin ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Department/Area</label>
+                        <p class="text-sm text-foreground">{{ $form->department_area ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Cadre</label>
+                        <p class="text-sm text-foreground">{{ $form->cadre ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Unit</label>
+                        <p class="text-sm text-foreground">{{ $form->unit ?? $form->officer->unit ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Zone</label>
+                        <p class="text-sm text-foreground">{{ $form->zone ?? $form->officer->geopolitical_zone ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <label class="kt-form-label text-sm">Qualifications</label>
+                        <p class="text-sm text-foreground">
+                            @if($form->qualifications)
+                                @if(is_array($form->qualifications))
+                                    {{ implode(', ', $form->qualifications) }}
+                                @else
+                                    {{ $form->qualifications }}
+                                @endif
+                            @else
+                                {{ $form->officer->entry_qualification ?? 'N/A' }}
+                            @endif
+                        </p>
+                    </div>
                 </div>
-            @endif
+            </div>
         </div>
-    </div>
+
+        <!-- Part 2: Leave Records, Targets, Job Description -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">PART 2: Leave Records, Target Setting & Job Description</h3>
+            </div>
+            <div class="kt-card-content">
+                <div class="grid grid-cols-1 gap-4">
+                    @if($form->main_duties)
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Main Duties</label>
+                            <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->main_duties }}</p>
+                        </div>
+                    @endif
+                    @if($form->joint_discussion)
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Joint Discussion</label>
+                            <p class="text-sm text-foreground">{{ $form->joint_discussion }}</p>
+                        </div>
+                    @endif
+                    @if($form->final_evaluation)
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Final Evaluation</label>
+                            <p class="text-sm text-foreground">{{ $form->final_evaluation }}</p>
+                        </div>
+                    @endif
+                    @if($form->difficulties_encountered)
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Difficulties Encountered</label>
+                            <p class="text-sm text-foreground">{{ $form->difficulties_encountered }}</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Part 3: Performance Assessment -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">PART 3: Performance Assessment</h3>
+            </div>
+            <div class="kt-card-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @if($form->job_understanding_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Job Understanding</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->job_understanding_grade }}</strong> - {{ $form->job_understanding_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->knowledge_application_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Knowledge Application</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->knowledge_application_grade }}</strong> - {{ $form->knowledge_application_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->accomplishment_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Accomplishment</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->accomplishment_grade }}</strong> - {{ $form->accomplishment_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->judgement_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Judgement</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->judgement_grade }}</strong> - {{ $form->judgement_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->staff_relations_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Staff Relations</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->staff_relations_grade }}</strong> - {{ $form->staff_relations_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->public_relations_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Public Relations</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->public_relations_grade }}</strong> - {{ $form->public_relations_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->quality_of_work_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Quality of Work</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->quality_of_work_grade }}</strong> - {{ $form->quality_of_work_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                    @if($form->punctuality_grade)
+                        <div>
+                            <label class="kt-form-label text-sm">Punctuality</label>
+                            <p class="text-sm text-foreground"><strong>{{ $form->punctuality_grade }}</strong> - {{ $form->punctuality_comment ?? '' }}</p>
+                        </div>
+                    @endif
+                </div>
+                
+                @if($form->overall_assessment)
+                    <div class="mt-4">
+                        <label class="kt-form-label text-sm font-semibold">Overall Assessment</label>
+                        <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->overall_assessment }}</p>
+                    </div>
+                @endif
+                
+                @if($form->general_remarks)
+                    <div class="mt-4">
+                        <label class="kt-form-label text-sm font-semibold">General Remarks</label>
+                        <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->general_remarks }}</p>
+                    </div>
+                @endif
+                
+                @if($form->promotability)
+                    <div class="mt-4">
+                        <label class="kt-form-label text-sm font-semibold">Promotability</label>
+                        <p class="text-sm text-foreground">{{ $form->promotability }}</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @else
+        <!-- Draft Form Preview -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Form Content</h3>
+            </div>
+            <div class="kt-card-content">
+                <p class="text-sm text-secondary-foreground">
+                    This form is still in draft status. Complete the form to see full details.
+                </p>
+            </div>
+        </div>
+    @endif
 
     <!-- Declarations Section -->
     @include('forms.aper.partials.declarations', ['form' => $form])

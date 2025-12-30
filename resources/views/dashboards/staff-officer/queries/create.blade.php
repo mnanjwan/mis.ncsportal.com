@@ -87,6 +87,19 @@
                         <p class="text-xs text-muted-foreground mt-1">Minimum 10 characters required</p>
                     </div>
 
+                    <div>
+                        <label class="kt-label">Response Deadline <span class="text-danger">*</span></label>
+                        <input type="datetime-local" 
+                               name="response_deadline" 
+                               value="{{ old('response_deadline') }}"
+                               class="kt-input @error('response_deadline') border-danger @enderror" 
+                               required>
+                        @error('response_deadline')
+                            <p class="text-danger text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                        <p class="text-xs text-muted-foreground mt-1">The officer must respond before this date and time. If no response is received by this deadline, the query will automatically be added to the officer's disciplinary record.</p>
+                    </div>
+
                     <div class="flex gap-3">
                         <button type="submit" class="kt-btn kt-btn-primary">
                             <i class="ki-filled ki-check"></i> Issue Query

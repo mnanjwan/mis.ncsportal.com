@@ -104,7 +104,7 @@ class SidebarComponent {
                 <div class="flex flex-col gap-2.5" id="sidebar_header">
                     <div class="flex items-center gap-2.5 px-3.5 h-[70px]">
                         <a href="${this.getDashboardPath(this.role)}">
-                            <img class="size-[34px]" src="../../dist/assets/media/app/mini-logo-circle-success.svg"/>
+                            <img class="size-[34px]" src="/logo.jpg"/>
                         </a>
                         <div class="kt-menu kt-menu-default grow" data-kt-menu="true">
                             <div class="kt-menu-item grow" data-kt-menu-item-offset="0, 15px" data-kt-menu-item-placement="bottom-start" data-kt-menu-item-toggle="dropdown" data-kt-menu-item-trigger="hover">

@@ -45,3 +45,7 @@ Schedule::command('emolument:extend-timeline')
 Schedule::command('aper:manage-timeline')
     ->daily()
     ->at('08:00');
+
+// Query expiration - check and automatically expire queries that have passed their deadline
+Schedule::command('queries:check-expired')
+    ->hourly();

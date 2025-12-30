@@ -11,10 +11,41 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
+    @if(isset($isOICOr2IC) && !$isOICOr2IC && !auth()->user()->hasRole('HRD') && !auth()->user()->hasRole('Staff Officer'))
+        <div class="kt-card bg-warning/10 border border-warning/20">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-information text-warning text-xl"></i>
+                    <div>
+                        <p class="text-sm font-medium text-warning">You must be an Officer in Charge (OIC) or Second In Command (2IC) in an approved duty roster to create APER forms.</p>
+                        <p class="text-xs text-secondary-foreground mt-1">Only officers with OIC or 2IC roles in approved duty rosters can create APER forms for officers in their command.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if(isset($rosterRole))
+        <div class="kt-card bg-info/10 border border-info/20">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-check-circle text-info text-xl"></i>
+                    <p class="text-sm font-medium text-info">Your Role: <strong>{{ $rosterRole }}</strong> - You can create APER forms for officers in your command.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Search Card -->
     <div class="kt-card">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Search Officers</h3>
+            <div class="kt-card-toolbar">
+                <p class="text-xs text-secondary-foreground">
+                    <i class="ki-filled ki-information"></i> 
+                    Only officers in your command are shown
+                </p>
+            </div>
         </div>
         <div class="kt-card-content">
             <form method="GET" action="{{ route('staff-officer.aper-forms.reporting-officer.search') }}" class="flex gap-3">
@@ -41,6 +72,7 @@
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Name</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Roster Role</th>
                                 <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
                             </tr>
                         </thead>
@@ -56,10 +88,17 @@
                                     <td class="py-3 px-4">
                                         <span class="text-sm text-secondary-foreground">{{ $officer->substantive_rank ?? 'N/A' }}</span>
                                     </td>
+                                    <td class="py-3 px-4">
+                                        @if(isset($officer->roster_role) && $officer->roster_role)
+                                            <span class="kt-badge kt-badge-info kt-badge-sm">{{ $officer->roster_role }}</span>
+                                        @else
+                                            <span class="text-xs text-muted-foreground">-</span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 px-4 text-right">
                                         <a href="{{ route('staff-officer.aper-forms.access', $officer->id) }}" 
                                            class="kt-btn kt-btn-sm kt-btn-primary">
-                                            Access APER Form
+                                            <i class="ki-filled ki-document"></i> Create/Access Form
                                         </a>
                                     </td>
                                 </tr>

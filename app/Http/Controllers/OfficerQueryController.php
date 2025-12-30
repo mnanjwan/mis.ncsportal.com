@@ -87,6 +87,11 @@ class OfficerQueryController extends Controller
             return redirect()->back()->with('error', 'Query is not pending response.');
         }
 
+        // Check if query has expired
+        if ($query->isOverdue()) {
+            return redirect()->back()->with('error', 'The response deadline has passed. This query can no longer be responded to.');
+        }
+
         try {
             DB::beginTransaction();
 

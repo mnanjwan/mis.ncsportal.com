@@ -7,6 +7,7 @@ use App\Models\QuarterRequest;
 use App\Models\User;
 use App\Models\Query;
 use App\Jobs\SendNotificationEmailJob;
+use App\Jobs\SendRoleAssignedMailJob;
 use App\Mail\NotificationMail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -599,14 +600,37 @@ class NotificationService
         }
         $message .= ".";
 
-        return $this->notify(
+        // Create in-app notification (without email via notify method)
+        $notification = $this->notify(
             $user,
             'role_assigned',
             'Role Assigned',
             $message,
             'role_assignment',
-            null
+            null,
+            false // Don't send email via notify method, we'll use job
         );
+
+        // Send email via job
+        if ($user->email) {
+            try {
+                SendRoleAssignedMailJob::dispatch($user, $notification);
+                Log::info('Role assignment email job dispatched', [
+                    'user_id' => $user->id,
+                    'notification_id' => $notification->id,
+                    'role' => $roleName,
+                    'command' => $commandName,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch role assignment email job', [
+                    'user_id' => $user->id,
+                    'notification_id' => $notification->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $notification;
     }
 
     /**
@@ -1510,13 +1534,14 @@ class NotificationService
         $issuedBy = $query->issuedBy;
         $issuedByName = $issuedBy ? ($issuedBy->name ?? $issuedBy->email) : 'Staff Officer';
         $issuedDate = $query->issued_at ? \Carbon\Carbon::parse($query->issued_at)->format('d/m/Y') : now()->format('d/m/Y');
+        $deadlineText = $query->response_deadline ? \Carbon\Carbon::parse($query->response_deadline)->format('d/m/Y H:i') : 'Not specified';
 
         // Create in-app notification
         $notification = $this->notify(
             $officer->user,
             'query_issued',
             'Query Issued',
-            "A query has been issued to you by {$issuedByName} on {$issuedDate}. Please respond to the query through your dashboard.",
+            "A query has been issued to you by {$issuedByName} on {$issuedDate}. Response deadline: {$deadlineText}. Please respond to the query through your dashboard before the deadline.",
             'query',
             $query->id,
             false // Don't send email via notify method, we'll send custom email
@@ -1751,6 +1776,53 @@ class NotificationService
     }
 
     /**
+     * Notify officer about query expired (automatically accepted)
+     */
+    public function notifyQueryExpired($query): ?Notification
+    {
+        $officer = $query->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $issuedDate = $query->issued_at ? \Carbon\Carbon::parse($query->issued_at)->format('d/m/Y') : 'N/A';
+        $deadlineDate = $query->response_deadline ? \Carbon\Carbon::parse($query->response_deadline)->format('d/m/Y H:i') : 'N/A';
+
+        // Create in-app notification
+        $notification = $this->notify(
+            $officer->user,
+            'query_expired',
+            'Query Expired - Added to Disciplinary Record',
+            "The query issued to you on {$issuedDate} has expired. The response deadline ({$deadlineDate}) has passed without a response. This query has been automatically added to your disciplinary record.",
+            'query',
+            $query->id,
+            false // Don't send email via notify method, we'll send custom email
+        );
+
+        // Send custom email via job
+        if ($officer->user->email) {
+            try {
+                \App\Jobs\SendQueryExpiredMailJob::dispatch($query);
+                Log::info('Query expired email job dispatched', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to dispatch query expired email job', [
+                    'user_id' => $officer->user->id,
+                    'query_id' => $query->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Also notify authorities (same as when query is accepted)
+        $this->notifyAuthoritiesQueryAccepted($query);
+
+        return $notification;
+    }
+
+    /**
      * Notify officers assigned to duty roster
      */
     public function notifyDutyRosterAssigned($roster, array $assignedOfficerIds): array
@@ -1765,7 +1837,16 @@ class NotificationService
         $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
         $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
 
-        foreach ($assignedOfficerIds as $officerId) {
+        // Ensure OIC and 2IC are included in notifications
+        $allOfficerIds = $assignedOfficerIds;
+        if ($roster->oic_officer_id && !in_array($roster->oic_officer_id, $allOfficerIds)) {
+            $allOfficerIds[] = $roster->oic_officer_id;
+        }
+        if ($roster->second_in_command_officer_id && !in_array($roster->second_in_command_officer_id, $allOfficerIds)) {
+            $allOfficerIds[] = $roster->second_in_command_officer_id;
+        }
+
+        foreach ($allOfficerIds as $officerId) {
             $officer = \App\Models\Officer::find($officerId);
             if (!$officer || !$officer->user) {
                 continue;
@@ -1798,15 +1879,47 @@ class NotificationService
                 }
             }
 
-            $notifications[] = $this->notify(
+            // Create in-app notification
+            $notification = $this->notify(
                 $officer->user,
                 'duty_roster_assigned',
                 'Duty Roster Assignment',
                 $message,
                 'duty_roster',
                 $roster->id,
-                true // Send email
+                false // Don't send email via notify method, we'll use job
             );
+
+            // Send email via job
+            if ($officer->user->email) {
+                try {
+                    \App\Jobs\SendDutyRosterAssignmentMailJob::dispatch(
+                        $roster,
+                        $officer,
+                        $role,
+                        $commandName,
+                        $periodStart,
+                        $periodEnd,
+                        $oicName,
+                        $secondInCommandName
+                    );
+                    Log::info('Duty roster assignment email job dispatched', [
+                        'user_id' => $officer->user->id,
+                        'roster_id' => $roster->id,
+                        'officer_id' => $officer->id,
+                        'role' => $role,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster assignment email job', [
+                        'user_id' => $officer->user->id,
+                        'roster_id' => $roster->id,
+                        'officer_id' => $officer->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
         }
 
         return $notifications;
@@ -1828,6 +1941,10 @@ class NotificationService
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
         $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
+        
+        // Get OIC and 2IC names if set
+        $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
+        $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
 
         // Get DC Admins for the command
         $dcAdmins = User::whereHas('roles', function($q) use ($commandId) {
@@ -1840,14 +1957,51 @@ class NotificationService
             return [];
         }
 
-        return $this->notifyMany(
-            $dcAdmins,
-            'duty_roster_submitted',
-            'Duty Roster Submitted - Requires Approval',
-            "A duty roster for {$command->name} has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Total assignments: {$assignmentsCount}. Please review and approve.",
-            'duty_roster',
-            $roster->id
-        );
+        $notifications = [];
+        foreach ($dcAdmins as $dcAdmin) {
+            // Create in-app notification
+            $notification = $this->notify(
+                $dcAdmin,
+                'duty_roster_submitted',
+                'Duty Roster Submitted - Requires Approval',
+                "A duty roster for {$command->name} has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Total assignments: {$assignmentsCount}. Please review and approve.",
+                'duty_roster',
+                $roster->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($dcAdmin->email) {
+                try {
+                    \App\Jobs\SendDutyRosterSubmittedMailJob::dispatch(
+                        $roster,
+                        $dcAdmin,
+                        $command->name,
+                        $periodStart,
+                        $periodEnd,
+                        $preparedByName,
+                        $assignmentsCount,
+                        $oicName,
+                        $secondInCommandName,
+                        'dc-admin/roster'
+                    );
+                    Log::info('Duty roster submitted email job dispatched to DC Admin', [
+                        'user_id' => $dcAdmin->id,
+                        'roster_id' => $roster->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster submitted email job to DC Admin', [
+                        'user_id' => $dcAdmin->id,
+                        'roster_id' => $roster->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
     }
 
     /**
@@ -1866,6 +2020,10 @@ class NotificationService
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
         $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
+        
+        // Get OIC and 2IC names if set
+        $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
+        $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
 
         // Get Area Controllers (they can approve any roster)
         $areaControllers = User::whereHas('roles', function($q) {
@@ -1877,13 +2035,295 @@ class NotificationService
             return [];
         }
 
-        return $this->notifyMany(
-            $areaControllers,
-            'duty_roster_submitted',
-            'Duty Roster Submitted - Requires Approval',
-            "A duty roster for {$command->name} has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Total assignments: {$assignmentsCount}. Please review and approve.",
-            'duty_roster',
-            $roster->id
-        );
+        $notifications = [];
+        foreach ($areaControllers as $areaController) {
+            // Create in-app notification
+            $notification = $this->notify(
+                $areaController,
+                'duty_roster_submitted',
+                'Duty Roster Submitted - Requires Approval',
+                "A duty roster for {$command->name} has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Total assignments: {$assignmentsCount}. Please review and approve.",
+                'duty_roster',
+                $roster->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($areaController->email) {
+                try {
+                    \App\Jobs\SendDutyRosterSubmittedMailJob::dispatch(
+                        $roster,
+                        $areaController,
+                        $command->name,
+                        $periodStart,
+                        $periodEnd,
+                        $preparedByName,
+                        $assignmentsCount,
+                        $oicName,
+                        $secondInCommandName,
+                        'area-controller/roster'
+                    );
+                    Log::info('Duty roster submitted email job dispatched to Area Controller', [
+                        'user_id' => $areaController->id,
+                        'roster_id' => $roster->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster submitted email job to Area Controller', [
+                        'user_id' => $areaController->id,
+                        'roster_id' => $roster->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
+    }
+
+    /**
+     * Notify Staff Officer when duty roster is approved
+     * Also sends assignment emails to all assigned officers
+     */
+    public function notifyDutyRosterApproved($roster, $approvedBy): array
+    {
+        // Ensure roster has all necessary relationships loaded
+        if (!$roster->relationLoaded('command')) {
+            $roster->load('command');
+        }
+        if (!$roster->relationLoaded('preparedBy')) {
+            $roster->load('preparedBy');
+        }
+        if (!$roster->relationLoaded('assignments')) {
+            $roster->load('assignments.officer');
+        }
+        if (!$roster->relationLoaded('oicOfficer')) {
+            $roster->load('oicOfficer');
+        }
+        if (!$roster->relationLoaded('secondInCommandOfficer')) {
+            $roster->load('secondInCommandOfficer');
+        }
+
+        $command = $roster->command;
+        $commandName = $command ? $command->name : 'Unknown Command';
+        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+        
+        $approvedByName = $approvedBy ? ($approvedBy->name ?? $approvedBy->email) : 'Approver';
+        $staffOfficer = $roster->preparedBy;
+        
+        $notifications = [];
+
+        // Notify Staff Officer about approval
+        if ($staffOfficer) {
+            $message = "Your duty roster for {$commandName} has been approved by {$approvedByName}. Period: {$periodStart} to {$periodEnd}. All assigned officers have been notified.";
+            
+            $notification = $this->notify(
+                $staffOfficer,
+                'duty_roster_approved',
+                'Duty Roster Approved',
+                $message,
+                'duty_roster',
+                $roster->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($staffOfficer->email) {
+                try {
+                    \App\Jobs\SendDutyRosterApprovedMailJob::dispatch(
+                        $roster,
+                        $approvedByName,
+                        $commandName,
+                        $periodStart,
+                        $periodEnd
+                    );
+                    Log::info('Duty roster approved email job dispatched to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'roster_id' => $roster->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster approved email job to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'roster_id' => $roster->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        // Send assignment emails to all assigned officers (OIC, 2IC, and regular officers)
+        $allOfficerIds = [];
+        
+        // Add OIC if set
+        if ($roster->oic_officer_id) {
+            $allOfficerIds[] = $roster->oic_officer_id;
+        }
+        
+        // Add 2IC if set
+        if ($roster->second_in_command_officer_id) {
+            $allOfficerIds[] = $roster->second_in_command_officer_id;
+        }
+        
+        // Add officers from assignments
+        if ($roster->assignments) {
+            foreach ($roster->assignments as $assignment) {
+                if ($assignment->officer_id && !in_array($assignment->officer_id, $allOfficerIds)) {
+                    $allOfficerIds[] = $assignment->officer_id;
+                }
+            }
+        }
+
+        // Get OIC and 2IC names
+        $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
+        $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
+
+        // Send assignment emails to all officers
+        foreach ($allOfficerIds as $officerId) {
+            $officer = \App\Models\Officer::find($officerId);
+            if (!$officer || !$officer->user) {
+                continue;
+            }
+
+            // Determine role
+            $role = 'Regular Officer';
+            if ($roster->oic_officer_id == $officerId) {
+                $role = 'Officer in Charge (OIC)';
+            } elseif ($roster->second_in_command_officer_id == $officerId) {
+                $role = 'Second In Command (2IC)';
+            }
+
+            $message = "You have been assigned to the duty roster for {$commandName} as {$role}. ";
+            $message .= "Period: {$periodStart} to {$periodEnd}. ";
+            
+            if ($role === 'Officer in Charge (OIC)') {
+                $message .= "You are the Officer in Charge for this roster period.";
+            } elseif ($role === 'Second In Command (2IC)') {
+                $message .= "You are the Second In Command for this roster period.";
+                if ($oicName) {
+                    $message .= " OIC: {$oicName}.";
+                }
+            } else {
+                if ($oicName) {
+                    $message .= "OIC: {$oicName}.";
+                }
+                if ($secondInCommandName) {
+                    $message .= " 2IC: {$secondInCommandName}.";
+                }
+            }
+
+            // Create in-app notification
+            $notification = $this->notify(
+                $officer->user,
+                'duty_roster_assigned',
+                'Duty Roster Assignment',
+                $message,
+                'duty_roster',
+                $roster->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($officer->user->email) {
+                try {
+                    \App\Jobs\SendDutyRosterAssignmentMailJob::dispatch(
+                        $roster,
+                        $officer,
+                        $role,
+                        $commandName,
+                        $periodStart,
+                        $periodEnd,
+                        $oicName,
+                        $secondInCommandName
+                    );
+                    Log::info('Duty roster assignment email job dispatched after approval', [
+                        'user_id' => $officer->user->id,
+                        'roster_id' => $roster->id,
+                        'officer_id' => $officer->id,
+                        'role' => $role,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster assignment email job after approval', [
+                        'user_id' => $officer->user->id,
+                        'roster_id' => $roster->id,
+                        'officer_id' => $officer->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
+    }
+
+    /**
+     * Notify Staff Officer when duty roster is rejected
+     */
+    public function notifyDutyRosterRejected($roster, $rejectedBy, $rejectionReason): array
+    {
+        // Ensure roster has relationships loaded
+        if (!$roster->relationLoaded('command')) {
+            $roster->load('command');
+        }
+        if (!$roster->relationLoaded('preparedBy')) {
+            $roster->load('preparedBy');
+        }
+
+        $command = $roster->command;
+        $commandName = $command ? $command->name : 'Unknown Command';
+        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+        
+        $rejectedByName = $rejectedBy ? ($rejectedBy->name ?? $rejectedBy->email) : 'Approver';
+        $staffOfficer = $roster->preparedBy;
+        
+        $notifications = [];
+
+        if ($staffOfficer) {
+            $message = "Your duty roster for {$commandName} has been rejected by {$rejectedByName}. Period: {$periodStart} to {$periodEnd}. Reason: {$rejectionReason}";
+            
+            $notification = $this->notify(
+                $staffOfficer,
+                'duty_roster_rejected',
+                'Duty Roster Rejected',
+                $message,
+                'duty_roster',
+                $roster->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($staffOfficer->email) {
+                try {
+                    \App\Jobs\SendDutyRosterRejectedMailJob::dispatch(
+                        $roster,
+                        $rejectedByName,
+                        $rejectionReason,
+                        $commandName,
+                        $periodStart,
+                        $periodEnd
+                    );
+                    Log::info('Duty roster rejected email job dispatched to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'roster_id' => $roster->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster rejected email job to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'roster_id' => $roster->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
     }
 }

@@ -316,7 +316,8 @@ class LeaveApplicationController extends Controller
 
     public function print($id)
     {
-        return view('forms.leave.print', compact('id'));
+        // Redirect to the official print format
+        return redirect()->route('print.leave-document', $id);
     }
 
     // Staff Officer - List leave applications for their command

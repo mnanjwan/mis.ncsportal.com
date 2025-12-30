@@ -147,9 +147,9 @@
                                     <div class="grid sm:grid-cols-2 gap-4">
                                         <div class="flex flex-col gap-1">
                                             <label class="kt-form-label font-normal text-mono text-xs">Officer <span class="text-danger">*</span></label>
-                                            <select class="kt-input" name="assignments[{{ $index }}][officer_id]" required>
+                                            <select class="kt-input assignment-officer-select" name="assignments[{{ $index }}][officer_id]" required>
                                                 <option value="">Select Officer</option>
-                                                @foreach($officers as $officer)
+                                                @foreach($officersForAssignments ?? $officers as $officer)
                                                     <option value="{{ $officer->id }}" {{ $assignment->officer_id == $officer->id ? 'selected' : '' }}>
                                                         {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
                                                     </option>
@@ -157,11 +157,11 @@
                                             </select>
                                         </div>
                                         <div class="flex flex-col gap-1">
-                                            <label class="kt-form-label font-normal text-mono text-xs">Duty Date <span class="text-danger">*</span></label>
+                                            <label class="kt-form-label font-normal text-mono text-xs">Duty Date</label>
                                             <input type="date" class="kt-input" name="assignments[{{ $index }}][duty_date]" 
-                                                   value="{{ $assignment->duty_date->format('Y-m-d') }}" 
+                                                   value="{{ $assignment->duty_date ? $assignment->duty_date->format('Y-m-d') : '' }}" 
                                                    min="{{ $roster->roster_period_start->format('Y-m-d') }}"
-                                                   max="{{ $roster->roster_period_end->format('Y-m-d') }}" required/>
+                                                   max="{{ $roster->roster_period_end->format('Y-m-d') }}"/>
                                         </div>
                                         <div class="flex flex-col gap-1">
                                             <label class="kt-form-label font-normal text-mono text-xs">Shift</label>
@@ -195,13 +195,26 @@
 @push('scripts')
 <script>
 let assignmentCount = {{ $roster->assignments->count() }};
-const officers = @json($officers);
+const allOfficers = @json($allOfficers ?? $officers);
 const periodStart = '{{ $roster->roster_period_start->format('Y-m-d') }}';
 const periodEnd = '{{ $roster->roster_period_end->format('Y-m-d') }}';
 
+// Get officers available for assignments (excludes OIC and 2IC)
+function getAvailableOfficersForAssignments() {
+    const oicSelect = document.getElementById('oic_officer_id');
+    const secondIcSelect = document.getElementById('second_in_command_officer_id');
+    const oicId = oicSelect ? oicSelect.value : null;
+    const secondIcId = secondIcSelect ? secondIcSelect.value : null;
+    
+    return allOfficers.filter(officer => {
+        return officer.id != oicId && officer.id != secondIcId;
+    });
+}
+
 // Assignment template
 function createAssignmentTemplate(index) {
-    const officersHtml = officers.map(officer => 
+    const availableOfficers = getAvailableOfficersForAssignments();
+    const officersHtml = availableOfficers.map(officer => 
         `<option value="${officer.id}">${officer.initials} ${officer.surname} (${officer.service_number})</option>`
     ).join('');
     
@@ -217,15 +230,15 @@ function createAssignmentTemplate(index) {
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Officer <span class="text-danger">*</span></label>
-                        <select class="kt-input" name="assignments[${index}][officer_id]" required>
+                        <select class="kt-input assignment-officer-select" name="assignments[${index}][officer_id]" required>
                             <option value="">Select Officer</option>
                             ${officersHtml}
                         </select>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label font-normal text-mono text-xs">Duty Date <span class="text-danger">*</span></label>
+                        <label class="kt-form-label font-normal text-mono text-xs">Duty Date</label>
                         <input type="date" class="kt-input" name="assignments[${index}][duty_date]" 
-                               min="${periodStart}" max="${periodEnd}" required/>
+                               min="${periodStart}" max="${periodEnd}"/>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Shift</label>
@@ -248,6 +261,8 @@ function addAssignment() {
     container.insertAdjacentHTML('beforeend', assignmentHtml);
     assignmentCount++;
     updateRemoveButtons();
+    // Make sure new assignment dropdown excludes OIC/2IC
+    updateAssignmentDropdowns();
 }
 
 // Remove assignment
@@ -298,6 +313,47 @@ function updateRemoveButtons() {
     });
 }
 
+// Update assignment dropdowns to exclude OIC and 2IC
+function updateAssignmentDropdowns() {
+    const availableOfficers = getAvailableOfficersForAssignments();
+    const availableOfficerIds = availableOfficers.map(o => o.id);
+    
+    // Update all assignment officer selects
+    document.querySelectorAll('.assignment-officer-select').forEach(select => {
+        const currentValue = select.value;
+        const oicSelect = document.getElementById('oic_officer_id');
+        const secondIcSelect = document.getElementById('second_in_command_officer_id');
+        const oicId = oicSelect ? oicSelect.value : null;
+        const secondIcId = secondIcSelect ? secondIcSelect.value : null;
+        
+        // Clear and rebuild options
+        select.innerHTML = '<option value="">Select Officer</option>';
+        
+        allOfficers.forEach(officer => {
+            // Skip if officer is OIC or 2IC
+            if (officer.id == oicId || officer.id == secondIcId) {
+                return;
+            }
+            
+            const option = document.createElement('option');
+            option.value = officer.id;
+            option.textContent = `${officer.initials} ${officer.surname} (${officer.service_number})`;
+            
+            // Restore selected value if it's still valid
+            if (currentValue == officer.id) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+        
+        // If current selection is no longer valid (became OIC/2IC), clear it
+        if (currentValue && (currentValue == oicId || currentValue == secondIcId)) {
+            select.value = '';
+        }
+    });
+}
+
 // Prevent OIC from being selected as 2IC and vice versa
 function updateOic2icOptions() {
     const oicSelect = document.getElementById('oic_officer_id');
@@ -333,6 +389,9 @@ function updateOic2icOptions() {
             option.style.display = '';
         }
     });
+    
+    // Update assignment dropdowns when OIC/2IC changes
+    updateAssignmentDropdowns();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -346,7 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (oicSelect && secondIcSelect) {
         oicSelect.addEventListener('change', updateOic2icOptions);
         secondIcSelect.addEventListener('change', updateOic2icOptions);
-        updateOic2icOptions(); // Initial check
+        updateOic2icOptions(); // Initial check - this also calls updateAssignmentDropdowns()
+    } else {
+        // If OIC/2IC selects don't exist, still filter assignments on load
+        updateAssignmentDropdowns();
     }
     
     // Form validation before submit

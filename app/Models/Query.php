@@ -16,6 +16,7 @@ class Query extends Model
         'response',
         'status',
         'issued_at',
+        'response_deadline',
         'responded_at',
         'reviewed_at',
     ];
@@ -24,6 +25,7 @@ class Query extends Model
     {
         return [
             'issued_at' => 'datetime',
+            'response_deadline' => 'datetime',
             'responded_at' => 'datetime',
             'reviewed_at' => 'datetime',
         ];
@@ -80,5 +82,46 @@ class Query extends Model
     public function isRejected(): bool
     {
         return $this->status === 'REJECTED';
+    }
+
+    /**
+     * Check if the query deadline has passed
+     */
+    public function isExpired(): bool
+    {
+        if (!$this->response_deadline) {
+            return false;
+        }
+        return now()->isAfter($this->response_deadline);
+    }
+
+    /**
+     * Check if query is overdue (pending response and expired)
+     */
+    public function isOverdue(): bool
+    {
+        return $this->isPendingResponse() && $this->isExpired();
+    }
+
+    /**
+     * Get days remaining until deadline
+     */
+    public function daysUntilDeadline(): ?int
+    {
+        if (!$this->response_deadline) {
+            return null;
+        }
+        return now()->diffInDays($this->response_deadline, false);
+    }
+
+    /**
+     * Get hours remaining until deadline
+     */
+    public function hoursUntilDeadline(): ?int
+    {
+        if (!$this->response_deadline) {
+            return null;
+        }
+        return now()->diffInHours($this->response_deadline, false);
     }
 }

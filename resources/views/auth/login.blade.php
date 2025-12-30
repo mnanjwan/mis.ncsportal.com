@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>NCS Employee Portal - Sign In</title>
-    <link href="{{ asset('ncs-employee-portal/dist/assets/media/app/favicon.svg') }}" rel="icon" type="image/svg+xml" />
-    <link href="{{ asset('ncs-employee-portal/dist/assets/media/app/favicon.svg') }}" rel="shortcut icon" />
+    <link href="{{ asset('favicon.ico') }}" rel="icon" type="image/x-icon" />
+    <link href="{{ asset('favicon.ico') }}" rel="shortcut icon" />
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -50,7 +50,7 @@
             <!-- Header -->
             <div class="text-center mb-10">
                 <div class="mx-auto h-20 w-20 bg-white rounded-md shadow-sm flex items-center justify-center mb-6 ring-1 ring-gray-100">
-                    <img class="h-12 w-12 object-contain" src="{{ asset('ncs-employee-portal/dist/assets/media/app/portal-logo-circle.svg') }}" alt="Portal Logo">
+                    <img class="h-12 w-12 object-contain" src="{{ asset('logo.jpg') }}" alt="Portal Logo">
                 </div>
                 <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Welcome Back</h2>
                 <p class="mt-2 text-sm text-gray-600 font-medium">Sign in to the NCS Employee Portal</p>

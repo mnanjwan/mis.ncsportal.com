@@ -50,9 +50,10 @@
             <div class="kt-card-header">
                 <h3 class="kt-card-title">My APER Forms</h3>
                 <div class="kt-card-toolbar">
-                    <a href="{{ route('officer.aper-forms.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                        <i class="ki-filled ki-plus"></i> Create New Form
-                    </a>
+                    <p class="text-sm text-secondary-foreground">
+                        <i class="ki-filled ki-information text-info"></i> 
+                        APER forms are created by your Reporting Officer (OIC or 2IC)
+                    </p>
                 </div>
             </div>
         </div>
@@ -81,7 +82,9 @@
                                             'REPORTING_OFFICER' => ['class' => 'warning', 'label' => 'With Reporting Officer'],
                                             'COUNTERSIGNING_OFFICER' => ['class' => 'warning', 'label' => 'With Countersigning Officer'],
                                             'OFFICER_REVIEW' => ['class' => 'primary', 'label' => 'Pending Review'],
+                                            'STAFF_OFFICER_REVIEW' => ['class' => 'warning', 'label' => 'With Staff Officer'],
                                             'ACCEPTED' => ['class' => 'success', 'label' => 'Accepted'],
+                                            'FINALIZED' => ['class' => 'info', 'label' => 'Finalized'],
                                             'REJECTED' => ['class' => 'danger', 'label' => 'Rejected'],
                                             default => ['class' => 'secondary', 'label' => $form->status]
                                         };
@@ -102,12 +105,6 @@
                                             {{ $form->submitted_at ? $form->submitted_at->format('d/m/Y') : '-' }}
                                         </td>
                                     <td class="py-3 px-4 text-right">
-                                        @if($form->status === 'DRAFT')
-                                            <a href="{{ route('officer.aper-forms.edit', $form->id) }}" 
-                                               class="kt-btn kt-btn-sm kt-btn-primary">
-                                                <i class="ki-filled ki-notepad-edit"></i> Edit
-                                            </a>
-                                        @endif
                                         <a href="{{ route('officer.aper-forms.show', $form->id) }}" 
                                            class="kt-btn kt-btn-sm kt-btn-ghost">
                                             View
@@ -122,9 +119,10 @@
                     <div class="text-center py-12">
                         <i class="ki-filled ki-document text-4xl text-muted-foreground mb-4"></i>
                         <p class="text-secondary-foreground mb-4">No APER forms found</p>
-                        <a href="{{ route('officer.aper-forms.create') }}" class="kt-btn kt-btn-primary">
-                            Create First Form
-                        </a>
+                        <p class="text-sm text-secondary-foreground">
+                            APER forms are created by your Reporting Officer (OIC or 2IC).<br>
+                            Please contact them to have your APER form created.
+                        </p>
                     </div>
                 @endif
 

@@ -242,7 +242,14 @@
                 ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
                 ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('staff-officer.queries.index')],
                 ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
-                ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
+                [
+                    'title' => 'APER Forms',
+                    'icon' => 'ki-filled ki-document',
+                    'submenu' => [
+                        ['title' => 'Create/Search Forms', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
+                        ['title' => 'Review Rejected Forms', 'href' => route('staff-officer.aper-forms.review')],
+                    ]
+                ],
             ];
             break;
         case 'Assessor':
@@ -367,7 +374,7 @@
         <div class="flex items-center gap-2.5 px-3.5 h-[70px]">
             <a href="{{ route('dashboard') }}" class="flex items-center shrink-0">
                 <img class="size-[34px]"
-                    src="{{ asset('ncs-employee-portal/dist/assets/media/app/portal-logo-circle.svg') }}"
+                    src="{{ asset('logo.jpg') }}"
                     alt="Portal Logo" />
             </a>
             <div class="kt-menu kt-menu-default grow min-w-0" data-kt-menu="true">

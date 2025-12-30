@@ -21,6 +21,7 @@ class APERForm extends Model
         'staff_officer_id',
         'is_rejected',
         'rejection_reason',
+        'staff_officer_rejection_reason',
         'rejected_by_role',
         'submitted_at',
         'reporting_officer_completed_at',
@@ -28,6 +29,7 @@ class APERForm extends Model
         'officer_reviewed_at',
         'accepted_at',
         'rejected_at',
+        'finalized_at',
         // Part 1 fields
         'service_number',
         'title',
@@ -177,6 +179,7 @@ class APERForm extends Model
             'officer_reviewed_at' => 'datetime',
             'accepted_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'finalized_at' => 'datetime',
             'date_of_first_appointment' => 'date',
             'date_of_present_appointment' => 'date',
             'date_of_birth' => 'date',
@@ -255,7 +258,19 @@ class APERForm extends Model
             return true;
         }
 
-        // Check if user is HRD or Staff Officer (for reassignment)
+        // Check if user is Staff Officer and form is in STAFF_OFFICER_REVIEW status
+        if ($this->status === 'STAFF_OFFICER_REVIEW') {
+            $userRoles = $user->roles->pluck('name')->toArray();
+            if (in_array('Staff Officer', $userRoles)) {
+                // Also check same command
+                $staffOfficer = $user->officer;
+                if ($staffOfficer && $staffOfficer->present_station === $this->officer->present_station) {
+                    return true;
+                }
+            }
+        }
+
+        // Check if user is HRD or Staff Officer (for reassignment and viewing)
         $userRoles = $user->roles->pluck('name')->toArray();
         if (in_array('HRD', $userRoles) || in_array('Staff Officer', $userRoles)) {
             return true;
@@ -266,7 +281,7 @@ class APERForm extends Model
 
     public function canBeReassigned()
     {
-        return $this->is_rejected && in_array($this->status, ['REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER']);
+        return $this->is_rejected && in_array($this->status, ['REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER', 'STAFF_OFFICER_REVIEW']);
     }
 
     public function isActiveForYear()

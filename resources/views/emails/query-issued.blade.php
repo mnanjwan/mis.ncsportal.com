@@ -15,6 +15,7 @@
     <p>
         <strong>Issued By:</strong> {{ $issuedBy->name ?? $issuedBy->email ?? 'Staff Officer' }}<br>
         <strong>Date Issued:</strong> {{ $query->issued_at ? $query->issued_at->format('l, F j, Y \a\t g:i A') : date('l, F j, Y \a\t g:i A') }}<br>
+        <strong>Response Deadline:</strong> {{ $query->response_deadline ? $query->response_deadline->format('l, F j, Y \a\t g:i A') : 'Not specified' }}<br>
         <strong>Service Number:</strong> {{ $officer->service_number }}
     </p>
     
@@ -22,6 +23,8 @@
     <p>{{ $query->reason }}</p>
     
     <h3>Action Required:</h3>
+    <p><strong>IMPORTANT:</strong> You must respond to this query before the deadline ({{ $query->response_deadline ? $query->response_deadline->format('l, F j, Y \a\t g:i A') : 'Not specified' }}).</p>
+    <p>If you fail to respond by the deadline, this query will automatically be added to your disciplinary record.</p>
     <p>Please respond to this query through your dashboard. Your response will be reviewed by the Staff Officer who issued this query.</p>
     
     <p>You can view and respond to this query by clicking the link below:</p>

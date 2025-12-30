@@ -457,6 +457,16 @@ class AdminRoleAssignmentController extends Controller
                 ->with('error', 'Role assignment not found or does not belong to your command.');
         }
 
+        // Get Officer role ID - Officer role should never be deactivated
+        $officerRole = Role::where('name', 'Officer')->first();
+        $officerRoleId = $officerRole ? $officerRole->id : null;
+
+        // Prevent deactivating the Officer role
+        if ($roleId == $officerRoleId) {
+            return redirect()->back()
+                ->with('error', 'Cannot remove the Officer role. This role must always remain active.');
+        }
+
         // Deactivate instead of deleting
         $user->roles()->wherePivot('command_id', $adminCommand->id)
             ->updateExistingPivot($roleId, [

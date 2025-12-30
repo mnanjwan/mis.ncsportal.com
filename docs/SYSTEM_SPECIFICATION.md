@@ -44,6 +44,10 @@
 21. View all accepted queries system-wide through dedicated Query Management section
 22. Receive in-app notifications when queries are accepted (no email notifications for HRD)
 23. Filter queries by command and officer for comprehensive disciplinary record review
+24. Create and manage APER form timelines (similar to emolument timelines with cron job support)
+25. View all APER forms system-wide
+26. Access finalized APER forms and award marks
+27. Reassign APER forms when necessary (can override OIC/2IC validation)
 
 ### Admin - Command Role Assignment Manager
 **Primary Role:** Command-specific role assignment and user management
@@ -92,6 +96,9 @@
 20. Review officer responses to queries
 21. Accept or reject query responses (Accepted queries become part of officer's disciplinary record)
 22. Manage query workflow and tracking
+23. Review rejected APER forms from officers in their command
+24. Reassign APER forms to different Reporting Officers or Counter Signing Officers when officers reject
+25. Finalize rejected APER forms (makes them accessible to HRD, marks awarded)
 
 ### Building Unit - Accommodation Manager
 **Primary Role:** Officer quarters allocation and management
@@ -1470,21 +1477,22 @@ The Eligibility List carries the following fields:
 3. **Initial status** - Roster is created with status: DRAFT
 4. **No assignments yet** - Roster can be created without assignments initially
 
-**Assignment Phase:**
+**Assignment Phase (DRAFT Status):**
 1. **Staff Officer edits roster** - Staff Officer edits the DRAFT roster to add assignments
 2. **Select OIC** - Staff Officer selects Officer in Charge (OIC) - **Required**
 3. **Select 2IC** - Staff Officer selects Second In Command (2IC) - **Optional**
+   - **Validation**: OIC and 2IC cannot be the same officer
+   - **System prevents**: If OIC is selected, that officer cannot be selected as 2IC and vice versa
 4. **Add assignments** - Staff Officer adds officer assignments with:
-   - Officer selection
-   - Duty date (must be within roster period)
+   - Officer selection (OIC and 2IC are automatically excluded from assignment dropdown)
+   - Duty date (optional - can be left blank, but if provided must be within roster period)
    - Shift (optional: Morning, Evening, Night, etc.)
    - Notes (optional)
 5. **Save assignments** - Staff Officer saves the roster with assignments
-6. **System notifies officers** - **All assigned officers receive email and in-app notifications**:
-   - OIC receives notification indicating they are Officer in Charge
-   - 2IC receives notification indicating they are Second In Command
-   - Other officers receive notification with OIC and 2IC information
-   - Notifications include roster period, command, and role assignment
+6. **No emails sent** - **IMPORTANT**: During DRAFT status, NO email notifications are sent to officers
+   - Roster remains in DRAFT status until submitted
+   - Staff Officer can edit assignments multiple times without triggering notifications
+   - Success message displayed: "Roster updated successfully! Emails will be sent to assigned officers after approval."
 
 **Submission Phase:**
 1. **Staff Officer submits** - Staff Officer submits roster for approval (requires at least 1 assignment)
@@ -1492,6 +1500,7 @@ The Eligibility List carries the following fields:
 3. **System notifies approvers** - **DC Admin and Area Controller receive email and in-app notifications**:
    - Notification includes command name, period, prepared by, and assignment count
    - Both DC Admin and Area Controller can approve/reject independently
+   - Emails sent via Laravel Jobs for asynchronous processing
 4. **Roster becomes read-only** - Staff Officer can view but cannot edit submitted roster
 
 **Approval Phase (Dual Approval):**
@@ -1503,24 +1512,67 @@ The Eligibility List carries the following fields:
    - Prepared by information
 3. **DC Admin approves/rejects** - DC Admin can:
    - **Approve**: Changes status to APPROVED, sets approved_at timestamp
+     - **System triggers**: Assignment emails sent to ALL officers (OIC, 2IC, regular officers) via Laravel Jobs
+     - **System triggers**: Approval notification email sent to Staff Officer via Laravel Job
+     - Success message: "Roster approved successfully. All assigned officers and Staff Officer have been notified."
    - **Reject**: Requires rejection reason, changes status to REJECTED
+     - **System triggers**: Rejection notification email sent to Staff Officer via Laravel Job (includes rejection reason)
+     - Success message: "Roster rejected. Staff Officer has been notified."
 4. **Area Controller reviews** - Area Controller views submitted rosters (all commands)
 5. **Area Controller approves/rejects** - Area Controller can:
    - **Approve**: Changes status to APPROVED, sets approved_at timestamp
+     - **System triggers**: Assignment emails sent to ALL officers (OIC, 2IC, regular officers) via Laravel Jobs
+     - **System triggers**: Approval notification email sent to Staff Officer via Laravel Job
+     - Success message: "Roster approved successfully. All assigned officers and Staff Officer have been notified."
    - **Reject**: Requires rejection reason, changes status to REJECTED
+     - **System triggers**: Rejection notification email sent to Staff Officer via Laravel Job (includes rejection reason)
+     - Success message: "Roster rejected. Staff Officer has been notified."
 6. **Independent approval** - Both DC Admin and Area Controller can approve independently
    - Either approver can approve the roster
    - Either approver can reject with reason
 
-**Notification Details:**
-- **When assignments are added/updated**: All assigned officers notified (email + in-app)
-- **When roster is submitted**: DC Admin and Area Controller notified (email + in-app)
-- **Notification content includes**:
+**Email Notification Flow:**
+- **DRAFT Status**: NO emails sent (roster can be edited freely)
+- **SUBMITTED Status**: 
+  - DC Admin and Area Controller receive submission notification emails (via Laravel Jobs)
+  - In-app notifications sent to approvers
+- **APPROVED Status**:
+  - **Assignment emails** sent to ALL assigned officers via Laravel Jobs:
+    - OIC receives email indicating they are Officer in Charge
+    - 2IC receives email indicating they are Second In Command (includes OIC name)
+    - Regular officers receive email with OIC and 2IC information
+    - Each email includes roster period, command, role, and specific assignments for that officer
+  - **Approval email** sent to Staff Officer via Laravel Job:
+    - Confirms roster approval
+    - Includes approver name and approval timestamp
+    - Includes link to view roster details
+- **REJECTED Status**:
+  - **Rejection email** sent to Staff Officer via Laravel Job:
+    - Includes rejection reason
+    - Includes approver name
+    - Includes link to edit roster
+  - NO emails sent to assigned officers (roster not approved)
+
+**Notification Content:**
+- **Assignment emails** include:
   - Roster period (start - end dates)
   - Command name
   - Officer's role (OIC, 2IC, or Regular Officer)
   - OIC and 2IC names (for regular officers)
+  - Specific assignments for the recipient officer (duty dates, shifts, notes)
   - Link to view roster details
+- **Approval emails** include:
+  - Roster ID and command name
+  - Period dates
+  - Approver name
+  - Approval timestamp
+  - Confirmation that all officers have been notified
+- **Rejection emails** include:
+  - Roster ID and command name
+  - Period dates
+  - Rejection reason (mandatory)
+  - Rejector name
+  - Link to edit roster
 
 **Roster Leadership Structure:**
 - **Officer in Charge (OIC)**: Required, primary leadership role
@@ -1528,19 +1580,151 @@ The Eligibility List carries the following fields:
 - **Regular Officers**: All other assigned officers
 - OIC and 2IC are displayed prominently in roster views
 - OIC and 2IC badges shown in assignment tables
+- OIC and 2IC cannot be selected for regular assignments (automatically excluded from assignment dropdown)
+
+**Assignment Rules:**
+- OIC cannot be the same as 2IC (server-side and client-side validation)
+- OIC and 2IC are automatically excluded from regular assignment officer dropdown
+- Duty date is optional for assignments (can be left blank)
+- If duty date is provided, it must fall within the roster period
+- Multiple assignments can be added for the same officer with different dates/shifts
 
 **Status Flow:**
 ```
-DRAFT → SUBMITTED → APPROVED
+DRAFT → SUBMITTED → APPROVED (emails sent to officers + Staff Officer)
          ↓
-      REJECTED
+      REJECTED (email sent to Staff Officer only)
 ```
+
+**Email Processing:**
+- All emails processed asynchronously via Laravel Jobs
+- Jobs include retry mechanism (3 attempts with exponential backoff)
+- Failed email jobs logged for monitoring
+- Email templates use minimal HTML structure (no inline styles)
 
 **Dashboard Integration:**
 - **DC Admin Dashboard**: Shows pending rosters count and recent rosters widget
 - **Area Controller Dashboard**: Shows pending rosters count and recent rosters widget
 - **Quick Actions**: Direct links to review and approve rosters
 - **Real-time Updates**: Dashboard widgets update when new rosters are submitted
+
+---
+
+### FLOW 16: APER FORM WORKFLOW
+
+**Timeline Creation Phase:**
+1. **HRD sets timeline** - HRD creates APER form timeline with start and end dates (similar to emolument timeline)
+2. **Cron job support** - Timeline can be extended automatically via cron job
+3. **System activates** - System activates timeline and notifies all officers
+4. **Once per year restriction** - Each officer can only have one APER form per year
+5. **Timeline validation** - Forms can only be created/filled during active timeline period
+
+**Form Creation Phase (Reporting Officer):**
+1. **Reporting Officer searches** - Reporting Officer searches for officers within their command
+   - **Command restriction**: Only officers in the same command are shown
+   - **OIC/2IC validation**: Reporting Officer must be OIC or 2IC in an approved duty roster for the year
+   - **Rank validation**: Reporting Officer must be of the same rank or higher than the officer being assessed
+2. **Reporting Officer selects officer** - Reporting Officer selects an officer to create APER form for
+3. **Form created automatically** - System creates APER form automatically when Reporting Officer accesses the form
+   - Form status: REPORTING_OFFICER
+   - Reporting Officer is assigned to the form
+   - Officer is notified (in-app notification)
+4. **Validation checks** - System validates:
+   - Reporting Officer is OIC/2IC in approved roster for the year
+   - Reporting Officer rank is same or higher than assessed officer
+   - Both officers are in the same command
+   - Officer doesn't already have an accepted form for the year
+
+**Reporting Officer Filling Phase:**
+1. **Reporting Officer fills form** - Reporting Officer fills all APER form sections for the officer
+2. **Form data pre-filled** - System pre-fills officer information from their profile
+3. **Reporting Officer completes** - Reporting Officer completes their section and forwards to Counter Signing Officer
+4. **Status changes** - Form status changes to COUNTERSIGNING_OFFICER
+5. **Counter Signing Officer notified** - Counter Signing Officer receives in-app notification
+
+**Counter Signing Phase:**
+1. **Counter Signing Officer accesses** - Counter Signing Officer accesses the form
+2. **Rank validation** - System validates:
+   - Counter Signing Officer must be of the same rank or higher than Reporting Officer
+   - Counter Signing Officer must be in the same command as the officer
+3. **Counter Signing Officer countersigns** - Counter Signing Officer adds their declaration/signature
+4. **Form forwarded** - Counter Signing Officer forwards form to officer for review
+5. **Status changes** - Form status changes to OFFICER_REVIEW
+6. **Officer notified** - Officer receives in-app and email notification
+
+**Officer Review Phase:**
+1. **Officer reviews form** - Officer reviews the completed APER form
+2. **Officer decision** - Officer can:
+   - **Accept**: Form status changes to ACCEPTED
+     - Form becomes part of officer's record
+     - HRD can access the form
+     - Marks are awarded
+     - Officer receives acceptance notification
+   - **Reject**: Officer provides rejection reason
+     - Form status changes to STAFF_OFFICER_REVIEW
+     - Rejection reason is recorded
+     - Staff Officer is notified (email + in-app)
+     - Form is sent to Staff Officer for review
+
+**Staff Officer Review Phase (If Officer Rejects):**
+1. **Staff Officer receives notification** - Staff Officer receives email and in-app notification
+2. **Staff Officer reviews** - Staff Officer views rejected form and officer's rejection reason
+3. **Staff Officer decision** - Staff Officer can:
+   - **Reassign**: Restart the process for that specific officer
+     - Can reassign Reporting Officer (must be OIC/2IC + rank validation)
+     - Can reassign Counter Signing Officer (rank + command validation)
+     - Form status returns to REPORTING_OFFICER or COUNTERSIGNING_OFFICER
+     - Assigned officer receives notification
+   - **Finalize (Reject)**: Finalize the form
+     - Form status changes to FINALIZED
+     - Staff Officer can provide optional rejection reason
+     - HRD can access the form
+     - Marks will be awarded
+     - Officer receives finalization notification
+     - This action cannot be undone
+
+**Validation Rules:**
+- **Reporting Officer Requirements**:
+  - Must be OIC or 2IC in an approved duty roster for the year
+  - Must be of the same rank or higher than the officer being assessed
+  - Must be in the same command as the officer
+- **Counter Signing Officer Requirements**:
+  - Must be of the same rank or higher than Reporting Officer
+  - Must be in the same command as the officer
+- **Form Restrictions**:
+  - One APER form per officer per year
+  - Forms can only be created during active timeline period
+  - Officers cannot create their own forms (only Reporting Officers can create)
+
+**Status Flow:**
+```
+REPORTING_OFFICER → COUNTERSIGNING_OFFICER → OFFICER_REVIEW → ACCEPTED
+                                                      ↓
+                                              STAFF_OFFICER_REVIEW → FINALIZED
+                                                      ↓
+                                              (Reassign) → REPORTING_OFFICER
+```
+
+**Email Notifications:**
+- **When form created**: Reporting Officer receives notification
+- **When forwarded to Counter Signing**: Counter Signing Officer receives notification
+- **When forwarded to Officer**: Officer receives notification (email + in-app)
+- **When Officer accepts**: Officer receives acceptance confirmation
+- **When Officer rejects**: Staff Officer receives notification (email + in-app)
+- **When reassigned**: New Reporting/Counter Signing Officer receives notification
+- **When finalized**: Officer receives finalization notification
+
+**Email Processing:**
+- All emails processed asynchronously via Laravel Jobs
+- Jobs include retry mechanism (3 attempts with exponential backoff)
+- Failed email jobs logged for monitoring
+- Email templates use minimal HTML structure (no inline styles)
+
+**Dashboard Integration:**
+- **Staff Officer Dashboard**: Shows rejected APER forms count widget
+- **Staff Officer Menu**: "APER Review" menu item for quick access
+- **Reporting Officer Menu**: "APER Forms" menu item to search and create forms
+- **Officer Menu**: "APER Forms" menu item to view their forms (view only, no create)
 
 ---
 
@@ -1574,7 +1758,10 @@ Staff Officer (Issues Query) → Officer (Responds) → Staff Officer (Reviews) 
 Investigation Unit (Sends Invitation) → Officer (Receives Notification) → Investigation Unit (Places on Status) → System (Updates Officer Record) → System (Excludes from Promotion Eligibility) → Accounts (Receives Interdicted List if Interdicted)
 
 ### Duty Roster Chain:
-Staff Officer (Creates & Assigns) → System (Notifies All Officers) → Staff Officer (Submits) → System (Notifies DC Admin & Area Controller) → DC Admin/Area Controller (Approve/Reject) → System (Updates Status)
+Staff Officer (Creates & Assigns in DRAFT) → Staff Officer (Submits) → System (Notifies DC Admin & Area Controller) → DC Admin/Area Controller (Approve/Reject) → System (Sends Assignment Emails to Officers + Approval/Rejection Email to Staff Officer)
+
+### APER Form Chain:
+HRD (Sets Timeline) → Reporting Officer (Searches & Creates Form) → Reporting Officer (Fills Form) → Counter Signing Officer (Countersigns) → Officer (Accepts/Rejects) → [If Rejected] Staff Officer (Reassigns or Finalizes) → HRD (Accesses Finalized Form, Marks Awarded)
 
 ---
 

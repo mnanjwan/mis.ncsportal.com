@@ -208,6 +208,11 @@ class ComprehensiveSeeder extends Seeder
                 'quartered' => false,
                 'is_deceased' => false,
                 'is_active' => true,
+                'profile_picture_url' => 'officers/default.png', // Set placeholder to mark onboarding as complete
+                'onboarding_status' => 'completed',
+                'onboarding_completed_at' => now()->subDays(rand(1, 30)), // Completed 1-30 days ago
+                'verification_status' => 'verified',
+                'verified_at' => now()->subDays(rand(1, 30)),
                 'created_by' => $hrdUser->id ?? null,
             ]);
 

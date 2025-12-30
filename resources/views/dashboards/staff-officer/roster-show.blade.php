@@ -178,7 +178,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                                    {{ $assignment->duty_date->format('M d, Y') }}
+                                                    {{ $assignment->duty_date ? $assignment->duty_date->format('M d, Y') : 'Not specified' }}
                                                 </td>
                                                 <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                                     {{ $assignment->shift ?? 'N/A' }}
@@ -221,12 +221,9 @@
                                 </a>
                             @endif
                             @if($roster->status === 'DRAFT' && $roster->assignments->count() > 0)
-                                <form action="{{ route('staff-officer.roster.submit', $roster->id) }}" method="POST" class="inline w-full">
-                                    @csrf
-                                    <button type="submit" class="kt-btn kt-btn-success w-full" onclick="return confirm('Submit this roster for DC Admin approval?')">
-                                        <i class="ki-filled ki-check"></i> Submit for Approval
-                                    </button>
-                                </form>
+                                <button type="button" class="kt-btn kt-btn-success w-full" data-kt-modal-toggle="#submit-modal">
+                                    <i class="ki-filled ki-check"></i> Submit for Approval
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -273,5 +270,38 @@
         background: #555;
     }
 </style>
+
+<!-- Submit for Approval Confirmation Modal -->
+<div class="kt-modal" data-kt-modal="true" id="submit-modal">
+    <div class="kt-modal-content max-w-[400px]">
+        <div class="kt-modal-header py-4 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
+                    <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Submit for Approval</h3>
+            </div>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <div class="kt-modal-body py-5 px-5">
+            <p class="text-sm text-secondary-foreground">
+                Are you sure you want to submit this roster for DC Admin approval? Once submitted, you will not be able to edit it until it is reviewed.
+            </p>
+        </div>
+        <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+            <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                Cancel
+            </button>
+            <form action="{{ route('staff-officer.roster.submit', $roster->id) }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" class="kt-btn kt-btn-success">
+                    <i class="ki-filled ki-check"></i> Submit for Approval
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 

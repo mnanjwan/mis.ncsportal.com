@@ -40,7 +40,11 @@
             <h3 class="kt-card-title">Query Details</h3>
             <div class="kt-card-toolbar">
                 @if($query->status === 'PENDING_RESPONSE')
-                    <span class="kt-badge kt-badge-warning">Pending Response</span>
+                    @if($query->isOverdue())
+                        <span class="kt-badge kt-badge-danger">Expired</span>
+                    @else
+                        <span class="kt-badge kt-badge-warning">Pending Response</span>
+                    @endif
                 @elseif($query->status === 'PENDING_REVIEW')
                     <span class="kt-badge kt-badge-info">Pending Review</span>
                 @elseif($query->status === 'ACCEPTED')
@@ -71,6 +75,42 @@
                     </div>
                 </div>
 
+                @if($query->response_deadline)
+                    <div>
+                        <label class="kt-label">Response Deadline</label>
+                        <div class="kt-input bg-muted">
+                            {{ $query->response_deadline->format('d/m/Y H:i') }}
+                            @if($query->isOverdue())
+                                <span class="text-danger ml-2">(Expired)</span>
+                            @elseif($query->isPendingResponse())
+                                @php
+                                    $hoursRemaining = $query->hoursUntilDeadline();
+                                    $daysRemaining = $query->daysUntilDeadline();
+                                @endphp
+                                @if($hoursRemaining !== null && $hoursRemaining < 24)
+                                    <span class="text-warning ml-2">({{ $hoursRemaining }} hour{{ $hoursRemaining !== 1 ? 's' : '' }} remaining)</span>
+                                @elseif($daysRemaining !== null)
+                                    <span class="text-info ml-2">({{ $daysRemaining }} day{{ $daysRemaining !== 1 ? 's' : '' }} remaining)</span>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                @if($query->isOverdue())
+                    <div class="kt-card bg-danger/10 border border-danger/20">
+                        <div class="kt-card-content p-4">
+                            <div class="flex items-center gap-3">
+                                <i class="ki-filled ki-information text-danger text-xl"></i>
+                                <div>
+                                    <p class="text-sm font-semibold text-danger">Deadline Expired</p>
+                                    <p class="text-sm text-danger">The response deadline has passed. This query will be automatically added to your disciplinary record.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 @if($query->response)
                     <div>
                         <label class="kt-label">Your Response</label>
@@ -84,7 +124,7 @@
                     </div>
                 @endif
 
-                @if($query->status === 'PENDING_RESPONSE')
+                @if($query->status === 'PENDING_RESPONSE' && !$query->isOverdue())
                     <div class="border-t border-border pt-5">
                         <h4 class="font-semibold mb-3">Respond to Query</h4>
                         <form action="{{ route('officer.queries.respond', $query->id) }}" method="POST">

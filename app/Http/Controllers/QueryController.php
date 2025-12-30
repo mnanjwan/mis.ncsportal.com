@@ -94,6 +94,7 @@ class QueryController extends Controller
         $request->validate([
             'officer_id' => 'required|exists:officers,id',
             'reason' => 'required|string|min:10',
+            'response_deadline' => 'required|date|after:now',
         ]);
 
         $user = auth()->user();
@@ -128,6 +129,7 @@ class QueryController extends Controller
                 'reason' => $request->reason,
                 'status' => 'PENDING_RESPONSE',
                 'issued_at' => now(),
+                'response_deadline' => $request->response_deadline,
             ]);
 
             // Send notification to officer

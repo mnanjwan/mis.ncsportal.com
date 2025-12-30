@@ -301,7 +301,8 @@ class PassApplicationController extends Controller
 
     public function print($id)
     {
-        return view('forms.pass.print', compact('id'));
+        // Redirect to the official print format
+        return redirect()->route('print.pass-document', $id);
     }
 
     // Staff Officer - List pass applications for their command

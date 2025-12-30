@@ -15,7 +15,7 @@ return new class extends Migration
             $table->integer('year');
             
             // Workflow fields
-            $table->enum('status', ['DRAFT', 'SUBMITTED', 'REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER', 'OFFICER_REVIEW', 'ACCEPTED', 'REJECTED'])->default('DRAFT');
+            $table->enum('status', ['DRAFT', 'SUBMITTED', 'REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER', 'OFFICER_REVIEW', 'ACCEPTED', 'REJECTED', 'STAFF_OFFICER_REVIEW', 'FINALIZED'])->default('DRAFT');
             $table->foreignId('reporting_officer_id')->nullable()->constrained('users');
             $table->foreignId('countersigning_officer_id')->nullable()->constrained('users');
             $table->foreignId('staff_officer_id')->nullable()->constrained('users'); // For reassignment

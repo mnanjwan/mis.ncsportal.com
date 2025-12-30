@@ -71,6 +71,28 @@
                     </div>
                 </div>
 
+                @if($query->response_deadline)
+                    <div>
+                        <label class="kt-label">Response Deadline</label>
+                        <div class="kt-input bg-muted">
+                            {{ $query->response_deadline->format('d/m/Y H:i') }}
+                            @if($query->isOverdue() && $query->status === 'PENDING_RESPONSE')
+                                <span class="text-danger ml-2">(Expired)</span>
+                            @elseif($query->status === 'PENDING_RESPONSE')
+                                @php
+                                    $hoursRemaining = $query->hoursUntilDeadline();
+                                    $daysRemaining = $query->daysUntilDeadline();
+                                @endphp
+                                @if($hoursRemaining !== null && $hoursRemaining < 24)
+                                    <span class="text-warning ml-2">({{ $hoursRemaining }} hour{{ $hoursRemaining !== 1 ? 's' : '' }} remaining)</span>
+                                @elseif($daysRemaining !== null)
+                                    <span class="text-info ml-2">({{ $daysRemaining }} day{{ $daysRemaining !== 1 ? 's' : '' }} remaining)</span>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 @if($query->response)
                     <div>
                         <label class="kt-label">Officer's Response</label>

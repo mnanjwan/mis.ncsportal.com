@@ -36,6 +36,7 @@ use App\Http\Controllers\AdminRoleAssignmentController;
 use App\Http\Controllers\QueryController;
 use App\Http\Controllers\OfficerQueryController;
 use App\Http\Controllers\InvestigationController;
+use App\Http\Controllers\PrintController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -318,6 +319,13 @@ Route::middleware('auth')->group(function () {
                 Route::get('/aper-forms/countersigning/{id}', [APERFormController::class, 'accessCountersigningForm'])->name('aper-forms.countersigning');
                 Route::post('/aper-forms/{id}/countersigning-officer', [APERFormController::class, 'updateCountersigningOfficer'])->name('aper-forms.update-countersigning-officer');
                 Route::post('/aper-forms/{id}/complete-countersigning-officer', [APERFormController::class, 'completeCountersigningOfficer'])->name('aper-forms.complete-countersigning-officer');
+                
+                // APER Forms - Staff Officer Review (rejection/reassignment)
+                Route::get('/aper-forms/review', [APERFormController::class, 'staffOfficerReviewIndex'])->name('aper-forms.review');
+                Route::get('/aper-forms/review/{id}', [APERFormController::class, 'staffOfficerReviewShow'])->name('aper-forms.review.show');
+                Route::post('/aper-forms/{id}/staff-officer-reject', [APERFormController::class, 'staffOfficerReject'])->name('aper-forms.staff-officer-reject');
+                Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
+                Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
 
                 // Query Management Routes
                 Route::get('/queries', [QueryController::class, 'index'])->name('queries.index');
@@ -572,4 +580,21 @@ Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::post('/submit', [DashboardController::class, 'submitOnboarding'])->name('submit');
     Route::get('/preview', [DashboardController::class, 'onboardingPreview'])->name('preview');
     Route::post('/final-submit', [DashboardController::class, 'finalSubmitOnboarding'])->name('final-submit');
+});
+
+// Print Routes - Available to authenticated users
+Route::prefix('print')->name('print.')->middleware('auth')->group(function () {
+    // Document Prints (from images)
+    Route::get('/internal-staff-order/{id}', [PrintController::class, 'internalStaffOrder'])->name('internal-staff-order');
+    Route::get('/staff-order/{id}', [PrintController::class, 'staffOrder'])->name('staff-order');
+    Route::get('/deployment', [PrintController::class, 'deployment'])->name('deployment');
+    Route::get('/leave-document/{id}', [PrintController::class, 'leaveDocument'])->name('leave-document');
+    Route::get('/pass-document/{id}', [PrintController::class, 'passDocument'])->name('pass-document');
+    Route::get('/retirement-list', [PrintController::class, 'retirementList'])->name('retirement-list');
+    
+    // Report Prints
+    Route::get('/accommodation-report', [PrintController::class, 'accommodationReport'])->name('accommodation-report');
+    Route::get('/service-number-report', [PrintController::class, 'serviceNumberReport'])->name('service-number-report');
+    Route::get('/validated-officers-report', [PrintController::class, 'validatedOfficersReport'])->name('validated-officers-report');
+    Route::get('/interdicted-officers-report', [PrintController::class, 'interdictedOfficersReport'])->name('interdicted-officers-report');
 });

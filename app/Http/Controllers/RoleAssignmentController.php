@@ -475,22 +475,35 @@ class RoleAssignmentController extends Controller
 
         $newRole = Role::findOrFail($validated['role_id']);
 
+        // Get Officer role ID to preserve it (Officer role should always remain active)
+        $officerRole = Role::where('name', 'Officer')->first();
+        $officerRoleId = $officerRole ? $officerRole->id : null;
+
         // Use database transaction to ensure consistency
         DB::beginTransaction();
         try {
             // If role is changing, deactivate ALL old active roles first
             if ($newRole->id != $oldRole->id) {
-                // Deactivate the specific old role being changed
-                $user->roles()->updateExistingPivot($roleId, [
-                    'is_active' => false,
-                ]);
+                // Deactivate the specific old role being changed (unless it's Officer role)
+                if ($roleId != $officerRoleId) {
+                    $user->roles()->updateExistingPivot($roleId, [
+                        'is_active' => false,
+                    ]);
+                }
                 
                 // Also deactivate any other active roles (to ensure only one active role)
                 // This prevents issues if user somehow has multiple active roles
+                // EXCEPT the Officer role which should always remain active
                 $otherActiveRoles = $user->roles()
                     ->wherePivot('is_active', true)
-                    ->where('roles.id', '!=', $newRole->id)
-                    ->get();
+                    ->where('roles.id', '!=', $newRole->id);
+                
+                // Exclude Officer role from deactivation
+                if ($officerRoleId) {
+                    $otherActiveRoles->where('roles.id', '!=', $officerRoleId);
+                }
+                
+                $otherActiveRoles = $otherActiveRoles->get();
                 
                 foreach ($otherActiveRoles as $role) {
                     $user->roles()->updateExistingPivot($role->id, [
@@ -523,10 +536,17 @@ class RoleAssignmentController extends Controller
             } else {
                 // Same role, just update command and status
                 // But still deactivate any other active roles to ensure only one active
+                // EXCEPT the Officer role which should always remain active
                 $otherActiveRoles = $user->roles()
                     ->wherePivot('is_active', true)
-                    ->where('roles.id', '!=', $roleId)
-                    ->get();
+                    ->where('roles.id', '!=', $roleId);
+                
+                // Exclude Officer role from deactivation
+                if ($officerRoleId) {
+                    $otherActiveRoles->where('roles.id', '!=', $officerRoleId);
+                }
+                
+                $otherActiveRoles = $otherActiveRoles->get();
                 
                 foreach ($otherActiveRoles as $role) {
                     $user->roles()->updateExistingPivot($role->id, [
@@ -581,6 +601,16 @@ class RoleAssignmentController extends Controller
     {
         $user = User::findOrFail($userId);
         $role = Role::findOrFail($roleId);
+
+        // Get Officer role ID - Officer role should never be deactivated
+        $officerRole = Role::where('name', 'Officer')->first();
+        $officerRoleId = $officerRole ? $officerRole->id : null;
+
+        // Prevent deactivating the Officer role
+        if ($roleId == $officerRoleId) {
+            return redirect()->back()
+                ->with('error', 'Cannot remove the Officer role. This role must always remain active.');
+        }
 
         // Deactivate instead of deleting
         $user->roles()->updateExistingPivot($roleId, [

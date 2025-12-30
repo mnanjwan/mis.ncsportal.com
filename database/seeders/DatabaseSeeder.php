@@ -21,8 +21,7 @@ class DatabaseSeeder extends Seeder
                 RoleSeeder::class,
                 LeaveTypeSeeder::class,
                 ZoneAndCommandSeeder::class, // New seeder with zones and all commands
-                UserSeeder::class,
-                ComprehensiveSeeder::class,
+                CompleteSystemSeeder::class, // Complete system with all roles and functions active
             ]);
         }
         

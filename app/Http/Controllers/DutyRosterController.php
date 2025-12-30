@@ -143,13 +143,29 @@ class DutyRosterController extends Controller
             abort(403, 'You can only edit rosters for your assigned command');
         }
         
-        // Get officers in the command
-        $officers = \App\Models\Officer::where('present_station', $commandId)
+        // Get all officers in the command
+        $allOfficers = \App\Models\Officer::where('present_station', $commandId)
             ->where('is_active', true)
             ->orderBy('surname')
             ->get();
         
-        return view('forms.roster.edit', compact('roster', 'officers'));
+        // Exclude OIC and 2IC from assignments list
+        $excludedIds = [];
+        if ($roster->oic_officer_id) {
+            $excludedIds[] = $roster->oic_officer_id;
+        }
+        if ($roster->second_in_command_officer_id) {
+            $excludedIds[] = $roster->second_in_command_officer_id;
+        }
+        
+        $officersForAssignments = $allOfficers->reject(function($officer) use ($excludedIds) {
+            return in_array($officer->id, $excludedIds);
+        });
+        
+        // For OIC/2IC dropdowns, use all officers
+        $officers = $allOfficers;
+        
+        return view('forms.roster.edit', compact('roster', 'officers', 'officersForAssignments', 'allOfficers'));
     }
     
     public function update(Request $request, $id)
@@ -179,7 +195,7 @@ class DutyRosterController extends Controller
             'second_in_command_officer_id' => 'nullable|exists:officers,id|different:oic_officer_id',
             'assignments' => 'nullable|array',
             'assignments.*.officer_id' => 'required|exists:officers,id',
-            'assignments.*.duty_date' => 'required|date',
+            'assignments.*.duty_date' => 'nullable|date',
             'assignments.*.shift' => 'nullable|string|max:50',
             'assignments.*.notes' => 'nullable|string|max:500',
         ], [
@@ -213,6 +229,14 @@ class DutyRosterController extends Controller
                 }
             }
             
+            // Include OIC and 2IC in notifications if they're set
+            if ($request->oic_officer_id && !in_array($request->oic_officer_id, $assignedOfficerIds)) {
+                $assignedOfficerIds[] = $request->oic_officer_id;
+            }
+            if ($request->second_in_command_officer_id && !in_array($request->second_in_command_officer_id, $assignedOfficerIds)) {
+                $assignedOfficerIds[] = $request->second_in_command_officer_id;
+            }
+            
             // Delete existing assignments if provided
             if ($request->has('assignments')) {
                 $roster->assignments()->delete();
@@ -222,7 +246,7 @@ class DutyRosterController extends Controller
                     \App\Models\RosterAssignment::create([
                         'roster_id' => $roster->id,
                         'officer_id' => $assignment['officer_id'],
-                        'duty_date' => $assignment['duty_date'],
+                        'duty_date' => !empty($assignment['duty_date']) ? $assignment['duty_date'] : null,
                         'shift' => $assignment['shift'] ?? null,
                         'notes' => $assignment['notes'] ?? null,
                     ]);
@@ -231,17 +255,15 @@ class DutyRosterController extends Controller
             
             // Refresh roster to get updated relationships
             $roster->refresh();
+            $roster->load(['command', 'assignments', 'oicOfficer', 'secondInCommandOfficer']);
             
-            // Notify all assigned officers
-            if (!empty($assignedOfficerIds)) {
-                $notificationService = app(NotificationService::class);
-                $notificationService->notifyDutyRosterAssigned($roster, $assignedOfficerIds);
-            }
+            // Note: No email notifications sent during DRAFT status
+            // Emails will be sent only after approval by DC Admin or Area Controller
             
             DB::commit();
             
             return redirect()->route('staff-officer.roster.show', $roster->id)
-                ->with('success', 'Roster updated successfully! All assigned officers have been notified.');
+                ->with('success', 'Roster updated successfully! Emails will be sent to assigned officers after approval.');
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -286,6 +308,7 @@ class DutyRosterController extends Controller
             
             // Refresh roster to get relationships
             $roster->refresh();
+            $roster->load(['command', 'preparedBy', 'assignments', 'oicOfficer', 'secondInCommandOfficer']);
             
             // Notify DC Admins and Area Controllers
             $notificationService = app(NotificationService::class);
@@ -345,13 +368,26 @@ class DutyRosterController extends Controller
         }
         
         try {
+            DB::beginTransaction();
+            
             $roster->status = 'APPROVED';
             $roster->approved_at = now();
             $roster->save();
             
+            // Refresh roster to load all relationships
+            $roster->refresh();
+            $roster->load(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer']);
+            
+            // Notify Staff Officer and send assignment emails to all officers
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyDutyRosterApproved($roster, $user);
+            
+            DB::commit();
+            
             return redirect()->route('area-controller.roster')
-                ->with('success', 'Roster approved successfully.');
+                ->with('success', 'Roster approved successfully. All assigned officers and Staff Officer have been notified.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Failed to approve roster: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to approve roster: ' . $e->getMessage());
@@ -380,13 +416,26 @@ class DutyRosterController extends Controller
         ]);
         
         try {
+            DB::beginTransaction();
+            
             $roster->status = 'REJECTED';
             $roster->rejection_reason = $request->rejection_reason;
             $roster->save();
             
+            // Refresh roster to load relationships
+            $roster->refresh();
+            $roster->load(['command', 'preparedBy']);
+            
+            // Notify Staff Officer about rejection
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyDutyRosterRejected($roster, $user, $request->rejection_reason);
+            
+            DB::commit();
+            
             return redirect()->route('area-controller.roster')
-                ->with('success', 'Roster rejected.');
+                ->with('success', 'Roster rejected. Staff Officer has been notified.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Failed to reject roster: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to reject roster: ' . $e->getMessage());
@@ -451,13 +500,26 @@ class DutyRosterController extends Controller
         }
         
         try {
+            DB::beginTransaction();
+            
             $roster->status = 'APPROVED';
             $roster->approved_at = now();
             $roster->save();
             
+            // Refresh roster to load all relationships
+            $roster->refresh();
+            $roster->load(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer']);
+            
+            // Notify Staff Officer and send assignment emails to all officers
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyDutyRosterApproved($roster, $user);
+            
+            DB::commit();
+            
             return redirect()->route('dc-admin.roster')
-                ->with('success', 'Roster approved successfully.');
+                ->with('success', 'Roster approved successfully. All assigned officers and Staff Officer have been notified.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Failed to approve roster: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to approve roster: ' . $e->getMessage());
@@ -486,13 +548,26 @@ class DutyRosterController extends Controller
         ]);
         
         try {
+            DB::beginTransaction();
+            
             $roster->status = 'REJECTED';
             $roster->rejection_reason = $request->rejection_reason;
             $roster->save();
             
+            // Refresh roster to load relationships
+            $roster->refresh();
+            $roster->load(['command', 'preparedBy']);
+            
+            // Notify Staff Officer about rejection
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyDutyRosterRejected($roster, $user, $request->rejection_reason);
+            
+            DB::commit();
+            
             return redirect()->route('dc-admin.roster')
-                ->with('success', 'Roster rejected.');
+                ->with('success', 'Roster rejected. Staff Officer has been notified.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Failed to reject roster: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to reject roster: ' . $e->getMessage());

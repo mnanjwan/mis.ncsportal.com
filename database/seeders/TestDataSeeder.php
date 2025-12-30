@@ -196,6 +196,11 @@ class TestDataSeeder extends Seeder
                 'pfa_name' => $pfas[array_rand($pfas)],
                 'rsa_number' => 'PEN' . str_pad($i, 12, '0', STR_PAD_LEFT),
                 'is_active' => true,
+                'profile_picture_url' => 'officers/default.png', // Set placeholder to mark onboarding as complete
+                'onboarding_status' => 'completed',
+                'onboarding_completed_at' => Carbon::now()->subDays(rand(1, 30)), // Completed 1-30 days ago
+                'verification_status' => 'verified',
+                'verified_at' => Carbon::now()->subDays(rand(1, 30)),
             ]);
             
             $officers[] = $officer;

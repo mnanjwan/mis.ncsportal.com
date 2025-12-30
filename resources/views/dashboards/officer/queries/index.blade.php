@@ -74,7 +74,11 @@
                                     </td>
                                     <td class="py-3 px-4">
                                         @if($query->status === 'PENDING_RESPONSE')
-                                            <span class="kt-badge kt-badge-warning">Pending Response</span>
+                                            @if($query->isOverdue())
+                                                <span class="kt-badge kt-badge-danger">Expired</span>
+                                            @else
+                                                <span class="kt-badge kt-badge-warning">Pending Response</span>
+                                            @endif
                                         @elseif($query->status === 'PENDING_REVIEW')
                                             <span class="kt-badge kt-badge-info">Pending Review</span>
                                         @elseif($query->status === 'ACCEPTED')
@@ -84,7 +88,22 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-4">
-                                        {{ $query->issued_at ? $query->issued_at->format('d/m/Y') : 'N/A' }}
+                                        <div>{{ $query->issued_at ? $query->issued_at->format('d/m/Y') : 'N/A' }}</div>
+                                        @if($query->response_deadline && $query->status === 'PENDING_RESPONSE')
+                                            <div class="text-xs text-secondary-foreground mt-1">
+                                                Deadline: {{ $query->response_deadline->format('d/m/Y H:i') }}
+                                                @if($query->isOverdue())
+                                                    <span class="text-danger">(Expired)</span>
+                                                @else
+                                                    @php
+                                                        $hoursRemaining = $query->hoursUntilDeadline();
+                                                    @endphp
+                                                    @if($hoursRemaining !== null && $hoursRemaining < 24)
+                                                        <span class="text-warning">({{ $hoursRemaining }}h left)</span>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4">
                                         <a href="{{ route('officer.queries.show', $query->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
