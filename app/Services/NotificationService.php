@@ -54,7 +54,7 @@ class NotificationService
                     'notification_id' => $notification->id,
                     'error' => $e->getMessage(),
                 ]);
-                
+
                 // Fallback: Try to queue if synchronous sending fails
                 // This helps if there are temporary SMTP issues
                 try {
@@ -170,9 +170,9 @@ class NotificationService
         $users = User::whereHas('roles', function ($query) {
             $query->where('name', 'TRADOC')->where('is_active', true);
         })->where('is_active', true)->get();
-        
+
         $recruitName = "{$recruit->initials} {$recruit->surname}";
-        
+
         return $this->notifyMany(
             $users,
             'new_recruit_created',
@@ -191,16 +191,16 @@ class NotificationService
         $users = User::whereHas('roles', function ($query) {
             $query->where('name', 'Establishment')->where('is_active', true);
         })->where('is_active', true)->get();
-        
+
         $recruitName = trim(($recruit->initials ?? '') . ' ' . ($recruit->surname ?? ''));
-        
+
         // Send email to each Establishment user via job
         foreach ($users as $user) {
             if ($user->email) {
                 \App\Jobs\SendRecruitOnboardingCompletedMailJob::dispatch($recruit, $user, $recruitName);
             }
         }
-        
+
         // Also create in-app notifications
         return $this->notifyMany(
             $users,
@@ -221,7 +221,7 @@ class NotificationService
         $users = User::whereHas('roles', function ($query) {
             $query->where('name', 'TRADOC')->where('is_active', true);
         })->where('is_active', true)->get();
-        
+
         return $this->notifyMany(
             $users,
             'recruits_ready_training',
@@ -290,7 +290,7 @@ class NotificationService
 
         $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
         $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
-        
+
         return $this->notify(
             $officer->user,
             'leave_application_approved',
@@ -357,12 +357,12 @@ class NotificationService
 
         $command = $officer->presentStation;
         $officerName = "{$officer->initials} {$officer->surname}";
-        
+
         // Get DC Admins for the command
-        $dcAdmins = User::whereHas('roles', function($q) {
+        $dcAdmins = User::whereHas('roles', function ($q) {
             $q->where('name', 'DC Admin')
-              ->where('user_roles.is_active', true);
-        })->whereHas('officer', function($q) use ($command) {
+                ->where('user_roles.is_active', true);
+        })->whereHas('officer', function ($q) use ($command) {
             $q->where('present_station', $command->id);
         })->where('is_active', true)->get();
 
@@ -480,11 +480,11 @@ class NotificationService
         $commandName = $command->name;
         $requestedBy = $manningRequest->requestedBy;
         $requestedByName = $requestedBy ? ($requestedBy->name ?? $requestedBy->email) : 'Staff Officer';
-        
+
         // Get Area Controllers (they can approve any manning request)
-        $areaControllers = User::whereHas('roles', function($q) {
+        $areaControllers = User::whereHas('roles', function ($q) {
             $q->where('name', 'Area Controller')
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($areaControllers->isEmpty()) {
@@ -515,11 +515,11 @@ class NotificationService
         }
 
         $commandName = $command->name;
-        
+
         // Get HRD users
-        $hrdUsers = User::whereHas('roles', function($q) {
+        $hrdUsers = User::whereHas('roles', function ($q) {
             $q->where('name', 'HRD')
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($hrdUsers->isEmpty()) {
@@ -569,13 +569,13 @@ class NotificationService
     public function notifyStaffOrderCreated($staffOrder): array
     {
         $notifications = [];
-        
+
         // Notify officer being posted
         $officer = $staffOrder->officer;
         if ($officer && $officer->user) {
             $fromCommand = $staffOrder->fromCommand ? $staffOrder->fromCommand->name : 'Unknown';
             $toCommand = $staffOrder->toCommand ? $staffOrder->toCommand->name : 'Unknown';
-            
+
             $notifications[] = $this->notify(
                 $officer->user,
                 'staff_order_created',
@@ -668,12 +668,12 @@ class NotificationService
         }
 
         $command = $officer->presentStation;
-        
+
         // Get Staff Officers for the command
-        $staffOfficers = User::whereHas('roles', function($q) use ($command) {
+        $staffOfficers = User::whereHas('roles', function ($q) use ($command) {
             $q->where('name', 'Staff Officer')
-              ->where('user_roles.command_id', $command->id)
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.command_id', $command->id)
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($staffOfficers->isEmpty()) {
@@ -705,12 +705,12 @@ class NotificationService
         }
 
         $command = $officer->presentStation;
-        
+
         // Get Staff Officers for the command
-        $staffOfficers = User::whereHas('roles', function($q) use ($command) {
+        $staffOfficers = User::whereHas('roles', function ($q) use ($command) {
             $q->where('name', 'Staff Officer')
-              ->where('user_roles.command_id', $command->id)
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.command_id', $command->id)
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($staffOfficers->isEmpty()) {
@@ -766,12 +766,12 @@ class NotificationService
         }
 
         $command = $officer->presentStation;
-        
+
         // Get Assessors for the command
-        $assessors = User::whereHas('roles', function($q) use ($command) {
+        $assessors = User::whereHas('roles', function ($q) use ($command) {
             $q->where('name', 'Assessor')
-              ->where('user_roles.command_id', $command->id)
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.command_id', $command->id)
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($assessors->isEmpty()) {
@@ -801,7 +801,7 @@ class NotificationService
         }
 
         $officerName = "{$officer->initials} {$officer->surname}";
-        
+
         if ($status === 'APPROVED') {
             $title = 'Emolument Assessed';
             $message = "Your emolument for year {$emolument->year} has been assessed and approved.";
@@ -835,18 +835,18 @@ class NotificationService
 
         $command = $officer->presentStation;
         $officerName = "{$officer->initials} {$officer->surname}";
-        
+
         // Get Validators for the command
-        $validators = User::whereHas('roles', function($q) use ($command) {
+        $validators = User::whereHas('roles', function ($q) use ($command) {
             $q->where('name', 'Validator')
-              ->where('user_roles.command_id', $command->id)
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.command_id', $command->id)
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         // Get Area Controllers (they can validate any emolument, no command restriction)
-        $areaControllers = User::whereHas('roles', function($q) {
+        $areaControllers = User::whereHas('roles', function ($q) {
             $q->where('name', 'Area Controller')
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         $allValidators = $validators->merge($areaControllers)->unique('id');
@@ -876,7 +876,7 @@ class NotificationService
         }
 
         $officerName = "{$officer->initials} {$officer->surname}";
-        
+
         if ($status === 'APPROVED') {
             $title = 'Emolument Validated';
             $message = "Your emolument for year {$emolument->year} has been validated and approved. It is now ready for payment processing.";
@@ -909,11 +909,11 @@ class NotificationService
         }
 
         $officerName = "{$officer->initials} {$officer->surname}";
-        
+
         // Get Accounts users
-        $accountsUsers = User::whereHas('roles', function($q) {
+        $accountsUsers = User::whereHas('roles', function ($q) {
             $q->where('name', 'Accounts')
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($accountsUsers->isEmpty()) {
@@ -1031,10 +1031,10 @@ class NotificationService
         }
 
         // Get Building Unit users for the command (from role pivot command_id)
-        $buildingUnitUsers = User::whereHas('roles', function($q) use ($command) {
+        $buildingUnitUsers = User::whereHas('roles', function ($q) use ($command) {
             $q->where('name', 'Building Unit')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $command->id);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $command->id);
         })->where('is_active', true)->where('id', '!=', $createdBy->id)->get();
 
         if ($buildingUnitUsers->isEmpty()) {
@@ -1068,10 +1068,10 @@ class NotificationService
         $commandId = $officer->present_station;
 
         // Get Building Unit users for the command (from role pivot command_id)
-        $buildingUnitUsers = User::whereHas('roles', function($q) use ($commandId) {
+        $buildingUnitUsers = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'Building Unit')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $commandId);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
 
         if ($buildingUnitUsers->isEmpty()) {
@@ -1146,7 +1146,7 @@ class NotificationService
     {
         $officer = $allocation->officer;
         $quarter = $allocation->quarter;
-        
+
         if (!$officer || !$quarter || !$quarter->command_id) {
             return [];
         }
@@ -1154,10 +1154,10 @@ class NotificationService
         $commandId = $quarter->command_id;
 
         // Get Building Unit users for the command
-        $buildingUnitUsers = User::whereHas('roles', function($q) use ($commandId) {
+        $buildingUnitUsers = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'Building Unit')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $commandId);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
 
         if ($buildingUnitUsers->isEmpty()) {
@@ -1186,7 +1186,7 @@ class NotificationService
     {
         $officer = $allocation->officer;
         $quarter = $allocation->quarter;
-        
+
         if (!$officer || !$quarter || !$quarter->command_id) {
             return [];
         }
@@ -1194,10 +1194,10 @@ class NotificationService
         $commandId = $quarter->command_id;
 
         // Get Building Unit users for the command
-        $buildingUnitUsers = User::whereHas('roles', function($q) use ($commandId) {
+        $buildingUnitUsers = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'Building Unit')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $commandId);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
 
         if ($buildingUnitUsers->isEmpty()) {
@@ -1673,23 +1673,23 @@ class NotificationService
         $serviceNumber = $officer->service_number ?? 'N/A';
 
         // Get Area Controller for this command
-        $areaControllers = User::whereHas('roles', function($q) use ($commandId) {
+        $areaControllers = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'Area Controller')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $commandId);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
         })->get();
 
         // Get DC Admin for this command
-        $dcAdmins = User::whereHas('roles', function($q) use ($commandId) {
+        $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'DC Admin')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $commandId);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
         })->get();
 
         // Get all HRD users
-        $hrdUsers = User::whereHas('roles', function($q) {
+        $hrdUsers = User::whereHas('roles', function ($q) {
             $q->where('name', 'HRD')
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.is_active', true);
         })->get();
 
         // Notify Area Controllers (email + in-app)
@@ -1823,6 +1823,43 @@ class NotificationService
     }
 
     /**
+     * Notify officer about query deadline approaching (24 hours before)
+     */
+    public function notifyQueryDeadlineReminder($query, $hoursRemaining): ?Notification
+    {
+        $officer = $query->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $issuedDate = $query->issued_at ? \Carbon\Carbon::parse($query->issued_at)->format('d/m/Y') : 'N/A';
+        $deadlineDate = $query->response_deadline ? \Carbon\Carbon::parse($query->response_deadline)->format('d/m/Y H:i') : 'N/A';
+        $issuedBy = $query->issuedBy;
+        $issuedByName = $issuedBy ? ($issuedBy->name ?? $issuedBy->email) : 'Staff Officer';
+
+        // Create in-app notification
+        $notification = $this->notify(
+            $officer->user,
+            'query_deadline_reminder',
+            'Query Response Deadline Approaching',
+            "REMINDER: You have approximately {$hoursRemaining} hours remaining to respond to the query issued by {$issuedByName} on {$issuedDate}. Deadline: {$deadlineDate}. If you do not respond before the deadline, this query will be automatically accepted and added to your disciplinary record.",
+            'query',
+            $query->id,
+            true // Send email for reminders
+        );
+
+        Log::info('Query deadline reminder notification sent', [
+            'query_id' => $query->id,
+            'officer_id' => $query->officer_id,
+            'user_id' => $officer->user->id,
+            'hours_remaining' => $hoursRemaining,
+        ]);
+
+        return $notification;
+    }
+
+
+    /**
      * Notify officers assigned to duty roster
      */
     public function notifyDutyRosterAssigned($roster, array $assignedOfficerIds): array
@@ -1832,7 +1869,7 @@ class NotificationService
         $commandName = $command ? $command->name : 'your command';
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
-        
+
         // Get OIC and 2IC names if set
         $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
         $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
@@ -1862,7 +1899,7 @@ class NotificationService
 
             $message = "You have been assigned to the duty roster for {$commandName} as {$role}. ";
             $message .= "Period: {$periodStart} to {$periodEnd}. ";
-            
+
             if ($role === 'Officer in Charge (OIC)') {
                 $message .= "You are the Officer in Charge for this roster period.";
             } elseif ($role === 'Second In Command (2IC)') {
@@ -1941,16 +1978,16 @@ class NotificationService
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
         $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
-        
+
         // Get OIC and 2IC names if set
         $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
         $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
 
         // Get DC Admins for the command
-        $dcAdmins = User::whereHas('roles', function($q) use ($commandId) {
+        $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'DC Admin')
-              ->where('user_roles.is_active', true)
-              ->where('user_roles.command_id', $commandId);
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
 
         if ($dcAdmins->isEmpty()) {
@@ -2020,15 +2057,15 @@ class NotificationService
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
         $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
-        
+
         // Get OIC and 2IC names if set
         $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
         $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
 
         // Get Area Controllers (they can approve any roster)
-        $areaControllers = User::whereHas('roles', function($q) {
+        $areaControllers = User::whereHas('roles', function ($q) {
             $q->where('name', 'Area Controller')
-              ->where('user_roles.is_active', true);
+                ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
         if ($areaControllers->isEmpty()) {
@@ -2109,16 +2146,16 @@ class NotificationService
         $commandName = $command ? $command->name : 'Unknown Command';
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
-        
+
         $approvedByName = $approvedBy ? ($approvedBy->name ?? $approvedBy->email) : 'Approver';
         $staffOfficer = $roster->preparedBy;
-        
+
         $notifications = [];
 
         // Notify Staff Officer about approval
         if ($staffOfficer) {
             $message = "Your duty roster for {$commandName} has been approved by {$approvedByName}. Period: {$periodStart} to {$periodEnd}. All assigned officers have been notified.";
-            
+
             $notification = $this->notify(
                 $staffOfficer,
                 'duty_roster_approved',
@@ -2157,17 +2194,17 @@ class NotificationService
 
         // Send assignment emails to all assigned officers (OIC, 2IC, and regular officers)
         $allOfficerIds = [];
-        
+
         // Add OIC if set
         if ($roster->oic_officer_id) {
             $allOfficerIds[] = $roster->oic_officer_id;
         }
-        
+
         // Add 2IC if set
         if ($roster->second_in_command_officer_id) {
             $allOfficerIds[] = $roster->second_in_command_officer_id;
         }
-        
+
         // Add officers from assignments
         if ($roster->assignments) {
             foreach ($roster->assignments as $assignment) {
@@ -2198,7 +2235,7 @@ class NotificationService
 
             $message = "You have been assigned to the duty roster for {$commandName} as {$role}. ";
             $message .= "Period: {$periodStart} to {$periodEnd}. ";
-            
+
             if ($role === 'Officer in Charge (OIC)') {
                 $message .= "You are the Officer in Charge for this roster period.";
             } elseif ($role === 'Second In Command (2IC)') {
@@ -2278,15 +2315,15 @@ class NotificationService
         $commandName = $command ? $command->name : 'Unknown Command';
         $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
         $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
-        
+
         $rejectedByName = $rejectedBy ? ($rejectedBy->name ?? $rejectedBy->email) : 'Approver';
         $staffOfficer = $roster->preparedBy;
-        
+
         $notifications = [];
 
         if ($staffOfficer) {
             $message = "Your duty roster for {$commandName} has been rejected by {$rejectedByName}. Period: {$periodStart} to {$periodEnd}. Reason: {$rejectionReason}";
-            
+
             $notification = $this->notify(
                 $staffOfficer,
                 'duty_roster_rejected',

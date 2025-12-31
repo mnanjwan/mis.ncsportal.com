@@ -129,7 +129,15 @@ class Query extends Model
         if (!$this->response_deadline) {
             return null;
         }
-        return now()->diffInDays($this->response_deadline, false);
+        
+        // If deadline has passed, return null
+        if (now()->greaterThanOrEqualTo($this->response_deadline)) {
+            return null;
+        }
+        
+        // Use diffInDays with absolute value and round up to show at least 1 day if any time remains
+        $days = now()->diffInDays($this->response_deadline, false);
+        return $days >= 0 ? max(1, (int)ceil($days)) : null;
     }
 
     /**
@@ -140,6 +148,38 @@ class Query extends Model
         if (!$this->response_deadline) {
             return null;
         }
-        return now()->diffInHours($this->response_deadline, false);
+        
+        // If deadline has passed, return null
+        if (now()->greaterThanOrEqualTo($this->response_deadline)) {
+            return null;
+        }
+        
+        // Get minutes remaining and convert to hours (rounded up)
+        $minutesRemaining = (int)now()->diffInMinutes($this->response_deadline, false);
+        
+        if ($minutesRemaining <= 0) {
+            return null;
+        }
+        
+        // Convert minutes to hours, rounding up (e.g., 59 minutes = 1 hour)
+        return (int)ceil($minutesRemaining / 60);
+    }
+    
+    /**
+     * Get minutes remaining until deadline
+     */
+    public function minutesUntilDeadline(): ?int
+    {
+        if (!$this->response_deadline) {
+            return null;
+        }
+        
+        // If deadline has passed, return null
+        if (now()->greaterThanOrEqualTo($this->response_deadline)) {
+            return null;
+        }
+        
+        $minutes = (int)now()->diffInMinutes($this->response_deadline, false);
+        return $minutes > 0 ? $minutes : null;
     }
 }

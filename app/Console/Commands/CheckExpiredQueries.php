@@ -32,7 +32,7 @@ class CheckExpiredQueries extends Command
     {
         $startTime = microtime(true);
         $this->info('Checking for expired queries...');
-        
+
         Log::info('Query expiration check started', [
             'timestamp' => now()->toDateTimeString(),
             'command' => 'queries:check-expired',
@@ -52,22 +52,22 @@ class CheckExpiredQueries extends Command
 
         if ($expiredQueries->isEmpty()) {
             $this->info('No expired queries found.');
-            
+
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
             Log::info('Query expiration check completed - no expired queries', [
                 'execution_time_ms' => $executionTime,
                 'timestamp' => now()->toDateTimeString(),
             ]);
-            
+
             return 0;
         }
 
         $this->info("Found {$expiredQueries->count()} expired query/queries.");
-        
+
         // Log details of all expired queries found
         Log::info('Query expiration check - expired queries details', [
             'count' => $expiredQueries->count(),
-            'queries' => $expiredQueries->map(function($query) {
+            'queries' => $expiredQueries->map(function ($query) {
                 return [
                     'id' => $query->id,
                     'officer_id' => $query->officer_id,
@@ -88,7 +88,7 @@ class CheckExpiredQueries extends Command
         foreach ($expiredQueries as $query) {
             try {
                 $queryStartTime = microtime(true);
-                
+
                 Log::info('Processing expired query', [
                     'query_id' => $query->id,
                     'officer_id' => $query->officer_id,
@@ -97,17 +97,19 @@ class CheckExpiredQueries extends Command
                     'status_before' => $query->status,
                 ]);
 
+                // Update query status to ACCEPTED in a tight transaction to prevent deadlocks
                 DB::beginTransaction();
 
-                // Update query status to ACCEPTED (automatically added to disciplinary record)
                 $query->update([
                     'status' => 'ACCEPTED',
                     'reviewed_at' => now(),
                 ]);
 
+                DB::commit();
+
                 $query->refresh();
 
-                // Send notification to officer about automatic expiration
+                // Send notifications AFTER transaction commit to avoid holding locks during email operations
                 $notificationSent = false;
                 if ($query->officer && $query->officer->user) {
                     try {
@@ -120,10 +122,12 @@ class CheckExpiredQueries extends Command
                             'user_email' => $query->officer->user->email,
                         ]);
                     } catch (\Exception $notifException) {
+                        // Log but don't fail the expiration process if notification fails
                         Log::warning('Failed to send query expiration notification', [
                             'query_id' => $query->id,
                             'officer_id' => $query->officer_id,
                             'error' => $notifException->getMessage(),
+                            'error_trace' => $notifException->getTraceAsString(),
                         ]);
                     }
                 } else {
@@ -133,11 +137,9 @@ class CheckExpiredQueries extends Command
                     ]);
                 }
 
-                DB::commit();
-
                 $expiredCount++;
                 $queryExecutionTime = round((microtime(true) - $queryStartTime) * 1000, 2);
-                
+
                 $this->info("Expired query #{$query->id} for officer {$query->officer->initials} {$query->officer->surname}");
 
                 Log::info('Query expired successfully', [
@@ -156,9 +158,9 @@ class CheckExpiredQueries extends Command
             } catch (\Exception $e) {
                 DB::rollBack();
                 $failedCount++;
-                
+
                 $this->error("Failed to expire query #{$query->id}: {$e->getMessage()}");
-                
+
                 Log::error('Failed to expire query', [
                     'query_id' => $query->id,
                     'officer_id' => $query->officer_id,
@@ -171,9 +173,9 @@ class CheckExpiredQueries extends Command
         }
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-        
+
         $this->info("Successfully expired {$expiredCount} query/queries.");
-        
+
         if ($failedCount > 0) {
             $this->warn("Failed to expire {$failedCount} query/queries.");
         }

@@ -80,10 +80,13 @@
                                 <span class="text-danger ml-2">(Expired)</span>
                             @elseif($query->status === 'PENDING_RESPONSE')
                                 @php
+                                    $minutesRemaining = $query->minutesUntilDeadline();
                                     $hoursRemaining = $query->hoursUntilDeadline();
                                     $daysRemaining = $query->daysUntilDeadline();
                                 @endphp
-                                @if($hoursRemaining !== null && $hoursRemaining < 24)
+                                @if($minutesRemaining !== null && $minutesRemaining < 60)
+                                    <span class="text-danger ml-2">({{ $minutesRemaining }} minute{{ $minutesRemaining !== 1 ? 's' : '' }} remaining)</span>
+                                @elseif($hoursRemaining !== null && $hoursRemaining < 24)
                                     <span class="text-warning ml-2">({{ $hoursRemaining }} hour{{ $hoursRemaining !== 1 ? 's' : '' }} remaining)</span>
                                 @elseif($daysRemaining !== null)
                                     <span class="text-info ml-2">({{ $daysRemaining }} day{{ $daysRemaining !== 1 ? 's' : '' }} remaining)</span>

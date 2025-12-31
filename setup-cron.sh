@@ -78,3 +78,4 @@ echo "  1. Wait a minute and check: php artisan schedule:list"
 echo "  2. Check logs: tail -f storage/logs/laravel.log"
 echo "  3. Manually run: php artisan schedule:run"
 
+

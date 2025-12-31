@@ -50,3 +50,8 @@ Schedule::command('aper:manage-timeline')
 // Run every 3 minutes to ensure timely expiration
 Schedule::command('queries:check-expired')
     ->everyThreeMinutes();
+
+// Query deadline reminders - send reminders to officers 24 hours before deadline
+// Run every 6 hours to catch queries approaching deadline
+Schedule::command('queries:send-reminders')
+    ->everySixHours();

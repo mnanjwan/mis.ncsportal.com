@@ -7,6 +7,7 @@ This document lists all scheduled tasks configured in the application.
 | Task | Frequency | Time | Command/Job |
 |------|-----------|------|-------------|
 | Query Expiration Check | Every 3 minutes | - | `queries:check-expired` |
+| Query Deadline Reminders | Every 6 hours | - | `queries:send-reminders` |
 | Leave Expiry Alerts | Hourly | - | `SendLeaveExpiryAlertsJob` |
 | Pass Expiry Alerts | Hourly | - | `SendPassExpiryAlertsJob` |
 | Retirement Checks | Daily | 08:00 | `CheckRetirementJob` |
@@ -23,10 +24,23 @@ This document lists all scheduled tasks configured in the application.
 - **Purpose**: Automatically expires queries that have passed their response deadline
 - **Actions**:
   - Finds queries with `status = 'PENDING_RESPONSE'` and `response_deadline <= now()`
-  - Updates status to `ACCEPTED`
+  - Updates status to `ACCEPTED` in a tight transaction to prevent deadlocks
   - Sets `reviewed_at` timestamp
-  - Sends notification to officer
-  - Notifies authorities (Area Controller, DC Admin, HRD)
+  - Sends notification to officer (after transaction commit)
+  - Notifies authorities (Area Controller, DC Admin, HRD) after transaction
+- **Improvements**:
+  - Notifications sent AFTER database commit to avoid holding locks
+  - Enhanced error handling with detailed logging
+
+### 1a. Query Deadline Reminders
+- **Command**: `php artisan queries:send-reminders`
+- **Frequency**: Every 6 hours
+- **Purpose**: Sends reminder notifications to officers 24 hours before query deadline
+- **Actions**:
+  - Finds queries with deadline within next 24 hours
+  - Sends email + in-app notification to remind officers
+  - Prevents queries from being forgotten until they expire
+  - Logs all reminder activities
 
 ### 2. Leave Expiry Alerts
 - **Job**: `SendLeaveExpiryAlertsJob`
@@ -79,6 +93,9 @@ php artisan schedule:run
 ```bash
 # Query expiration
 php artisan queries:check-expired
+
+# Query reminders
+php artisan queries:send-reminders
 
 # Retirement alerts
 php artisan retirement:check-alerts

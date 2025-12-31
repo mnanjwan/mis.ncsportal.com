@@ -24,15 +24,15 @@ class QueryController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return redirect()->route('dashboard')->with('error', 'Command not found for Staff Officer role.');
         }
@@ -63,15 +63,15 @@ class QueryController extends Controller
     public function create()
     {
         $user = auth()->user();
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return redirect()->route('dashboard')->with('error', 'Command not found for Staff Officer role.');
         }
@@ -94,19 +94,27 @@ class QueryController extends Controller
         $request->validate([
             'officer_id' => 'required|exists:officers,id',
             'reason' => 'required|string|min:10',
-            'response_deadline' => 'required|date|after:now',
+            'response_deadline' => [
+                'required',
+                'date',
+                // 'after:+24 hours',
+                'before:+30 days'
+            ],
+        ], [
+            // 'response_deadline.after' => 'Response deadline must be at least 24 hours from now.',
+            'response_deadline.before' => 'Response deadline cannot exceed 30 days from now.',
         ]);
 
         $user = auth()->user();
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return redirect()->back()->with('error', 'Command not found for Staff Officer role.')->withInput();
         }
@@ -167,21 +175,21 @@ class QueryController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return redirect()->route('dashboard')->with('error', 'Command not found for Staff Officer role.');
         }
 
         $query = Query::with(['officer', 'issuedBy'])
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->findOrFail($id);
@@ -199,21 +207,21 @@ class QueryController extends Controller
         ]);
 
         $user = auth()->user();
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return redirect()->back()->with('error', 'Command not found for Staff Officer role.');
         }
 
         $query = Query::with(['officer', 'issuedBy'])
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->findOrFail($id);
@@ -268,21 +276,21 @@ class QueryController extends Controller
     public function reject(Request $request, $id)
     {
         $user = auth()->user();
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return redirect()->back()->with('error', 'Command not found for Staff Officer role.');
         }
 
         $query = Query::with(['officer', 'issuedBy'])
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->findOrFail($id);
