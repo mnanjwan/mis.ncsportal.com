@@ -57,10 +57,21 @@
                     class="flex gap-3">
                     <input type="text" name="search" class="kt-input flex-1"
                         placeholder="Search by service number, name, or email..." value="{{ request('search') }}">
+                    @if(request('filter') === 'subordinates')
+                        <input type="hidden" name="filter" value="subordinates">
+                    @endif
                     <button type="submit" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-magnifier"></i> Search
                     </button>
                 </form>
+                @if(request('filter') === 'subordinates')
+                    <div class="mt-3 pt-3 border-t border-border">
+                        <a href="{{ auth()->user()->hasRole('Staff Officer') || auth()->user()->hasRole('HRD') ? route('staff-officer.aper-forms.reporting-officer.search', ['search' => request('search')]) : route('officer.aper-forms.search-officers', ['search' => request('search')]) }}" 
+                           class="text-sm text-primary hover:underline inline-flex items-center gap-1">
+                            <i class="ki-filled ki-cross"></i> Clear Filter (Show All Officers)
+                        </a>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -100,7 +111,10 @@
                                         <td class="py-3 px-4">
                                             <div class="flex flex-col gap-1">
                                                 @if($officer->is_subordinate)
-                                                    <span class="kt-badge kt-badge-success kt-badge-sm w-fit">My Subordinate</span>
+                                                    <a href="{{ (auth()->user()->hasRole('Staff Officer') || auth()->user()->hasRole('HRD')) ? route('staff-officer.aper-forms.reporting-officer.search', ['filter' => 'subordinates']) : route('officer.aper-forms.search-officers', ['filter' => 'subordinates']) }}" 
+                                                       class="kt-badge kt-badge-success kt-badge-sm w-fit hover:opacity-80 transition-opacity cursor-pointer">
+                                                        My Subordinate
+                                                    </a>
                                                 @endif
                                                 @if(isset($officer->roster_role) && $officer->roster_role)
                                                     <span

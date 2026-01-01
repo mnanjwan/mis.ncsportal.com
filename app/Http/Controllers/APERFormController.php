@@ -345,6 +345,11 @@ class APERFormController extends Controller
         // 2. Query officers in the command
         $query = Officer::where('present_station', $commandId);
 
+        // Filter by subordinates if requested
+        if ($request->filled('filter') && $request->filter === 'subordinates' && !empty($subordinateIds)) {
+            $query->whereIn('id', $subordinateIds);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
