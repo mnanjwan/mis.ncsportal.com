@@ -342,7 +342,7 @@ class DutyRosterController extends Controller
         $oldOfficerIds = array_merge($oldOfficerIds, $oldAssignments);
         $oldOfficerIds = array_unique($oldOfficerIds);
         
-        $request->validate([
+        $validator = \Validator::make($request->all(), [
             'unit' => 'nullable|string|max:255',
             'unit_custom' => 'nullable|string|max:255|required_if:unit,__NEW__',
             'oic_officer_id' => 'nullable|exists:officers,id',
@@ -354,6 +354,52 @@ class DutyRosterController extends Controller
             'second_in_command_officer_id.different' => 'The Second In Command (2IC) cannot be the same as the Officer in Charge (OIC).',
             'unit_custom.required_if' => 'Please enter a unit name when creating a new unit.',
         ]);
+        
+        // Customize assignment validation messages to be more descriptive
+        if ($validator->fails()) {
+            $errors = $validator->errors();
+            $messagesToRemove = [];
+            $messagesToAdd = [];
+            
+            foreach ($errors->messages() as $key => $messages) {
+                // Check if this is an assignment officer_id required error
+                if (preg_match('/^assignments\.(\d+)\.officer_id$/', $key, $matches)) {
+                    $assignmentIndex = (int)$matches[1];
+                    $assignmentNumber = $assignmentIndex + 1; // Convert 0-based to 1-based
+                    
+                    // Replace the default message with a more descriptive one
+                    $messagesToRemove[] = $key;
+                    $messagesToAdd[$key] = ["Assignment #{$assignmentNumber}: Please select an officer for this assignment."];
+                }
+                // Check if this is an assignment shift max length error
+                elseif (preg_match('/^assignments\.(\d+)\.shift$/', $key, $matches)) {
+                    $assignmentIndex = (int)$matches[1];
+                    $assignmentNumber = $assignmentIndex + 1;
+                    
+                    // Check if it's a max length error
+                    foreach ($messages as $message) {
+                        if (strpos($message, 'may not be greater than') !== false || strpos($message, 'may not exceed') !== false) {
+                            $messagesToRemove[] = $key;
+                            $messagesToAdd[$key] = ["Assignment #{$assignmentNumber}: The shift description cannot exceed 50 characters."];
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Remove old messages and add new ones
+            foreach ($messagesToRemove as $key) {
+                $errors->forget($key);
+            }
+            foreach ($messagesToAdd as $key => $newMessages) {
+                foreach ($newMessages as $message) {
+                    $errors->add($key, $message);
+                }
+            }
+            
+            // Throw validation exception with customized messages
+            throw new \Illuminate\Validation\ValidationException($validator);
+        }
         
         // Additional validation: OIC cannot be 2IC
         if ($request->oic_officer_id && $request->second_in_command_officer_id && 

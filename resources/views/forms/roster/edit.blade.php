@@ -95,16 +95,26 @@
                 <div class="flex flex-col gap-1">
                     <label class="kt-form-label font-normal text-mono">Unit/Title</label>
                     <div class="flex gap-2">
-                        <select class="kt-input flex-1" name="unit" id="unit-select-edit">
+                        @php
+                            $oldUnit = old('unit', $roster->unit);
+                            $isNewUnit = $oldUnit === '__NEW__' || (!isset($allUnits) || !in_array($oldUnit, $allUnits)) && $oldUnit;
+                        @endphp
+                        <select class="kt-input flex-1 {{ $errors->has('unit') || $errors->has('unit_custom') ? 'border-danger' : '' }}" name="unit" id="unit-select-edit">
                             <option value="">Select Unit</option>
                             @if(isset($allUnits) && count($allUnits) > 0)
                                 @foreach($allUnits as $unit)
-                                    <option value="{{ $unit }}" {{ $roster->unit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
+                                    <option value="{{ $unit }}" {{ $oldUnit === $unit ? 'selected' : '' }}>{{ $unit }}</option>
                                 @endforeach
                             @endif
-                            <option value="__NEW__" {{ !isset($allUnits) || !in_array($roster->unit, $allUnits) && $roster->unit ? 'selected' : '' }}>➕ Create New Unit</option>
+                            <option value="__NEW__" {{ $isNewUnit ? 'selected' : '' }}>➕ Create New Unit</option>
                         </select>
-                        <input type="text" class="kt-input flex-1 {{ (isset($allUnits) && in_array($roster->unit, $allUnits)) || !$roster->unit ? 'hidden' : '' }}" name="unit_custom" id="unit-custom-input-edit" placeholder="Enter new unit name" value="{{ (!isset($allUnits) || !in_array($roster->unit, $allUnits)) && $roster->unit ? $roster->unit : old('unit_custom') }}"/>
+                        <input type="text" class="kt-input flex-1 {{ $isNewUnit ? '' : 'hidden' }} {{ $errors->has('unit_custom') ? 'border-danger' : '' }}" name="unit_custom" id="unit-custom-input-edit" placeholder="Enter new unit name" value="{{ old('unit_custom', $isNewUnit && $roster->unit ? $roster->unit : '') }}"/>
+                        @if($errors->has('unit'))
+                            <p class="text-xs text-danger mt-1">{{ $errors->first('unit') }}</p>
+                        @endif
+                        @if($errors->has('unit_custom'))
+                            <p class="text-xs text-danger mt-1">{{ $errors->first('unit_custom') }}</p>
+                        @endif
                     </div>
                     <p class="text-xs text-secondary-foreground mt-1">Select a unit from the list or create a new one</p>
                 </div>
@@ -158,20 +168,27 @@
                                     Officer in Charge (OIC) <span class="text-danger">*</span>
                                 </label>
                                 <div class="relative">
-                                    <input type="hidden" name="oic_officer_id" id="oic_officer_id" value="{{ $roster->oic_officer_id }}" required>
+                                    @php
+                                        $oldOicId = old('oic_officer_id', $roster->oic_officer_id);
+                                        $oicOfficer = $oldOicId ? \App\Models\Officer::find($oldOicId) : ($roster->oicOfficer ?? null);
+                                    @endphp
+                                    <input type="hidden" name="oic_officer_id" id="oic_officer_id" value="{{ $oldOicId }}" required>
                                     <button type="button" 
                                             id="oic_select_trigger" 
-                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('oic_officer_id') ? 'border-danger' : '' }}"
                                             {{ !$commandId ? 'disabled' : '' }}>
                                         <span id="oic_select_text">
-                                            @if($roster->oic_officer_id && $roster->oicOfficer)
-                                                {{ $roster->oicOfficer->initials }} {{ $roster->oicOfficer->surname }} ({{ $roster->oicOfficer->service_number }})
+                                            @if($oldOicId && $oicOfficer)
+                                                {{ $oicOfficer->initials }} {{ $oicOfficer->surname }} ({{ $oicOfficer->service_number }})
                                             @else
                                                 {{ $commandId ? 'Select OIC' : 'Select command first, then choose OIC...' }}
                                             @endif
                                         </span>
                                         <i class="ki-filled ki-down text-gray-400"></i>
                                     </button>
+                                    @if($errors->has('oic_officer_id'))
+                                        <p class="text-xs text-danger mt-1">{{ $errors->first('oic_officer_id') }}</p>
+                                    @endif
                                     <div id="oic_dropdown" 
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
                                         <!-- Search Box -->
@@ -201,20 +218,27 @@
                                     Second In Command (2IC)
                                 </label>
                                 <div class="relative">
-                                    <input type="hidden" name="second_in_command_officer_id" id="second_in_command_officer_id" value="{{ $roster->second_in_command_officer_id }}">
+                                    @php
+                                        $old2icId = old('second_in_command_officer_id', $roster->second_in_command_officer_id);
+                                        $secondIcOfficer = $old2icId ? \App\Models\Officer::find($old2icId) : ($roster->secondInCommandOfficer ?? null);
+                                    @endphp
+                                    <input type="hidden" name="second_in_command_officer_id" id="second_in_command_officer_id" value="{{ $old2icId }}">
                                     <button type="button" 
                                             id="second_ic_select_trigger" 
-                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('second_in_command_officer_id') ? 'border-danger' : '' }}"
                                             {{ !$commandId ? 'disabled' : '' }}>
                                         <span id="second_ic_select_text">
-                                            @if($roster->second_in_command_officer_id && $roster->secondInCommandOfficer)
-                                                {{ $roster->secondInCommandOfficer->initials }} {{ $roster->secondInCommandOfficer->surname }} ({{ $roster->secondInCommandOfficer->service_number }})
+                                            @if($old2icId && $secondIcOfficer)
+                                                {{ $secondIcOfficer->initials }} {{ $secondIcOfficer->surname }} ({{ $secondIcOfficer->service_number }})
                                             @else
                                                 {{ $commandId ? 'Select 2IC (Optional)' : 'Select command first, then choose 2IC...' }}
                                             @endif
                                         </span>
                                         <i class="ki-filled ki-down text-gray-400"></i>
                                     </button>
+                                    @if($errors->has('second_in_command_officer_id'))
+                                        <p class="text-xs text-danger mt-1">{{ $errors->first('second_in_command_officer_id') }}</p>
+                                    @endif
                                     <div id="second_ic_dropdown" 
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
                                         <!-- Search Box -->
@@ -253,9 +277,24 @@
                         </button>
                     </div>
                 <div id="assignments-container" class="space-y-4">
-                    @if($roster->assignments->count() > 0)
-                        @foreach($roster->assignments as $index => $assignment)
-                            <div class="kt-card shadow-none bg-muted/30 border border-input" data-assignment-index="{{ $index }}">
+                    @php
+                        // Get old assignments from form submission if validation failed
+                        $oldAssignments = old('assignments', []);
+                        $hasOldAssignments = !empty($oldAssignments);
+                        
+                        // Use old assignments if available, otherwise use saved assignments
+                        $assignmentsToRender = $hasOldAssignments ? $oldAssignments : $roster->assignments->toArray();
+                    @endphp
+                    @if(!empty($assignmentsToRender))
+                        @foreach($assignmentsToRender as $index => $assignment)
+                            @php
+                                // Handle both old input format and saved assignment format
+                                $officerId = is_array($assignment) ? ($assignment['officer_id'] ?? null) : ($assignment->officer_id ?? null);
+                                $shift = is_array($assignment) ? ($assignment['shift'] ?? '') : ($assignment->shift ?? '');
+                                $officer = $officerId ? \App\Models\Officer::find($officerId) : null;
+                                $hasError = $errors->has("assignments.{$index}.officer_id") || $errors->has("assignments.{$index}.shift");
+                            @endphp
+                            <div class="kt-card shadow-none bg-muted/30 border {{ $hasError ? 'border-danger' : 'border-input' }}" data-assignment-index="{{ $index }}">
                                 <div class="kt-card-content p-4 space-y-4">
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm font-semibold text-mono">Assignment #{{ $index + 1 }}</span>
@@ -270,21 +309,24 @@
                                                 <input type="hidden" 
                                                         name="assignments[{{ $index }}][officer_id]" 
                                                         id="assignment-officer-{{ $index }}"
-                                                       value="{{ $assignment->officer_id }}"
+                                                       value="{{ $officerId }}"
                                                         required>
                                                 <button type="button" 
                                                         id="assignment-officer-{{ $index }}-trigger" 
-                                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer assignment-officer-trigger"
+                                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer assignment-officer-trigger {{ $errors->has("assignments.{$index}.officer_id") ? 'border-danger' : '' }}"
                                                         {{ !$commandId ? 'disabled' : '' }}>
                                                     <span id="assignment-officer-{{ $index }}-text">
-                                                        @if($assignment->officer_id && $assignment->officer)
-                                                            {{ $assignment->officer->initials }} {{ $assignment->officer->surname }} ({{ $assignment->officer->service_number }})
+                                                        @if($officerId && $officer)
+                                                            {{ $officer->initials }} {{ $officer->surname }} ({{ $officer->service_number }})
                                                         @else
                                                             {{ $commandId ? 'Select Officer' : 'Select command first, then choose officer...' }}
                                                         @endif
                                                     </span>
                                                     <i class="ki-filled ki-down text-gray-400"></i>
                                                 </button>
+                                                @if($errors->has("assignments.{$index}.officer_id"))
+                                                    <p class="text-xs text-danger mt-1">{{ $errors->first("assignments.{$index}.officer_id") }}</p>
+                                                @endif
                                                 <div id="assignment-officer-{{ $index }}-dropdown" 
                                                      class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden assignment-officer-dropdown">
                                                     <!-- Search Box -->
@@ -309,8 +351,11 @@
                                         </div>
                                         <div class="flex flex-col gap-1">
                                             <label class="kt-form-label font-normal text-mono text-xs">Shift</label>
-                                            <input type="text" class="kt-input" name="assignments[{{ $index }}][shift]" 
-                                                   value="{{ $assignment->shift }}" placeholder="e.g., Morning, Evening, Night"/>
+                                            <input type="text" class="kt-input {{ $errors->has("assignments.{$index}.shift") ? 'border-danger' : '' }}" name="assignments[{{ $index }}][shift]" 
+                                                   value="{{ $shift }}" placeholder="e.g., Morning, Evening, Night"/>
+                                            @if($errors->has("assignments.{$index}.shift"))
+                                                <p class="text-xs text-danger mt-1">{{ $errors->first("assignments.{$index}.shift") }}</p>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -364,7 +409,11 @@
 
 @push('scripts')
 <script>
-let assignmentCount = {{ $roster->assignments->count() }};
+@php
+    $oldAssignments = old('assignments', []);
+    $assignmentCount = !empty($oldAssignments) ? count($oldAssignments) : $roster->assignments->count();
+@endphp
+let assignmentCount = {{ $assignmentCount }};
 const allOfficers = @json($allOfficers ?? $officers);
 const periodStart = '{{ $roster->roster_period_start->format('Y-m-d') }}';
 const periodEnd = '{{ $roster->roster_period_end->format('Y-m-d') }}';
@@ -1072,11 +1121,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load officers if command is already selected
     if (initialCommandId) {
         isInitialLoad = true;
-        loadOfficersByCommand(initialCommandId);
+        loadOfficersByCommand(initialCommandId).then(() => {
+            // Restore OIC/2IC selections after officers are loaded
+            restoreOfficerSelections();
+        }).catch(() => {
+            // Still try to restore even if load fails
+            restoreOfficerSelections();
+        });
+    } else {
+        // Still try to restore if we have old input
+        restoreOfficerSelections();
     }
     
     // Initialize assignment dropdowns
     setupAssignmentOfficerDropdowns();
+    
+    // Restore assignment officer selections from old input
+    restoreAssignmentOfficerSelections();
     
     // Toggle dropdowns for OIC and 2IC
     document.getElementById('oic_select_trigger')?.addEventListener('click', function(e) {
@@ -1120,11 +1181,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Restore officer selections from old input
+    function restoreOfficerSelections() {
+        // Restore OIC
+        const oicId = document.getElementById('oic_officer_id')?.value;
+        if (oicId) {
+            // Try to find in officers array first (loaded by command)
+            let oicOfficer = officers.find(o => o.id == oicId);
+            // If not found, try allOfficers array
+            if (!oicOfficer && allOfficers.length > 0) {
+                oicOfficer = allOfficers.find(o => o.id == oicId);
+            }
+            if (oicOfficer) {
+                const oicText = document.getElementById('oic_select_text');
+                if (oicText) {
+                    const officerName = oicOfficer.name || (oicOfficer.initials + ' ' + oicOfficer.surname);
+                    oicText.textContent = `${officerName} (${oicOfficer.service_number})`;
+                }
+            }
+        }
+        
+        // Restore 2IC
+        const secondIcId = document.getElementById('second_in_command_officer_id')?.value;
+        if (secondIcId) {
+            // Try to find in officers array first (loaded by command)
+            let secondIcOfficer = officers.find(o => o.id == secondIcId);
+            // If not found, try allOfficers array
+            if (!secondIcOfficer && allOfficers.length > 0) {
+                secondIcOfficer = allOfficers.find(o => o.id == secondIcId);
+            }
+            if (secondIcOfficer) {
+                const secondIcText = document.getElementById('second_ic_select_text');
+                if (secondIcText) {
+                    const officerName = secondIcOfficer.name || (secondIcOfficer.initials + ' ' + secondIcOfficer.surname);
+                    secondIcText.textContent = `${officerName} (${secondIcOfficer.service_number})`;
+                }
+            }
+        }
+    }
+    
+    // Restore assignment officer selections from old input
+    function restoreAssignmentOfficerSelections() {
+        document.querySelectorAll('[id^="assignment-officer-"][id$="-trigger"]').forEach(trigger => {
+            const assignmentIndex = trigger.id.replace('assignment-officer-', '').replace('-trigger', '');
+            const hiddenInput = document.getElementById(`assignment-officer-${assignmentIndex}`);
+            const officerId = hiddenInput?.value;
+            const textElement = document.getElementById(`assignment-officer-${assignmentIndex}-text`);
+            
+            if (officerId && textElement && allOfficers.length > 0) {
+                const officer = allOfficers.find(o => o.id == officerId);
+                if (officer) {
+                    textElement.textContent = `${officer.initials} ${officer.surname} (${officer.service_number})`;
+                }
+            }
+        });
+    }
+    
     // Unit dropdown handling
     const unitSelectEdit = document.getElementById('unit-select-edit');
     const unitCustomInputEdit = document.getElementById('unit-custom-input-edit');
     
+    // Check if unit is __NEW__ on page load (from old input)
     if (unitSelectEdit && unitCustomInputEdit) {
+        if (unitSelectEdit.value === '__NEW__') {
+            unitCustomInputEdit.classList.remove('hidden');
+            unitCustomInputEdit.required = true;
+            unitSelectEdit.required = false;
+        }
+        
         unitSelectEdit.addEventListener('change', function() {
             if (this.value === '__NEW__') {
                 unitCustomInputEdit.classList.remove('hidden');
