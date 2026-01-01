@@ -131,7 +131,7 @@
                                            class="kt-btn kt-btn-sm kt-btn-ghost">
                                             View
                                         </a>
-                                        @if($form->status === 'FINALIZED')
+                                        @if(in_array($form->status, ['ACCEPTED', 'FINALIZED']))
                                             <a href="{{ route('hrd.aper-forms.grade', $form->id) }}" 
                                                class="kt-btn kt-btn-sm kt-btn-primary">
                                                 {{ $form->hrd_score !== null ? 'Update Grade' : 'Grade' }}

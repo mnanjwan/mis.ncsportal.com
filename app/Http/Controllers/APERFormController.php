@@ -1445,9 +1445,9 @@ class APERFormController extends Controller
 
         $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
 
-        // Only allow grading finalized forms
-        if ($form->status !== 'FINALIZED') {
-            return redirect()->route('hrd.aper-forms')->with('error', 'You can only grade finalized APER forms.');
+        // Allow grading accepted or finalized forms
+        if (!in_array($form->status, ['ACCEPTED', 'FINALIZED'])) {
+            return redirect()->route('hrd.aper-forms')->with('error', 'You can only grade accepted or finalized APER forms.');
         }
 
         return view('dashboards.hrd.aper-grade', compact('form'));
@@ -1464,9 +1464,9 @@ class APERFormController extends Controller
 
         $form = APERForm::findOrFail($id);
 
-        // Only allow grading finalized forms
-        if ($form->status !== 'FINALIZED') {
-            return redirect()->route('hrd.aper-forms')->with('error', 'You can only grade finalized APER forms.');
+        // Allow grading accepted or finalized forms
+        if (!in_array($form->status, ['ACCEPTED', 'FINALIZED'])) {
+            return redirect()->route('hrd.aper-forms')->with('error', 'You can only grade accepted or finalized APER forms.');
         }
 
         $validated = $request->validate([

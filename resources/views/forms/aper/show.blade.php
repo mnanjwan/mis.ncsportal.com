@@ -4,11 +4,19 @@
 @section('page-title', 'View APER Form - ' . $form->year)
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.dashboard') }}">Officer</a>
-    <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.aper-forms') }}">APER Forms</a>
-    <span>/</span>
-    <span class="text-primary">View</span>
+    @if(auth()->user()->hasRole('HRD'))
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+        <span>/</span>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.aper-forms') }}">APER Forms</a>
+        <span>/</span>
+        <span class="text-primary">View</span>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.dashboard') }}">Officer</a>
+        <span>/</span>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('officer.aper-forms') }}">APER Forms</a>
+        <span>/</span>
+        <span class="text-primary">View</span>
+    @endif
 @endsection
 
 @section('content')
@@ -55,6 +63,11 @@
                                 <i class="ki-filled ki-check"></i> Accept
                             </button>
                         </form>
+                    @endif
+                    @if(auth()->user()->hasRole('HRD') && in_array($form->status, ['ACCEPTED', 'FINALIZED']))
+                        <a href="{{ route('hrd.aper-forms.grade', $form->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                            <i class="ki-filled ki-star"></i> {{ $form->hrd_score !== null ? 'Update Grade' : 'Grade' }}
+                        </a>
                     @endif
                 </div>
             </div>
