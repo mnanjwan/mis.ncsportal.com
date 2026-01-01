@@ -18,8 +18,9 @@
                         <i class="ki-filled ki-information text-warning text-xl"></i>
                         <div>
                             <p class="text-sm font-medium text-warning">You must be an Officer in Charge (OIC) or Second In
-                                Command (2IC) in an approved duty roster to create APER forms.</p>
-                            <p class="text-xs text-secondary-foreground mt-1">Only officers with OIC or 2IC roles in approved
+                                Command (2IC) in an approved or submitted duty roster to create APER forms.</p>
+                            <p class="text-xs text-secondary-foreground mt-1">Only officers with OIC or 2IC roles in approved or
+                                submitted
                                 duty rosters can create APER forms for officers in their command.</p>
                         </div>
                     </div>
@@ -97,11 +98,18 @@
                                                 class="text-sm text-secondary-foreground">{{ $officer->substantive_rank ?? 'N/A' }}</span>
                                         </td>
                                         <td class="py-3 px-4">
-                                            @if(isset($officer->roster_role) && $officer->roster_role)
-                                                <span class="kt-badge kt-badge-info kt-badge-sm">{{ $officer->roster_role }}</span>
-                                            @else
-                                                <span class="text-xs text-muted-foreground">-</span>
-                                            @endif
+                                            <div class="flex flex-col gap-1">
+                                                @if($officer->is_subordinate)
+                                                    <span class="kt-badge kt-badge-success kt-badge-sm w-fit">My Subordinate</span>
+                                                @endif
+                                                @if(isset($officer->roster_role) && $officer->roster_role)
+                                                    <span
+                                                        class="kt-badge kt-badge-info kt-badge-sm w-fit">{{ $officer->roster_role }}</span>
+                                                @endif
+                                                @if(!$officer->is_subordinate && (!isset($officer->roster_role) || !$officer->roster_role))
+                                                    <span class="text-xs text-muted-foreground">-</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="py-3 px-4 text-right">
                                             @if($officer->can_countersign)

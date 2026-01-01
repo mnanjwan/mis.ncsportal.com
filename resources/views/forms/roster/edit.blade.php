@@ -433,6 +433,7 @@ let officers = [];
 const initialCommandId = {{ $commandId ?? 'null' }};
 const initialOicId = {{ $roster->oic_officer_id ?? 'null' }};
 const initialSecondIcId = {{ $roster->second_in_command_officer_id ?? 'null' }};
+const currentRosterId = {{ $roster->id ?? 'null' }};
 let isInitialLoad = true;
 
 // Searchable Select Helper Function (for Command selection)
@@ -536,7 +537,8 @@ function loadOfficersByCommand(commandId) {
     }
     secondIcOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Loading...</div>';
 
-    return fetch(`{{ route('staff-officer.roster.officers-by-command') }}?command_id=${commandId}`, {
+    const rosterIdParam = currentRosterId ? `&roster_id=${currentRosterId}` : '';
+    return fetch(`{{ route('staff-officer.roster.officers-by-command') }}?command_id=${commandId}${rosterIdParam}`, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json'
@@ -637,15 +639,33 @@ function renderOfficerOptions(officersList, optionsContainer, hiddenInput, selec
         const details = officer.service_number !== 'N/A' ? officer.service_number : '';
         const rank = officer.rank !== 'N/A' ? ' - ' + officer.rank : '';
         const displayText = officer.name + (details ? ' (' + details + rank + ')' : '');
+        const isAssigned = officer.is_assigned === true;
+        const assignedRoster = officer.assigned_roster || null;
+        const rosterDisplayName = assignedRoster ? assignedRoster.display_name : '';
+        const optionClass = isAssigned 
+            ? 'p-3 opacity-60 cursor-not-allowed bg-muted/30 border-b border-input last:border-0 officer-option' 
+            : 'p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 officer-option';
         
         return `
-            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 officer-option" 
+            <div class="${optionClass}" 
                  data-id="${officer.id}" 
                  data-name="${officer.name}"
                  data-service="${details}"
-                 data-rank="${officer.rank}">
-                <div class="text-sm text-foreground">${officer.name}</div>
-                <div class="text-xs text-secondary-foreground">${details}${rank}</div>
+                 data-rank="${officer.rank}"
+                 data-assigned="${isAssigned ? 'true' : 'false'}"
+                 data-roster-name="${rosterDisplayName}">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="text-sm text-foreground">${officer.name}</div>
+                        <div class="text-xs text-secondary-foreground">${details}${rank}</div>
+                    </div>
+                    ${isAssigned && assignedRoster ? `
+                        <div class="ml-2 text-xs text-warning flex items-center gap-1">
+                            <i class="ki-filled ki-information text-warning"></i>
+                            <span>Assigned to ${rosterDisplayName}</span>
+                        </div>
+                    ` : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -665,6 +685,15 @@ function renderOfficerOptions(officersList, optionsContainer, hiddenInput, selec
     // Add click handlers
     optionsContainer.querySelectorAll('.officer-option').forEach(option => {
         option.addEventListener('click', function() {
+            const isAssigned = this.dataset.assigned === 'true';
+            const rosterName = this.dataset.rosterName || '';
+            
+            // Prevent selection of assigned officers
+            if (isAssigned) {
+                alert(`This officer is already assigned to an active roster: ${rosterName}. Please select a different officer.`);
+                return;
+            }
+            
             const id = this.dataset.id;
             const name = this.dataset.name;
             const service = this.dataset.service;
@@ -934,15 +963,33 @@ function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenIn
         const details = officer.service_number !== 'N/A' ? officer.service_number : '';
         const rank = officer.rank !== 'N/A' ? ' - ' + officer.rank : '';
         const displayText = officer.name + (details ? ' (' + details + rank + ')' : '');
+        const isAssigned = officer.is_assigned === true;
+        const assignedRoster = officer.assigned_roster || null;
+        const rosterDisplayName = assignedRoster ? assignedRoster.display_name : '';
+        const optionClass = isAssigned 
+            ? 'p-3 opacity-60 cursor-not-allowed bg-muted/30 border-b border-input last:border-0 assignment-officer-option' 
+            : 'p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 assignment-officer-option';
         
         return `
-            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 assignment-officer-option" 
+            <div class="${optionClass}" 
                  data-id="${officer.id}" 
                  data-name="${officer.name}"
                  data-service="${details}"
-                 data-rank="${officer.rank}">
-                <div class="text-sm text-foreground">${officer.name}</div>
-                <div class="text-xs text-secondary-foreground">${details}${rank}</div>
+                 data-rank="${officer.rank}"
+                 data-assigned="${isAssigned ? 'true' : 'false'}"
+                 data-roster-name="${rosterDisplayName}">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="text-sm text-foreground">${officer.name}</div>
+                        <div class="text-xs text-secondary-foreground">${details}${rank}</div>
+                    </div>
+                    ${isAssigned && assignedRoster ? `
+                        <div class="ml-2 text-xs text-warning flex items-center gap-1">
+                            <i class="ki-filled ki-information text-warning"></i>
+                            <span>Assigned to ${rosterDisplayName}</span>
+                        </div>
+                    ` : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -964,6 +1011,15 @@ function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenIn
     // Add click handlers
     optionsContainer.querySelectorAll('.assignment-officer-option').forEach(option => {
         option.addEventListener('click', function() {
+            const isAssigned = this.dataset.assigned === 'true';
+            const rosterName = this.dataset.rosterName || '';
+            
+            // Prevent selection of assigned officers
+            if (isAssigned) {
+                alert(`This officer is already assigned to an active roster: ${rosterName}. Please select a different officer.`);
+                return;
+            }
+            
             const id = this.dataset.id;
             const name = this.dataset.name;
             const service = this.dataset.service;

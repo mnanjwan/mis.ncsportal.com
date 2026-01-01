@@ -97,7 +97,7 @@ class Officer extends Model
     public function getProfilePictureUrlFull(): ?string
     {
         $path = $this->attributes['profile_picture_url'] ?? null;
-        
+
         if (empty($path)) {
             return null;
         }
@@ -113,7 +113,7 @@ class Officer extends Model
             // Fallback: use asset() helper which works with symlink
             return asset('storage/' . $path);
         }
-        
+
         // Ensure proper URL formatting
         return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
@@ -126,7 +126,7 @@ class Officer extends Model
             $this->attributes['service_number'] = null;
             return;
         }
-        
+
         // Remove any existing NCS prefix to avoid duplication
         $value = preg_replace('/^NCS/i', '', $value);
         // Add NCS prefix
@@ -404,6 +404,21 @@ class Officer extends Model
         }
 
         return false;
+    }
+
+    public function dutyRosterAsOIC()
+    {
+        return $this->hasMany(DutyRoster::class, 'oic_officer_id');
+    }
+
+    public function dutyRosterAs2IC()
+    {
+        return $this->hasMany(DutyRoster::class, 'second_in_command_officer_id');
+    }
+
+    public function dutyRosterAssignments()
+    {
+        return $this->hasMany(RosterAssignment::class);
     }
 }
 

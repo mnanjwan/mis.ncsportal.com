@@ -26,14 +26,14 @@ class OfficerController extends Controller
     {
         $user = auth()->user();
         $query = \App\Models\Officer::with(['presentStation.zone', 'currentPosting']);
-        
+
         // If Staff Officer, filter by their command
         if ($user->hasRole('Staff Officer')) {
             $staffOfficerRole = $user->roles()
                 ->where('name', 'Staff Officer')
                 ->wherePivot('is_active', true)
                 ->first();
-            
+
             $commandId = $staffOfficerRole?->pivot->command_id ?? null;
             if ($commandId) {
                 $query->where('present_station', $commandId);
@@ -43,11 +43,11 @@ class OfficerController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('initials', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -64,7 +64,7 @@ class OfficerController extends Controller
         // Sorting
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
-        
+
         // Map sort_by to actual column names
         $sortableColumns = [
             'service_number' => 'service_number',
@@ -82,14 +82,14 @@ class OfficerController extends Controller
         // Handle zone sorting - need to join with commands and zones
         if ($sortBy === 'zone') {
             $query->leftJoin('commands', 'officers.present_station', '=', 'commands.id')
-                  ->leftJoin('zones', 'commands.zone_id', '=', 'zones.id')
-                  ->select('officers.*')
-                  ->orderBy('zones.name', $order)
-                  ->orderBy('commands.name', $order); // Secondary sort by command name
+                ->leftJoin('zones', 'commands.zone_id', '=', 'zones.id')
+                ->select('officers.*')
+                ->orderBy('zones.name', $order)
+                ->orderBy('commands.name', $order); // Secondary sort by command name
         } elseif ($sortBy === 'command') {
             $query->leftJoin('commands', 'officers.present_station', '=', 'commands.id')
-                  ->select('officers.*')
-                  ->orderBy('commands.name', $order);
+                ->select('officers.*')
+                ->orderBy('commands.name', $order);
         } else {
             $query->orderBy($column, $order);
         }
@@ -116,47 +116,47 @@ class OfficerController extends Controller
 
         return view('dashboards.hrd.officers-list', compact('officers', 'ranks', 'commands'));
     }
-    
+
     // Document an officer (Staff Officer only)
     public function document($id)
     {
         $user = auth()->user();
-        
+
         if (!$user->hasRole('Staff Officer')) {
             abort(403, 'Unauthorized');
         }
-        
+
         // Get Staff Officer's command
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
-        
+
         $officer = \App\Models\Officer::findOrFail($id);
-        
+
         // Verify officer is in Staff Officer's command
         if ($officer->present_station != $commandId) {
             return redirect()->back()->with('error', 'You can only document officers in your command.');
         }
-        
+
         // Get current posting
         $posting = \App\Models\OfficerPosting::where('officer_id', $officer->id)
             ->where('is_current', true)
             ->whereNull('documented_at')
             ->first();
-        
+
         if (!$posting) {
             return redirect()->back()->with('error', 'Officer is already documented or has no pending posting.');
         }
-        
+
         // Document the officer
         $posting->update([
             'documented_at' => now(),
             'documented_by' => $user->id,
         ]);
-        
+
         return redirect()->back()->with('success', "Officer {$officer->service_number} has been documented successfully.");
     }
 
@@ -164,51 +164,51 @@ class OfficerController extends Controller
     public function zoneOfficers(Request $request)
     {
         $user = auth()->user();
-        
+
         // Get the zone coordinator's zone from their command assignment
         $zoneCoordinatorRole = $user->roles()
             ->where('name', 'Zone Coordinator')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         if (!$zoneCoordinatorRole || !$zoneCoordinatorRole->pivot->command_id) {
             abort(403, 'You are not assigned to a zone. Please contact HRD.');
         }
-        
+
         $coordinatorCommand = \App\Models\Command::find($zoneCoordinatorRole->pivot->command_id);
         $coordinatorZone = $coordinatorCommand ? $coordinatorCommand->zone : null;
-        
+
         if (!$coordinatorZone) {
             abort(403, 'Your assigned command does not have a zone. Please contact HRD.');
         }
-        
+
         // Get all commands in the zone
         $zoneCommandIds = \App\Models\Command::where('zone_id', $coordinatorZone->id)
             ->where('is_active', true)
             ->pluck('id')
             ->toArray();
-        
+
         // Query officers in the zone
         $query = \App\Models\Officer::whereIn('present_station', $zoneCommandIds)
             ->where('is_active', true)
             ->with(['presentStation.zone']);
-        
+
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('initials', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
-        
+
         // Rank filter
         if ($request->filled('rank')) {
             $query->where('substantive_rank', $request->rank);
         }
-        
+
         // Command filter (within zone only)
         if ($request->filled('command_id')) {
             $commandId = $request->command_id;
@@ -216,11 +216,11 @@ class OfficerController extends Controller
                 $query->where('present_station', $commandId);
             }
         }
-        
+
         // Sorting
         $sortBy = $request->get('sort_by', 'surname');
         $sortOrder = $request->get('sort_order', 'asc');
-        
+
         $sortableColumns = [
             'service_number' => 'service_number',
             'name' => 'surname',
@@ -228,23 +228,23 @@ class OfficerController extends Controller
             'command' => 'present_station',
             'status' => 'is_active',
         ];
-        
+
         $column = $sortableColumns[$sortBy] ?? 'surname';
         $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'asc';
-        
+
         if ($sortBy === 'command') {
             $query->leftJoin('commands', 'officers.present_station', '=', 'commands.id')
-                  ->select('officers.*')
-                  ->orderBy('commands.name', $order);
+                ->select('officers.*')
+                ->orderBy('commands.name', $order);
         } else {
             $query->orderBy($column, $order);
         }
-        
+
         // If sorting by name, add initials as secondary sort
         if ($sortBy === 'name' || !$request->has('sort_by')) {
             $query->orderBy('initials', $order);
         }
-        
+
         // Get unique ranks for filter dropdown (from zone officers only)
         $ranks = \App\Models\Officer::whereIn('present_station', $zoneCommandIds)
             ->whereNotNull('substantive_rank')
@@ -253,15 +253,15 @@ class OfficerController extends Controller
             ->pluck('substantive_rank')
             ->filter()
             ->values();
-        
+
         // Get commands in the zone for filter dropdown
         $commands = \App\Models\Command::whereIn('id', $zoneCommandIds)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
-        
+
         $officers = $query->select('officers.*')->paginate(20)->withQueryString();
-        
+
         return view('dashboards.zone-coordinator.officers', compact('officers', 'ranks', 'commands', 'coordinatorZone'));
     }
 
@@ -269,37 +269,74 @@ class OfficerController extends Controller
     {
         $officer = \App\Models\Officer::with(['presentStation.zone', 'user', 'nextOfKin', 'documents', 'acceptedQueries.issuedBy'])
             ->findOrFail($id);
-        
+
         // Load accepted queries for display
         $acceptedQueries = $officer->acceptedQueries()
             ->with('issuedBy')
             ->orderBy('reviewed_at', 'desc')
             ->get();
-        
+
         return view('dashboards.hrd.officer-show', compact('officer', 'acceptedQueries'));
     }
 
     public function edit($id)
     {
         $officer = \App\Models\Officer::with(['presentStation.zone', 'nextOfKin', 'user'])->findOrFail($id);
-        
+
         // Load related data for dropdowns
         $commands = \App\Models\Command::where('is_active', true)->with('zone')->orderBy('name')->get();
         $zones = \App\Models\Zone::where('is_active', true)->orderBy('name')->get();
-        
+
         // Nigerian states and LGAs (same as onboarding)
         $nigerianStates = [
-            'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
-            'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe',
-            'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
-            'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
-            'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+            'Abia',
+            'Adamawa',
+            'Akwa Ibom',
+            'Anambra',
+            'Bauchi',
+            'Bayelsa',
+            'Benue',
+            'Borno',
+            'Cross River',
+            'Delta',
+            'Ebonyi',
+            'Edo',
+            'Ekiti',
+            'Enugu',
+            'FCT',
+            'Gombe',
+            'Imo',
+            'Jigawa',
+            'Kaduna',
+            'Kano',
+            'Katsina',
+            'Kebbi',
+            'Kogi',
+            'Kwara',
+            'Lagos',
+            'Nasarawa',
+            'Niger',
+            'Ogun',
+            'Ondo',
+            'Osun',
+            'Oyo',
+            'Plateau',
+            'Rivers',
+            'Sokoto',
+            'Taraba',
+            'Yobe',
+            'Zamfara'
         ];
-        
+
         $geopoliticalZones = [
-            'North Central', 'North East', 'North West', 'South East', 'South South', 'South West'
+            'North Central',
+            'North East',
+            'North West',
+            'South East',
+            'South South',
+            'South West'
         ];
-        
+
         // Use standard rank abbreviations (same as manning level)
         $ranks = [
             'CGC',
@@ -319,22 +356,39 @@ class OfficerController extends Controller
             'CA II',
             'CA III',
         ];
-        
-        $gradeLevels = ['GL 01', 'GL 02', 'GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08',
-                       'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17'];
-        
+
+        $gradeLevels = [
+            'GL 01',
+            'GL 02',
+            'GL 03',
+            'GL 04',
+            'GL 05',
+            'GL 06',
+            'GL 07',
+            'GL 08',
+            'GL 09',
+            'GL 10',
+            'GL 11',
+            'GL 12',
+            'GL 13',
+            'GL 14',
+            'GL 15',
+            'GL 16',
+            'GL 17'
+        ];
+
         // Prepare education data from officer
         $educationData = [];
-        
+
         // First, try to get all education entries from additional_qualification JSON
         if ($officer->additional_qualification) {
             $allEducation = json_decode($officer->additional_qualification, true);
             if (is_array($allEducation) && count($allEducation) > 0) {
                 // Check if first entry in JSON matches entry_qualification (new format with all entries)
-                $firstEntryMatches = isset($allEducation[0]) && 
-                    isset($allEducation[0]['qualification']) && 
+                $firstEntryMatches = isset($allEducation[0]) &&
+                    isset($allEducation[0]['qualification']) &&
                     $allEducation[0]['qualification'] === $officer->entry_qualification;
-                
+
                 if ($firstEntryMatches) {
                     // New format: All entries (including first) are in JSON with universities
                     $educationData = $allEducation;
@@ -342,14 +396,16 @@ class OfficerController extends Controller
                     // Old format: JSON only has entries from index 1, need to prepend first entry
                     // Try to get university from first entry in JSON if it exists and matches
                     $firstEntryUniversity = '';
-                    if (isset($allEducation[0]) && isset($allEducation[0]['qualification']) && 
-                        $allEducation[0]['qualification'] === $officer->entry_qualification) {
+                    if (
+                        isset($allEducation[0]) && isset($allEducation[0]['qualification']) &&
+                        $allEducation[0]['qualification'] === $officer->entry_qualification
+                    ) {
                         // First entry in JSON might be the same as our first entry, use its university
                         $firstEntryUniversity = $allEducation[0]['university'] ?? '';
                         // Remove it from the array since we're using it as the first entry
                         array_shift($allEducation);
                     }
-                    
+
                     $firstEntry = [
                         'university' => $firstEntryUniversity, // Try to get from JSON if available
                         'qualification' => $officer->entry_qualification,
@@ -359,7 +415,7 @@ class OfficerController extends Controller
                 }
             }
         }
-        
+
         // Fallback: If no JSON data, reconstruct from legacy fields only
         if (empty($educationData) && $officer->entry_qualification) {
             // First education entry from entry_qualification and discipline (no university available)
@@ -369,14 +425,14 @@ class OfficerController extends Controller
                 'discipline' => $officer->discipline ?? ''
             ];
         }
-        
+
         return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData'));
     }
-    
+
     public function update(Request $request, $id)
     {
         $officer = \App\Models\Officer::findOrFail($id);
-        
+
         // Store original values for comparison
         $originalRank = $officer->substantive_rank;
         $originalInterdicted = $officer->interdicted;
@@ -386,7 +442,7 @@ class OfficerController extends Controller
         $originalPresentStation = $officer->present_station;
         $originalDatePosted = $officer->date_posted_to_station;
         $originalUnit = $officer->unit;
-        
+
         $validated = $request->validate([
             'initials' => 'required|string|max:50',
             'surname' => 'required|string|max:255',
@@ -417,72 +473,72 @@ class OfficerController extends Controller
             'dismissed' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ]);
-        
+
         // Process education data
         $education = $validated['education'];
         $validated['entry_qualification'] = isset($education[0]) ? $education[0]['qualification'] : null;
         $validated['discipline'] = isset($education[0]) ? ($education[0]['discipline'] ?? null) : null;
         $validated['additional_qualification'] = count($education) > 0 ? json_encode($education) : null; // Store ALL entries including first one
         unset($validated['education']);
-        
+
         // Convert checkbox values
         $validated['interdicted'] = $request->has('interdicted');
         $validated['suspended'] = $request->has('suspended');
         $validated['quartered'] = $request->has('quartered');
         $validated['dismissed'] = $request->has('dismissed');
         $validated['is_active'] = $request->has('is_active') ? true : ($request->has('is_active') === false ? false : $officer->is_active);
-        
+
         // Update officer
         $officer->update($validated);
-        
+
         // Refresh to get updated values
         $officer->refresh();
-        
+
         // Send notifications for changes
         $notificationService = app(\App\Services\NotificationService::class);
-        
+
         // Rank change notification
         if ($originalRank !== $officer->substantive_rank) {
             $notificationService->notifyRankChanged($officer, $originalRank, $officer->substantive_rank);
         }
-        
+
         // Interdiction status change notification
         if ($originalInterdicted !== $officer->interdicted) {
             $notificationService->notifyInterdictionStatusChanged($officer, $officer->interdicted);
         }
-        
+
         // Suspension status change notification
         if ($originalSuspended !== $officer->suspended) {
             $notificationService->notifySuspensionStatusChanged($officer, $officer->suspended);
         }
-        
+
         // Dismissal notification
         if (!$originalDismissed && $officer->dismissed) {
             $notificationService->notifyOfficerDismissed($officer);
         }
-        
+
         // Active status change notification
         if ($originalIsActive !== $officer->is_active) {
             $notificationService->notifyActiveStatusChanged($officer, $officer->is_active);
         }
-        
+
         // Command/Station change notification
         if ($originalPresentStation !== $officer->present_station) {
             $oldCommand = \App\Models\Command::find($originalPresentStation);
             $newCommand = \App\Models\Command::find($officer->present_station);
             $notificationService->notifyCommandChanged($officer, $oldCommand, $newCommand);
         }
-        
+
         // Date posted change notification
         if ($originalDatePosted != $officer->date_posted_to_station) {
             $notificationService->notifyDatePostedChanged($officer, $originalDatePosted, $officer->date_posted_to_station);
         }
-        
+
         // Unit change notification
         if ($originalUnit !== $officer->unit) {
             $notificationService->notifyUnitChanged($officer, $originalUnit ?? '', $officer->unit ?? '');
         }
-        
+
         return redirect()->route('hrd.officers.show', $officer->id)
             ->with('success', 'Officer information updated successfully.');
     }
@@ -506,6 +562,8 @@ class OfficerController extends Controller
                 'recentCourses' => collect([]),
                 'upcomingCourses' => collect([]),
                 'pendingQueries' => collect([]),
+                'currentRosterTitle' => null,
+                'rosterRole' => null,
             ]);
         }
 
@@ -591,6 +649,66 @@ class OfficerController extends Controller
             ->orderBy('issued_at', 'desc')
             ->get();
 
+        // 9. Current Roster Assignment and Role
+        $currentRosterTitle = null;
+        $rosterRole = null;
+        $dutyRosterService = app(\App\Services\DutyRosterService::class);
+        $year = date('Y');
+        $commandId = $officer->present_station;
+
+        // Get officer's role in roster (OIC/2IC) using the service method which handles date filtering properly
+        $rosterRole = $dutyRosterService->getOfficerRoleInRoster($officer->id, $commandId, $year);
+
+        if ($rosterRole) {
+            // If officer is OIC/2IC, get the roster unit
+            $startDate = "{$year}-01-01";
+            $endDate = "{$year}-12-31";
+
+            $rosterAsOIC = \App\Models\DutyRoster::where('command_id', $commandId)
+                ->whereIn('status', ['APPROVED', 'SUBMITTED'])
+                ->where(function ($query) use ($officer) {
+                    $query->where('oic_officer_id', $officer->id)
+                        ->orWhere('second_in_command_officer_id', $officer->id);
+                })
+                ->where(function ($query) use ($startDate, $endDate) {
+                    // If both dates are NULL, treat as valid (no date filtering)
+                    $query->where(function ($nullQuery) {
+                        $nullQuery->whereNull('roster_period_start')
+                            ->whereNull('roster_period_end');
+                    })
+                        // Otherwise, check date overlap
+                        ->orWhere(function ($dateQuery) use ($startDate, $endDate) {
+                        $dateQuery->whereNotNull('roster_period_start')
+                            ->whereNotNull('roster_period_end')
+                            ->where(function ($overlapQuery) use ($startDate, $endDate) {
+                                $overlapQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                    ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                    ->orWhere(function ($spanQuery) use ($startDate, $endDate) {
+                                        $spanQuery->where('roster_period_start', '<=', $startDate)
+                                            ->where('roster_period_end', '>=', $endDate);
+                                    });
+                            });
+                    });
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($rosterAsOIC) {
+                $currentRosterTitle = $rosterAsOIC->unit;
+            }
+        } else {
+            // If not OIC/2IC, check if they're assigned as a subordinate
+            $currentRosterAssignment = \App\Models\RosterAssignment::where('officer_id', $officer->id)
+                ->whereHas('roster', function ($query) {
+                    $query->whereIn('status', ['APPROVED', 'SUBMITTED']);
+                })
+                ->with(['roster:id,unit,command_id,status'])
+                ->latest('duty_date')
+                ->first();
+
+            $currentRosterTitle = $currentRosterAssignment?->roster?->unit ?? null;
+        }
+
         return view('dashboards.officer.dashboard', compact(
             'officer',
             'emolumentStatus',
@@ -601,7 +719,9 @@ class OfficerController extends Controller
             'activeTimeline',
             'pendingAllocations',
             'recentCourses',
-            'upcomingCourses'
+            'upcomingCourses',
+            'currentRosterTitle',
+            'rosterRole'
         ));
     }
 
@@ -609,25 +729,25 @@ class OfficerController extends Controller
     {
         $user = auth()->user();
         $officer = $user->officer;
-        
+
         if (!$officer) {
             return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
         }
-        
+
         // Load all necessary relationships
         $officer->load([
             'presentStation.zone',
             'nextOfKin',
             'user'
         ]);
-        
+
         // Check if officer has completed onboarding
         // An officer is considered onboarded if they have essential fields filled
-        $isOnboarded = $officer->date_of_birth && 
-                      $officer->phone_number && 
-                      $officer->date_of_first_appointment &&
-                      $officer->nextOfKin()->where('is_primary', true)->exists();
-        
+        $isOnboarded = $officer->date_of_birth &&
+            $officer->phone_number &&
+            $officer->date_of_first_appointment &&
+            $officer->nextOfKin()->where('is_primary', true)->exists();
+
         return view('dashboards.officer.profile', compact('officer', 'isOnboarded'));
     }
 
@@ -635,25 +755,25 @@ class OfficerController extends Controller
     {
         $user = auth()->user();
         $officer = $user->officer;
-        
+
         if (!$officer) {
             return response()->json(['message' => 'Officer record not found.'], 404);
         }
-        
+
         // Check if officer has completed onboarding
-        $isOnboarded = $officer->date_of_birth && 
-                      $officer->phone_number && 
-                      $officer->date_of_first_appointment &&
-                      $officer->nextOfKin()->where('is_primary', true)->exists();
-        
+        $isOnboarded = $officer->date_of_birth &&
+            $officer->phone_number &&
+            $officer->date_of_first_appointment &&
+            $officer->nextOfKin()->where('is_primary', true)->exists();
+
         if (!$isOnboarded) {
             return response()->json(['message' => 'You can only change your profile picture after completing onboarding.'], 403);
         }
-        
+
         $request->validate([
             'profile_picture' => 'required|image|mimes:jpeg,jpg,png|max:2048',
         ]);
-        
+
         try {
             // Delete old profile picture if exists
             if ($officer->profile_picture_url) {
@@ -662,14 +782,14 @@ class OfficerController extends Controller
                     unlink($oldPath);
                 }
             }
-            
+
             // Store new profile picture
             $path = $request->file('profile_picture')->store('profiles', 'public');
             $officer->update(['profile_picture_url' => $path]);
-            
+
             // Refresh to get updated model
             $officer->refresh();
-            
+
             return response()->json([
                 'message' => 'Profile picture updated successfully.',
                 'profile_picture_url' => $officer->getProfilePictureUrlFull()
@@ -700,7 +820,7 @@ class OfficerController extends Controller
 
         // Get fresh user instance from database to ensure we have latest password
         $user = \App\Models\User::find(auth()->id());
-        
+
         if (!$user) {
             return redirect()->back()
                 ->withErrors(['current_password' => 'User not found.'])
@@ -709,13 +829,13 @@ class OfficerController extends Controller
 
         // Verify current password - trim whitespace and check
         $currentPassword = trim($request->current_password);
-        
+
         if (empty($currentPassword)) {
             return redirect()->back()
                 ->withErrors(['current_password' => 'Current password is required.'])
                 ->withInput($request->except('current_password', 'new_password', 'new_password_confirmation'));
         }
-        
+
         // Check password - use the password attribute directly
         if (!\Illuminate\Support\Facades\Hash::check($currentPassword, $user->password)) {
             return redirect()->back()

@@ -323,24 +323,24 @@ class APERFormController extends Controller
 
         // Get active timeline
         $activeTimeline = APERTimeline::where('is_active', true)->first();
-        $year = $activeTimeline ? $activeTimeline->year : date('Y');
+        $formYear = $activeTimeline ? $activeTimeline->year : date('Y'); // Year for APER forms
+        $rosterCheckYear = $formYear; // Year to use for roster checks (may fallback to current year)
 
         $dutyRosterService = app(DutyRosterService::class);
         $rankComparisonService = app(RankComparisonService::class);
 
-        // 1. Determine all subordinates the user is OIC or 2IC for
-        $rosters = \App\Models\DutyRoster::where('command_id', $commandId)
-            ->where('status', 'APPROVED')
-            ->where(function ($query) use ($reportingOfficer) {
-                $query->where('oic_officer_id', $reportingOfficer->id)
-                    ->orWhere('second_in_command_officer_id', $reportingOfficer->id);
-            })
-            ->with('assignments')
-            ->get();
-
-        $subordinateIds = $rosters->flatMap(function ($r) {
-            return $r->assignments->pluck('officer_id');
-        })->unique()->toArray();
+        // 1. Determine all subordinates the user is OIC or 2IC for in the given year
+        $subordinateIds = $dutyRosterService->getSubordinateIds($reportingOfficer->id, $commandId, $rosterCheckYear);
+        
+        // Fallback: If no subordinates found for APER timeline year, check current year
+        // This handles cases where roster exists for current year but APER timeline is for different year
+        if (empty($subordinateIds) && $activeTimeline && $activeTimeline->year != date('Y')) {
+            $currentYearSubordinates = $dutyRosterService->getSubordinateIds($reportingOfficer->id, $commandId, date('Y'));
+            if (!empty($currentYearSubordinates)) {
+                $subordinateIds = $currentYearSubordinates;
+                $rosterCheckYear = date('Y'); // Use current year for roster checks
+            }
+        }
 
         // 2. Query officers in the command
         $query = Officer::where('present_station', $commandId);
@@ -355,15 +355,22 @@ class APERFormController extends Controller
             });
         }
 
-        $officers = $query->orderBy('surname')->paginate(20);
+        // Sorting: Subordinates (those under OIC/2IC roster) first, then by surname
+        if (!empty($subordinateIds)) {
+            $idsString = implode(',', $subordinateIds);
+            $query->orderByRaw("CASE WHEN id IN ({$idsString}) THEN 0 ELSE 1 END");
+        }
+        $query->orderBy('surname');
+
+        $officers = $query->paginate(20);
 
         foreach ($officers as $officer) {
             // Can user START an APER for this officer? (Must be OIC/2IC and not self)
             $officer->is_subordinate = in_array($officer->id, $subordinateIds) && $officer->id !== $reportingOfficer->id;
 
-            // Check for pending countersignature
+            // Check for pending countersignature (use APER timeline year, not roster check year)
             $pendingForm = APERForm::where('officer_id', $officer->id)
-                ->where('year', $year)
+                ->where('year', $formYear)
                 ->where('status', 'COUNTERSIGNING_OFFICER')
                 ->where('reporting_officer_id', '!=', $user->id) // Cannot countersign self-reported form
                 ->first();
@@ -380,11 +387,53 @@ class APERFormController extends Controller
                 }
             }
 
-            $officer->roster_role = $dutyRosterService->getOfficerRoleInRoster($officer->id, $commandId, $year);
+            $officer->roster_role = $dutyRosterService->getOfficerRoleInRoster($officer->id, $commandId, $rosterCheckYear);
         }
 
-        $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $year);
-        $rosterRole = $dutyRosterService->getOfficerRoleInRoster($reportingOfficer->id, $commandId, $year);
+        $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $rosterCheckYear);
+        $rosterRole = $dutyRosterService->getOfficerRoleInRoster($reportingOfficer->id, $commandId, $rosterCheckYear);
+        
+        // Get roster unit name for display (like dashboard)
+        $rosterUnitName = null;
+        if ($rosterRole) {
+            $startDate = "{$rosterCheckYear}-01-01";
+            $endDate = "{$rosterCheckYear}-12-31";
+            $rosterAsOIC = \App\Models\DutyRoster::where('command_id', $commandId)
+                ->whereIn('status', ['APPROVED', 'SUBMITTED'])
+                ->where(function ($query) use ($reportingOfficer) {
+                    $query->where('oic_officer_id', $reportingOfficer->id)
+                        ->orWhere('second_in_command_officer_id', $reportingOfficer->id);
+                })
+                ->where(function ($query) use ($startDate, $endDate) {
+                    $query->where(function ($nullQuery) {
+                        $nullQuery->whereNull('roster_period_start')
+                            ->whereNull('roster_period_end');
+                    })
+                        ->orWhere(function ($dateQuery) use ($startDate, $endDate) {
+                            $dateQuery->whereNotNull('roster_period_start')
+                                ->whereNotNull('roster_period_end')
+                                ->where(function ($overlapQuery) use ($startDate, $endDate) {
+                                    $overlapQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                        ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                        ->orWhere(function ($spanQuery) use ($startDate, $endDate) {
+                                            $spanQuery->where('roster_period_start', '<=', $startDate)
+                                                ->where('roster_period_end', '>=', $endDate);
+                                        });
+                                });
+                        });
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($rosterAsOIC) {
+                $rosterUnitName = $rosterAsOIC->unit;
+            }
+        }
+        
+        // Format roster role with unit name (like dashboard: "OIC - Stone age")
+        if ($rosterRole && $rosterUnitName) {
+            $rosterRole = "{$rosterRole} - {$rosterUnitName}";
+        }
 
         return view('dashboards.reporting-officer.aper-search', compact('officers', 'rosterRole', 'isOICOr2IC'));
     }
@@ -473,15 +522,40 @@ class APERFormController extends Controller
         }
 
         $commandId = $reportingOfficer->present_station;
-        $year = $activeTimeline->year;
+        $formYear = $activeTimeline->year; // Always use APER timeline year for form creation
+        $rosterCheckYear = $formYear; // Year to use for roster checks (may fallback to current year)
 
         // Validate Reporting Officer is OIC or 2IC (unless HRD or Staff Officer)
         if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer')) {
             $dutyRosterService = app(DutyRosterService::class);
-            $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $year);
+            $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $rosterCheckYear);
+            
+            // Fallback: Check current year if not OIC/2IC for APER timeline year
+            if (!$isOICOr2IC && $activeTimeline->year != date('Y')) {
+                $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, date('Y'));
+                if ($isOICOr2IC) {
+                    $rosterCheckYear = date('Y'); // Use current year for roster checks
+                }
+            }
 
             if (!$isOICOr2IC) {
                 return redirect()->back()->with('error', 'You must be an Officer in Charge (OIC) or Second In Command (2IC) in an approved duty roster to create APER forms.');
+            }
+
+            // Validate that the officer is a subordinate in the rosters where reporting officer is OIC/2IC for the given year
+            $subordinateIds = $dutyRosterService->getSubordinateIds($reportingOfficer->id, $commandId, $rosterCheckYear);
+            
+            // Fallback: If no subordinates found for APER timeline year, check current year
+            if (empty($subordinateIds) && $activeTimeline->year != date('Y')) {
+                $currentYearSubordinates = $dutyRosterService->getSubordinateIds($reportingOfficer->id, $commandId, date('Y'));
+                if (!empty($currentYearSubordinates)) {
+                    $subordinateIds = $currentYearSubordinates;
+                    $rosterCheckYear = date('Y'); // Use current year for roster checks
+                }
+            }
+
+            if (!in_array($officer->id, $subordinateIds) || $officer->id === $reportingOfficer->id) {
+                return redirect()->back()->with('error', 'You can only create APER forms for officers assigned to your duty roster.');
             }
 
             // Validate rank - Reporting Officer must be same or higher rank
@@ -491,9 +565,9 @@ class APERFormController extends Controller
             }
         }
 
-        // Find or create form
+        // Find or create form (always use APER timeline year for form)
         $form = APERForm::where('officer_id', $officer->id)
-            ->where('year', $year)
+            ->where('year', $formYear)
             ->first();
 
         // Create form if it doesn't exist
@@ -502,7 +576,7 @@ class APERFormController extends Controller
             try {
                 // Check if officer already has an accepted form for this year
                 $acceptedForm = APERForm::where('officer_id', $officer->id)
-                    ->where('year', $year)
+                    ->where('year', $formYear)
                     ->where('status', 'ACCEPTED')
                     ->first();
 
@@ -514,7 +588,7 @@ class APERFormController extends Controller
                 $form = APERForm::create([
                     'officer_id' => $officer->id,
                     'timeline_id' => $activeTimeline->id,
-                    'year' => $year,
+                    'year' => $formYear,
                     'status' => 'REPORTING_OFFICER',
                     'reporting_officer_id' => $user->id,
                 ]);

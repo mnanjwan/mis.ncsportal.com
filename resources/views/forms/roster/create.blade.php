@@ -126,11 +126,135 @@
                             <input type="date" class="kt-input" name="roster_period_end" value="{{ old('roster_period_end', date('Y-m-t')) }}" required/>
                         </div>
                     </div>
+
+                    <!-- Leadership Selection -->
+                    <div class="kt-card shadow-none bg-info/10 border border-info/20">
+                        <div class="kt-card-content p-4">
+                            <h4 class="text-sm font-semibold text-foreground mb-4">Roster Leadership</h4>
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <!-- OIC Selection -->
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">
+                                        Officer in Charge (OIC)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="hidden" name="oic_officer_id" id="oic_officer_id" value="{{ old('oic_officer_id') }}">
+                                        <button type="button" 
+                                                id="oic_select_trigger" 
+                                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('oic_officer_id') ? 'border-danger' : '' }}">
+                                            <span id="oic_select_text">
+                                                @if(old('oic_officer_id'))
+                                                    @php $oic = $officers->find(old('oic_officer_id')); @endphp
+                                                    {{ $oic ? $oic->initials . ' ' . $oic->surname . ' (' . $oic->service_number . ')' : 'Select OIC' }}
+                                                @else
+                                                    Select OIC
+                                                @endif
+                                            </span>
+                                            <i class="ki-filled ki-down text-gray-400"></i>
+                                        </button>
+                                        <div id="oic_dropdown" 
+                                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                            <div class="p-3 border-b border-input">
+                                                <input type="text" id="oic_search_input" class="kt-input w-full" placeholder="Search officers..." autocomplete="off">
+                                            </div>
+                                            <div id="oic_options" class="max-h-60 overflow-y-auto">
+                                                @foreach($officers as $officerData)
+                                                    @php
+                                                        $officer = $officerData['officer'];
+                                                        $isAssigned = $officerData['is_assigned'];
+                                                        $assignedRoster = $officerData['assigned_roster'];
+                                                    @endphp
+                                                    <div class="p-3 border-b border-input last:border-0 officer-option {{ $isAssigned ? 'opacity-60 cursor-not-allowed bg-muted/30' : 'hover:bg-muted/50 cursor-pointer' }}" 
+                                                         data-id="{{ $officer->id }}" 
+                                                         data-name="{{ $officer->initials }} {{ $officer->surname }}"
+                                                         data-service="{{ $officer->service_number }}"
+                                                         data-rank="{{ $officer->substantive_rank }}"
+                                                         data-assigned="{{ $isAssigned ? 'true' : 'false' }}"
+                                                         data-roster-name="{{ $isAssigned && $assignedRoster ? $assignedRoster['display_name'] : '' }}">
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex-1">
+                                                                <div class="text-sm text-foreground">{{ $officer->initials }} {{ $officer->surname }}</div>
+                                                                <div class="text-xs text-secondary-foreground">{{ $officer->service_number }} - {{ $officer->substantive_rank }}</div>
+                                                            </div>
+                                                            @if($isAssigned && $assignedRoster)
+                                                                <div class="ml-2 text-xs text-warning flex items-center gap-1">
+                                                                    <i class="ki-filled ki-information text-warning"></i>
+                                                                    <span>Assigned to {{ $assignedRoster['display_name'] }}</span>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 2IC Selection -->
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">
+                                        Second In Command (2IC)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="hidden" name="second_in_command_officer_id" id="second_in_command_officer_id" value="{{ old('second_in_command_officer_id') }}">
+                                        <button type="button" 
+                                                id="second_ic_select_trigger" 
+                                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('second_in_command_officer_id') ? 'border-danger' : '' }}">
+                                            <span id="second_ic_select_text">
+                                                @if(old('second_in_command_officer_id'))
+                                                    @php $second_ic = $officers->find(old('second_in_command_officer_id')); @endphp
+                                                    {{ $second_ic ? $second_ic->initials . ' ' . $second_ic->surname . ' (' . $second_ic->service_number . ')' : 'Select 2IC (Optional)' }}
+                                                @else
+                                                    Select 2IC (Optional)
+                                                @endif
+                                            </span>
+                                            <i class="ki-filled ki-down text-gray-400"></i>
+                                        </button>
+                                        <div id="second_ic_dropdown" 
+                                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                            <div class="p-3 border-b border-input">
+                                                <input type="text" id="second_ic_search_input" class="kt-input w-full" placeholder="Search officers..." autocomplete="off">
+                                            </div>
+                                            <div id="second_ic_options" class="max-h-60 overflow-y-auto">
+                                                @foreach($officers as $officerData)
+                                                    @php
+                                                        $officer = $officerData['officer'];
+                                                        $isAssigned = $officerData['is_assigned'];
+                                                        $assignedRoster = $officerData['assigned_roster'];
+                                                    @endphp
+                                                    <div class="p-3 border-b border-input last:border-0 officer-option {{ $isAssigned ? 'opacity-60 cursor-not-allowed bg-muted/30' : 'hover:bg-muted/50 cursor-pointer' }}" 
+                                                         data-id="{{ $officer->id }}" 
+                                                         data-name="{{ $officer->initials }} {{ $officer->surname }}"
+                                                         data-service="{{ $officer->service_number }}"
+                                                         data-rank="{{ $officer->substantive_rank }}"
+                                                         data-assigned="{{ $isAssigned ? 'true' : 'false' }}"
+                                                         data-roster-name="{{ $isAssigned && $assignedRoster ? $assignedRoster['display_name'] : '' }}">
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex-1">
+                                                                <div class="text-sm text-foreground">{{ $officer->initials }} {{ $officer->surname }}</div>
+                                                                <div class="text-xs text-secondary-foreground">{{ $officer->service_number }} - {{ $officer->substantive_rank }}</div>
+                                                            </div>
+                                                            @if($isAssigned && $assignedRoster)
+                                                                <div class="ml-2 text-xs text-warning flex items-center gap-1">
+                                                                    <i class="ki-filled ki-information text-warning"></i>
+                                                                    <span>Assigned to {{ $assignedRoster['display_name'] }}</span>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="kt-card bg-muted/50 border border-input">
                         <div class="kt-card-content p-4">
                             <p class="text-sm text-secondary-foreground">
-                                <strong>Note:</strong> After creating the roster, you can add officer assignments by editing the roster.
+                                <strong>Note:</strong> After creating the roster, you can add regular officer assignments by editing the roster.
                             </p>
                         </div>
                     </div>
@@ -176,40 +300,123 @@
     </div>
 @endif
 
+@push('styles')
+<style>
+    .relative {
+        position: relative;
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const unitSelect = document.getElementById('unit-select');
     const unitCustomInput = document.getElementById('unit-custom-input');
     
-    unitSelect.addEventListener('change', function() {
-        if (this.value === '__NEW__') {
-            unitCustomInput.classList.remove('hidden');
-            unitCustomInput.required = true;
-            unitSelect.required = false;
-            unitCustomInput.focus();
-        } else {
-            unitCustomInput.classList.add('hidden');
-            unitCustomInput.required = false;
-            unitSelect.required = true;
-            unitCustomInput.value = '';
-        }
-    });
+    if (unitSelect) {
+        unitSelect.addEventListener('change', function() {
+            if (this.value === '__NEW__') {
+                unitCustomInput.classList.remove('hidden');
+                unitCustomInput.required = true;
+                unitSelect.required = false;
+                unitCustomInput.focus();
+            } else {
+                unitCustomInput.classList.add('hidden');
+                unitCustomInput.required = false;
+                unitSelect.required = true;
+                unitCustomInput.value = '';
+            }
+        });
+    }
     
     // Handle form submission
     const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        if (unitSelect.value === '__NEW__') {
-            if (!unitCustomInput.value.trim()) {
-                e.preventDefault();
-                alert('Please enter a unit name');
-                unitCustomInput.focus();
-                return false;
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (unitSelect && unitSelect.value === '__NEW__') {
+                if (!unitCustomInput.value.trim()) {
+                    e.preventDefault();
+                    alert('Please enter a unit name');
+                    unitCustomInput.focus();
+                    return false;
+                }
             }
-            // Set the custom unit value to the select
-            unitSelect.value = unitCustomInput.value.trim();
-        }
-    });
+        });
+    }
+
+    // Searchable Dropdown Logic
+    function setupSearchableDropdown(prefix) {
+        const trigger = document.getElementById(`${prefix}_select_trigger`);
+        const text = document.getElementById(`${prefix}_select_text`);
+        // Handle special case for second_ic which uses second_in_command_officer_id
+        const hiddenInputId = prefix === 'second_ic' ? 'second_in_command_officer_id' : `${prefix}_officer_id`;
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(`${prefix}_dropdown`);
+        const searchInput = document.getElementById(`${prefix}_search_input`);
+        const optionsContainer = document.getElementById(`${prefix}_options`);
+        const options = optionsContainer.querySelectorAll('.officer-option');
+
+        if (!trigger || !hiddenInput) return;
+
+        trigger.addEventListener('click', function() {
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                searchInput.focus();
+            }
+        });
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            options.forEach(option => {
+                const name = option.dataset.name.toLowerCase();
+                const service = option.dataset.service.toLowerCase();
+                const rank = option.dataset.rank.toLowerCase();
+                if (name.includes(searchTerm) || service.includes(searchTerm) || rank.includes(searchTerm)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+
+        optionsContainer.addEventListener('click', function(e) {
+            const option = e.target.closest('.officer-option');
+            if (option) {
+                const isAssigned = option.dataset.assigned === 'true';
+                const rosterName = option.dataset.rosterName || '';
+                
+                // Prevent selection of assigned officers
+                if (isAssigned) {
+                    alert(`This officer is already assigned to an active roster: ${rosterName}. Please select a different officer.`);
+                    return;
+                }
+                
+                const id = option.dataset.id;
+                const name = option.dataset.name;
+                const service = option.dataset.service;
+                const rank = option.dataset.rank;
+
+                hiddenInput.value = id;
+                text.textContent = `${name} (${service})`;
+                dropdown.classList.add('hidden');
+                searchInput.value = '';
+                
+                // Reset search display
+                options.forEach(opt => opt.style.display = 'block');
+            }
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    setupSearchableDropdown('oic');
+    setupSearchableDropdown('second_ic');
 });
 </script>
 @endpush

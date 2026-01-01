@@ -46,6 +46,22 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
+        <!-- Roster Role Notice -->
+        @if(isset($rosterRole) && $rosterRole)
+            <div class="kt-card bg-info/10 border border-info/20">
+                <div class="kt-card-content p-4">
+                    <div class="flex items-center gap-3">
+                        <i class="ki-filled ki-check-circle text-info text-xl"></i>
+                        <p class="text-sm font-medium text-info">Your Roster Role: <strong>{{ $rosterRole }}</strong> 
+                            @if($currentRosterTitle)
+                                - {{ $currentRosterTitle }}
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Quick Actions Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
             <div class="kt-card">
@@ -185,6 +201,12 @@
                                 <span class="text-sm text-secondary-foreground">Present Station</span>
                                 <span class="text-sm font-semibold text-mono">{{ $officer->presentStation->name ?? 'N/A' }}</span>
                             </div>
+                            @if(isset($currentRosterTitle) && $currentRosterTitle)
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Roster Assignment</span>
+                                <span class="text-sm font-semibold text-mono">{{ $currentRosterTitle }}</span>
+                            </div>
+                            @endif
                         @else
                             <p class="text-secondary-foreground text-center py-4">Officer profile not found</p>
                         @endif
