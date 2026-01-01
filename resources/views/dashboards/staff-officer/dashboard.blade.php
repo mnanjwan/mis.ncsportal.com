@@ -25,14 +25,19 @@
                     <i class="ki-filled ki-information text-xl" style="color: #dc3545;"></i>
                     <div class="flex-1">
                         <p class="text-sm font-semibold mb-1" style="color: #b91c1c;">
-                            You have {{ $pendingReviewQueries->count() }} query{{ $pendingReviewQueries->count() !== 1 ? 's' : '' }} pending review that require{{ $pendingReviewQueries->count() === 1 ? 's' : '' }} your attention
+                            You have {{ $pendingReviewQueries->count() }}
+                            query{{ $pendingReviewQueries->count() !== 1 ? 's' : '' }} pending review that
+                            require{{ $pendingReviewQueries->count() === 1 ? 's' : '' }} your attention
                         </p>
                         @foreach($pendingReviewQueries as $query)
                             <p class="text-sm mb-2" style="color: #dc2626;">
-                                Response submitted by {{ $query->officer->initials }} {{ $query->officer->surname }} ({{ $query->officer->service_number }}) on {{ $query->responded_at ? $query->responded_at->format('d/m/Y') : 'N/A' }}
+                                Response submitted by {{ $query->officer->initials }} {{ $query->officer->surname }}
+                                ({{ $query->officer->service_number }}) on
+                                {{ $query->responded_at ? $query->responded_at->format('d/m/Y') : 'N/A' }}
                             </p>
                         @endforeach
-                        <a href="{{ route('staff-officer.queries.index') }}?status=PENDING_REVIEW" class="kt-btn kt-btn-sm mt-2" style="background-color: #dc3545; border-color: #dc3545; color: #ffffff;">
+                        <a href="{{ route('staff-officer.queries.index') }}?status=PENDING_REVIEW" class="kt-btn kt-btn-sm mt-2"
+                            style="background-color: #dc3545; border-color: #dc3545; color: #ffffff;">
                             <i class="ki-filled ki-question"></i> Review Queries
                         </a>
                     </div>
@@ -41,191 +46,280 @@
         </div>
     @endif
 
-<div class="grid gap-5 lg:gap-7.5">
-    @if(!$command)
-        <div class="kt-card">
-            <div class="kt-card-content">
-                <div class="text-center py-12">
-                    <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
-                    <p class="text-secondary-foreground">You are not assigned to a command. Please contact HRD for command assignment.</p>
+    <div class="grid gap-5 lg:gap-7.5">
+        @if(!$command)
+            <div class="kt-card">
+                <div class="kt-card-content">
+                    <div class="text-center py-12">
+                        <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground">You are not assigned to a command. Please contact HRD for command
+                            assignment.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    @else
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
-            <a href="{{ route('staff-officer.leave-pass') }}?status=PENDING" class="kt-card hover:shadow-lg transition-shadow">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Pending Leave</span>
-                            <span class="text-2xl font-semibold text-mono">{{ $pendingLeaveCount }}</span>
-                        </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
-                            <i class="ki-filled ki-calendar text-2xl text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            
-            <a href="{{ route('staff-officer.leave-pass') }}?status=PENDING&type=pass" class="kt-card hover:shadow-lg transition-shadow">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Pending Pass</span>
-                            <span class="text-2xl font-semibold text-mono">{{ $pendingPassCount }}</span>
-                        </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
-                            <i class="ki-filled ki-calendar-tick text-2xl text-info"></i>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            
-            <a href="{{ route('staff-officer.manning-level') }}" class="kt-card hover:shadow-lg transition-shadow">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Manning Requests</span>
-                            <span class="text-2xl font-semibold text-mono">{{ $manningLevelCount }}</span>
-                        </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
-                            <i class="ki-filled ki-people text-2xl text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            
-            <a href="{{ route('staff-officer.roster') }}" class="kt-card hover:shadow-lg transition-shadow">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Duty Roster</span>
-                            <span class="text-sm font-semibold text-mono {{ $dutyRosterActive ? 'text-success' : 'text-secondary-foreground' }}">
-                                {{ $dutyRosterActive ? 'Active' : 'Inactive' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-center size-12 rounded-full {{ $dutyRosterActive ? 'bg-success/10' : 'bg-muted/10' }}">
-                            <i class="ki-filled ki-calendar-tick text-2xl {{ $dutyRosterActive ? 'text-success' : 'text-muted-foreground' }}"></i>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    @endif
-    
-    <!-- Matched Officers from Approved Requests Section -->
-    @if($command && isset($approvedManningRequestsWithMatches) && $approvedManningRequestsWithMatches->count() > 0)
-        <div class="kt-card overflow-hidden">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">Matched Officers Ready for Review</h3>
-                <div class="kt-card-toolbar">
-                    <span class="kt-badge kt-badge-success kt-badge-sm">{{ $approvedManningRequestsWithMatches->count() }} Request(s)</span>
-                </div>
-            </div>
-            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
-                <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
-                    HRD has matched officers for your approved manning requests. <strong>These officers are ready for your immediate review and approval</strong> - you don't need to wait for all ranks to be matched. Review and approve matched officers as they become available.
-                </p>
-                    @foreach($approvedManningRequestsWithMatches as $request)
-                        <div class="mb-6 pb-6 border-b border-border last:border-0 last:mb-0 last:pb-0">
-                            <div class="flex items-center justify-between mb-4">
-                                <div>
-                                    <h4 class="text-sm font-semibold text-foreground">Manning Request #{{ $request->id }}</h4>
-                                    <p class="text-xs text-secondary-foreground mt-1">
-                                        Approved: {{ $request->approved_at ? $request->approved_at->format('M d, Y') : 'N/A' }}
-                                        <span class="kt-badge kt-badge-success kt-badge-xs ml-2">Officers Matched</span>
-                                    </p>
-                                </div>
-                                <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
-                                    View Details
-                                </a>
+        @else
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+                <a href="{{ route('staff-officer.leave-pass') }}?status=PENDING"
+                    class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Pending Leave</span>
+                                <span class="text-2xl font-semibold text-mono">{{ $pendingLeaveCount }}</span>
                             </div>
-                            
-                            @php
-                                // Get only matched officers (items with matched_officer_id)
-                                $matchedItems = $request->items->whereNotNull('matched_officer_id');
-                            @endphp
-                            
-                            @if($matchedItems->count() > 0)
-                                <div class="mb-3 px-4 md:px-0">
-                                    <p class="text-xs text-secondary-foreground">
-                                        <i class="ki-filled ki-information-2 mr-1"></i>
-                                        {{ $matchedItems->count() }} officer(s) matched by HRD - Ready for your approval
-                                    </p>
+                            <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                                <i class="ki-filled ki-calendar text-2xl text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ route('staff-officer.leave-pass') }}?status=PENDING&type=pass"
+                    class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Pending Pass</span>
+                                <span class="text-2xl font-semibold text-mono">{{ $pendingPassCount }}</span>
+                            </div>
+                            <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
+                                <i class="ki-filled ki-calendar-tick text-2xl text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ route('staff-officer.manning-level') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Manning Requests</span>
+                                <span class="text-2xl font-semibold text-mono">{{ $manningLevelCount }}</span>
+                            </div>
+                            <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+                                <i class="ki-filled ki-people text-2xl text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ route('staff-officer.roster') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Duty Roster</span>
+                                <span
+                                    class="text-sm font-semibold text-mono {{ $dutyRosterActive ? 'text-success' : 'text-secondary-foreground' }}">
+                                    {{ $dutyRosterActive ? 'Active' : 'Inactive' }}
+                                </span>
+                            </div>
+                            <div
+                                class="flex items-center justify-center size-12 rounded-full {{ $dutyRosterActive ? 'bg-success/10' : 'bg-muted/10' }}">
+                                <i
+                                    class="ki-filled ki-calendar-tick text-2xl {{ $dutyRosterActive ? 'text-success' : 'text-muted-foreground' }}"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- APER Statistics Card -->
+                <a href="{{ route('staff-officer.aper-forms.countersigning.search') }}"
+                    class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Pending APER Tasks</span>
+                                <div class="flex gap-3 text-mono">
+                                    <span class="text-2xl font-semibold"
+                                        title="Countersigning">{{ $pendingAperCountersigningCount }}</span>
+                                    <span class="text-sm text-secondary-foreground self-end mb-1">/</span>
+                                    <span class="text-2xl font-semibold text-danger"
+                                        title="Review">{{ $pendingAperReviewCount }}</span>
                                 </div>
-                                <!-- Table with horizontal scroll wrapper -->
-                                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
-                                    <table class="kt-table" style="min-width: 700px; width: 100%;">
-                                        <thead>
-                                            <tr class="border-b border-border">
-                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Rank</th>
-                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Matched Officer</th>
-                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Service Number</th>
-                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Current Station</th>
-                                                <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground" style="white-space: nowrap;">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($matchedItems as $item)
-                                                @if($item->matchedOfficer)
-                                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                                        <td class="py-2 px-4 text-xs font-medium text-foreground" style="white-space: nowrap;">
-                                                            {{ $item->rank }}
-                                                        </td>
-                                                        <td class="py-2 px-4" style="white-space: nowrap;">
-                                                            <span class="text-xs font-medium text-foreground">
-                                                                {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="py-2 px-4" style="white-space: nowrap;">
-                                                            <span class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
-                                                        </td>
-                                                        <td class="py-2 px-4 text-xs text-secondary-foreground" style="white-space: nowrap;">
-                                                            {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
-                                                        </td>
-                                                        <td class="py-2 px-4" style="white-space: nowrap;">
-                                                            <a href="{{ route('staff-officer.manning-level.show', $request->id) }}" class="kt-btn kt-btn-xs kt-btn-primary">
-                                                                Review & Approve
-                                                            </a>
-                                                        </td>
-                                                    </tr>
-                                                @endif
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                @php
-                                    // Show summary of unmatched ranks if any
-                                    $unmatchedRanks = $request->items->whereNull('matched_officer_id')->groupBy('rank');
-                                @endphp
-                                @if($unmatchedRanks->count() > 0)
-                                    <div class="mt-4 pt-4 border-t border-border">
-                                        <p class="text-xs text-secondary-foreground mb-2">
-                                            <i class="ki-filled ki-clock mr-1"></i>
-                                            Waiting for HRD to match:
-                                        </p>
-                                        <div class="flex flex-wrap gap-2">
-                                            @foreach($unmatchedRanks as $rank => $rankItems)
-                                                <span class="text-xs px-2 py-1 rounded bg-muted text-secondary-foreground">
-                                                    {{ $rank }} ({{ $rankItems->sum('quantity_needed') }})
-                                                </span>
-                                            @endforeach
+                            </div>
+                            <div
+                                class="flex items-center justify-center size-12 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                                <i class="ki-filled ki-document text-2xl text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            @if(isset($recentAperActions) && $recentAperActions->count() > 0)
+                <!-- Recent APER Activities -->
+                <div class="kt-card mt-5">
+                    <div class="kt-card-header">
+                        <h3 class="kt-card-title">Pending APER Actions</h3>
+                        <div class="kt-card-toolbar">
+                            <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $recentAperActions->count() }} Pending</span>
+                        </div>
+                    </div>
+                    <div class="kt-card-content">
+                        <div class="flex flex-col gap-4">
+                            @foreach($recentAperActions as $form)
+                                <div
+                                    class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="flex items-center justify-center size-10 rounded-full {{ $form->status === 'COUNTERSIGNING_OFFICER' ? 'bg-purple-100' : 'bg-red-100' }}">
+                                            <i
+                                                class="ki-filled {{ $form->status === 'COUNTERSIGNING_OFFICER' ? 'ki-pencil' : 'ki-flag' }} {{ $form->status === 'COUNTERSIGNING_OFFICER' ? 'text-purple-600' : 'text-red-600' }}"></i>
+                                        </div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-sm font-medium text-foreground">
+                                                {{ $form->officer->initials ?? '' }} {{ $form->officer->surname ?? '' }}
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground">
+                                                {{ $form->year }} APER - <span
+                                                    class="font-semibold">{{ str_replace('_', ' ', $form->status) }}</span>
+                                            </span>
                                         </div>
                                     </div>
-                                @endif
-                            @else
-                                <div class="text-center py-4">
-                                    <p class="text-xs text-secondary-foreground">No matched officers yet</p>
+
+                                    @if($form->status === 'COUNTERSIGNING_OFFICER')
+                                        <a href="{{ route('staff-officer.aper-forms.countersigning', $form->id) }}"
+                                            class="kt-btn kt-btn-sm kt-btn-primary">
+                                            Countersign
+                                        </a>
+                                    @elseif($form->status === 'STAFF_OFFICER_REVIEW')
+                                        <a href="{{ route('staff-officer.aper-forms.review.show', $form->id) }}"
+                                            class="kt-btn kt-btn-sm kt-btn-danger">
+                                            Review
+                                        </a>
+                                    @endif
                                 </div>
-                            @endif
+                            @endforeach
                         </div>
-                    @endforeach
+                    </div>
+                </div>
+            @endif
+        @endif
+
+        <!-- Matched Officers from Approved Requests Section -->
+        @if($command && isset($approvedManningRequestsWithMatches) && $approvedManningRequestsWithMatches->count() > 0)
+                <div class="kt-card overflow-hidden">
+                    <div class="kt-card-header">
+                        <h3 class="kt-card-title">Matched Officers Ready for Review</h3>
+                        <div class="kt-card-toolbar">
+                            <span class="kt-badge kt-badge-success kt-badge-sm">{{ $approvedManningRequestsWithMatches->count() }}
+                                Request(s)</span>
+                        </div>
+                    </div>
+                    <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                        <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
+                            HRD has matched officers for your approved manning requests. <strong>These officers are ready for your
+                                immediate review and approval</strong> - you don't need to wait for all ranks to be matched. Review
+                            and approve matched officers as they become available.
+                        </p>
+                        @foreach($approvedManningRequestsWithMatches as $request)
+                            <div class="mb-6 pb-6 border-b border-border last:border-0 last:mb-0 last:pb-0">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-foreground">Manning Request #{{ $request->id }}</h4>
+                                        <p class="text-xs text-secondary-foreground mt-1">
+                                            Approved: {{ $request->approved_at ? $request->approved_at->format('M d, Y') : 'N/A' }}
+                                            <span class="kt-badge kt-badge-success kt-badge-xs ml-2">Officers Matched</span>
+                                        </p>
+                                    </div>
+                                    <a href="{{ route('staff-officer.manning-level.show', $request->id) }}"
+                                        class="kt-btn kt-btn-sm kt-btn-ghost">
+                                        View Details
+                                    </a>
+                                </div>
+
+                                @php
+                                    // Get only matched officers (items with matched_officer_id)
+                                    $matchedItems = $request->items->whereNotNull('matched_officer_id');
+                                @endphp
+
+                                @if($matchedItems->count() > 0)
+                                    <div class="mb-3 px-4 md:px-0">
+                                        <p class="text-xs text-secondary-foreground">
+                                            <i class="ki-filled ki-information-2 mr-1"></i>
+                                            {{ $matchedItems->count() }} officer(s) matched by HRD - Ready for your approval
+                                        </p>
+                                    </div>
+                                    <!-- Table with horizontal scroll wrapper -->
+                                    <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                                        <table class="kt-table" style="min-width: 700px; width: 100%;">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground"
+                                                        style="white-space: nowrap;">Rank</th>
+                                                    <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground"
+                                                        style="white-space: nowrap;">Matched Officer</th>
+                                                    <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground"
+                                                        style="white-space: nowrap;">Service Number</th>
+                                                    <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground"
+                                                        style="white-space: nowrap;">Current Station</th>
+                                                    <th class="text-left py-2 px-4 font-semibold text-xs text-secondary-foreground"
+                                                        style="white-space: nowrap;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($matchedItems as $item)
+                                                    @if($item->matchedOfficer)
+                                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                                            <td class="py-2 px-4 text-xs font-medium text-foreground" style="white-space: nowrap;">
+                                                                {{ $item->rank }}
+                                                            </td>
+                                                            <td class="py-2 px-4" style="white-space: nowrap;">
+                                                                <span class="text-xs font-medium text-foreground">
+                                                                    {{ $item->matchedOfficer->initials }} {{ $item->matchedOfficer->surname }}
+                                                                </span>
+                                                            </td>
+                                                            <td class="py-2 px-4" style="white-space: nowrap;">
+                                                                <span
+                                                                    class="text-xs font-mono text-secondary-foreground">{{ $item->matchedOfficer->service_number }}</span>
+                                                            </td>
+                                                            <td class="py-2 px-4 text-xs text-secondary-foreground" style="white-space: nowrap;">
+                                                                {{ $item->matchedOfficer->presentStation->name ?? 'N/A' }}
+                                                            </td>
+                                                            <td class="py-2 px-4" style="white-space: nowrap;">
+                                                                <a href="{{ route('staff-officer.manning-level.show', $request->id) }}"
+                                                                    class="kt-btn kt-btn-xs kt-btn-primary">
+                                                                    Review & Approve
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    @php
+                                        // Show summary of unmatched ranks if any
+                                        $unmatchedRanks = $request->items->whereNull('matched_officer_id')->groupBy('rank');
+                                    @endphp
+                                    @if($unmatchedRanks->count() > 0)
+                                        <div class="mt-4 pt-4 border-t border-border">
+                                            <p class="text-xs text-secondary-foreground mb-2">
+                                                <i class="ki-filled ki-clock mr-1"></i>
+                                                Waiting for HRD to match:
+                                            </p>
+                                            <div class="flex flex-wrap gap-2">
+                                                @foreach($unmatchedRanks as $rank => $rankItems)
+                                                    <span class="text-xs px-2 py-1 rounded bg-muted text-secondary-foreground">
+                                                        {{ $rank }} ({{ $rankItems->sum('quantity_needed') }})
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="text-center py-4">
+                                        <p class="text-xs text-secondary-foreground">No matched officers yet</p>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
-        </div>
-    @endif
+        @endif
 
     <!-- Newly Posted Officers Section -->
     @if($command && $newlyPostedOfficers->count() > 0)
@@ -245,11 +339,16 @@
                     <table class="kt-table" style="min-width: 800px; width: 100%;">
                         <thead>
                             <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Officer Name</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Service Number</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Rank</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Posted Date</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Action</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground"
+                                    style="white-space: nowrap;">Officer Name</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground"
+                                    style="white-space: nowrap;">Service Number</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground"
+                                    style="white-space: nowrap;">Rank</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground"
+                                    style="white-space: nowrap;">Posted Date</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground"
+                                    style="white-space: nowrap;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -261,7 +360,8 @@
                                         </span>
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
-                                        <span class="text-sm font-mono text-secondary-foreground">{{ $officer->service_number }}</span>
+                                        <span
+                                            class="text-sm font-mono text-secondary-foreground">{{ $officer->service_number }}</span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $officer->substantive_rank }}
@@ -270,9 +370,11 @@
                                         {{ $officer->date_posted_to_station ? $officer->date_posted_to_station->format('M d, Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
-                                        <form action="{{ route('staff-officer.officers.document', $officer->id) }}" method="POST" class="inline">
+                                        <form action="{{ route('staff-officer.officers.document', $officer->id) }}" method="POST"
+                                            class="inline">
                                             @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Document this officer? This confirms their arrival at the command.')">
+                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary"
+                                                onclick="return confirm('Document this officer? This confirms their arrival at the command.')">
                                                 <i class="ki-filled ki-file-check"></i> Document
                                             </button>
                                         </form>
@@ -302,8 +404,8 @@
                     @if($recentLeaveApplications->count() > 0)
                         <div class="flex flex-col gap-4">
                             @foreach($recentLeaveApplications as $app)
-                                <a href="{{ route('staff-officer.leave-applications.show', $app->id) }}" 
-                                   class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                                <a href="{{ route('staff-officer.leave-applications.show', $app->id) }}"
+                                    class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                                     <div class="flex items-center gap-3">
                                         <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
                                             <i class="ki-filled ki-calendar text-warning"></i>
@@ -317,7 +419,8 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <span class="kt-badge kt-badge-{{ strtolower($app->status) === 'approved' ? 'success' : (strtolower($app->status) === 'pending' ? 'warning' : 'danger') }} kt-badge-sm">
+                                    <span
+                                        class="kt-badge kt-badge-{{ strtolower($app->status) === 'approved' ? 'success' : (strtolower($app->status) === 'pending' ? 'warning' : 'danger') }} kt-badge-sm">
                                         {{ $app->status }}
                                     </span>
                                 </a>
@@ -328,7 +431,7 @@
                     @endif
                 </div>
             </div>
-            
+
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Recent Pass Applications</h3>
@@ -342,8 +445,8 @@
                     @if($recentPassApplications->count() > 0)
                         <div class="flex flex-col gap-4">
                             @foreach($recentPassApplications as $app)
-                                <a href="{{ route('staff-officer.pass-applications.show', $app->id) }}" 
-                                   class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                                <a href="{{ route('staff-officer.pass-applications.show', $app->id) }}"
+                                    class="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                                     <div class="flex items-center gap-3">
                                         <div class="flex items-center justify-center size-10 rounded-full bg-info/10">
                                             <i class="ki-filled ki-calendar-tick text-info"></i>
@@ -357,7 +460,8 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <span class="kt-badge kt-badge-{{ strtolower($app->status) === 'approved' ? 'success' : (strtolower($app->status) === 'pending' ? 'warning' : 'danger') }} kt-badge-sm">
+                                    <span
+                                        class="kt-badge kt-badge-{{ strtolower($app->status) === 'approved' ? 'success' : (strtolower($app->status) === 'pending' ? 'warning' : 'danger') }} kt-badge-sm">
                                         {{ $app->status }}
                                     </span>
                                 </a>
@@ -370,44 +474,43 @@
             </div>
         </div>
     @endif
-</div>
+    </div>
 
-<style>
-    /* Prevent page from expanding beyond viewport on mobile */
-    @media (max-width: 768px) {
-        body {
-            overflow-x: hidden;
+    <style>
+        /* Prevent page from expanding beyond viewport on mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+
+            .kt-card {
+                max-width: 100vw;
+            }
         }
 
-        .kt-card {
-            max-width: 100vw;
+        /* Smooth scrolling for mobile */
+        .table-scroll-wrapper {
+            position: relative;
+            max-width: 100%;
         }
-    }
 
-    /* Smooth scrolling for mobile */
-    .table-scroll-wrapper {
-        position: relative;
-        max-width: 100%;
-    }
+        /* Custom scrollbar for webkit browsers */
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 8px;
+        }
 
-    /* Custom scrollbar for webkit browsers */
-    .scrollbar-thin::-webkit-scrollbar {
-        height: 8px;
-    }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
 
-    .scrollbar-thin::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-    }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
 
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
-    }
-
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-        background: #555;
-    }
-</style>
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 @endsection
-

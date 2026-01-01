@@ -246,7 +246,12 @@
                 
                 <!-- Assignments Section -->
                 <div>
-                    <h4 class="text-sm font-semibold text-foreground mb-4">Officer Assignments</h4>
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-sm font-semibold text-foreground">Officer Assignments</h4>
+                        <button type="button" class="kt-btn kt-btn-primary" id="add-assignment-btn">
+                            <i class="ki-filled ki-plus"></i> Add Assignment
+                        </button>
+                    </div>
                 <div id="assignments-container" class="space-y-4">
                     @if($roster->assignments->count() > 0)
                         @foreach($roster->assignments as $index => $assignment)
@@ -312,11 +317,6 @@
                             </div>
                         @endforeach
                     @endif
-                    </div>
-                    <div class="mt-4">
-                        <button type="button" class="kt-btn kt-btn-primary" id="add-assignment-btn">
-                            <i class="ki-filled ki-plus"></i> Add Assignment
-                        </button>
                     </div>
                 </div>
             </div>
@@ -790,7 +790,8 @@ function createAssignmentTemplate(index) {
 function addAssignment() {
     const container = document.getElementById('assignments-container');
     const assignmentHtml = createAssignmentTemplate(assignmentCount);
-    container.insertAdjacentHTML('beforeend', assignmentHtml);
+    // Insert at the top of the container instead of the bottom
+    container.insertAdjacentHTML('afterbegin', assignmentHtml);
     assignmentCount++;
     updateRemoveButtons();
     // Make sure new assignment dropdown excludes OIC/2IC

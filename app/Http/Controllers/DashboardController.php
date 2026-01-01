@@ -44,12 +44,14 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         // Load ONLY ACTIVE roles
-        $user->load(['roles' => function($query) {
-            $query->wherePivot('is_active', true);
-        }]);
-        
+        $user->load([
+            'roles' => function ($query) {
+                $query->wherePivot('is_active', true);
+            }
+        ]);
+
         // Priority order: HRD > Admin roles > Zone Coordinator > Validator > Assessor > Staff Officer > Officer
         $rolePriorities = [
             'HRD',
@@ -71,9 +73,9 @@ class DashboardController extends Controller
             'Staff Officer',
             'Officer'
         ];
-        
+
         $userRoles = $user->roles->pluck('name')->toArray();
-        
+
         // Find the highest priority role the user has
         $role = 'Officer'; // Default
         foreach ($rolePriorities as $priorityRole) {
@@ -95,12 +97,12 @@ class DashboardController extends Controller
         $pendingEmoluments = Emolument::where('status', 'RAISED')->count();
         $activeTimeline = EmolumentTimeline::where('is_active', true)->first();
         $staffOrdersCount = StaffOrder::count();
-        
+
         // Get recent officers
         $recentOfficers = Officer::orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        
+
         // Get emolument status breakdown
         $emolumentStatus = [
             'RAISED' => Emolument::where('status', 'RAISED')->count(),
@@ -228,9 +230,9 @@ class DashboardController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($data, $reportType) {
+        $callback = function () use ($data, $reportType) {
             $file = fopen('php://output', 'w');
-            
+
             // Write headers based on report type
             switch ($reportType) {
                 case 'officers':
@@ -265,7 +267,7 @@ class DashboardController extends Controller
                         fputcsv($file, [$item->id, $item->created_at->format('Y-m-d')]);
                     }
             }
-            
+
             fclose($file);
         };
 
@@ -276,16 +278,16 @@ class DashboardController extends Controller
     public function staffOfficer()
     {
         $user = auth()->user();
-        
+
         // Get Staff Officer's command from their role
         $staffOfficerRole = $user->roles()
             ->where('name', 'Staff Officer')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $staffOfficerRole?->pivot->command_id ?? null;
         $command = $commandId ? Command::find($commandId) : null;
-        
+
         // Initialize default values
         $newlyPostedOfficers = collect();
         $pendingLeaveCount = 0;
@@ -296,77 +298,106 @@ class DashboardController extends Controller
         $recentPassApplications = collect();
         $approvedManningRequestsWithMatches = collect();
         $pendingReviewQueries = collect();
-        
+
+        // APER Variables
+        $pendingAperCountersigningCount = 0;
+        $pendingAperReviewCount = 0;
+        $recentAperActions = collect();
+
         // Get pending queries that need Staff Officer review (queries issued by this Staff Officer with PENDING_REVIEW status)
         $pendingReviewQueries = Query::where('issued_by_user_id', $user->id)
             ->where('status', 'PENDING_REVIEW')
             ->with(['officer', 'issuedBy'])
             ->orderBy('responded_at', 'desc')
             ->get();
-        
+
         if ($commandId) {
+            // Get pending APER forms waiting for Countersigning in this command
+            // Note: The specific CSO assignment happens on access, so we check generally for forms in this command ready for CSO
+            $pendingAperCountersigningCount = \App\Models\APERForm::where('status', 'COUNTERSIGNING_OFFICER')
+                ->whereHas('officer', function ($q) use ($commandId) {
+                    $q->where('present_station', $commandId);
+                })
+                ->count();
+
+            // Get pending APER forms waiting for Staff Officer Review (rejected by officer)
+            $pendingAperReviewCount = \App\Models\APERForm::where('status', 'STAFF_OFFICER_REVIEW')
+                ->whereHas('officer', function ($q) use ($commandId) {
+                    $q->where('present_station', $commandId);
+                })
+                ->count();
+
+            // Get Combined Recent APER Actions needed
+            $recentAperActions = \App\Models\APERForm::whereIn('status', ['COUNTERSIGNING_OFFICER', 'STAFF_OFFICER_REVIEW'])
+                ->whereHas('officer', function ($q) use ($commandId) {
+                    $q->where('present_station', $commandId);
+                })
+                ->with(['officer', 'reportingOfficer'])
+                ->orderBy('updated_at', 'desc')
+                ->take(5)
+                ->get();
             // Get newly posted officers (not yet documented)
             // Officers with current posting that's not documented
             $newlyPostedOfficers = Officer::where('present_station', $commandId)
                 ->where('is_active', true)
-                ->whereHas('postings', function($q) {
+                ->whereHas('postings', function ($q) {
                     // Has a current posting that hasn't been documented
                     $q->where('is_current', true)
-                      ->whereNull('documented_at');
+                        ->whereNull('documented_at');
                 })
                 ->with(['presentStation', 'user', 'currentPosting'])
                 ->orderBy('date_posted_to_station', 'desc')
                 ->take(10)
                 ->get();
-            
+
             // Get pending leave applications (PENDING status, from command officers)
             $pendingLeaveCount = \App\Models\LeaveApplication::where('status', 'PENDING')
-                ->whereHas('officer', function($q) use ($commandId) {
+                ->whereHas('officer', function ($q) use ($commandId) {
                     $q->where('present_station', $commandId);
                 })
                 ->count();
-            
+
             // Get pending pass applications (PENDING status, from command officers)
             $pendingPassCount = \App\Models\PassApplication::where('status', 'PENDING')
-                ->whereHas('officer', function($q) use ($commandId) {
+                ->whereHas('officer', function ($q) use ($commandId) {
                     $q->where('present_station', $commandId);
                 })
                 ->count();
-            
+
             // Get manning level requests count (pending approval)
             $manningLevelCount = \App\Models\ManningRequest::where('command_id', $commandId)
                 ->where('status', 'PENDING')
                 ->count();
-            
+
             // Check if there's an active duty roster
             $dutyRosterActive = \App\Models\DutyRoster::where('command_id', $commandId)
                 ->where('status', 'ACTIVE')
                 ->exists();
-            
+
             // Get recent leave applications (last 5, from command officers)
-            $recentLeaveApplications = \App\Models\LeaveApplication::whereHas('officer', function($q) use ($commandId) {
-                    $q->where('present_station', $commandId);
-                })
+            $recentLeaveApplications = \App\Models\LeaveApplication::whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
                 ->with(['officer', 'leaveType'])
                 ->orderBy('created_at', 'desc')
                 ->take(5)
                 ->get();
-            
+
             // Get recent pass applications (last 5, from command officers)
-            $recentPassApplications = \App\Models\PassApplication::whereHas('officer', function($q) use ($commandId) {
-                    $q->where('present_station', $commandId);
-                })
+            $recentPassApplications = \App\Models\PassApplication::whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
                 ->with('officer')
                 ->orderBy('created_at', 'desc')
                 ->take(5)
                 ->get();
-            
+
             // Get approved manning requests with matched officers (ready for Staff Officer review)
             // Show requests where HRD has matched at least one rank - these are actionable for Staff Officer
             // Load all items so we can show which ranks were matched and which weren't
             $approvedManningRequestsWithMatches = \App\Models\ManningRequest::where('command_id', $commandId)
                 ->where('status', 'APPROVED')
-                ->whereHas('items', function($q) {
+                ->whereHas('items', function ($q) {
                     // Only show requests that have at least one matched officer (any rank)
                     $q->whereNotNull('matched_officer_id');
                 })
@@ -375,7 +406,7 @@ class DashboardController extends Controller
                 ->orderBy('approved_at', 'desc')
                 ->get();
         }
-        
+
         return view('dashboards.staff-officer.dashboard', compact(
             'command',
             'newlyPostedOfficers',
@@ -386,7 +417,10 @@ class DashboardController extends Controller
             'recentLeaveApplications',
             'recentPassApplications',
             'approvedManningRequestsWithMatches',
-            'pendingReviewQueries'
+            'pendingReviewQueries',
+            'pendingAperCountersigningCount',
+            'pendingAperReviewCount',
+            'recentAperActions'
         ));
     }
 
@@ -401,11 +435,11 @@ class DashboardController extends Controller
     public function assessor()
     {
         $user = auth()->user();
-        
+
         // Get Assessor's command from their role
         $assessorRole = $user->roles()->where('name', 'Assessor')->first();
         $commandId = $assessorRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return view('dashboards.assessor.dashboard', [
                 'error' => 'No command assigned. Please contact HRD to assign you to a command.',
@@ -417,28 +451,28 @@ class DashboardController extends Controller
                 'command' => null,
             ]);
         }
-        
+
         $command = Command::find($commandId);
-        
+
         // Get statistics for command officers only
         $commandOfficers = Officer::where('present_station', $commandId)
             ->where('is_active', true)
             ->where('is_deceased', false)
             ->get();
-        
+
         $totalCommandOfficers = $commandOfficers->count();
-        
+
         // Get emoluments for command officers only
-        $commandEmoluments = Emolument::whereHas('officer', function($q) use ($commandId) {
+        $commandEmoluments = Emolument::whereHas('officer', function ($q) use ($commandId) {
             $q->where('present_station', $commandId);
         });
-        
+
         // Statistics
         $pendingEmolumentsCount = (clone $commandEmoluments)->where('status', 'RAISED')->count();
         $assessedCount = (clone $commandEmoluments)->where('status', 'ASSESSED')->count();
         $validatedCount = (clone $commandEmoluments)->where('status', 'VALIDATED')->count();
         $processedCount = (clone $commandEmoluments)->where('status', 'PROCESSED')->count();
-        
+
         // Emolument status breakdown
         $emolumentStatus = [
             'RAISED' => $pendingEmolumentsCount,
@@ -446,27 +480,27 @@ class DashboardController extends Controller
             'VALIDATED' => $validatedCount,
             'PROCESSED' => $processedCount,
         ];
-        
+
         // Pending emoluments for assessment (only from command officers)
         $pendingEmoluments = Emolument::where('status', 'RAISED')
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->with(['officer.presentStation'])
             ->orderBy('submitted_at', 'asc')
             ->take(10)
             ->get();
-        
+
         // Recent assessments (last 5)
         $recentAssessments = Emolument::where('status', 'ASSESSED')
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->with(['officer.presentStation', 'assessment'])
             ->orderBy('updated_at', 'desc')
             ->take(5)
             ->get();
-        
+
         // Recent command officers (last 5)
         $recentCommandOfficers = $commandOfficers
             ->sortByDesc('created_at')
@@ -491,11 +525,11 @@ class DashboardController extends Controller
     public function validator()
     {
         $user = auth()->user();
-        
+
         // Get Validator's command from their role
         $validatorRole = $user->roles()->where('name', 'Validator')->first();
         $commandId = $validatorRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return view('dashboards.validator.dashboard', [
                 'error' => 'No command assigned. Please contact HRD to assign you to a command.',
@@ -507,28 +541,28 @@ class DashboardController extends Controller
                 'command' => null,
             ]);
         }
-        
+
         $command = Command::find($commandId);
-        
+
         // Get statistics for command officers only
         $commandOfficers = Officer::where('present_station', $commandId)
             ->where('is_active', true)
             ->where('is_deceased', false)
             ->get();
-        
+
         $totalCommandOfficers = $commandOfficers->count();
-        
+
         // Get emoluments for command officers only
-        $commandEmoluments = Emolument::whereHas('officer', function($q) use ($commandId) {
+        $commandEmoluments = Emolument::whereHas('officer', function ($q) use ($commandId) {
             $q->where('present_station', $commandId);
         });
-        
+
         // Statistics
         $pendingValidationCount = (clone $commandEmoluments)->where('status', 'ASSESSED')->count();
         $validatedCount = (clone $commandEmoluments)->where('status', 'VALIDATED')->count();
         $processedCount = (clone $commandEmoluments)->where('status', 'PROCESSED')->count();
         $rejectedCount = (clone $commandEmoluments)->where('status', 'REJECTED')->count();
-        
+
         // Emolument status breakdown
         $emolumentStatus = [
             'ASSESSED' => $pendingValidationCount,
@@ -536,27 +570,27 @@ class DashboardController extends Controller
             'PROCESSED' => $processedCount,
             'REJECTED' => $rejectedCount,
         ];
-        
+
         // Pending emoluments for validation (only from command officers)
         $pendingEmoluments = Emolument::where('status', 'ASSESSED')
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->with(['officer.presentStation', 'assessment'])
             ->orderBy('assessed_at', 'asc')
             ->take(10)
             ->get();
-        
+
         // Recent validations (last 5)
         $recentValidations = Emolument::where('status', 'VALIDATED')
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
             ->with(['officer.presentStation', 'validation'])
             ->orderBy('updated_at', 'desc')
             ->take(5)
             ->get();
-        
+
         // Recent command officers (last 5)
         $recentCommandOfficers = $commandOfficers
             ->sortByDesc('created_at')
@@ -583,11 +617,11 @@ class DashboardController extends Controller
         // Get statistics for Area Controller (no command restrictions - Area Controller oversees multiple units)
         $pendingManningRequests = ManningRequest::where('status', 'SUBMITTED')->count();
         $pendingRosters = DutyRoster::where('status', 'SUBMITTED')->count();
-        
+
         // Get assessed emoluments pending Area Controller validation (ASSESSED status)
         // Area Controller validates emoluments from all commands in their area
         $pendingEmoluments = Emolument::where('status', 'ASSESSED')->count();
-        
+
         // Get recent submitted manning requests (all commands - Area Controller oversees multiple units)
         $recentManningRequests = ManningRequest::with(['command.zone', 'requestedBy'])
             ->where('status', 'SUBMITTED')
@@ -595,14 +629,14 @@ class DashboardController extends Controller
             ->orderBy('submitted_at', 'desc')
             ->take(5)
             ->get();
-        
+
         // Get recent submitted rosters (all commands)
         $recentRosters = DutyRoster::with(['command', 'preparedBy'])
             ->where('status', 'SUBMITTED')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        
+
         return view('dashboards.area-controller.dashboard', compact(
             'pendingManningRequests',
             'pendingRosters',
@@ -616,13 +650,13 @@ class DashboardController extends Controller
     public function zoneCoordinator()
     {
         $user = auth()->user();
-        
+
         // Get the zone coordinator's zone from their command assignment
         $zoneCoordinatorRole = $user->roles()
             ->where('name', 'Zone Coordinator')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $coordinatorZone = null;
         $coordinatorCommand = null;
         $zoneOfficers = collect();
@@ -634,18 +668,18 @@ class DashboardController extends Controller
             'total_commands' => 0,
             'recent_orders' => 0,
         ];
-        
+
         if ($zoneCoordinatorRole && $zoneCoordinatorRole->pivot->command_id) {
             $coordinatorCommand = Command::find($zoneCoordinatorRole->pivot->command_id);
             $coordinatorZone = $coordinatorCommand ? $coordinatorCommand->zone : null;
-            
+
             if ($coordinatorZone) {
                 // Get all commands in the zone
                 $zoneCommands = Command::where('zone_id', $coordinatorZone->id)
                     ->where('is_active', true)
                     ->orderBy('name')
                     ->get();
-                
+
                 // Get all officers in the zone
                 $zoneCommandIds = $zoneCommands->pluck('id')->toArray();
                 $zoneOfficers = Officer::whereIn('present_station', $zoneCommandIds)
@@ -654,22 +688,22 @@ class DashboardController extends Controller
                     ->orderBy('surname')
                     ->take(10)
                     ->get();
-                
+
                 // Get eligible officers (GL 07 and below)
                 $eligibleOfficers = Officer::whereIn('present_station', $zoneCommandIds)
                     ->where('is_active', true)
-                    ->where(function($q) {
+                    ->where(function ($q) {
                         $q->where('salary_grade_level', 'GL05')
-                          ->orWhere('salary_grade_level', 'GL06')
-                          ->orWhere('salary_grade_level', 'GL07')
-                          ->orWhere('salary_grade_level', '05')
-                          ->orWhere('salary_grade_level', '06')
-                          ->orWhere('salary_grade_level', '07')
-                          ->orWhereRaw("CAST(SUBSTRING(salary_grade_level, 3) AS UNSIGNED) <= 7")
-                          ->orWhereRaw("CAST(salary_grade_level AS UNSIGNED) <= 7");
+                            ->orWhere('salary_grade_level', 'GL06')
+                            ->orWhere('salary_grade_level', 'GL07')
+                            ->orWhere('salary_grade_level', '05')
+                            ->orWhere('salary_grade_level', '06')
+                            ->orWhere('salary_grade_level', '07')
+                            ->orWhereRaw("CAST(SUBSTRING(salary_grade_level, 3) AS UNSIGNED) <= 7")
+                            ->orWhereRaw("CAST(salary_grade_level AS UNSIGNED) <= 7");
                     })
                     ->count();
-                
+
                 // Get recent staff orders for this zone
                 $recentOrders = StaffOrder::whereIn('from_command_id', $zoneCommandIds)
                     ->whereIn('to_command_id', $zoneCommandIds)
@@ -677,7 +711,7 @@ class DashboardController extends Controller
                     ->orderBy('created_at', 'desc')
                     ->take(5)
                     ->get();
-                
+
                 $zoneStats = [
                     'total_officers' => Officer::whereIn('present_station', $zoneCommandIds)->where('is_active', true)->count(),
                     'eligible_officers' => $eligibleOfficers,
@@ -689,7 +723,7 @@ class DashboardController extends Controller
                 ];
             }
         }
-        
+
         return view('dashboards.zone-coordinator.dashboard', compact(
             'coordinatorZone',
             'coordinatorCommand',
@@ -704,22 +738,22 @@ class DashboardController extends Controller
     public function dcAdmin()
     {
         $user = auth()->user();
-        
+
         // Get DC Admin's command
         $dcAdminRole = $user->roles()
             ->where('name', 'DC Admin')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $dcAdminRole?->pivot->command_id ?? null;
-        
+
         // Get pending rosters count
         $pendingRostersQuery = DutyRoster::where('status', 'SUBMITTED');
         if ($commandId) {
             $pendingRostersQuery->where('command_id', $commandId);
         }
         $pendingRosters = $pendingRostersQuery->count();
-        
+
         // Get recent pending rosters
         $recentRostersQuery = DutyRoster::with(['command', 'preparedBy'])
             ->where('status', 'SUBMITTED')
@@ -729,7 +763,7 @@ class DashboardController extends Controller
             $recentRostersQuery->where('command_id', $commandId);
         }
         $recentRosters = $recentRostersQuery->get();
-        
+
         return view('dashboards.dc-admin.dashboard', compact('pendingRosters', 'recentRosters'));
     }
 
@@ -737,18 +771,18 @@ class DashboardController extends Controller
     public function admin()
     {
         $user = auth()->user();
-        
+
         // Get Admin's assigned command
         $adminRole = $user->roles()
             ->where('name', 'Admin')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $adminCommand = null;
         if ($adminRole && $adminRole->pivot->command_id) {
             $adminCommand = Command::find($adminRole->pivot->command_id);
         }
-        
+
         // Get statistics for Admin's command
         $roleAssignmentsCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')
@@ -757,28 +791,28 @@ class DashboardController extends Controller
             ->where('roles.name', '!=', 'Officer')
             ->distinct()
             ->count('users.id');
-        
+
         $staffOfficersCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')
             ->where('user_roles.is_active', true)
             ->where('user_roles.command_id', $adminCommand->id ?? 0)
             ->where('roles.name', 'Staff Officer')
             ->count();
-        
+
         $areaControllersCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')
             ->where('user_roles.is_active', true)
             ->where('user_roles.command_id', $adminCommand->id ?? 0)
             ->where('roles.name', 'Area Controller')
             ->count();
-        
+
         $dcAdminsCount = \App\Models\User::join('user_roles', 'users.id', '=', 'user_roles.user_id')
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')
             ->where('user_roles.is_active', true)
             ->where('user_roles.command_id', $adminCommand->id ?? 0)
             ->where('roles.name', 'DC Admin')
             ->count();
-        
+
         return view('dashboards.admin.dashboard', compact(
             'adminCommand',
             'roleAssignmentsCount',
@@ -792,32 +826,32 @@ class DashboardController extends Controller
     {
         $type = $request->get('type', 'leave');
         $status = $request->get('status', '');
-        
+
         // Get minuted applications (only minuted applications should be visible to DC Admin)
         if ($type === 'leave') {
             $query = LeaveApplication::with(['officer', 'leaveType'])
                 ->whereNotNull('minuted_at')
                 ->where('status', 'PENDING');
-            
+
             if ($status && $status !== 'all') {
                 $query->where('status', $status);
             }
-            
+
             $leaveApplications = $query->orderBy('minuted_at', 'desc')->paginate(20)->withQueryString();
             $passApplications = collect();
         } else {
             $query = PassApplication::with('officer')
                 ->whereNotNull('minuted_at')
                 ->where('status', 'PENDING');
-            
+
             if ($status && $status !== 'all') {
                 $query->where('status', $status);
             }
-            
+
             $passApplications = $query->orderBy('minuted_at', 'desc')->paginate(20)->withQueryString();
             $leaveApplications = collect();
         }
-        
+
         return view('dashboards.dc-admin.leave-pass', compact('leaveApplications', 'passApplications', 'type', 'status'));
     }
 
@@ -831,7 +865,7 @@ class DashboardController extends Controller
             ->whereMonth('processed_at', now()->month)
             ->whereYear('processed_at', now()->year)
             ->count();
-        
+
         // Account Change Request statistics
         $pendingChangeRequests = AccountChangeRequest::where('status', 'PENDING')->count();
         $recentChangeRequests = AccountChangeRequest::with(['officer.presentStation'])
@@ -869,11 +903,11 @@ class DashboardController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('initials', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -908,7 +942,7 @@ class DashboardController extends Controller
     public function establishment()
     {
         $totalOfficers = Officer::where('is_active', true)->where('is_deceased', false)->count();
-        
+
         $lastServiceNumber = Officer::whereNotNull('service_number')
             ->orderByRaw("CAST(SUBSTRING(service_number, 4) AS UNSIGNED) DESC")
             ->value('service_number') ?? 'N/A';
@@ -963,11 +997,11 @@ class DashboardController extends Controller
 
     public function newRecruits(Request $request)
     {
-        $query = Officer::where(function($q) {
-                $q->whereNull('service_number')
-                  ->orWhere('service_number', '')
-                  ->orWhere('service_number', 'NCS'); // Handle edge case where mutator set it to "NCS"
-            })
+        $query = Officer::where(function ($q) {
+            $q->whereNull('service_number')
+                ->orWhere('service_number', '')
+                ->orWhere('service_number', 'NCS'); // Handle edge case where mutator set it to "NCS"
+        })
             ->where('is_active', true)
             ->where('is_deceased', false);
 
@@ -982,7 +1016,7 @@ class DashboardController extends Controller
         switch ($sortBy) {
             case 'name':
                 $query->orderBy('surname', $sortOrder)
-                      ->orderBy('initials', $sortOrder);
+                    ->orderBy('initials', $sortOrder);
                 break;
             case 'email':
                 $query->orderBy('email', $sortOrder);
@@ -1014,7 +1048,7 @@ class DashboardController extends Controller
         $benefitsProcessedCount = DeceasedOfficer::where('benefits_processed', true)
             ->whereYear('benefits_processed_at', now()->year)
             ->count();
-        
+
         // Next of KIN Change Request statistics
         $pendingNextOfKinRequests = NextOfKinChangeRequest::where('status', 'PENDING')->count();
         $recentNextOfKinRequests = NextOfKinChangeRequest::with(['officer.presentStation'])
@@ -1070,12 +1104,12 @@ class DashboardController extends Controller
             try {
                 $tokenData = base64_decode($request->token);
                 list($userId, $tempPassword) = explode('|', $tokenData, 2);
-                
+
                 $user = User::find($userId);
                 if ($user && Hash::check($tempPassword, $user->password)) {
                     // Auto-login the user (remember for the session)
                     Auth::login($user, true);
-                    
+
                     // Redirect to remove token from URL for security
                     return redirect()->route('onboarding.step1');
                 } else {
@@ -1086,12 +1120,12 @@ class DashboardController extends Controller
                 return redirect()->route('login')->with('error', 'Invalid onboarding link. Please contact HRD for a new link.');
             }
         }
-        
+
         // If no valid token, require authentication
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Invalid or expired onboarding link. Please contact HRD for a new link.');
         }
-        
+
         // Load existing officer data if available (for already authenticated users)
         $user = auth()->user();
         // Explicitly load the officer relationship
@@ -1100,7 +1134,7 @@ class DashboardController extends Controller
         }
         $officer = $user->officer;
         $savedData = session('onboarding_step1', []);
-        
+
         // Pre-fill with existing officer data if available
         // Only fill fields that are not already in savedData or are empty
         if ($officer) {
@@ -1108,9 +1142,9 @@ class DashboardController extends Controller
                 'service_number' => $officer->service_number,
                 'initials' => $officer->initials,
                 'surname' => $officer->surname,
-                'first_name' => $officer->surname ?? '',
+                'first_name' => $officer->initials ?? '',
                 'gender' => $officer->sex == 'M' ? 'Male' : ($officer->sex == 'F' ? 'Female' : ''),
-                'date_of_birth' => $officer->date_of_birth?->format('Y-m-d'),
+                'date_of_birth' => $officer->date_of_birth ? $officer->date_of_birth->format('Y-m-d') : null,
                 'state_of_origin' => $officer->state_of_origin,
                 'lga' => $officer->lga,
                 'geopolitical_zone' => $officer->geopolitical_zone,
@@ -1120,13 +1154,13 @@ class DashboardController extends Controller
                 'residential_address' => $officer->residential_address,
                 'permanent_home_address' => $officer->permanent_home_address,
             ];
-            
+
             // Merge officer data with saved data
             // For service_number, always use officer's value if it exists
             if (!empty($officerData['service_number'])) {
                 $savedData['service_number'] = $officerData['service_number'];
             }
-            
+
             // For other fields, don't overwrite non-empty saved values
             foreach ($officerData as $key => $value) {
                 if ($key !== 'service_number' && (!isset($savedData[$key]) || empty($savedData[$key]))) {
@@ -1134,7 +1168,7 @@ class DashboardController extends Controller
                 }
             }
         }
-        
+
         return view('forms.onboarding.step1', compact('savedData'));
     }
 
@@ -1144,7 +1178,7 @@ class DashboardController extends Controller
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Please use the onboarding link from your email.');
         }
-        
+
         $validated = $request->validate([
             'surname' => 'required|string|max:255',
             'first_name' => 'required|string|max:255',
@@ -1172,21 +1206,21 @@ class DashboardController extends Controller
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Please use the onboarding link from your email.');
         }
-        
+
         // Check if step1 data exists
         if (!session('onboarding_step1')) {
             return redirect()->route('onboarding.step1')->with('error', 'Please complete Step 1 first.');
         }
-        
+
         $savedData = session('onboarding_step2', []);
-        
+
         // Pre-fill zone_id from officer's command if available
         $user = auth()->user();
         if (!$user->relationLoaded('officer')) {
             $user->load('officer.presentStation.zone');
         }
         $officer = $user->officer;
-        
+
         if ($officer && $officer->presentStation && $officer->presentStation->zone) {
             if (!isset($savedData['zone_id']) || empty($savedData['zone_id'])) {
                 $savedData['zone_id'] = $officer->presentStation->zone->id;
@@ -1195,7 +1229,7 @@ class DashboardController extends Controller
                 $savedData['command_id'] = $officer->presentStation->id;
             }
         }
-        
+
         return view('forms.onboarding.step2', compact('savedData'));
     }
 
@@ -1227,7 +1261,7 @@ class DashboardController extends Controller
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Please use the onboarding link from your email.');
         }
-        
+
         // Check if previous steps completed
         if (!session('onboarding_step1') || !session('onboarding_step2')) {
             return redirect()->route('onboarding.step1')->with('error', 'Please complete previous steps first.');
@@ -1256,19 +1290,19 @@ class DashboardController extends Controller
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Please use the onboarding link from your email.');
         }
-        
+
         // Check if previous steps completed
         if (!session('onboarding_step1') || !session('onboarding_step2') || !session('onboarding_step3')) {
             return redirect()->route('onboarding.step1')->with('error', 'Please complete previous steps first.');
         }
         $savedData = session('onboarding_step4', []);
-        
+
         // Load existing profile picture if officer has one
         $user = auth()->user();
         if ($user && $user->officer && $user->officer->profile_picture_url) {
             $savedData['profile_picture_preview'] = asset('storage/' . $user->officer->profile_picture_url);
         }
-        
+
         return view('forms.onboarding.step4', compact('savedData'));
     }
 
@@ -1295,7 +1329,7 @@ class DashboardController extends Controller
                 break;
             }
         }
-        
+
         if (!$hasPrimary) {
             return redirect()->back()
                 ->withErrors(['next_of_kin' => 'At least one next of kin must be marked as primary.'])
@@ -1341,7 +1375,7 @@ class DashboardController extends Controller
                 break;
             }
         }
-        
+
         if (!$hasPrimary) {
             return redirect()->back()
                 ->withErrors(['next_of_kin' => 'At least one next of kin must be marked as primary.'])
@@ -1358,7 +1392,7 @@ class DashboardController extends Controller
         if ($request->hasFile('documents')) {
             $user = auth()->user();
             $officer = $user->officer;
-            
+
             if ($officer) {
                 foreach ($request->file('documents') as $document) {
                     $path = $document->store('officer-documents-temp', 'public');
@@ -1408,7 +1442,7 @@ class DashboardController extends Controller
         if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Please use the onboarding link from your email.');
         }
-        
+
         // Check if all steps are completed
         $step1 = session('onboarding_step1');
         $step2 = session('onboarding_step2');
@@ -1444,7 +1478,7 @@ class DashboardController extends Controller
 
             // Get existing officer record (should exist from HRD initiation)
             $officer = $user->officer;
-            
+
             if (!$officer) {
                 return redirect()->route('onboarding.step1')
                     ->with('error', 'Officer record not found. Please contact HRD.')
@@ -1465,14 +1499,14 @@ class DashboardController extends Controller
                 'lga' => $step1['lga'],
                 'geopolitical_zone' => $step1['geopolitical_zone'],
                 'marital_status' => $step1['marital_status'],
-                'entry_qualification' => isset($step2['education']) && count($step2['education']) > 0 
-                    ? $step2['education'][0]['qualification'] 
+                'entry_qualification' => isset($step2['education']) && count($step2['education']) > 0
+                    ? $step2['education'][0]['qualification']
                     : null, // Use first education entry's qualification as primary
-                'discipline' => isset($step2['education']) && count($step2['education']) > 0 
-                    ? ($step2['education'][0]['discipline'] ?? null) 
+                'discipline' => isset($step2['education']) && count($step2['education']) > 0
+                    ? ($step2['education'][0]['discipline'] ?? null)
                     : null, // Use first education entry's discipline
-                'additional_qualification' => isset($step2['education']) && count($step2['education']) > 0 
-                    ? json_encode($step2['education']) 
+                'additional_qualification' => isset($step2['education']) && count($step2['education']) > 0
+                    ? json_encode($step2['education'])
                     : null, // Store ALL education entries as JSON (including first one with university)
                 'present_station' => $step2['command_id'],
                 'date_posted_to_station' => $step2['date_posted_to_station'],
@@ -1496,19 +1530,19 @@ class DashboardController extends Controller
             if (isset($step4['profile_picture_data']) && !empty($step4['profile_picture_data'])) {
                 try {
                     $base64Image = $step4['profile_picture_data'];
-                    
+
                     // Extract base64 data
                     if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {
                         $imageType = $matches[1];
                         $imageData = base64_decode(preg_replace('/^data:image\/\w+;base64,/', '', $base64Image));
-                        
+
                         // Generate unique filename
                         $filename = 'profile_' . $officer->id . '_' . time() . '.jpg';
                         $path = 'profiles/' . $filename;
-                        
+
                         // Store the image
                         \Storage::disk('public')->put($path, $imageData);
-                        
+
                         // Delete old profile picture if exists
                         if ($officer->profile_picture_url) {
                             $oldPath = storage_path('app/public/' . $officer->profile_picture_url);
@@ -1516,7 +1550,7 @@ class DashboardController extends Controller
                                 unlink($oldPath);
                             }
                         }
-                        
+
                         // Update officer with profile picture path
                         $officerData['profile_picture_url'] = $path;
                     }
@@ -1532,15 +1566,15 @@ class DashboardController extends Controller
             // Create next of kin entries
             if (isset($step4['next_of_kin']) && is_array($step4['next_of_kin'])) {
                 foreach ($step4['next_of_kin'] as $nok) {
-            \App\Models\NextOfKin::create([
-                'officer_id' => $officer->id,
+                    \App\Models\NextOfKin::create([
+                        'officer_id' => $officer->id,
                         'name' => $nok['name'],
                         'relationship' => $nok['relationship'],
                         'phone_number' => $nok['phone_number'],
                         'email' => $nok['email'] ?? null,
                         'address' => $nok['address'],
                         'is_primary' => isset($nok['is_primary']) && $nok['is_primary'] == '1',
-            ]);
+                    ]);
                 }
             }
 
@@ -1550,11 +1584,11 @@ class DashboardController extends Controller
                     // Move from temp location to final location
                     $tempPath = $docInfo['path'];
                     $finalPath = 'officer-documents/' . basename($tempPath);
-                    
+
                     // Move file from temp to final location
                     if (\Storage::disk('public')->exists($tempPath)) {
                         \Storage::disk('public')->move($tempPath, $finalPath);
-                        
+
                         \App\Models\OfficerDocument::create([
                             'officer_id' => $officer->id,
                             'document_type' => $docInfo['extension'],
@@ -1567,7 +1601,7 @@ class DashboardController extends Controller
                     }
                 }
             }
-            
+
             // Also handle documents from request if submitted again (for backward compatibility)
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $document) {

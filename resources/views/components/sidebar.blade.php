@@ -1,14 +1,16 @@
 @php
     $user = auth()->user();
     $officer = $user->officer ?? null;
-    
+
     // Load ONLY ACTIVE roles
-    $user->load(['roles' => function($query) {
-        $query->wherePivot('is_active', true);
-    }]);
-    
+    $user->load([
+        'roles' => function ($query) {
+            $query->wherePivot('is_active', true);
+        }
+    ]);
+
     $roles = $user->roles->pluck('name')->toArray();
-    
+
     // Determine primary role based on priority (same as DashboardController)
     $rolePriorities = [
         'HRD',
@@ -30,7 +32,7 @@
         'Staff Officer',
         'Officer'
     ];
-    
+
     $primaryRole = 'Officer'; // Default
     foreach ($rolePriorities as $priorityRole) {
         if (in_array($priorityRole, $roles)) {
@@ -56,7 +58,7 @@
             // Use profile photo as indicator - if profile_picture_url exists, onboarding is complete
             $officer = \App\Models\Officer::find($officer->id);
             $onboardingComplete = $officer && !empty($officer->profile_picture_url);
-            
+
             // Check if officer is OIC or 2IC in an approved duty roster
             if ($onboardingComplete && $officer->present_station) {
                 $dutyRosterService = app(\App\Services\DutyRosterService::class);
@@ -105,14 +107,10 @@
             [
                 'title' => 'APER Forms',
                 'icon' => 'ki-filled ki-document',
-                'submenu' => $isOICOr2IC 
-                    ? [
-                        ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')],
-                        ['title' => 'Search Officers', 'href' => route('officer.aper-forms.search-officers')]
-                      ]
-                    : [
-                        ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')]
-                      ]
+                'submenu' => [
+                    ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')],
+                    ['title' => 'Search/Countersign', 'href' => route('officer.aper-forms.search-officers')],
+                ]
             ],
             [
                 'title' => 'Settings',
@@ -158,14 +156,10 @@
                     [
                         'title' => 'APER Forms',
                         'icon' => 'ki-filled ki-document',
-                        'submenu' => $isOICOr2IC 
-                            ? [
-                                ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')],
-                                ['title' => 'Search Officers', 'href' => route('officer.aper-forms.search-officers')]
-                              ]
-                            : [
-                                ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')]
-                              ]
+                        'submenu' => [
+                            ['title' => 'My APER Forms', 'href' => route('officer.aper-forms')],
+                            ['title' => 'Search/Countersign', 'href' => route('officer.aper-forms.search-officers')],
+                        ]
                     ],
                     [
                         'title' => 'Settings',
@@ -277,7 +271,7 @@
                     'title' => 'APER Forms',
                     'icon' => 'ki-filled ki-document',
                     'submenu' => [
-                        ['title' => 'Create/Search Forms', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
+                        ['title' => 'Search/Countersign', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
                         ['title' => 'Review Rejected Forms', 'href' => route('staff-officer.aper-forms.review')],
                     ]
                 ],
@@ -404,9 +398,7 @@
     <div class="flex flex-col gap-2.5" id="sidebar_header">
         <div class="flex items-center gap-2.5 px-3.5 h-[70px]">
             <a href="{{ route('dashboard') }}" class="flex items-center shrink-0">
-                <img class="size-[34px]"
-                    src="{{ asset('logo.jpg') }}"
-                    alt="Portal Logo" />
+                <img class="size-[34px]" src="{{ asset('logo.jpg') }}" alt="Portal Logo" />
             </a>
             <div class="kt-menu kt-menu-default grow min-w-0" data-kt-menu="true">
                 <div class="kt-menu-item grow" data-kt-menu-item-offset="0, 15px"
@@ -458,8 +450,7 @@
                             @endif
                         @endif
                         <div class="kt-menu-item">
-                            <a class="kt-menu-link" href="#"
-                                data-kt-modal-toggle="#logout-confirm-modal">
+                            <a class="kt-menu-link" href="#" data-kt-modal-toggle="#logout-confirm-modal">
                                 <span class="kt-menu-icon"><i class="ki-filled ki-exit-right"></i></span>
                                 <span class="kt-menu-title">Sign Out</span>
                             </a>
@@ -549,7 +540,7 @@
                     @endforeach
                 </div>
             </div>
-            
+
             @if($isOfficerWithRole && !empty($officerMenuItems))
                 <!-- Officer Menu (for officers with roles) -->
                 <div class="mb-5">
@@ -678,7 +669,8 @@
             <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
                 Cancel
             </button>
-            <button class="kt-btn kt-btn-primary" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            <button class="kt-btn kt-btn-primary"
+                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <span class="kt-menu-icon"><i class="ki-filled ki-exit-right"></i></span>
                 <span>Sign Out</span>
             </button>

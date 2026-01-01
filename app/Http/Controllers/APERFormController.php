@@ -41,7 +41,7 @@ class APERFormController extends Controller
     // Officers can no longer create their own forms. Forms are created by Reporting Officers.
     public function create()
     {
-            return redirect()->route('officer.aper-forms')
+        return redirect()->route('officer.aper-forms')
             ->with('error', 'APER forms are created by Reporting Officers. Please contact your Reporting Officer (OIC or 2IC) to have your APER form created.');
     }
 
@@ -80,7 +80,7 @@ class APERFormController extends Controller
         }
 
         $validated = $this->validateFormData($request);
-        
+
         // Handle qualifications array
         if ($request->has('qualifications')) {
             $qualifications = [];
@@ -94,17 +94,17 @@ class APERFormController extends Controller
 
         // Handle leave records arrays
         if ($request->has('sick_leave_records')) {
-            $validated['sick_leave_records'] = array_filter($request->sick_leave_records ?? [], function($record) {
+            $validated['sick_leave_records'] = array_filter($request->sick_leave_records ?? [], function ($record) {
                 return !empty($record['type']) || !empty($record['from']) || !empty($record['to']);
             });
         }
         if ($request->has('maternity_leave_records')) {
-            $validated['maternity_leave_records'] = array_filter($request->maternity_leave_records ?? [], function($record) {
+            $validated['maternity_leave_records'] = array_filter($request->maternity_leave_records ?? [], function ($record) {
                 return !empty($record['from']) || !empty($record['to']);
             });
         }
         if ($request->has('annual_casual_leave_records')) {
-            $validated['annual_casual_leave_records'] = array_filter($request->annual_casual_leave_records ?? [], function($record) {
+            $validated['annual_casual_leave_records'] = array_filter($request->annual_casual_leave_records ?? [], function ($record) {
                 return !empty($record['from']) || !empty($record['to']);
             });
         }
@@ -119,7 +119,7 @@ class APERFormController extends Controller
 
         // Handle training courses array
         if ($request->has('training_courses')) {
-            $validated['training_courses'] = array_filter($request->training_courses ?? [], function($course) {
+            $validated['training_courses'] = array_filter($request->training_courses ?? [], function ($course) {
                 return !empty($course['type']) || !empty($course['where']);
             });
         }
@@ -148,13 +148,13 @@ class APERFormController extends Controller
             }
 
             DB::commit();
-            
+
             // Send notification if form was submitted
             if ($action === 'submit' && $form->officer->user && $form->officer->user->email) {
                 \App\Jobs\SendAPERFormSubmittedMailJob::dispatch($form);
             }
-            
-            $message = $action === 'submit' 
+
+            $message = $action === 'submit'
                 ? 'APER form submitted successfully. Waiting for Reporting Officer assignment.'
                 : 'APER form saved successfully.';
             return redirect()->route('officer.aper-forms.show', $form->id)
@@ -204,7 +204,7 @@ class APERFormController extends Controller
         $action = $request->input('action', 'save');
 
         $validated = $this->validateFormData($request);
-        
+
         // Handle qualifications array
         if ($request->has('qualifications')) {
             $qualifications = [];
@@ -218,17 +218,17 @@ class APERFormController extends Controller
 
         // Handle leave records arrays
         if ($request->has('sick_leave_records')) {
-            $validated['sick_leave_records'] = array_filter($request->sick_leave_records ?? [], function($record) {
+            $validated['sick_leave_records'] = array_filter($request->sick_leave_records ?? [], function ($record) {
                 return !empty($record['type']) || !empty($record['from']) || !empty($record['to']);
             });
         }
         if ($request->has('maternity_leave_records')) {
-            $validated['maternity_leave_records'] = array_filter($request->maternity_leave_records ?? [], function($record) {
+            $validated['maternity_leave_records'] = array_filter($request->maternity_leave_records ?? [], function ($record) {
                 return !empty($record['from']) || !empty($record['to']);
             });
         }
         if ($request->has('annual_casual_leave_records')) {
-            $validated['annual_casual_leave_records'] = array_filter($request->annual_casual_leave_records ?? [], function($record) {
+            $validated['annual_casual_leave_records'] = array_filter($request->annual_casual_leave_records ?? [], function ($record) {
                 return !empty($record['from']) || !empty($record['to']);
             });
         }
@@ -243,7 +243,7 @@ class APERFormController extends Controller
 
         // Handle training courses array
         if ($request->has('training_courses')) {
-            $validated['training_courses'] = array_filter($request->training_courses ?? [], function($course) {
+            $validated['training_courses'] = array_filter($request->training_courses ?? [], function ($course) {
                 return !empty($course['type']) || !empty($course['where']);
             });
         }
@@ -259,7 +259,7 @@ class APERFormController extends Controller
             $form->update($validated);
 
             DB::commit();
-            $message = $action === 'submit' 
+            $message = $action === 'submit'
                 ? 'APER form submitted successfully. Waiting for Reporting Officer assignment.'
                 : 'APER form updated successfully.';
             return redirect()->route('officer.aper-forms.show', $form->id)
@@ -305,7 +305,7 @@ class APERFormController extends Controller
     public function searchOfficers(Request $request)
     {
         $user = auth()->user();
-        
+
         // Allow access if user has Reporting Officer role, HRD role, Staff Officer role, OR is an officer
         $this->authorizeAnyRoleOrOfficer(['Reporting Officer', 'HRD', 'Staff Officer']);
 
@@ -325,91 +325,128 @@ class APERFormController extends Controller
         $activeTimeline = APERTimeline::where('is_active', true)->first();
         $year = $activeTimeline ? $activeTimeline->year : date('Y');
 
-        // Check if Reporting Officer is OIC or 2IC
         $dutyRosterService = app(DutyRosterService::class);
-        $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $year);
-        $rosterRole = $dutyRosterService->getOfficerRoleInRoster($reportingOfficer->id, $commandId, $year);
+        $rankComparisonService = app(RankComparisonService::class);
 
-        // Only allow if Reporting Officer is OIC or 2IC (unless HRD or Staff Officer)
-        if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer') && !$isOICOr2IC) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You must be an Officer in Charge (OIC) or Second In Command (2IC) in an approved duty roster to create APER forms.');
-        }
-
-        // Get the approved roster where the Reporting Officer is OIC or 2IC
-        $startDate = "{$year}-01-01";
-        $endDate = "{$year}-12-31";
-        
-        $approvedRoster = \App\Models\DutyRoster::where('command_id', $commandId)
+        // 1. Determine all subordinates the user is OIC or 2IC for
+        $rosters = \App\Models\DutyRoster::where('command_id', $commandId)
             ->where('status', 'APPROVED')
-            ->where(function($query) use ($reportingOfficer, $startDate, $endDate) {
-                $query->where(function($q) use ($reportingOfficer, $startDate, $endDate) {
-                    $q->where('oic_officer_id', $reportingOfficer->id)
-                      ->where(function($periodQuery) use ($startDate, $endDate) {
-                          $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
-                                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
-                                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
-                                         $overlapQuery->where('roster_period_start', '<=', $startDate)
-                                                     ->where('roster_period_end', '>=', $endDate);
-                                     });
-                      });
-                })
-                ->orWhere(function($q) use ($reportingOfficer, $startDate, $endDate) {
-                    $q->where('second_in_command_officer_id', $reportingOfficer->id)
-                      ->where(function($periodQuery) use ($startDate, $endDate) {
-                          $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
-                                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
-                                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
-                                         $overlapQuery->where('roster_period_start', '<=', $startDate)
-                                                     ->where('roster_period_end', '>=', $endDate);
-                                     });
-                      });
-                });
+            ->where(function ($query) use ($reportingOfficer) {
+                $query->where('oic_officer_id', $reportingOfficer->id)
+                    ->orWhere('second_in_command_officer_id', $reportingOfficer->id);
             })
-            ->first();
-        
-        if (!$approvedRoster) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You must be an OIC or 2IC in an approved duty roster with an active timeline to search for officers.');
-        }
-        
-        // Get officer IDs from roster assignments (excluding OIC and 2IC)
-        $assignedOfficerIds = $approvedRoster->assignments()
-            ->pluck('officer_id')
-            ->toArray();
-        
-        // Also include OIC and 2IC if they exist
-        if ($approvedRoster->oic_officer_id) {
-            $assignedOfficerIds[] = $approvedRoster->oic_officer_id;
-        }
-        if ($approvedRoster->second_in_command_officer_id) {
-            $assignedOfficerIds[] = $approvedRoster->second_in_command_officer_id;
-        }
-        
-        // Query officers - only those assigned to this roster
-        $query = Officer::whereIn('id', $assignedOfficerIds)
-            ->where('present_station', $commandId);
+            ->with('assignments')
+            ->get();
+
+        $subordinateIds = $rosters->flatMap(function ($r) {
+            return $r->assignments->pluck('officer_id');
+        })->unique()->toArray();
+
+        // 2. Query officers in the command
+        $query = Officer::where('present_station', $commandId);
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('initials', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
         $officers = $query->orderBy('surname')->paginate(20);
 
-        // Load OIC/2IC status for each officer (for display)
-        $dutyRosterService = app(DutyRosterService::class);
         foreach ($officers as $officer) {
-            $officer->is_oic_or_2ic = $dutyRosterService->isOfficerOICOr2IC($officer->id, $commandId, $year);
+            // Can user START an APER for this officer? (Must be OIC/2IC and not self)
+            $officer->is_subordinate = in_array($officer->id, $subordinateIds) && $officer->id !== $reportingOfficer->id;
+
+            // Check for pending countersignature
+            $pendingForm = APERForm::where('officer_id', $officer->id)
+                ->where('year', $year)
+                ->where('status', 'COUNTERSIGNING_OFFICER')
+                ->where('reporting_officer_id', '!=', $user->id) // Cannot countersign self-reported form
+                ->first();
+
+            $officer->pending_form = $pendingForm;
+            $officer->can_countersign = false;
+
+            if ($pendingForm) {
+                $ro = $pendingForm->reportingOfficer;
+                if ($ro && $ro->officer) {
+                    if ($rankComparisonService->isRankHigherOrEqual($reportingOfficer->id, $ro->officer->id)) {
+                        $officer->can_countersign = true;
+                    }
+                }
+            }
+
             $officer->roster_role = $dutyRosterService->getOfficerRoleInRoster($officer->id, $commandId, $year);
         }
 
+        $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $year);
+        $rosterRole = $dutyRosterService->getOfficerRoleInRoster($reportingOfficer->id, $commandId, $year);
+
         return view('dashboards.reporting-officer.aper-search', compact('officers', 'rosterRole', 'isOICOr2IC'));
+    }
+
+    // Countersigning Officer: Search for forms in the command awaiting countersigning
+    public function searchCountersigningForms(Request $request)
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $commandId = $officer->present_station;
+        if (!$commandId) {
+            return redirect()->route('dashboard')->with('error', 'You must be assigned to a command.');
+        }
+
+        // Find forms in command, awaiting CSO, where reporter != current user
+        $query = APERForm::where('status', 'COUNTERSIGNING_OFFICER')
+            ->where('reporting_officer_id', '!=', $user->id) // Constraint: Not the one who filled it
+            ->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
+            ->with(['officer', 'reportingOfficer.officer']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('officer', function ($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('initials', 'like', "%{$search}%");
+            });
+        }
+
+        // Get all matching basic criteria
+        $potentialForms = $query->orderBy('updated_at', 'desc')->get();
+
+        // Filter by Rank (CSO >= Reporting Officer)
+        $rankComparisonService = app(RankComparisonService::class);
+        $forms = $potentialForms->filter(function ($form) use ($officer, $rankComparisonService) {
+            // Reporting Officer must exist (it should for this status)
+            if (!$form->reportingOfficer || !$form->reportingOfficer->officer)
+                return false;
+
+            // Check if user's rank is higher or equal to Reporting Officer's rank
+            return $rankComparisonService->isRankHigherOrEqual($officer->id, $form->reportingOfficer->officer->id);
+        });
+
+        // Paginate manually
+        $page = $request->input('page', 1);
+        $perPage = 20;
+        $forms = new \Illuminate\Pagination\LengthAwarePaginator(
+            $forms->forPage($page, $perPage),
+            $forms->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view('dashboards.countersigning-officer.aper-search', compact('forms'));
     }
 
     // Reporting Officer: Access APER form for an officer (creates form if doesn't exist)
@@ -442,7 +479,7 @@ class APERFormController extends Controller
         if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer')) {
             $dutyRosterService = app(DutyRosterService::class);
             $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $year);
-            
+
             if (!$isOICOr2IC) {
                 return redirect()->back()->with('error', 'You must be an Officer in Charge (OIC) or Second In Command (2IC) in an approved duty roster to create APER forms.');
             }
@@ -504,32 +541,32 @@ class APERFormController extends Controller
             }
         } else {
             // Form exists - check access
-        if (!$form->canBeAccessedBy($user)) {
-            // If form is submitted and no reporting officer assigned, assign this user
-            if ($form->status === 'SUBMITTED' && !$form->reporting_officer_id) {
-                DB::beginTransaction();
-                try {
-                    $form->update([
-                        'reporting_officer_id' => $user->id,
-                        'status' => 'REPORTING_OFFICER',
-                    ]);
-                    DB::commit();
-                    
-                    if ($user->email) {
-                        \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $user);
-                    }
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    return redirect()->back()->with('error', 'Failed to assign reporting officer.');
-                }
-            } else {
-                return redirect()->back()->with('error', 'You do not have access to this APER form.');
-            }
-        }
+            if (!$form->canBeAccessedBy($user)) {
+                // If form is submitted and no reporting officer assigned, assign this user
+                if ($form->status === 'SUBMITTED' && !$form->reporting_officer_id) {
+                    DB::beginTransaction();
+                    try {
+                        $form->update([
+                            'reporting_officer_id' => $user->id,
+                            'status' => 'REPORTING_OFFICER',
+                        ]);
+                        DB::commit();
 
-        // If form was rejected and needs reassignment
-        if ($form->is_rejected && $form->status === 'REPORTING_OFFICER' && $form->reporting_officer_id !== $user->id) {
-            return redirect()->back()->with('error', 'This form has been rejected and needs to be reassigned by HRD or Staff Officer.');
+                        if ($user->email) {
+                            \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $user);
+                        }
+                    } catch (\Exception $e) {
+                        DB::rollBack();
+                        return redirect()->back()->with('error', 'Failed to assign reporting officer.');
+                    }
+                } else {
+                    return redirect()->back()->with('error', 'You do not have access to this APER form.');
+                }
+            }
+
+            // If form was rejected and needs reassignment
+            if ($form->is_rejected && $form->status === 'REPORTING_OFFICER' && $form->reporting_officer_id !== $user->id) {
+                return redirect()->back()->with('error', 'This form has been rejected and needs to be reassigned by HRD or Staff Officer.');
             }
         }
 
@@ -569,6 +606,27 @@ class APERFormController extends Controller
             return redirect()->back()->with('error', 'Unauthorized access.');
         }
 
+        // Validate that essential fields are filled
+        $requiredFields = [
+            'job_understanding_grade',
+            'knowledge_application_grade',
+            'accomplishment_grade',
+            'judgement_grade',
+            'work_speed_accuracy_grade',
+            'written_expression_grade',
+            'oral_expression_grade',
+            'staff_relations_grade',
+            'public_relations_grade',
+            'overall_assessment',
+            'promotability'
+        ];
+
+        foreach ($requiredFields as $field) {
+            if (empty($form->$field)) {
+                return redirect()->back()->with('error', 'You must complete the assessment grades before forwarding the form.');
+            }
+        }
+
         DB::beginTransaction();
         try {
             $form->update([
@@ -578,6 +636,10 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
+
+            // Notify potential Countersigning Officers in the command pool
+            \App\Jobs\SendAPERCountersigningPoolMailJob::dispatch($form);
+
             return redirect()->back()->with('success', 'APER form forwarded to Countersigning Officer.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -668,6 +730,10 @@ class APERFormController extends Controller
             return redirect()->back()->with('error', 'Unauthorized access.');
         }
 
+        if (empty($form->countersigning_officer_declaration) || strlen($form->countersigning_officer_declaration) < 50) {
+            return redirect()->back()->with('error', 'You must provide a valid countersigning declaration (min 50 chars) before completing.');
+        }
+
         DB::beginTransaction();
         try {
             $form->update([
@@ -747,12 +813,12 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
-            
+
             // Send notification to officer
             if ($form->officer->user && $form->officer->user->email) {
                 \App\Jobs\SendAPERFormAcceptedMailJob::dispatch($form);
             }
-            
+
             return redirect()->back()->with('success', 'APER form accepted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -778,20 +844,28 @@ class APERFormController extends Controller
         try {
             // Get Staff Officer for the command
             $commandId = $form->officer->present_station;
-            $staffOfficer = User::whereHas('roles', function($q) {
+            $staffOfficer = User::whereHas('roles', function ($q) {
                 $q->where('name', 'Staff Officer')
-                  ->where('user_roles.is_active', true);
+                    ->where('user_roles.is_active', true);
             })
-            ->whereHas('officer', function($q) use ($commandId) {
-                $q->where('present_station', $commandId);
-            })
-            ->first();
+                ->whereHas('officer', function ($q) use ($commandId) {
+                    $q->where('present_station', $commandId);
+                })
+                ->first();
+
+            if (!$staffOfficer) {
+                // FALLBACK: If no Staff Officer defined for command, assign to an HRD admin
+                $staffOfficer = User::whereHas('roles', function ($q) {
+                    $q->where('name', 'HRD')
+                        ->where('user_roles.is_active', true);
+                })->first();
+            }
 
             if (!$staffOfficer) {
                 DB::rollBack();
-                return redirect()->back()->with('error', 'Staff Officer not found for your command. Please contact HRD.');
+                return redirect()->back()->with('error', 'No Staff Officer or HRD found to review this rejection. Please contact support.');
             }
-            
+
             $form->update([
                 'status' => 'STAFF_OFFICER_REVIEW', // New status for Staff Officer review
                 'is_rejected' => true,
@@ -803,17 +877,17 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
-            
+
             // Send notification to officer
             if ($form->officer->user && $form->officer->user->email) {
                 \App\Jobs\SendAPERFormRejectedMailJob::dispatch($form);
             }
-            
+
             // Send notification to Staff Officer
             if ($staffOfficer->email) {
                 \App\Jobs\SendAPERFormRejectedToStaffOfficerMailJob::dispatch($form, $staffOfficer);
             }
-            
+
             return redirect()->back()->with('success', 'APER form rejected. It has been sent to Staff Officer for review.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -829,7 +903,7 @@ class APERFormController extends Controller
     public function staffOfficerReviewIndex(Request $request)
     {
         $user = auth()->user();
-        
+
         if (!$user->hasRole('Staff Officer')) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
@@ -843,16 +917,16 @@ class APERFormController extends Controller
 
         $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])
             ->where('status', 'STAFF_OFFICER_REVIEW')
-            ->whereHas('officer', function($q) use ($commandId) {
+            ->whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             });
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('officer', function($q) use ($search) {
+            $query->whereHas('officer', function ($q) use ($search) {
                 $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%");
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('initials', 'like', "%{$search}%");
             });
         }
 
@@ -958,10 +1032,10 @@ class APERFormController extends Controller
             if ($newReportingOfficer && $newReportingOfficer->officer) {
                 $commandId = $form->officer->present_station;
                 $year = $form->year;
-                
+
                 $dutyRosterService = app(DutyRosterService::class);
                 $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($newReportingOfficer->officer->id, $commandId, $year);
-                
+
                 if (!$isOICOr2IC) {
                     return redirect()->back()->with('error', 'The selected Reporting Officer must be an OIC or 2IC in an approved duty roster.');
                 }
@@ -985,13 +1059,13 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
-            
+
             // Send notification to newly assigned reporting officer
             $reportingOfficer = User::find($validated['reporting_officer_id']);
             if ($reportingOfficer && $reportingOfficer->email) {
                 \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $reportingOfficer);
             }
-            
+
             return redirect()->back()->with('success', 'Reporting Officer reassigned successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1053,7 +1127,7 @@ class APERFormController extends Controller
     public function hrdIndex(Request $request)
     {
         $user = auth()->user();
-        
+
         if (!$user->hasRole('HRD')) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
@@ -1073,10 +1147,10 @@ class APERFormController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('officer', function($q) use ($search) {
+            $query->whereHas('officer', function ($q) use ($search) {
                 $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%");
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('initials', 'like', "%{$search}%");
             });
         }
 
@@ -1229,23 +1303,44 @@ class APERFormController extends Controller
             'promotability' => 'nullable|string|max:1|in:A,B,C,D,E,F',
             'reporting_officer_declaration' => 'nullable|string|max:2000',
         ];
-        
+
         // Add validation for all grade fields
         $gradeFields = [
-            'job_understanding', 'knowledge_application', 'accomplishment', 'judgement', 
-            'work_speed_accuracy', 'written_expression', 'oral_expression', 'staff_relations',
-            'public_relations', 'staff_management', 'quality_of_work', 'productivity',
-            'effective_use_of_data', 'initiative', 'dependability', 'loyalty', 'honesty',
-            'reliability_under_pressure', 'sense_of_responsibility', 'appearance',
-            'punctuality', 'attendance', 'drive_determination', 'resource_utilization',
-            'encourage_standards', 'train_subordinates', 'good_example', 'suggestions_improvements'
+            'job_understanding',
+            'knowledge_application',
+            'accomplishment',
+            'judgement',
+            'work_speed_accuracy',
+            'written_expression',
+            'oral_expression',
+            'staff_relations',
+            'public_relations',
+            'staff_management',
+            'quality_of_work',
+            'productivity',
+            'effective_use_of_data',
+            'initiative',
+            'dependability',
+            'loyalty',
+            'honesty',
+            'reliability_under_pressure',
+            'sense_of_responsibility',
+            'appearance',
+            'punctuality',
+            'attendance',
+            'drive_determination',
+            'resource_utilization',
+            'encourage_standards',
+            'train_subordinates',
+            'good_example',
+            'suggestions_improvements'
         ];
-        
+
         foreach ($gradeFields as $field) {
             $rules[$field . '_grade'] = 'nullable|string|max:1|in:A,B,C,D,E,F';
             $rules[$field . '_comment'] = 'nullable|string|max:2000';
         }
-        
+
         return $request->validate($rules);
     }
 
@@ -1263,17 +1358,16 @@ class APERFormController extends Controller
     public function exportPDF($id)
     {
         $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])->findOrFail($id);
-        
+
         // Check access
         $user = auth()->user();
         if (!$form->canBeAccessedBy($user) && $form->officer->user_id !== $user->id) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
-        // For now, return a view. To generate actual PDF, install: composer require barryvdh/laravel-dompdf
-        // Then use: return PDF::loadView('forms.aper.pdf', compact('form'))->download("aper-form-{$form->year}.pdf");
-        
-        return view('forms.aper.pdf', compact('form'));
+        // Generate PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('forms.aper.pdf', compact('form'));
+        return $pdf->download("aper-form-{$form->year}-{$form->officer->service_number}.pdf");
     }
 }
 

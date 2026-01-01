@@ -108,39 +108,47 @@ Route::middleware('auth')->group(function () {
         Route::put('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'update'])->name('next-of-kin.update');
         Route::delete('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'destroy'])->name('next-of-kin.destroy');
         Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
-        
+
         // Query Routes
         Route::get('/queries', [OfficerQueryController::class, 'index'])->name('queries.index');
         Route::get('/queries/{id}', [OfficerQueryController::class, 'show'])->name('queries.show');
         Route::post('/queries/{id}/respond', [OfficerQueryController::class, 'respond'])->name('queries.respond');
-        
-                Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
-                Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
-                
-                // Quarter Allocation Accept/Reject
-                Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation'])->name('quarters.allocations.accept');
-                Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation'])->name('quarters.allocations.reject');
-                
-                // APER Forms
-                Route::get('/aper-forms', [APERFormController::class, 'index'])->name('aper-forms');
-                Route::get('/aper-forms/create', [APERFormController::class, 'create'])->name('aper-forms.create');
-                Route::post('/aper-forms', [APERFormController::class, 'store'])->name('aper-forms.store');
-                
-                // APER Forms - OIC/2IC: Search for officers to create APER forms (must come before {id} routes)
-                Route::get('/aper-forms/search-officers', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search-officers');
-                Route::get('/aper-forms/access/{officerId}', [APERFormController::class, 'accessForm'])->name('aper-forms.access');
-                
-                Route::get('/aper-forms/{id}/edit', [APERFormController::class, 'edit'])->name('aper-forms.edit');
-                Route::put('/aper-forms/{id}', [APERFormController::class, 'update'])->name('aper-forms.update');
-                Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
-                Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
-                Route::post('/aper-forms/{id}/submit', [APERFormController::class, 'submit'])->name('aper-forms.submit');
-                Route::post('/aper-forms/{id}/update-comments', [APERFormController::class, 'updateComments'])->name('aper-forms.update-comments');
-                Route::post('/aper-forms/{id}/accept', [APERFormController::class, 'accept'])->name('aper-forms.accept');
-                Route::post('/aper-forms/{id}/reject', [APERFormController::class, 'reject'])->name('aper-forms.reject');
-                Route::post('/aper-forms/{id}/reporting-officer', [APERFormController::class, 'updateReportingOfficer'])->name('aper-forms.update-reporting-officer');
-                Route::post('/aper-forms/{id}/complete-reporting-officer', [APERFormController::class, 'completeReportingOfficer'])->name('aper-forms.complete-reporting-officer');
-            });
+
+        Route::get('/quarter-requests', [QuarterController::class, 'myRequests'])->name('quarter-requests');
+        Route::get('/quarter-requests/create', [QuarterController::class, 'createRequest'])->name('quarter-requests.create');
+
+        // Quarter Allocation Accept/Reject
+        Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation'])->name('quarters.allocations.accept');
+        Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation'])->name('quarters.allocations.reject');
+
+        // APER Forms
+        Route::get('/aper-forms', [APERFormController::class, 'index'])->name('aper-forms');
+        Route::get('/aper-forms/create', [APERFormController::class, 'create'])->name('aper-forms.create');
+        Route::post('/aper-forms', [APERFormController::class, 'store'])->name('aper-forms.store');
+
+        // APER Forms - OIC/2IC: Search for officers to create APER forms (must come before {id} routes)
+        Route::get('/aper-forms/search-officers', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search-officers');
+        Route::get('/aper-forms/access/{officerId}', [APERFormController::class, 'accessForm'])->name('aper-forms.access');
+
+        Route::get('/aper-forms/{id}/edit', [APERFormController::class, 'edit'])->name('aper-forms.edit');
+        Route::put('/aper-forms/{id}', [APERFormController::class, 'update'])->name('aper-forms.update');
+        Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
+        Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
+        Route::post('/aper-forms/{id}/submit', [APERFormController::class, 'submit'])->name('aper-forms.submit');
+        Route::post('/aper-forms/{id}/update-comments', [APERFormController::class, 'updateComments'])->name('aper-forms.update-comments');
+        Route::post('/aper-forms/{id}/accept', [APERFormController::class, 'accept'])->name('aper-forms.accept');
+        Route::post('/aper-forms/{id}/reject', [APERFormController::class, 'reject'])->name('aper-forms.reject');
+        Route::post('/aper-forms/{id}/reporting-officer', [APERFormController::class, 'updateReportingOfficer'])->name('aper-forms.update-reporting-officer');
+        Route::post('/aper-forms/{id}/complete-reporting-officer', [APERFormController::class, 'completeReportingOfficer'])->name('aper-forms.complete-reporting-officer');
+
+        // APER Forms - Countersigning Officer Search (Pool)
+        Route::get('/aper-forms/countersigning/search', [APERFormController::class, 'searchCountersigningForms'])->name('aper-forms.countersigning.search');
+
+        // APER Forms - Countersigning Officer
+        Route::get('/aper-forms/countersigning/{id}', [APERFormController::class, 'accessCountersigningForm'])->name('aper-forms.countersigning');
+        Route::post('/aper-forms/{id}/countersigning-officer', [APERFormController::class, 'updateCountersigningOfficer'])->name('aper-forms.update-countersigning-officer');
+        Route::post('/aper-forms/{id}/complete-countersigning-officer', [APERFormController::class, 'completeCountersigningOfficer'])->name('aper-forms.complete-countersigning-officer');
+    });
 
     // HRD Routes
     Route::prefix('hrd')->name('hrd.')->middleware('role:HRD')->group(function () {
@@ -149,31 +157,31 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
         Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');
-        
+
         // Query Management Routes
         Route::prefix('queries')->name('queries.')->group(function () {
             Route::get('/', [\App\Http\Controllers\HrdQueryController::class, 'index'])->name('index');
             Route::get('/{id}', [\App\Http\Controllers\HrdQueryController::class, 'show'])->name('show');
         });
 
-                Route::get('/emolument-timeline', [EmolumentTimelineController::class, 'index'])->name('emolument-timeline');
-                Route::get('/emolument-timeline/create', [EmolumentTimelineController::class, 'create'])->name('emolument-timeline.create');
-                Route::post('/emolument-timeline', [EmolumentTimelineController::class, 'store'])->name('emolument-timeline.store');
-                Route::get('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extend'])->name('emolument-timeline.extend');
-                Route::post('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extendStore'])->name('emolument-timeline.extend.store');
+        Route::get('/emolument-timeline', [EmolumentTimelineController::class, 'index'])->name('emolument-timeline');
+        Route::get('/emolument-timeline/create', [EmolumentTimelineController::class, 'create'])->name('emolument-timeline.create');
+        Route::post('/emolument-timeline', [EmolumentTimelineController::class, 'store'])->name('emolument-timeline.store');
+        Route::get('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extend'])->name('emolument-timeline.extend');
+        Route::post('/emolument-timeline/{id}/extend', [EmolumentTimelineController::class, 'extendStore'])->name('emolument-timeline.extend.store');
 
-                // APER Timeline Management
-                Route::get('/aper-timeline', [APERTimelineController::class, 'index'])->name('aper-timeline');
-                Route::get('/aper-timeline/create', [APERTimelineController::class, 'create'])->name('aper-timeline.create');
-                Route::post('/aper-timeline', [APERTimelineController::class, 'store'])->name('aper-timeline.store');
-                Route::get('/aper-timeline/{id}/extend', [APERTimelineController::class, 'extend'])->name('aper-timeline.extend');
-                Route::post('/aper-timeline/{id}/extend', [APERTimelineController::class, 'extendStore'])->name('aper-timeline.extend.store');
-                
-                // APER Forms Management
-                Route::get('/aper-forms', [APERFormController::class, 'hrdIndex'])->name('aper-forms');
-                Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
-                Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
-                Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
+        // APER Timeline Management
+        Route::get('/aper-timeline', [APERTimelineController::class, 'index'])->name('aper-timeline');
+        Route::get('/aper-timeline/create', [APERTimelineController::class, 'create'])->name('aper-timeline.create');
+        Route::post('/aper-timeline', [APERTimelineController::class, 'store'])->name('aper-timeline.store');
+        Route::get('/aper-timeline/{id}/extend', [APERTimelineController::class, 'extend'])->name('aper-timeline.extend');
+        Route::post('/aper-timeline/{id}/extend', [APERTimelineController::class, 'extendStore'])->name('aper-timeline.extend.store');
+
+        // APER Forms Management
+        Route::get('/aper-forms', [APERFormController::class, 'hrdIndex'])->name('aper-forms');
+        Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
+        Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
+        Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
 
         // Staff Orders - accessible to HRD (Zone Coordinators handled in controller)
         Route::get('/staff-orders', [StaffOrderController::class, 'index'])->name('staff-orders');
@@ -214,7 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/reports/generate', [DashboardController::class, 'generateReport'])->name('reports.generate');
 
         Route::get('/leave-types', [LeaveTypeController::class, 'index'])->name('leave-types');
-        
+
         Route::get('/manning-requests', [ManningRequestController::class, 'hrdIndex'])->name('manning-requests');
         Route::get('/manning-requests/{id}', [ManningRequestController::class, 'hrdShow'])->name('manning-requests.show');
         Route::get('/manning-requests/{id}/match', [ManningRequestController::class, 'hrdMatch'])->name('manning-requests.match');
@@ -270,7 +278,7 @@ Route::middleware('auth')->group(function () {
     // CGC Routes
     Route::prefix('cgc')->name('cgc.')->middleware('role:CGC')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'cgc'])->name('dashboard');
-        
+
         // Preretirement Leave Management
         Route::get('/preretirement-leave', [CGCPreretirementLeaveController::class, 'index'])->name('preretirement-leave.index');
         Route::get('/preretirement-leave/approaching', [CGCPreretirementLeaveController::class, 'approaching'])->name('preretirement-leave.approaching');
@@ -321,38 +329,44 @@ Route::middleware('auth')->group(function () {
         Route::delete('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'destroy'])->name('internal-staff-orders.destroy');
 
         Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
-                Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
-                Route::post('/officers/{id}/document', [OfficerController::class, 'document'])->name('officers.document');
-                
-                // APER Forms - Reporting Officer
-                Route::get('/aper-forms/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search');
-                
-                // APER Forms - Reporting Officer (also accessible to Staff Officer)
-                Route::get('/aper-forms/reporting-officer/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.reporting-officer.search');
-                Route::get('/aper-forms/access/{officerId}', [APERFormController::class, 'accessForm'])->name('aper-forms.access');
-                Route::post('/aper-forms/{id}/reporting-officer', [APERFormController::class, 'updateReportingOfficer'])->name('aper-forms.update-reporting-officer');
-                Route::post('/aper-forms/{id}/complete-reporting-officer', [APERFormController::class, 'completeReportingOfficer'])->name('aper-forms.complete-reporting-officer');
-                
-                // APER Forms - Countersigning Officer
-                Route::get('/aper-forms/countersigning/{id}', [APERFormController::class, 'accessCountersigningForm'])->name('aper-forms.countersigning');
-                Route::post('/aper-forms/{id}/countersigning-officer', [APERFormController::class, 'updateCountersigningOfficer'])->name('aper-forms.update-countersigning-officer');
-                Route::post('/aper-forms/{id}/complete-countersigning-officer', [APERFormController::class, 'completeCountersigningOfficer'])->name('aper-forms.complete-countersigning-officer');
-                
-                // APER Forms - Staff Officer Review (rejection/reassignment)
-                Route::get('/aper-forms/review', [APERFormController::class, 'staffOfficerReviewIndex'])->name('aper-forms.review');
-                Route::get('/aper-forms/review/{id}', [APERFormController::class, 'staffOfficerReviewShow'])->name('aper-forms.review.show');
-                Route::post('/aper-forms/{id}/staff-officer-reject', [APERFormController::class, 'staffOfficerReject'])->name('aper-forms.staff-officer-reject');
-                Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
-                Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
+        Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
+        Route::post('/officers/{id}/document', [OfficerController::class, 'document'])->name('officers.document');
 
-                // Query Management Routes
-                Route::get('/queries', [QueryController::class, 'index'])->name('queries.index');
-                Route::get('/queries/create', [QueryController::class, 'create'])->name('queries.create');
-                Route::post('/queries', [QueryController::class, 'store'])->name('queries.store');
-                Route::get('/queries/{id}', [QueryController::class, 'show'])->name('queries.show');
-                Route::post('/queries/{id}/accept', [QueryController::class, 'accept'])->name('queries.accept');
-                Route::post('/queries/{id}/reject', [QueryController::class, 'reject'])->name('queries.reject');
-            });
+        // APER Forms - Reporting Officer
+        Route::get('/aper-forms/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search');
+
+        // APER Forms - Reporting Officer (also accessible to Staff Officer)
+        Route::get('/aper-forms/reporting-officer/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.reporting-officer.search');
+        Route::get('/aper-forms/access/{officerId}', [APERFormController::class, 'accessForm'])->name('aper-forms.access');
+        Route::post('/aper-forms/{id}/reporting-officer', [APERFormController::class, 'updateReportingOfficer'])->name('aper-forms.update-reporting-officer');
+        Route::post('/aper-forms/{id}/complete-reporting-officer', [APERFormController::class, 'completeReportingOfficer'])->name('aper-forms.complete-reporting-officer');
+
+        // APER Forms - Countersigning Officer Search (Pool)
+        Route::get('/aper-forms/countersigning/search', [APERFormController::class, 'searchCountersigningForms'])->name('aper-forms.countersigning.search');
+
+        // APER Forms - Countersigning Officer
+        Route::get('/aper-forms/countersigning/{id}', [APERFormController::class, 'accessCountersigningForm'])->name('aper-forms.countersigning');
+        Route::post('/aper-forms/{id}/countersigning-officer', [APERFormController::class, 'updateCountersigningOfficer'])->name('aper-forms.update-countersigning-officer');
+        Route::post('/aper-forms/{id}/complete-countersigning-officer', [APERFormController::class, 'completeCountersigningOfficer'])->name('aper-forms.complete-countersigning-officer');
+
+        // APER Forms - Export (Staff Officer)
+        Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
+
+        // APER Forms - Staff Officer Review (rejection/reassignment)
+        Route::get('/aper-forms/review', [APERFormController::class, 'staffOfficerReviewIndex'])->name('aper-forms.review');
+        Route::get('/aper-forms/review/{id}', [APERFormController::class, 'staffOfficerReviewShow'])->name('aper-forms.review.show');
+        Route::post('/aper-forms/{id}/staff-officer-reject', [APERFormController::class, 'staffOfficerReject'])->name('aper-forms.staff-officer-reject');
+        Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
+        Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
+
+        // Query Management Routes
+        Route::get('/queries', [QueryController::class, 'index'])->name('queries.index');
+        Route::get('/queries/create', [QueryController::class, 'create'])->name('queries.create');
+        Route::post('/queries', [QueryController::class, 'store'])->name('queries.store');
+        Route::get('/queries/{id}', [QueryController::class, 'show'])->name('queries.show');
+        Route::post('/queries/{id}/accept', [QueryController::class, 'accept'])->name('queries.accept');
+        Route::post('/queries/{id}/reject', [QueryController::class, 'reject'])->name('queries.reject');
+    });
 
     // Assessor Routes
     Route::prefix('assessor')->name('assessor.')->middleware('role:Assessor')->group(function () {
@@ -394,7 +408,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/roster/{id}', [DutyRosterController::class, 'areaControllerShow'])->name('roster.show');
         Route::post('/roster/{id}/approve', [DutyRosterController::class, 'areaControllerApprove'])->name('roster.approve');
         Route::post('/roster/{id}/reject', [DutyRosterController::class, 'areaControllerReject'])->name('roster.reject');
-        
+
         // Query Management Routes
         Route::prefix('queries')->name('queries.')->group(function () {
             Route::get('/', [\App\Http\Controllers\AreaControllerQueryController::class, 'index'])->name('index');
@@ -423,13 +437,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show'])->name('pass-applications.show');
         Route::post('/pass-applications/{id}/approve', [PassApplicationController::class, 'approve'])->name('pass-applications.approve');
         Route::post('/pass-applications/{id}/reject', [PassApplicationController::class, 'reject'])->name('pass-applications.reject');
-        
+
         // Duty Roster Routes
         Route::get('/roster', [DutyRosterController::class, 'dcAdminIndex'])->name('roster');
         Route::get('/roster/{id}', [DutyRosterController::class, 'dcAdminShow'])->name('roster.show');
         Route::post('/roster/{id}/approve', [DutyRosterController::class, 'dcAdminApprove'])->name('roster.approve');
         Route::post('/roster/{id}/reject', [DutyRosterController::class, 'dcAdminReject'])->name('roster.reject');
-        
+
         // Query Management Routes
         Route::prefix('queries')->name('queries.')->group(function () {
             Route::get('/', [\App\Http\Controllers\DcAdminQueryController::class, 'index'])->name('index');
@@ -500,7 +514,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/new-recruits/step4', [EstablishmentController::class, 'saveRecruitStep4'])->name('new-recruits.step4.save');
         Route::get('/new-recruits/preview', [EstablishmentController::class, 'previewRecruit'])->name('new-recruits.preview');
         Route::post('/new-recruits/final-submit', [EstablishmentController::class, 'finalSubmitRecruit'])->name('new-recruits.final-submit');
-        
+
         // Legacy route for backward compatibility
         Route::post('/new-recruits', [EstablishmentController::class, 'storeRecruit'])->name('new-recruits.store');
         Route::delete('/new-recruits/{id}', [EstablishmentController::class, 'deleteRecruit'])->name('new-recruits.delete');
@@ -510,7 +524,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/training-results', [EstablishmentController::class, 'trainingResults'])->name('training-results');
         Route::post('/assign-service-numbers', [EstablishmentController::class, 'assignServiceNumbers'])->name('assign-service-numbers');
         Route::post('/assign-appointment-numbers', [EstablishmentController::class, 'assignAppointmentNumbers'])->name('assign-appointment-numbers');
-        
+
         // Onboarding initiation routes
         Route::post('/onboarding/initiate-create', [EstablishmentController::class, 'initiateCreateOnboarding'])->name('onboarding.initiate-create');
         Route::post('/onboarding/initiate', [EstablishmentController::class, 'initiateOnboarding'])->name('onboarding.initiate');
@@ -571,14 +585,14 @@ Route::middleware('auth')->group(function () {
 
     // Form Routes (Public within auth)
     Route::middleware('onboarding.complete')->group(function () {
-    Route::get('/emolument/raise', [EmolumentController::class, 'create'])->name('emolument.raise');
-    Route::post('/emolument/raise', [EmolumentController::class, 'store'])->name('emolument.store');
+        Route::get('/emolument/raise', [EmolumentController::class, 'create'])->name('emolument.raise');
+        Route::post('/emolument/raise', [EmolumentController::class, 'store'])->name('emolument.store');
         Route::get('/leave/apply', [LeaveApplicationController::class, 'create'])->name('leave.apply');
         Route::post('/leave/apply', [LeaveApplicationController::class, 'store'])->name('leave.store');
         Route::get('/pass/apply', [PassApplicationController::class, 'create'])->name('pass.apply');
         Route::post('/pass/apply', [PassApplicationController::class, 'store'])->name('pass.store');
     });
-    
+
     // These routes don't require onboarding completion (admin/HRD functions)
     Route::post('/emolument/{id}/assess', [EmolumentController::class, 'processAssessment'])->name('emolument.process-assessment');
     Route::post('/emolument/{id}/validate', [EmolumentController::class, 'processValidation'])->name('emolument.process-validation');
@@ -609,7 +623,7 @@ Route::prefix('print')->name('print.')->middleware('auth')->group(function () {
     Route::get('/leave-document/{id}', [PrintController::class, 'leaveDocument'])->name('leave-document');
     Route::get('/pass-document/{id}', [PrintController::class, 'passDocument'])->name('pass-document');
     Route::get('/retirement-list', [PrintController::class, 'retirementList'])->name('retirement-list');
-    
+
     // Report Prints
     Route::get('/accommodation-report', [PrintController::class, 'accommodationReport'])->name('accommodation-report');
     Route::get('/service-number-report', [PrintController::class, 'serviceNumberReport'])->name('service-number-report');
