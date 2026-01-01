@@ -11,6 +11,7 @@ use App\Services\RankComparisonService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class APERFormController extends Controller
 {
@@ -1158,10 +1159,21 @@ class APERFormController extends Controller
                 \App\Jobs\SendAPERFormRejectedMailJob::dispatch($form);
             }
 
-            // Send notification to Staff Officer
+            // Send notification to Staff Officer (email and app notification)
             if ($staffOfficer->email) {
                 \App\Jobs\SendAPERFormRejectedToStaffOfficerMailJob::dispatch($form, $staffOfficer);
             }
+
+            // Create app notification for Staff Officer
+            \App\Models\Notification::create([
+                'user_id' => $staffOfficer->id,
+                'notification_type' => 'APER_FORM_REJECTED',
+                'title' => 'APER Form Rejected - Requires Review',
+                'message' => "An officer has rejected their APER form for {$form->year}. Officer: {$form->officer->initials} {$form->officer->surname} ({$form->officer->service_number}). Rejection reason: " . Str::limit($validated['rejection_reason'], 100),
+                'entity_type' => 'APERForm',
+                'entity_id' => $form->id,
+                'is_read' => false,
+            ]);
 
             return redirect()->back()->with('success', 'APER form rejected. It has been sent to Staff Officer for review.');
         } catch (\Exception $e) {
@@ -1180,12 +1192,12 @@ class APERFormController extends Controller
         $user = auth()->user();
 
         if (!$user->hasRole('Staff Officer')) {
-            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+            return redirect()->route('staff-officer.dashboard')->with('error', 'Unauthorized access.');
         }
 
         $staffOfficer = $user->officer;
         if (!$staffOfficer) {
-            return redirect()->route('dashboard')->with('error', 'Officer record not found.');
+            return redirect()->route('staff-officer.dashboard')->with('error', 'Officer record not found.');
         }
 
         $commandId = $staffOfficer->present_station;
@@ -1217,7 +1229,7 @@ class APERFormController extends Controller
         $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
 
         if (!$user->hasRole('Staff Officer')) {
-            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+            return redirect()->route('staff-officer.dashboard')->with('error', 'Unauthorized access.');
         }
 
         if ($form->status !== 'STAFF_OFFICER_REVIEW') {
