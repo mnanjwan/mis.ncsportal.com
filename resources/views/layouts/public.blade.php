@@ -5,8 +5,8 @@
     <title>@yield('title', 'NCS Employee Portal')</title>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
-    <link href="{{ asset('favicon.ico') }}" rel="icon" type="image/x-icon" />
-    <link href="{{ asset('favicon.ico') }}" rel="shortcut icon" />
+    <link href="{{ asset('logo.jpg') }}" rel="icon" type="image/jpeg" />
+    <link href="{{ asset('logo.jpg') }}" rel="shortcut icon" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="{{ asset('ncs-employee-portal/dist/assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>NCS Employee Portal - Forgot Password</title>
-    <link href="{{ asset('favicon.ico') }}" rel="icon" type="image/x-icon" />
-    <link href="{{ asset('favicon.ico') }}" rel="shortcut icon" />
+    <link href="{{ asset('logo.jpg') }}" rel="icon" type="image/jpeg" />
+    <link href="{{ asset('logo.jpg') }}" rel="shortcut icon" />
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

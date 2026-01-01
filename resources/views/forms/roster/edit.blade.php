@@ -1189,27 +1189,35 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-assignment-btn').addEventListener('click', addAssignment);
     updateRemoveButtons();
     
-    // Initialize Command Searchable Select
-    createSearchableSelect(
-        document.getElementById('command_search'),
-        document.getElementById('command_id'),
-        document.getElementById('command_dropdown'),
-        document.getElementById('selected_command'),
-        '#selected_command_name',
-        commands,
-        function(selectedCommand) {
-            if (selectedCommand) {
-                // Load officers for this command
-                loadOfficersByCommand(selectedCommand.id);
-            } else {
-                // Clear officers
-                clearOfficers();
-            }
-        },
-        function(cmd) {
-            return cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
-        }
-    );
+    // Command field is readonly in edit mode - don't initialize searchable select
+    // Just load officers for the existing command
+    const commandSearch = document.getElementById('command_search');
+    const commandDropdown = document.getElementById('command_dropdown');
+    if (commandSearch) {
+        // Make it visually clear it's readonly
+        commandSearch.style.cursor = 'not-allowed';
+        // Prevent any interaction
+        commandSearch.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        commandSearch.addEventListener('focus', function(e) {
+            e.preventDefault();
+            this.blur();
+        });
+    }
+    
+    // Ensure dropdown is always hidden
+    if (commandDropdown) {
+        commandDropdown.classList.add('hidden');
+        commandDropdown.style.display = 'none';
+    }
+    
+    // Remove clear command button if it exists
+    const clearCommandBtn = document.getElementById('clear_command');
+    if (clearCommandBtn) {
+        clearCommandBtn.remove();
+    }
     
     // Load officers if command is already selected
     if (initialCommandId) {
