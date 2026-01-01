@@ -124,7 +124,7 @@
                     <div class="kt-card-content p-4">
                         <h4 class="text-sm font-semibold text-foreground mb-4">Roster Leadership</h4>
                         
-                        <!-- Command Selection (Searchable) -->
+                        <!-- Command Selection (Readonly) -->
                         <div class="mb-4">
                             <label class="block text-sm font-medium mb-1">
                                 Command <span class="text-danger">*</span>
@@ -132,9 +132,11 @@
                             <div class="relative">
                                 <input type="text" 
                                        id="command_search" 
-                                       class="kt-input w-full" 
-                                       placeholder="Search command..."
-                                       autocomplete="off">
+                                       class="kt-input w-full bg-muted/30" 
+                                       placeholder="Command"
+                                       value="{{ $commandId && $roster->command ? $roster->command->name . ($roster->command->code ? ' (' . $roster->command->code . ')' : '') : 'N/A' }}"
+                                       readonly
+                                       disabled>
                                 <input type="hidden" 
                                        name="command_id" 
                                        id="command_id"
@@ -151,14 +153,9 @@
                                             {{ $roster->command->name }}{{ $roster->command->code ? ' (' . $roster->command->code . ')' : '' }}
                                         @endif
                                     </span>
-                                    <button type="button" 
-                                            id="clear_command" 
-                                            class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
-                                        <i class="ki-filled ki-cross"></i>
-                                    </button>
                                 </div>
                             </div>
-                            <p class="text-xs text-secondary-foreground mt-1">Select a command to view officers in that command</p>
+                            <p class="text-xs text-secondary-foreground mt-1">Command cannot be changed after roster creation</p>
                         </div>
                         
                         <div class="grid sm:grid-cols-2 gap-4">
@@ -522,18 +519,24 @@ function loadOfficersByCommand(commandId) {
     const secondIcSearchInput = document.getElementById('second_ic_search_input');
     const secondIcInfo = document.getElementById('second_ic_info');
     
+    // Preserve current values before loading
+    const currentOicId = oicHiddenInput ? oicHiddenInput.value : null;
+    const currentSecondIcId = secondIcHiddenInput ? secondIcHiddenInput.value : null;
+    
     // Update UI to loading state
     oicSelectText.textContent = 'Loading officers...';
     oicSelectTrigger.disabled = true;
-    if (!isInitialLoad || commandId != initialCommandId) {
-        oicHiddenInput.value = '';
+    // Only clear if command changed (not on initial load of same command)
+    if (!isInitialLoad && commandId != initialCommandId) {
+        if (oicHiddenInput) oicHiddenInput.value = '';
     }
     oicOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Loading...</div>';
     
     secondIcSelectText.textContent = 'Loading officers...';
     secondIcSelectTrigger.disabled = true;
-    if (!isInitialLoad || commandId != initialCommandId) {
-        secondIcHiddenInput.value = '';
+    // Only clear if command changed (not on initial load of same command)
+    if (!isInitialLoad && commandId != initialCommandId) {
+        if (secondIcHiddenInput) secondIcHiddenInput.value = '';
     }
     secondIcOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Loading...</div>';
 
@@ -548,9 +551,23 @@ function loadOfficersByCommand(commandId) {
     .then(data => {
         officers = data;
         
-        // Calculate initial IDs to use (before the if block)
-        const oicIdToUse = isInitialLoad && commandId == initialCommandId ? initialOicId : null;
-        const secondIcIdToUse = isInitialLoad && commandId == initialCommandId ? initialSecondIcId : null;
+        // Calculate initial IDs to use - prioritize current values, then initial values
+        let oicIdToUse = null;
+        let secondIcIdToUse = null;
+        
+        if (isInitialLoad && commandId == initialCommandId) {
+            // On initial load, use the initial values
+            oicIdToUse = initialOicId;
+            secondIcIdToUse = initialSecondIcId;
+        } else if (commandId == initialCommandId) {
+            // Same command, preserve current values
+            oicIdToUse = currentOicId || initialOicId;
+            secondIcIdToUse = currentSecondIcId || initialSecondIcId;
+        } else {
+            // Different command, use current values if they exist
+            oicIdToUse = currentOicId;
+            secondIcIdToUse = currentSecondIcId;
+        }
         
         if (data.length > 0) {
             // Populate OIC options
@@ -672,13 +689,33 @@ function renderOfficerOptions(officersList, optionsContainer, hiddenInput, selec
     
     // Set initial selection if provided
     if (initialId) {
-        const initialOfficer = officersList.find(o => o.id == initialId);
-        if (initialOfficer) {
+        // Ensure hidden input has the value
+        if (hiddenInput) {
             hiddenInput.value = initialId;
+        }
+        
+        // Convert to number and string for flexible comparison
+        const initialIdNum = parseInt(initialId, 10);
+        const initialIdStr = String(initialId);
+        
+        const initialOfficer = officersList.find(o => {
+            const oIdNum = parseInt(o.id, 10);
+            const oIdStr = String(o.id);
+            return o.id == initialId || o.id == initialIdNum || oIdNum == initialIdNum || oIdStr === initialIdStr;
+        });
+        
+        if (initialOfficer) {
             const details = initialOfficer.service_number !== 'N/A' ? initialOfficer.service_number : '';
             const rank = initialOfficer.rank !== 'N/A' ? ' - ' + initialOfficer.rank : '';
             const displayText = initialOfficer.name + (details ? ' (' + details + rank + ')' : '');
-            selectText.textContent = displayText;
+            if (selectText) {
+                selectText.textContent = displayText;
+            }
+        } else if (hiddenInput && hiddenInput.value) {
+            // Officer not in list but we have a value - try to preserve it
+            // The value is already set in hidden input, just don't update display text
+            // This handles cases where officer might be from a different command or not loaded yet
+            // The restoreOfficerSelections function will try to set the display text later
         }
     }
     
@@ -1240,37 +1277,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Restore officer selections from old input
     function restoreOfficerSelections() {
         // Restore OIC
-        const oicId = document.getElementById('oic_officer_id')?.value;
+        const oicHiddenInput = document.getElementById('oic_officer_id');
+        const oicId = oicHiddenInput?.value;
         if (oicId) {
-            // Try to find in officers array first (loaded by command)
-            let oicOfficer = officers.find(o => o.id == oicId);
-            // If not found, try allOfficers array
-            if (!oicOfficer && allOfficers.length > 0) {
-                oicOfficer = allOfficers.find(o => o.id == oicId);
+            // Convert to number for comparison
+            const oicIdNum = parseInt(oicId, 10);
+            // Try to find in officers array first (loaded by command - API format)
+            let oicOfficer = officers.find(o => o.id == oicId || o.id == oicIdNum || String(o.id) === String(oicId));
+            // If not found, try allOfficers array (backend format)
+            if (!oicOfficer && allOfficers && allOfficers.length > 0) {
+                oicOfficer = allOfficers.find(o => o.id == oicId || o.id == oicIdNum || String(o.id) === String(oicId));
             }
             if (oicOfficer) {
                 const oicText = document.getElementById('oic_select_text');
                 if (oicText) {
+                    // Handle both API format (has 'name') and backend format (has 'initials' and 'surname')
                     const officerName = oicOfficer.name || (oicOfficer.initials + ' ' + oicOfficer.surname);
-                    oicText.textContent = `${officerName} (${oicOfficer.service_number})`;
+                    const serviceNumber = oicOfficer.service_number || 'N/A';
+                    const rank = oicOfficer.rank || oicOfficer.substantive_rank || '';
+                    const displayText = rank ? `${officerName} (${serviceNumber} - ${rank})` : `${officerName} (${serviceNumber})`;
+                    oicText.textContent = displayText;
                 }
             }
         }
         
         // Restore 2IC
-        const secondIcId = document.getElementById('second_in_command_officer_id')?.value;
+        const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
+        const secondIcId = secondIcHiddenInput?.value;
         if (secondIcId) {
-            // Try to find in officers array first (loaded by command)
-            let secondIcOfficer = officers.find(o => o.id == secondIcId);
-            // If not found, try allOfficers array
-            if (!secondIcOfficer && allOfficers.length > 0) {
-                secondIcOfficer = allOfficers.find(o => o.id == secondIcId);
+            // Convert to number for comparison
+            const secondIcIdNum = parseInt(secondIcId, 10);
+            // Try to find in officers array first (loaded by command - API format)
+            let secondIcOfficer = officers.find(o => o.id == secondIcId || o.id == secondIcIdNum || String(o.id) === String(secondIcId));
+            // If not found, try allOfficers array (backend format)
+            if (!secondIcOfficer && allOfficers && allOfficers.length > 0) {
+                secondIcOfficer = allOfficers.find(o => o.id == secondIcId || o.id == secondIcIdNum || String(o.id) === String(secondIcId));
             }
             if (secondIcOfficer) {
                 const secondIcText = document.getElementById('second_ic_select_text');
                 if (secondIcText) {
+                    // Handle both API format (has 'name') and backend format (has 'initials' and 'surname')
                     const officerName = secondIcOfficer.name || (secondIcOfficer.initials + ' ' + secondIcOfficer.surname);
-                    secondIcText.textContent = `${officerName} (${secondIcOfficer.service_number})`;
+                    const serviceNumber = secondIcOfficer.service_number || 'N/A';
+                    const rank = secondIcOfficer.rank || secondIcOfficer.substantive_rank || '';
+                    const displayText = rank ? `${officerName} (${serviceNumber} - ${rank})` : `${officerName} (${serviceNumber})`;
+                    secondIcText.textContent = displayText;
                 }
             }
         }
