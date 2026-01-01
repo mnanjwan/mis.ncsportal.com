@@ -1070,6 +1070,30 @@ class APERFormController extends Controller
                 \App\Jobs\SendAPERFormAcceptedMailJob::dispatch($form);
             }
 
+            // Notify all HRD users (email and app notification)
+            $hrdUsers = User::whereHas('roles', function ($q) {
+                $q->where('name', 'HRD')
+                    ->where('user_roles.is_active', true);
+            })->get();
+
+            foreach ($hrdUsers as $hrdUser) {
+                // Send email notification
+                if ($hrdUser->email) {
+                    \App\Jobs\SendAPERFormAcceptedToHRDMailJob::dispatch($form, $hrdUser);
+                }
+
+                // Create app notification
+                \App\Models\Notification::create([
+                    'user_id' => $hrdUser->id,
+                    'notification_type' => 'APER_FORM_ACCEPTED',
+                    'title' => 'APER Form Accepted - Ready for Grading',
+                    'message' => "APER form for {$form->officer->initials} {$form->officer->surname} ({$form->officer->service_number}) - {$form->year} has been accepted and is ready for grading.",
+                    'entity_type' => 'APERForm',
+                    'entity_id' => $form->id,
+                    'is_read' => false,
+                ]);
+            }
+
             return redirect()->back()->with('success', 'APER form accepted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();

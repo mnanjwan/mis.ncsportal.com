@@ -74,6 +74,7 @@
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">HRD Score</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Reporting Officer</th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Submitted</th>
                                 <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
