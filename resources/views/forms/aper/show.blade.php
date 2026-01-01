@@ -418,35 +418,58 @@
 </div>
 
 <!-- Reject Modal -->
-<div id="reject-modal" class="kt-modal hidden" data-kt-modal="true">
-    <div class="kt-modal-content max-w-[500px]">
-        <div class="kt-modal-header">
-            <h3 class="kt-modal-title">Reject APER Form</h3>
-            <button type="button" class="kt-btn kt-btn-sm kt-btn-icon" onclick="closeRejectModal()">
-                <i class="ki-filled ki-cross"></i>
-            </button>
+<div id="reject-modal" class="kt-modal hidden fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeRejectModal()"></div>
+    
+    <!-- Modal Content -->
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="kt-modal-content max-w-[500px] relative bg-background rounded-lg shadow-xl w-full">
+            <div class="kt-modal-header">
+                <h3 class="kt-modal-title">Reject APER Form</h3>
+                <button type="button" class="kt-btn kt-btn-sm kt-btn-icon" onclick="closeRejectModal()">
+                    <i class="ki-filled ki-cross"></i>
+                </button>
+            </div>
+            <form action="{{ route('officer.aper-forms.reject', $form->id) }}" method="POST">
+                @csrf
+                <div class="kt-modal-body">
+                    <label class="kt-form-label">Reason for Rejection <span class="text-danger">*</span></label>
+                    <textarea name="rejection_reason" class="kt-input" rows="4" placeholder="Please provide a reason for rejecting this form..." required></textarea>
+                    <p class="text-xs text-secondary-foreground mt-1">Maximum 1000 characters</p>
+                    @error('rejection_reason')
+                        <span class="text-sm text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="kt-modal-footer">
+                    <button type="button" class="kt-btn kt-btn-secondary" onclick="closeRejectModal()">Cancel</button>
+                    <button type="submit" class="kt-btn kt-btn-danger">
+                        <i class="ki-filled ki-cross"></i> Reject Form
+                    </button>
+                </div>
+            </form>
         </div>
-        <form action="{{ route('officer.aper-forms.reject', $form->id) }}" method="POST">
-            @csrf
-            <div class="kt-modal-body">
-                <label class="kt-form-label">Reason for Rejection</label>
-                <textarea name="rejection_reason" class="kt-input" rows="4" required></textarea>
-            </div>
-            <div class="kt-modal-footer">
-                <button type="button" class="kt-btn kt-btn-secondary" onclick="closeRejectModal()">Cancel</button>
-                <button type="submit" class="kt-btn kt-btn-danger">Reject Form</button>
-            </div>
-        </form>
     </div>
 </div>
 
 <script>
 function showRejectModal() {
-    document.getElementById('reject-modal').classList.remove('hidden');
+    const modal = document.getElementById('reject-modal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
 }
 
 function closeRejectModal() {
-    document.getElementById('reject-modal').classList.add('hidden');
+    const modal = document.getElementById('reject-modal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    document.body.style.overflow = ''; // Restore scrolling
+    // Clear form
+    const form = modal.querySelector('form');
+    if (form) {
+        form.reset();
+    }
 }
 </script>
 @endsection

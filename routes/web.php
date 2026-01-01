@@ -358,6 +358,7 @@ Route::middleware('auth')->group(function () {
         // APER Forms - Staff Officer Review (rejection/reassignment)
         Route::get('/aper-forms/review', [APERFormController::class, 'staffOfficerReviewIndex'])->name('aper-forms.review');
         Route::get('/aper-forms/review/{id}', [APERFormController::class, 'staffOfficerReviewShow'])->name('aper-forms.review.show');
+        Route::get('/aper-forms/search-users', [APERFormController::class, 'searchUsersForReassignment'])->name('aper-forms.search-users');
         Route::post('/aper-forms/{id}/staff-officer-reject', [APERFormController::class, 'staffOfficerReject'])->name('aper-forms.staff-officer-reject');
         Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
         Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');

@@ -1686,5 +1686,56 @@ class APERFormController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('forms.aper.pdf', compact('form'));
         return $pdf->download("aper-form-{$form->year}-{$form->officer->service_number}.pdf");
     }
+
+    // AJAX: Search users for reassignment
+    public function searchUsersForReassignment(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $query = $request->input('q', '');
+        $commandId = $request->input('command_id');
+
+        if (!$commandId) {
+            return response()->json(['error' => 'Command ID required'], 400);
+        }
+
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        // Search for users with officer records in the same command
+        $users = User::whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
+            ->where(function ($q) use ($query) {
+                $q->where('email', 'like', "%{$query}%")
+                  ->orWhereHas('officer', function ($oq) use ($query) {
+                      $oq->where('service_number', 'like', "%{$query}%")
+                         ->orWhere('surname', 'like', "%{$query}%")
+                         ->orWhere('initials', 'like', "%{$query}%");
+                  });
+            })
+            ->with('officer')
+            ->limit(20)
+            ->get();
+
+        return response()->json($users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'email' => $user->email,
+                'officer' => $user->officer ? [
+                    'id' => $user->officer->id,
+                    'service_number' => $user->officer->service_number,
+                    'initials' => $user->officer->initials,
+                    'surname' => $user->officer->surname,
+                    'rank' => $user->officer->rank ?? $user->officer->substantive_rank,
+                ] : null,
+            ];
+        }));
+    }
 }
 
