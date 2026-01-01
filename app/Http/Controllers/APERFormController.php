@@ -531,8 +531,16 @@ class APERFormController extends Controller
         $formYear = $activeTimeline->year; // Always use APER timeline year for form creation
         $rosterCheckYear = $formYear; // Year to use for roster checks (may fallback to current year)
 
-        // Validate Reporting Officer is OIC or 2IC (unless HRD or Staff Officer)
-        if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer')) {
+        // Find existing form first to check if user is already assigned as Reporting Officer
+        $form = APERForm::where('officer_id', $officer->id)
+            ->where('year', $formYear)
+            ->first();
+
+        // Check if user is assigned as Reporting Officer for this form (reassigned case)
+        $isAssignedReportingOfficer = $form && $form->reporting_officer_id === $user->id && $form->status === 'REPORTING_OFFICER';
+
+        // Validate Reporting Officer is OIC or 2IC (unless HRD, Staff Officer, or already assigned as Reporting Officer)
+        if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer') && !$isAssignedReportingOfficer) {
             $dutyRosterService = app(DutyRosterService::class);
             $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($reportingOfficer->id, $commandId, $rosterCheckYear);
             
@@ -570,11 +578,6 @@ class APERFormController extends Controller
                 return redirect()->back()->with('error', 'You must be of the same rank or higher than the officer you are assessing.');
             }
         }
-
-        // Find or create form (always use APER timeline year for form)
-        $form = APERForm::where('officer_id', $officer->id)
-            ->where('year', $formYear)
-            ->first();
 
         // Create form if it doesn't exist
         if (!$form) {
@@ -619,8 +622,10 @@ class APERFormController extends Controller
                 ]);
                 return redirect()->back()->with('error', 'Failed to create APER form: ' . $e->getMessage());
             }
-        } else {
-            // Form exists - check access
+        }
+        
+        // Form exists - check access (skip validation if already assigned as Reporting Officer)
+        if (!$isAssignedReportingOfficer) {
             if (!$form->canBeAccessedBy($user)) {
                 // If form is submitted and no reporting officer assigned, assign this user
                 if ($form->status === 'SUBMITTED' && !$form->reporting_officer_id) {
@@ -644,9 +649,15 @@ class APERFormController extends Controller
                 }
             }
 
-            // If form was rejected and needs reassignment
+            // If form was rejected and needs reassignment (but user is not the assigned Reporting Officer)
             if ($form->is_rejected && $form->status === 'REPORTING_OFFICER' && $form->reporting_officer_id !== $user->id) {
                 return redirect()->back()->with('error', 'This form has been rejected and needs to be reassigned by HRD or Staff Officer.');
+            }
+        } else {
+            // User is assigned as Reporting Officer - allow access regardless of OIC/2IC status
+            // Verify they are indeed the assigned Reporting Officer
+            if ($form->reporting_officer_id !== $user->id || $form->status !== 'REPORTING_OFFICER') {
+                return redirect()->back()->with('error', 'You do not have access to this APER form.');
             }
         }
 
@@ -1481,7 +1492,7 @@ class APERFormController extends Controller
             if ($reportingOfficer) {
                 // Send email notification
                 if ($reportingOfficer->email) {
-                    \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $reportingOfficer);
+                \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $reportingOfficer);
                 }
 
                 // Create app notification
