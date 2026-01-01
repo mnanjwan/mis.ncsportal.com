@@ -1189,59 +1189,188 @@ class APERFormController extends Controller
     // Staff Officer: View rejected APER forms pending review
     public function staffOfficerReviewIndex(Request $request)
     {
-        $user = auth()->user();
+        try {
+            $user = auth()->user();
 
-        if (!$user->hasRole('Staff Officer')) {
-            return redirect()->route('staff-officer.dashboard')->with('error', 'Unauthorized access.');
+            Log::info('Staff Officer Review Index - Start', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'has_staff_officer_role' => $user->hasRole('Staff Officer'),
+                'all_user_roles' => $user->roles->pluck('name')->toArray(),
+            ]);
+
+            if (!$user->hasRole('Staff Officer')) {
+                Log::warning('Staff Officer Review Index - Unauthorized', [
+                    'user_id' => $user->id,
+                    'user_roles' => $user->roles->pluck('name')->toArray(),
+                ]);
+                return redirect()->route('staff-officer.dashboard')->with('error', 'Unauthorized access.');
+            }
+
+            // Get Staff Officer's command from their role (same as dashboard)
+            $staffOfficerRole = $user->roles()
+                ->where('name', 'Staff Officer')
+                ->wherePivot('is_active', true)
+                ->first();
+
+            Log::info('Staff Officer Review Index - Role Check', [
+                'user_id' => $user->id,
+                'staff_officer_role_found' => $staffOfficerRole !== null,
+                'role_id' => $staffOfficerRole?->id,
+                'role_pivot' => $staffOfficerRole?->pivot ? [
+                    'command_id' => $staffOfficerRole->pivot->command_id,
+                    'is_active' => $staffOfficerRole->pivot->is_active,
+                ] : null,
+            ]);
+
+            $commandId = $staffOfficerRole?->pivot->command_id ?? null;
+
+            Log::info('Staff Officer Review Index - Command ID', [
+                'user_id' => $user->id,
+                'command_id' => $commandId,
+                'has_command' => $commandId !== null,
+            ]);
+
+            $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])
+                ->where('status', 'STAFF_OFFICER_REVIEW');
+
+            // Filter by command if Staff Officer has an assigned command
+            // If no command assigned, show all rejected forms (for system-wide Staff Officers)
+            if ($commandId) {
+                $query->whereHas('officer', function ($q) use ($commandId) {
+                    $q->where('present_station', $commandId);
+                });
+                Log::info('Staff Officer Review Index - Filtering by command', [
+                    'user_id' => $user->id,
+                    'command_id' => $commandId,
+                ]);
+            } else {
+                Log::info('Staff Officer Review Index - No command filter (system-wide)', [
+                    'user_id' => $user->id,
+                ]);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->whereHas('officer', function ($q) use ($search) {
+                    $q->where('service_number', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhere('initials', 'like', "%{$search}%");
+                });
+                Log::info('Staff Officer Review Index - Search applied', [
+                    'user_id' => $user->id,
+                    'search_term' => $search,
+                ]);
+            }
+
+            $forms = $query->orderBy('rejected_at', 'desc')->paginate(20);
+
+            Log::info('Staff Officer Review Index - Query Complete', [
+                'user_id' => $user->id,
+                'forms_count' => $forms->count(),
+                'total_forms' => $forms->total(),
+            ]);
+
+            return view('dashboards.staff-officer.aper-review', compact('forms'));
+        } catch (\Exception $e) {
+            Log::error('Staff Officer Review Index - Exception', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return redirect()->route('staff-officer.dashboard')
+                ->with('error', 'An error occurred: ' . $e->getMessage());
         }
-
-        $staffOfficer = $user->officer;
-        if (!$staffOfficer) {
-            return redirect()->route('staff-officer.dashboard')->with('error', 'Officer record not found.');
-        }
-
-        $commandId = $staffOfficer->present_station;
-
-        $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])
-            ->where('status', 'STAFF_OFFICER_REVIEW')
-            ->whereHas('officer', function ($q) use ($commandId) {
-                $q->where('present_station', $commandId);
-            });
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('officer', function ($q) use ($search) {
-                $q->where('service_number', 'like', "%{$search}%")
-                    ->orWhere('surname', 'like', "%{$search}%")
-                    ->orWhere('initials', 'like', "%{$search}%");
-            });
-        }
-
-        $forms = $query->orderBy('rejected_at', 'desc')->paginate(20);
-
-        return view('dashboards.staff-officer.aper-review', compact('forms'));
     }
 
     // Staff Officer: View rejected APER form details
     public function staffOfficerReviewShow($id)
     {
         $user = auth()->user();
+
+        Log::info('Staff Officer Review Show - Start', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'form_id' => $id,
+            'has_staff_officer_role' => $user->hasRole('Staff Officer'),
+        ]);
+
         $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
 
+        Log::info('Staff Officer Review Show - Form Loaded', [
+            'user_id' => $user->id,
+            'form_id' => $form->id,
+            'form_status' => $form->status,
+            'form_officer_id' => $form->officer_id,
+            'form_officer_present_station' => $form->officer->present_station ?? null,
+        ]);
+
         if (!$user->hasRole('Staff Officer')) {
+            Log::warning('Staff Officer Review Show - Unauthorized', [
+                'user_id' => $user->id,
+                'user_roles' => $user->roles->pluck('name')->toArray(),
+                'form_id' => $form->id,
+            ]);
             return redirect()->route('staff-officer.dashboard')->with('error', 'Unauthorized access.');
         }
 
         if ($form->status !== 'STAFF_OFFICER_REVIEW') {
+            Log::warning('Staff Officer Review Show - Wrong Status', [
+                'user_id' => $user->id,
+                'form_id' => $form->id,
+                'form_status' => $form->status,
+                'expected_status' => 'STAFF_OFFICER_REVIEW',
+            ]);
             return redirect()->route('staff-officer.aper-forms.review')
                 ->with('error', 'This form is not pending Staff Officer review.');
         }
 
-        $staffOfficer = $user->officer;
-        if (!$staffOfficer || $staffOfficer->present_station !== $form->officer->present_station) {
+        // Get Staff Officer's command from their role (same as dashboard)
+        $staffOfficerRole = $user->roles()
+            ->where('name', 'Staff Officer')
+            ->wherePivot('is_active', true)
+            ->first();
+
+        Log::info('Staff Officer Review Show - Role Check', [
+            'user_id' => $user->id,
+            'form_id' => $form->id,
+            'staff_officer_role_found' => $staffOfficerRole !== null,
+            'role_id' => $staffOfficerRole?->id,
+            'role_pivot' => $staffOfficerRole?->pivot ? [
+                'command_id' => $staffOfficerRole->pivot->command_id,
+                'is_active' => $staffOfficerRole->pivot->is_active,
+            ] : null,
+        ]);
+
+        $commandId = $staffOfficerRole?->pivot->command_id ?? null;
+
+        Log::info('Staff Officer Review Show - Command Check', [
+            'user_id' => $user->id,
+            'form_id' => $form->id,
+            'command_id' => $commandId,
+            'form_officer_command' => $form->officer->present_station ?? null,
+            'command_match' => $commandId ? ($form->officer->present_station === $commandId) : 'N/A (system-wide)',
+        ]);
+
+        // Check command access: if Staff Officer has a command, they can only review forms from that command
+        // If no command assigned, they can review all forms (system-wide Staff Officer)
+        if ($commandId && $form->officer->present_station !== $commandId) {
+            Log::warning('Staff Officer Review Show - Command Mismatch', [
+                'user_id' => $user->id,
+                'form_id' => $form->id,
+                'staff_officer_command_id' => $commandId,
+                'form_officer_command_id' => $form->officer->present_station,
+            ]);
             return redirect()->route('staff-officer.aper-forms.review')
                 ->with('error', 'You can only review APER forms for officers in your command.');
         }
+
+        Log::info('Staff Officer Review Show - Success', [
+            'user_id' => $user->id,
+            'form_id' => $form->id,
+        ]);
 
         return view('dashboards.staff-officer.aper-review-show', compact('form'));
     }
@@ -1261,9 +1390,17 @@ class APERFormController extends Controller
             return redirect()->back()->with('error', 'This form is not pending Staff Officer review.');
         }
 
-        // Validate same command
-        $staffOfficer = $user->officer;
-        if (!$staffOfficer || $staffOfficer->present_station !== $form->officer->present_station) {
+        // Get Staff Officer's command from their role (same as dashboard)
+        $staffOfficerRole = $user->roles()
+            ->where('name', 'Staff Officer')
+            ->wherePivot('is_active', true)
+            ->first();
+
+        $commandId = $staffOfficerRole?->pivot->command_id ?? null;
+
+        // Validate same command: if Staff Officer has a command, they can only review forms from that command
+        // If no command assigned, they can review all forms (system-wide Staff Officer)
+        if ($commandId && $form->officer->present_station !== $commandId) {
             return redirect()->back()->with('error', 'You can only review APER forms for officers in your command.');
         }
 
