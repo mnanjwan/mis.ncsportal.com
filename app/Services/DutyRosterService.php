@@ -32,24 +32,48 @@ class DutyRosterService
                     // Check if officer is OIC and roster period overlaps with the year
                     $q->where('oic_officer_id', $officerId)
                       ->where(function($periodQuery) use ($startDate, $endDate) {
-                          $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
-                                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
-                                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
-                                         $overlapQuery->where('roster_period_start', '<=', $startDate)
-                                                     ->where('roster_period_end', '>=', $endDate);
-                                     });
+                          // If both dates are NULL, treat as valid (no date filtering)
+                          $periodQuery->where(function($nullQuery) {
+                                  $nullQuery->whereNull('roster_period_start')
+                                           ->whereNull('roster_period_end');
+                              })
+                              // Otherwise, check date overlap
+                              ->orWhere(function($dateQuery) use ($startDate, $endDate) {
+                                  $dateQuery->whereNotNull('roster_period_start')
+                                           ->whereNotNull('roster_period_end')
+                                           ->where(function($overlapQuery) use ($startDate, $endDate) {
+                                               $overlapQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                                          ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                                          ->orWhere(function($spanQuery) use ($startDate, $endDate) {
+                                                              $spanQuery->where('roster_period_start', '<=', $startDate)
+                                                                       ->where('roster_period_end', '>=', $endDate);
+                                                          });
+                                           });
+                              });
                       });
                 })
                 ->orWhere(function($q) use ($officerId, $startDate, $endDate) {
                     // Check if officer is 2IC and roster period overlaps with the year
                     $q->where('second_in_command_officer_id', $officerId)
                       ->where(function($periodQuery) use ($startDate, $endDate) {
-                          $periodQuery->whereBetween('roster_period_start', [$startDate, $endDate])
-                                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
-                                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
-                                         $overlapQuery->where('roster_period_start', '<=', $startDate)
-                                                     ->where('roster_period_end', '>=', $endDate);
-                                     });
+                          // If both dates are NULL, treat as valid (no date filtering)
+                          $periodQuery->where(function($nullQuery) {
+                                  $nullQuery->whereNull('roster_period_start')
+                                           ->whereNull('roster_period_end');
+                              })
+                              // Otherwise, check date overlap
+                              ->orWhere(function($dateQuery) use ($startDate, $endDate) {
+                                  $dateQuery->whereNotNull('roster_period_start')
+                                           ->whereNotNull('roster_period_end')
+                                           ->where(function($overlapQuery) use ($startDate, $endDate) {
+                                               $overlapQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                                          ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                                          ->orWhere(function($spanQuery) use ($startDate, $endDate) {
+                                                              $spanQuery->where('roster_period_start', '<=', $startDate)
+                                                                       ->where('roster_period_end', '>=', $endDate);
+                                                          });
+                                           });
+                              });
                       });
                 });
             })
@@ -130,12 +154,24 @@ class DutyRosterService
             ->where('status', 'APPROVED')
             ->where('oic_officer_id', $officerId)
             ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('roster_period_start', [$startDate, $endDate])
-                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
-                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
-                         $overlapQuery->where('roster_period_start', '<=', $startDate)
-                                     ->where('roster_period_end', '>=', $endDate);
-                     });
+                // If both dates are NULL, treat as valid (no date filtering)
+                $query->where(function($nullQuery) {
+                        $nullQuery->whereNull('roster_period_start')
+                                 ->whereNull('roster_period_end');
+                    })
+                    // Otherwise, check date overlap
+                    ->orWhere(function($dateQuery) use ($startDate, $endDate) {
+                        $dateQuery->whereNotNull('roster_period_start')
+                                 ->whereNotNull('roster_period_end')
+                                 ->where(function($overlapQuery) use ($startDate, $endDate) {
+                                     $overlapQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                                ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                                ->orWhere(function($spanQuery) use ($startDate, $endDate) {
+                                                    $spanQuery->where('roster_period_start', '<=', $startDate)
+                                                             ->where('roster_period_end', '>=', $endDate);
+                                                });
+                                 });
+                    });
             })
             ->exists();
 
@@ -148,12 +184,24 @@ class DutyRosterService
             ->where('status', 'APPROVED')
             ->where('second_in_command_officer_id', $officerId)
             ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('roster_period_start', [$startDate, $endDate])
-                     ->orWhereBetween('roster_period_end', [$startDate, $endDate])
-                     ->orWhere(function($overlapQuery) use ($startDate, $endDate) {
-                         $overlapQuery->where('roster_period_start', '<=', $startDate)
-                                     ->where('roster_period_end', '>=', $endDate);
-                     });
+                // If both dates are NULL, treat as valid (no date filtering)
+                $query->where(function($nullQuery) {
+                        $nullQuery->whereNull('roster_period_start')
+                                 ->whereNull('roster_period_end');
+                    })
+                    // Otherwise, check date overlap
+                    ->orWhere(function($dateQuery) use ($startDate, $endDate) {
+                        $dateQuery->whereNotNull('roster_period_start')
+                                 ->whereNotNull('roster_period_end')
+                                 ->where(function($overlapQuery) use ($startDate, $endDate) {
+                                     $overlapQuery->whereBetween('roster_period_start', [$startDate, $endDate])
+                                                ->orWhereBetween('roster_period_end', [$startDate, $endDate])
+                                                ->orWhere(function($spanQuery) use ($startDate, $endDate) {
+                                                    $spanQuery->where('roster_period_start', '<=', $startDate)
+                                                             ->where('roster_period_end', '>=', $endDate);
+                                                });
+                                 });
+                    });
             })
             ->exists();
 

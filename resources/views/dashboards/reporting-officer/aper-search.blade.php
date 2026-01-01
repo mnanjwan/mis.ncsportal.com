@@ -11,7 +11,7 @@
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
-        @if(isset($isOICOr2IC) && !$isOICOr2IC && !auth()->user()->hasRole('HRD') && !auth()->user()->hasRole('Staff Officer'))
+        @if((!isset($rosterRole) || !$rosterRole) && !auth()->user()->hasRole('HRD') && !auth()->user()->hasRole('Staff Officer'))
             <div class="kt-card bg-warning/10 border border-warning/20">
                 <div class="kt-card-content p-4">
                     <div class="flex items-center gap-3">
@@ -27,7 +27,7 @@
             </div>
         @endif
 
-        @if(isset($rosterRole))
+        @if(isset($rosterRole) && $rosterRole)
             <div class="kt-card bg-info/10 border border-info/20">
                 <div class="kt-card-content p-4">
                     <div class="flex items-center gap-3">
