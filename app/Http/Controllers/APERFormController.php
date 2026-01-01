@@ -1876,25 +1876,25 @@ class APERFormController extends Controller
             return response()->json(['error' => 'Command ID required'], 400);
         }
 
-        if (strlen($query) < 2) {
-            return response()->json([]);
-        }
-
-        // Search for users with officer records in the same command
-        $users = User::whereHas('officer', function ($q) use ($commandId) {
+        // Get all users with officer records in the same command
+        $usersQuery = User::whereHas('officer', function ($q) use ($commandId) {
                 $q->where('present_station', $commandId);
             })
-            ->where(function ($q) use ($query) {
+            ->with('officer');
+
+        // If query is provided, filter results
+        if (!empty($query) && strlen($query) >= 1) {
+            $usersQuery->where(function ($q) use ($query) {
                 $q->where('email', 'like', "%{$query}%")
                   ->orWhereHas('officer', function ($oq) use ($query) {
                       $oq->where('service_number', 'like', "%{$query}%")
                          ->orWhere('surname', 'like', "%{$query}%")
                          ->orWhere('initials', 'like', "%{$query}%");
                   });
-            })
-            ->with('officer')
-            ->limit(20)
-            ->get();
+            });
+        }
+
+        $users = $usersQuery->orderBy('email')->limit(100)->get();
 
         return response()->json($users->map(function ($user) {
             return [

@@ -240,7 +240,7 @@
             // Reset form
             searchInput.value = '';
             document.getElementById('officer_results').classList.add('hidden');
-            document.getElementById('officer_list').innerHTML = '';
+            document.getElementById('officer_list').innerHTML = '<div class="p-4 text-center text-secondary-foreground">Loading officers...</div>';
             submitBtn.disabled = true;
             selectedOfficerId = null;
             
@@ -248,6 +248,9 @@
             modal.classList.remove('hidden');
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+            
+            // Load all officers immediately
+            searchOfficers('');
             
             // Focus search input
             setTimeout(() => searchInput.focus(), 100);
@@ -267,25 +270,27 @@
             selectedOfficerId = null;
         }
 
-        // Search functionality
+        // Search functionality - search as user types
         document.getElementById('officer_search').addEventListener('input', function(e) {
             const query = e.target.value.trim();
             
             clearTimeout(searchTimeout);
             
-            if (query.length < 2) {
-                document.getElementById('officer_results').classList.add('hidden');
-                return;
-            }
-            
+            // Search immediately, even with empty query (shows all)
             searchTimeout = setTimeout(() => {
                 searchOfficers(query);
-            }, 300);
+            }, 200);
         });
 
         function searchOfficers(query) {
             // Get command ID from the form's officer
             const commandId = {{ $form->officer->present_station }};
+            const listDiv = document.getElementById('officer_list');
+            const resultsDiv = document.getElementById('officer_results');
+            
+            // Show loading state
+            listDiv.innerHTML = '<div class="p-4 text-center text-secondary-foreground">Searching officers...</div>';
+            resultsDiv.classList.remove('hidden');
             
             // Use fetch to search for users/officers
             fetch(`/staff-officer/aper-forms/search-users?q=${encodeURIComponent(query)}&command_id=${commandId}`, {
@@ -297,19 +302,27 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Network response was not ok');
+                    });
                 }
                 return response.json();
             })
             .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 displayOfficers(data);
             })
             .catch(error => {
                 console.error('Error searching officers:', error);
-                // Fallback: Show error message
-                document.getElementById('officer_list').innerHTML = 
-                    '<div class="p-4 text-center text-secondary-foreground">Error searching officers. Please try again.</div>';
-                document.getElementById('officer_results').classList.remove('hidden');
+                // Show error message
+                listDiv.innerHTML = 
+                    `<div class="p-4 text-center text-danger">
+                        <i class="ki-filled ki-information"></i> 
+                        Error: ${error.message || 'Failed to load officers. Please try again.'}
+                    </div>`;
+                resultsDiv.classList.remove('hidden');
             });
         }
 
@@ -318,21 +331,26 @@
             const listDiv = document.getElementById('officer_list');
             
             if (!officers || officers.length === 0) {
-                listDiv.innerHTML = '<div class="p-4 text-center text-secondary-foreground">No officers found</div>';
+                listDiv.innerHTML = '<div class="p-4 text-center text-secondary-foreground"><i class="ki-filled ki-information"></i> No officers found matching your search.</div>';
                 resultsDiv.classList.remove('hidden');
                 return;
             }
             
-            let html = '<div class="divide-y divide-border">';
+            let html = `<div class="divide-y divide-border">
+                <div class="p-2 text-xs text-secondary-foreground bg-muted/30">
+                    <i class="ki-filled ki-information"></i> ${officers.length} officer(s) found
+                </div>`;
             officers.forEach(officer => {
                 const displayName = officer.officer ? 
                     `${officer.officer.initials} ${officer.officer.surname} (${officer.email})` : 
                     officer.email;
+                const serviceNumber = officer.officer ? (officer.officer.service_number || 'N/A') : 'N/A';
                 html += `
-                    <div class="p-3 hover:bg-muted/50 cursor-pointer transition-colors" 
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer transition-colors officer-item" 
+                         data-officer-id="${officer.id}"
                          onclick="selectOfficer(${officer.id}, '${displayName.replace(/'/g, "\\'")}')">
                         <div class="font-medium text-foreground">${displayName}</div>
-                        ${officer.officer ? `<div class="text-xs text-secondary-foreground">Service: ${officer.officer.service_number || 'N/A'}</div>` : ''}
+                        ${officer.officer ? `<div class="text-xs text-secondary-foreground">Service Number: ${serviceNumber}</div>` : ''}
                     </div>
                 `;
             });
@@ -361,11 +379,16 @@
             
             submitBtn.disabled = false;
             
-            // Highlight selected
-            document.querySelectorAll('#officer_list > div > div').forEach(div => {
-                div.classList.remove('bg-primary/10', 'border-l-4', 'border-primary');
+            // Highlight selected - remove all highlights first
+            document.querySelectorAll('.officer-item').forEach(item => {
+                item.classList.remove('bg-primary/10', 'border-l-4', 'border-primary');
             });
-            event.target.closest('.p-3').classList.add('bg-primary/10', 'border-l-4', 'border-primary');
+            
+            // Add highlight to selected item
+            const selectedItem = document.querySelector(`.officer-item[data-officer-id="${userId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('bg-primary/10', 'border-l-4', 'border-primary');
+            }
         }
     </script>
 @endsection
