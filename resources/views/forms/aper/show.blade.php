@@ -200,96 +200,151 @@
             </div>
             <div class="kt-card-content">
                 <div class="flex flex-col gap-6">
+                    <!-- Period of Report -->
+                    @if($form->period_from || $form->period_to)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                            <div>
+                                <label class="kt-form-label text-sm font-semibold">Period of Report - From</label>
+                                <p class="text-sm text-foreground">{{ $form->period_from ? \Carbon\Carbon::parse($form->period_from)->format('d/m/Y') : 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <label class="kt-form-label text-sm font-semibold">Period of Report - To</label>
+                                <p class="text-sm text-foreground">{{ $form->period_to ? \Carbon\Carbon::parse($form->period_to)->format('d/m/Y') : 'N/A' }}</p>
+                            </div>
+                        </div>
+                    @endif
+                    
                     <!-- Leave Records -->
-                    @if(($form->sick_leave_records && is_array($form->sick_leave_records) && count($form->sick_leave_records) > 0) || 
-                        ($form->maternity_leave_records && is_array($form->maternity_leave_records) && count($form->maternity_leave_records) > 0) || 
-                        ($form->annual_casual_leave_records && is_array($form->annual_casual_leave_records) && count($form->annual_casual_leave_records) > 0))
+                    <div class="flex flex-col gap-4">
+                        <h4 class="text-lg font-semibold">4. Leave Records</h4>
+                        
+                        <!-- Sick Leave Records -->
+                        <div class="p-4 bg-muted/50 rounded-lg">
+                            <label class="kt-form-label font-semibold mb-3">(A) Sick Leave Records</label>
+                            @if($form->sick_leave_records && is_array($form->sick_leave_records) && count(array_filter($form->sick_leave_records, function($r) { return !empty($r['type']) || !empty($r['from']) || !empty($r['to']); })) > 0)
+                                <div class="overflow-x-auto">
+                                    <table class="kt-table w-full">
+                                        <thead>
+                                            <tr class="border-b border-border">
+                                                <th class="text-left py-2 px-3 text-sm">Type</th>
+                                                <th class="text-left py-2 px-3 text-sm">From</th>
+                                                <th class="text-left py-2 px-3 text-sm">To</th>
+                                                <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($form->sick_leave_records as $record)
+                                                @if(!empty($record['type']) || !empty($record['from']) || !empty($record['to']))
+                                                    <tr>
+                                                        <td class="py-2 px-3 text-sm">{{ $record['type'] ?? 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
+                                                    </tr>
+                                                @endif
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <p class="text-sm text-secondary-foreground italic">N/A</p>
+                            @endif
+                        </div>
+                        
+                        <!-- Maternity Leave Records -->
+                        <div class="p-4 bg-muted/50 rounded-lg">
+                            <label class="kt-form-label font-semibold mb-3">(B) Maternity Leave Records</label>
+                            @if($form->maternity_leave_records && is_array($form->maternity_leave_records) && count(array_filter($form->maternity_leave_records, function($r) { return !empty($r['from']) || !empty($r['to']); })) > 0)
+                                <div class="overflow-x-auto">
+                                    <table class="kt-table w-full">
+                                        <thead>
+                                            <tr class="border-b border-border">
+                                                <th class="text-left py-2 px-3 text-sm">From</th>
+                                                <th class="text-left py-2 px-3 text-sm">To</th>
+                                                <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($form->maternity_leave_records as $record)
+                                                @if(!empty($record['from']) || !empty($record['to']))
+                                                    <tr>
+                                                        <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
+                                                    </tr>
+                                                @endif
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <p class="text-sm text-secondary-foreground italic">N/A</p>
+                            @endif
+                        </div>
+                        
+                        <!-- Annual/Casual Leave Records -->
+                        <div class="p-4 bg-muted/50 rounded-lg">
+                            <label class="kt-form-label font-semibold mb-3">(C) Annual/Casual Leave Records</label>
+                            @if($form->annual_casual_leave_records && is_array($form->annual_casual_leave_records) && count(array_filter($form->annual_casual_leave_records, function($r) { return !empty($r['from']) || !empty($r['to']); })) > 0)
+                                <div class="overflow-x-auto">
+                                    <table class="kt-table w-full">
+                                        <thead>
+                                            <tr class="border-b border-border">
+                                                <th class="text-left py-2 px-3 text-sm">From</th>
+                                                <th class="text-left py-2 px-3 text-sm">To</th>
+                                                <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($form->annual_casual_leave_records as $record)
+                                                @if(!empty($record['from']) || !empty($record['to']))
+                                                    <tr>
+                                                        <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
+                                                        <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
+                                                    </tr>
+                                                @endif
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <p class="text-sm text-secondary-foreground italic">N/A</p>
+                            @endif
+                        </div>
+                    </div>
+                    
+                    <!-- Targets -->
+                    @if($form->division_targets || $form->individual_targets || $form->project_cost)
                         <div class="flex flex-col gap-4">
-                            <h4 class="text-lg font-semibold">4. Leave Records</h4>
+                            <h4 class="text-lg font-semibold">Targets</h4>
                             
-                            @if($form->sick_leave_records && is_array($form->sick_leave_records) && count($form->sick_leave_records) > 0)
+                            @if($form->division_targets && is_array($form->division_targets) && count($form->division_targets) > 0)
                                 <div class="p-4 bg-muted/50 rounded-lg">
-                                    <label class="kt-form-label font-semibold mb-3">(A) Sick Leave Records</label>
-                                    <div class="overflow-x-auto">
-                                        <table class="kt-table w-full">
-                                            <thead>
-                                                <tr class="border-b border-border">
-                                                    <th class="text-left py-2 px-3 text-sm">Type</th>
-                                                    <th class="text-left py-2 px-3 text-sm">From</th>
-                                                    <th class="text-left py-2 px-3 text-sm">To</th>
-                                                    <th class="text-left py-2 px-3 text-sm">No. of Days</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($form->sick_leave_records as $record)
-                                                    @if(!empty($record['type']) || !empty($record['from']) || !empty($record['to']))
-                                                        <tr>
-                                                            <td class="py-2 px-3 text-sm">{{ $record['type'] ?? 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
-                                                        </tr>
-                                                    @endif
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                    <label class="kt-form-label font-semibold mb-3">Division Targets</label>
+                                    <div class="flex flex-col gap-2">
+                                        @foreach($form->division_targets as $target)
+                                            <p class="text-sm text-foreground">{{ $target ?? 'N/A' }}</p>
+                                        @endforeach
                                     </div>
                                 </div>
                             @endif
                             
-                            @if($form->maternity_leave_records && is_array($form->maternity_leave_records) && count($form->maternity_leave_records) > 0)
+                            @if($form->individual_targets && is_array($form->individual_targets) && count($form->individual_targets) > 0)
                                 <div class="p-4 bg-muted/50 rounded-lg">
-                                    <label class="kt-form-label font-semibold mb-3">(B) Maternity Leave Records</label>
-                                    <div class="overflow-x-auto">
-                                        <table class="kt-table w-full">
-                                            <thead>
-                                                <tr class="border-b border-border">
-                                                    <th class="text-left py-2 px-3 text-sm">From</th>
-                                                    <th class="text-left py-2 px-3 text-sm">To</th>
-                                                    <th class="text-left py-2 px-3 text-sm">No. of Days</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($form->maternity_leave_records as $record)
-                                                    @if(!empty($record['from']) || !empty($record['to']))
-                                                        <tr>
-                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
-                                                        </tr>
-                                                    @endif
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                    <label class="kt-form-label font-semibold mb-3">Individual Targets</label>
+                                    <div class="flex flex-col gap-2">
+                                        @foreach($form->individual_targets as $target)
+                                            <p class="text-sm text-foreground">{{ $target ?? 'N/A' }}</p>
+                                        @endforeach
                                     </div>
                                 </div>
                             @endif
                             
-                            @if($form->annual_casual_leave_records && is_array($form->annual_casual_leave_records) && count($form->annual_casual_leave_records) > 0)
+                            @if($form->project_cost)
                                 <div class="p-4 bg-muted/50 rounded-lg">
-                                    <label class="kt-form-label font-semibold mb-3">(C) Annual/Casual Leave Records</label>
-                                    <div class="overflow-x-auto">
-                                        <table class="kt-table w-full">
-                                            <thead>
-                                                <tr class="border-b border-border">
-                                                    <th class="text-left py-2 px-3 text-sm">From</th>
-                                                    <th class="text-left py-2 px-3 text-sm">To</th>
-                                                    <th class="text-left py-2 px-3 text-sm">No. of Days</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($form->annual_casual_leave_records as $record)
-                                                    @if(!empty($record['from']) || !empty($record['to']))
-                                                        <tr>
-                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
-                                                            <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
-                                                        </tr>
-                                                    @endif
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <label class="kt-form-label font-semibold mb-3">Project Cost</label>
+                                    <p class="text-sm text-foreground">{{ $form->project_cost }}</p>
                                 </div>
                             @endif
                         </div>
@@ -297,30 +352,27 @@
                     
                     <!-- Job Description and Other Details -->
                     <div class="flex flex-col gap-4">
-                        @if($form->main_duties)
-                            <div>
-                                <label class="kt-form-label text-sm font-semibold">Main Duties</label>
-                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->main_duties }}</p>
-                            </div>
-                        @endif
-                        @if($form->joint_discussion)
-                            <div>
-                                <label class="kt-form-label text-sm font-semibold">Joint Discussion</label>
-                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->joint_discussion }}</p>
-                            </div>
-                        @endif
-                        @if($form->final_evaluation)
-                            <div>
-                                <label class="kt-form-label text-sm font-semibold">Final Evaluation</label>
-                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->final_evaluation }}</p>
-                            </div>
-                        @endif
-                        @if($form->difficulties_encountered)
-                            <div>
-                                <label class="kt-form-label text-sm font-semibold">Difficulties Encountered</label>
-                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->difficulties_encountered }}</p>
-                            </div>
-                        @endif
+                        <h4 class="text-lg font-semibold">Job Description</h4>
+                        
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Main Duties</label>
+                            <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->main_duties ?? 'N/A' }}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Joint Discussion</label>
+                            <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->joint_discussion ?? 'N/A' }}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Final Evaluation</label>
+                            <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->final_evaluation ?? 'N/A' }}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="kt-form-label text-sm font-semibold">Difficulties Encountered</label>
+                            <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->difficulties_encountered ?? 'N/A' }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
