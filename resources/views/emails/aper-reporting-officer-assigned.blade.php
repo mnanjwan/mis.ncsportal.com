@@ -33,7 +33,16 @@
     </ul>
     
     <div style="text-align: center; margin: 30px 0;">
-        <a href="{{ $appUrl }}/reporting-officer/aper-forms/{{ $form->id }}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Review APER Form</a>
+        <a href="{{ $appUrl }}/reporting-officer/aper-forms/access/{{ $form->officer_id }}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Access & Review APER Form</a>
+    </div>
+    
+    <div style="background-color: #f0f9ff; padding: 15px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
+        <p style="margin: 0;"><strong>How to Access the Form:</strong></p>
+        <ul style="margin: 10px 0 0 20px;">
+            <li>Click the button above to access the form directly</li>
+            <li>Or log in and navigate to: <strong>APER Forms → Search/Countersign</strong></li>
+            <li>Search for the officer by service number: <strong>{{ $form->officer->service_number }}</strong></li>
+        </ul>
     </div>
     
     <p><strong>Important:</strong> Please complete your review in a timely manner so the form can proceed to the Countersigning Officer.</p>

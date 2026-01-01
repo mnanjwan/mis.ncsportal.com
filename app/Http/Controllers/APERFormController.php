@@ -1190,7 +1190,7 @@ class APERFormController extends Controller
     public function staffOfficerReviewIndex(Request $request)
     {
         try {
-            $user = auth()->user();
+        $user = auth()->user();
 
             Log::info('Staff Officer Review Index - Start', [
                 'user_id' => $user->id,
@@ -1199,7 +1199,7 @@ class APERFormController extends Controller
                 'all_user_roles' => $user->roles->pluck('name')->toArray(),
             ]);
 
-            if (!$user->hasRole('Staff Officer')) {
+        if (!$user->hasRole('Staff Officer')) {
                 Log::warning('Staff Officer Review Index - Unauthorized', [
                     'user_id' => $user->id,
                     'user_roles' => $user->roles->pluck('name')->toArray(),
@@ -1231,15 +1231,15 @@ class APERFormController extends Controller
                 'has_command' => $commandId !== null,
             ]);
 
-            $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])
+        $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])
                 ->where('status', 'STAFF_OFFICER_REVIEW');
 
             // Filter by command if Staff Officer has an assigned command
             // If no command assigned, show all rejected forms (for system-wide Staff Officers)
             if ($commandId) {
                 $query->whereHas('officer', function ($q) use ($commandId) {
-                    $q->where('present_station', $commandId);
-                });
+                $q->where('present_station', $commandId);
+            });
                 Log::info('Staff Officer Review Index - Filtering by command', [
                     'user_id' => $user->id,
                     'command_id' => $commandId,
@@ -1250,20 +1250,20 @@ class APERFormController extends Controller
                 ]);
             }
 
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->whereHas('officer', function ($q) use ($search) {
-                    $q->where('service_number', 'like', "%{$search}%")
-                        ->orWhere('surname', 'like', "%{$search}%")
-                        ->orWhere('initials', 'like', "%{$search}%");
-                });
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('officer', function ($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('initials', 'like', "%{$search}%");
+            });
                 Log::info('Staff Officer Review Index - Search applied', [
                     'user_id' => $user->id,
                     'search_term' => $search,
                 ]);
-            }
+        }
 
-            $forms = $query->orderBy('rejected_at', 'desc')->paginate(20);
+        $forms = $query->orderBy('rejected_at', 'desc')->paginate(20);
 
             Log::info('Staff Officer Review Index - Query Complete', [
                 'user_id' => $user->id,
@@ -1271,7 +1271,7 @@ class APERFormController extends Controller
                 'total_forms' => $forms->total(),
             ]);
 
-            return view('dashboards.staff-officer.aper-review', compact('forms'));
+        return view('dashboards.staff-officer.aper-review', compact('forms'));
         } catch (\Exception $e) {
             Log::error('Staff Officer Review Index - Exception', [
                 'user_id' => auth()->id(),
@@ -1450,25 +1450,17 @@ class APERFormController extends Controller
             'reporting_officer_id' => 'required|exists:users,id',
         ]);
 
-        // Validate new Reporting Officer is OIC/2IC (unless HRD)
-        if (!$user->hasRole('HRD')) {
+        // Validate new Reporting Officer rank (must be same or higher than the officer being assessed)
             $newReportingOfficer = User::find($validated['reporting_officer_id']);
-            if ($newReportingOfficer && $newReportingOfficer->officer) {
-                $commandId = $form->officer->present_station;
-                $year = $form->year;
-
-                $dutyRosterService = app(DutyRosterService::class);
-                $isOICOr2IC = $dutyRosterService->isOfficerOICOr2IC($newReportingOfficer->officer->id, $commandId, $year);
-
-                if (!$isOICOr2IC) {
-                    return redirect()->back()->with('error', 'The selected Reporting Officer must be an OIC or 2IC in an approved duty roster.');
-                }
-
-                // Validate rank
+        if ($newReportingOfficer && $newReportingOfficer->officer && $form->officer) {
                 $rankComparisonService = app(RankComparisonService::class);
                 if (!$rankComparisonService->isRankHigherOrEqual($newReportingOfficer->officer->id, $form->officer->id)) {
                     return redirect()->back()->with('error', 'The selected Reporting Officer must be of the same rank or higher than the officer being assessed.');
                 }
+
+            // Validate same command
+            if ($newReportingOfficer->officer->present_station !== $form->officer->present_station) {
+                return redirect()->back()->with('error', 'The selected Reporting Officer must be in the same command.');
             }
         }
 
@@ -1484,10 +1476,24 @@ class APERFormController extends Controller
 
             DB::commit();
 
-            // Send notification to newly assigned reporting officer
+            // Send notifications to newly assigned reporting officer
             $reportingOfficer = User::find($validated['reporting_officer_id']);
-            if ($reportingOfficer && $reportingOfficer->email) {
-                \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $reportingOfficer);
+            if ($reportingOfficer) {
+                // Send email notification
+                if ($reportingOfficer->email) {
+                    \App\Jobs\SendAPERReportingOfficerAssignedMailJob::dispatch($form, $reportingOfficer);
+                }
+
+                // Create app notification
+                \App\Models\Notification::create([
+                    'user_id' => $reportingOfficer->id,
+                    'notification_type' => 'APER_FORM_ASSIGNED',
+                    'title' => 'APER Form Assigned - Action Required',
+                    'message' => "You have been assigned as Reporting Officer for {$form->officer->initials} {$form->officer->surname} ({$form->officer->service_number}) - {$form->year} APER form. Please review and complete the form.",
+                    'entity_type' => 'APERForm',
+                    'entity_id' => $form->id,
+                    'is_read' => false,
+                ]);
             }
 
             return redirect()->back()->with('success', 'Reporting Officer reassigned successfully.');
@@ -1540,6 +1546,22 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
+
+            // Send notifications to newly assigned countersigning officer
+            $countersigningOfficer = User::find($validated['countersigning_officer_id']);
+            if ($countersigningOfficer) {
+                // Create app notification
+                \App\Models\Notification::create([
+                    'user_id' => $countersigningOfficer->id,
+                    'notification_type' => 'APER_FORM_ASSIGNED',
+                    'title' => 'APER Form Assigned - Action Required',
+                    'message' => "You have been assigned as Countersigning Officer for {$form->officer->initials} {$form->officer->surname} ({$form->officer->service_number}) - {$form->year} APER form. Please review and countersign the form. Access via: APER Forms → Countersigning Search",
+                    'entity_type' => 'APERForm',
+                    'entity_id' => $form->id,
+                    'is_read' => false,
+                ]);
+            }
+
             return redirect()->back()->with('success', 'Countersigning Officer reassigned successfully.');
         } catch (\Exception $e) {
             DB::rollBack();

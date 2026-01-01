@@ -353,6 +353,71 @@
         </div>
         @endif
         <!-- End of Pending Quarter Allocations -->
+
+        <!-- Pending APER Form Assignments -->
+        @if($pendingAperAssignments && $pendingAperAssignments->count() > 0)
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Pending APER Form Assignments</h3>
+                <div class="kt-card-toolbar">
+                    <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $pendingAperAssignments->count() }} Pending</span>
+                </div>
+            </div>
+            <div class="kt-card-content">
+                <div class="flex flex-col gap-4">
+                    @foreach($pendingAperAssignments as $form)
+                        <div class="p-4 rounded-lg border border-warning/20 bg-warning/5">
+                            <div class="flex flex-col gap-3">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-center gap-3 flex-1">
+                                        <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
+                                            <i class="ki-filled ki-notepad-edit text-warning"></i>
+                                        </div>
+                                        <div class="flex flex-col gap-1">
+                                            <span class="text-sm font-semibold text-foreground">
+                                                {{ $form->assignment_type }} - APER Form {{ $form->year }}
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground">
+                                                Officer: {{ $form->officer->initials }} {{ $form->officer->surname }} 
+                                                ({{ $form->officer->service_number }})
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground">
+                                                Assigned: {{ $form->updated_at->format('d/m/Y H:i') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span class="kt-badge kt-badge-warning kt-badge-sm">Action Required</span>
+                                </div>
+                                
+                                <div class="flex gap-2 pt-2">
+                                    <a href="{{ route($form->assignment_route, $form->assignment_route_param) }}" 
+                                       class="kt-btn kt-btn-warning kt-btn-sm flex-1">
+                                        <i class="ki-filled ki-notepad-edit"></i> 
+                                        {{ $form->assignment_type === 'Reporting Officer' ? 'Review Form' : 'Countersign Form' }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-4 pt-4 border-t border-border">
+                    <div class="flex gap-2">
+                        @if($pendingAperAssignments->contains('assignment_type', 'Reporting Officer'))
+                            <a href="{{ route('aper-forms.reporting-officer.search') }}" class="kt-btn kt-btn-outline flex-1 justify-center">
+                                <i class="ki-filled ki-notepad-edit"></i> Reporting Officer Forms
+                            </a>
+                        @endif
+                        @if($pendingAperAssignments->contains('assignment_type', 'Countersigning Officer'))
+                            <a href="{{ route('aper-forms.countersigning.search') }}" class="kt-btn kt-btn-outline flex-1 justify-center">
+                                <i class="ki-filled ki-check-circle"></i> Countersigning Forms
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+        <!-- End of Pending APER Form Assignments -->
     </div>
 
     <!-- Rejection Modal -->

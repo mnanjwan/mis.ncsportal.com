@@ -9,6 +9,7 @@ use App\Models\PassApplication;
 use App\Models\OfficerQuarter;
 use App\Models\OfficerCourse;
 use App\Models\Query;
+use App\Models\APERForm;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -564,6 +565,7 @@ class OfficerController extends Controller
                 'pendingQueries' => collect([]),
                 'currentRosterTitle' => null,
                 'rosterRole' => null,
+                'pendingAperAssignments' => collect([]),
             ]);
         }
 
@@ -709,6 +711,40 @@ class OfficerController extends Controller
             $currentRosterTitle = $currentRosterAssignment?->roster?->unit ?? null;
         }
 
+        // 10. Pending APER Form Assignments
+        // Get forms where user is assigned as Reporting Officer or Countersigning Officer
+        $pendingAperAssignments = collect();
+        
+        // Reporting Officer assignments (status is REPORTING_OFFICER)
+        $reportingOfficerForms = APERForm::where('reporting_officer_id', $user->id)
+            ->where('status', 'REPORTING_OFFICER')
+            ->with(['officer', 'timeline'])
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function ($form) {
+                $form->assignment_type = 'Reporting Officer';
+                $form->assignment_route = 'aper-forms.access';
+                $form->assignment_route_param = $form->officer_id;
+                return $form;
+            });
+        
+        // Countersigning Officer assignments (status is COUNTERSIGNING_OFFICER)
+        $countersigningOfficerForms = APERForm::where('countersigning_officer_id', $user->id)
+            ->where('status', 'COUNTERSIGNING_OFFICER')
+            ->with(['officer', 'timeline', 'reportingOfficer'])
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function ($form) {
+                $form->assignment_type = 'Countersigning Officer';
+                $form->assignment_route = 'aper-forms.countersigning';
+                $form->assignment_route_param = $form->id;
+                return $form;
+            });
+        
+        $pendingAperAssignments = $reportingOfficerForms->concat($countersigningOfficerForms)
+            ->sortByDesc('updated_at')
+            ->take(5);
+
         return view('dashboards.officer.dashboard', compact(
             'officer',
             'emolumentStatus',
@@ -721,7 +757,8 @@ class OfficerController extends Controller
             'recentCourses',
             'upcomingCourses',
             'currentRosterTitle',
-            'rosterRole'
+            'rosterRole',
+            'pendingAperAssignments'
         ));
     }
 
