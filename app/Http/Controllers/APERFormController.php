@@ -1005,7 +1005,7 @@ class APERFormController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])->findOrFail($id);
+        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
 
         if ($form->officer->user_id !== $user->id && !$form->canBeAccessedBy($user)) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
@@ -1190,7 +1190,7 @@ class APERFormController extends Controller
     public function staffOfficerReviewShow($id)
     {
         $user = auth()->user();
-        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])->findOrFail($id);
+        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
 
         if (!$user->hasRole('Staff Officer')) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
@@ -1383,11 +1383,11 @@ class APERFormController extends Controller
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
-        $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer']);
+        $query = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy']);
 
         // By default, show submitted forms and above (not drafts)
         if (!$request->filled('status')) {
-            $query->whereIn('status', ['SUBMITTED', 'REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER', 'OFFICER_REVIEW', 'ACCEPTED', 'REJECTED']);
+            $query->whereIn('status', ['SUBMITTED', 'REPORTING_OFFICER', 'COUNTERSIGNING_OFFICER', 'OFFICER_REVIEW', 'ACCEPTED', 'REJECTED', 'FINALIZED']);
         } elseif ($request->status !== 'all') {
             $query->where('status', $request->status);
         }
@@ -1408,6 +1408,67 @@ class APERFormController extends Controller
         $forms = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return view('dashboards.hrd.aper-forms', compact('forms'));
+    }
+
+    // HRD: Grade APER form (show form)
+    public function hrdGrade($id)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('HRD')) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
+
+        // Only allow grading finalized forms
+        if ($form->status !== 'FINALIZED') {
+            return redirect()->route('hrd.aper-forms')->with('error', 'You can only grade finalized APER forms.');
+        }
+
+        return view('dashboards.hrd.aper-grade', compact('form'));
+    }
+
+    // HRD: Submit APER form grade
+    public function hrdGradeSubmit(Request $request, $id)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('HRD')) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        $form = APERForm::findOrFail($id);
+
+        // Only allow grading finalized forms
+        if ($form->status !== 'FINALIZED') {
+            return redirect()->route('hrd.aper-forms')->with('error', 'You can only grade finalized APER forms.');
+        }
+
+        $validated = $request->validate([
+            'hrd_score' => 'required|numeric|min:0|max:100',
+            'hrd_score_notes' => 'nullable|string|max:2000',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $form->update([
+                'hrd_score' => $validated['hrd_score'],
+                'hrd_score_notes' => $validated['hrd_score_notes'] ?? null,
+                'hrd_graded_at' => now(),
+                'hrd_graded_by' => $user->id,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('hrd.aper-forms.show', $form->id)
+                ->with('success', 'APER form graded successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to grade form: ' . $e->getMessage());
+        }
     }
 
     // Private helper methods
@@ -1613,7 +1674,7 @@ class APERFormController extends Controller
     // PDF Export
     public function exportPDF($id)
     {
-        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer'])->findOrFail($id);
+        $form = APERForm::with(['officer', 'timeline', 'reportingOfficer', 'countersigningOfficer', 'hrdGradedBy'])->findOrFail($id);
 
         // Check access
         $user = auth()->user();

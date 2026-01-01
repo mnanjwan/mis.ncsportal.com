@@ -110,6 +110,23 @@
                         <p class="text-sm text-foreground">{{ $form->accepted_at->format('d/m/Y H:i') }}</p>
                     </div>
                 @endif
+                @if($form->hrd_score !== null)
+                    <div>
+                        <label class="kt-form-label text-sm">HRD Score</label>
+                        <p class="text-sm font-semibold text-success">{{ number_format($form->hrd_score, 2) }} / 100</p>
+                        @if($form->hrd_graded_at)
+                            <p class="text-xs text-secondary-foreground mt-1">
+                                Graded on {{ $form->hrd_graded_at->format('d/m/Y H:i') }}
+                                @if($form->hrdGradedBy)
+                                    by {{ $form->hrdGradedBy->email }}
+                                @endif
+                            </p>
+                        @endif
+                        @if($form->hrd_score_notes)
+                            <p class="text-xs text-secondary-foreground mt-1 italic">{{ $form->hrd_score_notes }}</p>
+                        @endif
+                    </div>
+                @endif
             </div>
         </div>
     </div>

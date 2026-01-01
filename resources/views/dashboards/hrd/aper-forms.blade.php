@@ -37,6 +37,7 @@
                         <option value="OFFICER_REVIEW" {{ request('status') == 'OFFICER_REVIEW' ? 'selected' : '' }}>Officer Review</option>
                         <option value="ACCEPTED" {{ request('status') == 'ACCEPTED' ? 'selected' : '' }}>Accepted</option>
                         <option value="REJECTED" {{ request('status') == 'REJECTED' ? 'selected' : '' }}>Rejected</option>
+                        <option value="FINALIZED" {{ request('status') == 'FINALIZED' ? 'selected' : '' }}>Finalized</option>
                     </select>
                 </div>
                 <div>
@@ -89,6 +90,7 @@
                                         'OFFICER_REVIEW' => ['class' => 'primary', 'label' => 'Officer Review'],
                                         'ACCEPTED' => ['class' => 'success', 'label' => 'Accepted'],
                                         'REJECTED' => ['class' => 'danger', 'label' => 'Rejected'],
+                                        'FINALIZED' => ['class' => 'info', 'label' => 'Finalized'],
                                         default => ['class' => 'secondary', 'label' => $form->status]
                                     };
                                 @endphp
@@ -110,6 +112,13 @@
                                             <span class="kt-badge kt-badge-danger kt-badge-sm ml-1">Rejected</span>
                                         @endif
                                     </td>
+                                    <td class="py-3 px-4">
+                                        @if($form->hrd_score !== null)
+                                            <span class="text-sm font-semibold text-foreground">{{ number_format($form->hrd_score, 2) }}</span>
+                                        @else
+                                            <span class="text-sm text-secondary-foreground italic">Not Graded</span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         {{ $form->reportingOfficer ? $form->reportingOfficer->email : 'Not Assigned' }}
                                     </td>
@@ -117,10 +126,16 @@
                                         {{ $form->submitted_at ? $form->submitted_at->format('d/m/Y') : '-' }}
                                     </td>
                                     <td class="py-3 px-4 text-right">
-                                        <a href="{{ route('officer.aper-forms.show', $form->id) }}" 
+                                        <a href="{{ route('hrd.aper-forms.show', $form->id) }}" 
                                            class="kt-btn kt-btn-sm kt-btn-ghost">
                                             View
                                         </a>
+                                        @if($form->status === 'FINALIZED')
+                                            <a href="{{ route('hrd.aper-forms.grade', $form->id) }}" 
+                                               class="kt-btn kt-btn-sm kt-btn-primary">
+                                                {{ $form->hrd_score !== null ? 'Update Grade' : 'Grade' }}
+                                            </a>
+                                        @endif
                                         @if($form->canBeReassigned())
                                             <button type="button" 
                                                     class="kt-btn kt-btn-sm kt-btn-warning"

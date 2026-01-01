@@ -151,6 +151,10 @@ class APERForm extends Model
         'general_remarks',
         'suggest_different_job',
         'different_job_details',
+        'hrd_score',
+        'hrd_score_notes',
+        'hrd_graded_at',
+        'hrd_graded_by',
         'suggest_transfer',
         'transfer_details',
         'promotability',
@@ -238,6 +242,11 @@ class APERForm extends Model
     public function headOfDepartment()
     {
         return $this->belongsTo(User::class, 'head_of_department_user_id');
+    }
+
+    public function hrdGradedBy()
+    {
+        return $this->belongsTo(User::class, 'hrd_graded_by');
     }
 
     // Helper methods

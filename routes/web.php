@@ -179,6 +179,9 @@ Route::middleware('auth')->group(function () {
 
         // APER Forms Management
         Route::get('/aper-forms', [APERFormController::class, 'hrdIndex'])->name('aper-forms');
+        Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
+        Route::get('/aper-forms/{id}/grade', [APERFormController::class, 'hrdGrade'])->name('aper-forms.grade');
+        Route::post('/aper-forms/{id}/grade', [APERFormController::class, 'hrdGradeSubmit'])->name('aper-forms.grade.submit');
         Route::get('/aper-forms/{id}/export', [APERFormController::class, 'exportPDF'])->name('aper-forms.export');
         Route::post('/aper-forms/{id}/reassign-reporting-officer', [APERFormController::class, 'reassignReportingOfficer'])->name('aper-forms.reassign-reporting-officer');
         Route::post('/aper-forms/{id}/reassign-countersigning-officer', [APERFormController::class, 'reassignCountersigningOfficer'])->name('aper-forms.reassign-countersigning-officer');
