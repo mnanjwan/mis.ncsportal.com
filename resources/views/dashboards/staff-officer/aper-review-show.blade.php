@@ -113,11 +113,11 @@
                         </p>
                         <div class="flex gap-2">
                             <button type="button" class="kt-btn kt-btn-sm kt-btn-warning" onclick="showReassignModal('reporting', {{ $form->id }})">
-                                <i class="ki-filled ki-user-edit"></i> Reassign Reporting Officer
-                            </button>
+                                    <i class="ki-filled ki-user-edit"></i> Reassign Reporting Officer
+                                </button>
                             <button type="button" class="kt-btn kt-btn-sm kt-btn-warning" onclick="showReassignModal('countersigning', {{ $form->id }})">
-                                <i class="ki-filled ki-user-edit"></i> Reassign Countersigning Officer
-                            </button>
+                                    <i class="ki-filled ki-user-edit"></i> Reassign Countersigning Officer
+                                </button>
                         </div>
                     </div>
 
@@ -316,7 +316,9 @@
                 if (data.error) {
                     throw new Error(data.error);
                 }
-                displayOfficers(data);
+                // Ensure data is an array
+                const officersArray = Array.isArray(data) ? data : [];
+                displayOfficers(officersArray);
             })
             .catch(error => {
                 console.error('Error searching officers:', error);
@@ -333,6 +335,17 @@
         function displayOfficers(officers) {
             const resultsDiv = document.getElementById('officer_results');
             const listDiv = document.getElementById('officer_list');
+            
+            // Ensure officers is an array
+            if (!Array.isArray(officers)) {
+                console.error('displayOfficers received non-array data:', officers);
+                listDiv.innerHTML = `<div class="p-4 text-center text-danger">
+                    <i class="ki-filled ki-information"></i> 
+                    Error: Invalid data format received.
+                </div>`;
+                resultsDiv.classList.remove('hidden');
+                return;
+            }
             
             if (!officers || officers.length === 0) {
                 const typeText = currentReassignType === 'reporting' ? 'reporting' : 'countersigning';

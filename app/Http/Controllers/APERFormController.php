@@ -1944,7 +1944,8 @@ class APERFormController extends Controller
             return true;
         });
 
-        return response()->json($eligibleUsers->map(function ($user) {
+        // Convert collection to array to ensure JSON response is always an array
+        $officersArray = $eligibleUsers->map(function ($user) {
             return [
                 'id' => $user->id,
                 'email' => $user->email,
@@ -1956,7 +1957,9 @@ class APERFormController extends Controller
                     'rank' => $user->officer->rank ?? $user->officer->substantive_rank,
                 ] : null,
             ];
-        }));
+        })->values()->toArray();
+
+        return response()->json($officersArray);
     }
 }
 
