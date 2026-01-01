@@ -1871,9 +1871,17 @@ class APERFormController extends Controller
 
         $query = $request->input('q', '');
         $commandId = $request->input('command_id');
+        $formId = $request->input('form_id');
+        $type = $request->input('type', 'reporting'); // 'reporting' or 'countersigning'
 
         if (!$commandId) {
             return response()->json(['error' => 'Command ID required'], 400);
+        }
+
+        // Get the form to check eligibility
+        $form = null;
+        if ($formId) {
+            $form = APERForm::with(['officer', 'reportingOfficer'])->find($formId);
         }
 
         // Get all users with officer records in the same command
@@ -1896,7 +1904,47 @@ class APERFormController extends Controller
 
         $users = $usersQuery->orderBy('email')->limit(100)->get();
 
-        return response()->json($users->map(function ($user) {
+        // Filter by eligibility criteria
+        $rankComparisonService = app(RankComparisonService::class);
+        $eligibleUsers = $users->filter(function ($potentialUser) use ($form, $type, $rankComparisonService) {
+            // Must have an officer record
+            if (!$potentialUser->officer) {
+                return false;
+            }
+
+            // Cannot be the same officer as the form's officer
+            if ($form && $form->officer_id === $potentialUser->officer->id) {
+                return false;
+            }
+
+            // For Reporting Officer: Must be same or higher rank than the officer being assessed
+            if ($type === 'reporting' && $form && $form->officer) {
+                try {
+                    if (!$rankComparisonService->isRankHigherOrEqual($potentialUser->officer->id, $form->officer->id)) {
+                        return false;
+                    }
+                } catch (\Exception $e) {
+                    // If rank comparison fails, exclude this officer
+                    return false;
+                }
+            }
+
+            // For Countersigning Officer: Must be same or higher rank than the Reporting Officer
+            if ($type === 'countersigning' && $form && $form->reportingOfficer && $form->reportingOfficer->officer) {
+                try {
+                    if (!$rankComparisonService->isRankHigherOrEqual($potentialUser->officer->id, $form->reportingOfficer->officer->id)) {
+                        return false;
+                    }
+                } catch (\Exception $e) {
+                    // If rank comparison fails, exclude this officer
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        return response()->json($eligibleUsers->map(function ($user) {
             return [
                 'id' => $user->id,
                 'email' => $user->email,

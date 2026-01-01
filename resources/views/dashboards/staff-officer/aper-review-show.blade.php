@@ -165,14 +165,14 @@
                     @csrf
                     <div class="kt-modal-body">
                         <div class="mb-4">
-                            <label class="kt-form-label">Search Officer by Email or Service Number</label>
+                            <label class="kt-form-label">Search Eligible Officer by Email or Service Number</label>
                             <input type="text" 
                                    id="officer_search" 
                                    class="kt-input" 
                                    placeholder="Type email or service number to search..."
                                    autocomplete="off">
                             <p class="text-xs text-secondary-foreground mt-1">
-                                Start typing to search for officers in the same command
+                                <i class="ki-filled ki-information"></i> Only eligible officers (same or higher rank) are shown
                             </p>
                         </div>
                         
@@ -285,15 +285,19 @@
         function searchOfficers(query) {
             // Get command ID from the form's officer
             const commandId = {{ $form->officer->present_station }};
+            const formId = {{ $form->id }};
             const listDiv = document.getElementById('officer_list');
             const resultsDiv = document.getElementById('officer_results');
             
             // Show loading state
-            listDiv.innerHTML = '<div class="p-4 text-center text-secondary-foreground">Searching officers...</div>';
+            listDiv.innerHTML = '<div class="p-4 text-center text-secondary-foreground">Searching eligible officers...</div>';
             resultsDiv.classList.remove('hidden');
             
+            // Build URL with form ID and type
+            const url = `/staff-officer/aper-forms/search-users?q=${encodeURIComponent(query)}&command_id=${commandId}&form_id=${formId}&type=${currentReassignType}`;
+            
             // Use fetch to search for users/officers
-            fetch(`/staff-officer/aper-forms/search-users?q=${encodeURIComponent(query)}&command_id=${commandId}`, {
+            fetch(url, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -331,14 +335,19 @@
             const listDiv = document.getElementById('officer_list');
             
             if (!officers || officers.length === 0) {
-                listDiv.innerHTML = '<div class="p-4 text-center text-secondary-foreground"><i class="ki-filled ki-information"></i> No officers found matching your search.</div>';
+                const typeText = currentReassignType === 'reporting' ? 'reporting' : 'countersigning';
+                listDiv.innerHTML = `<div class="p-4 text-center text-secondary-foreground">
+                    <i class="ki-filled ki-information"></i> 
+                    No eligible ${typeText} officers found matching your search.
+                    <br><small class="text-xs mt-1 block">Only officers with appropriate rank are shown.</small>
+                </div>`;
                 resultsDiv.classList.remove('hidden');
                 return;
             }
             
             let html = `<div class="divide-y divide-border">
                 <div class="p-2 text-xs text-secondary-foreground bg-muted/30">
-                    <i class="ki-filled ki-information"></i> ${officers.length} officer(s) found
+                    <i class="ki-filled ki-check-circle"></i> ${officers.length} eligible officer(s) found
                 </div>`;
             officers.forEach(officer => {
                 const displayName = officer.officer ? 
