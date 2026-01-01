@@ -723,7 +723,7 @@ class OfficerController extends Controller
             ->get()
             ->map(function ($form) {
                 $form->assignment_type = 'Reporting Officer';
-                $form->assignment_route = 'aper-forms.access';
+                $form->assignment_route = 'officer.aper-forms.access';
                 $form->assignment_route_param = $form->officer_id;
                 return $form;
             });
@@ -736,7 +736,7 @@ class OfficerController extends Controller
             ->get()
             ->map(function ($form) {
                 $form->assignment_type = 'Countersigning Officer';
-                $form->assignment_route = 'aper-forms.countersigning';
+                $form->assignment_route = 'officer.aper-forms.countersigning';
                 $form->assignment_route_param = $form->id;
                 return $form;
             });

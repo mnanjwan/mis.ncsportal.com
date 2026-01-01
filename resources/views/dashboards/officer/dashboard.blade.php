@@ -403,12 +403,12 @@
                 <div class="mt-4 pt-4 border-t border-border">
                     <div class="flex gap-2">
                         @if($pendingAperAssignments->contains('assignment_type', 'Reporting Officer'))
-                            <a href="{{ route('aper-forms.reporting-officer.search') }}" class="kt-btn kt-btn-outline flex-1 justify-center">
+                            <a href="{{ route('officer.aper-forms.search-officers') }}" class="kt-btn kt-btn-outline flex-1 justify-center">
                                 <i class="ki-filled ki-notepad-edit"></i> Reporting Officer Forms
                             </a>
                         @endif
                         @if($pendingAperAssignments->contains('assignment_type', 'Countersigning Officer'))
-                            <a href="{{ route('aper-forms.countersigning.search') }}" class="kt-btn kt-btn-outline flex-1 justify-center">
+                            <a href="{{ route('officer.aper-forms.countersigning.search') }}" class="kt-btn kt-btn-outline flex-1 justify-center">
                                 <i class="ki-filled ki-check-circle"></i> Countersigning Forms
                             </a>
                         @endif
