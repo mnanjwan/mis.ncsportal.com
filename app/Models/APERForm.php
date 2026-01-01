@@ -200,6 +200,7 @@ class APERForm extends Model
             'reporting_officer_signed_at' => 'datetime',
             'countersigning_officer_signed_at' => 'datetime',
             'head_of_department_signed_at' => 'datetime',
+            'hrd_graded_at' => 'datetime',
         ];
     }
 

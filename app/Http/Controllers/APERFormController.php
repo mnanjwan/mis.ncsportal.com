@@ -1652,7 +1652,7 @@ class APERFormController extends Controller
         }
 
         $validated = $request->validate([
-            'hrd_score' => 'required|numeric|min:0|max:100',
+            'hrd_score' => 'required|numeric',
             'hrd_score_notes' => 'nullable|string|max:2000',
         ]);
 

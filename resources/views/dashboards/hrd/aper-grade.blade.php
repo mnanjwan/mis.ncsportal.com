@@ -42,7 +42,7 @@
     <div class="kt-card">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Grade APER Form</h3>
-            <p class="text-sm text-secondary-foreground italic">Enter the score for this APER form (0-100)</p>
+            <p class="text-sm text-secondary-foreground italic">Enter the score for this APER form</p>
         </div>
         <div class="kt-card-content">
             <form action="{{ route('hrd.aper-forms.grade.submit', $form->id) }}" method="POST">
@@ -51,13 +51,10 @@
                 <div class="flex flex-col gap-4">
                     <div>
                         <label class="kt-form-label font-semibold">Score <span class="text-danger">*</span></label>
-                        <p class="text-sm text-secondary-foreground mb-2">Enter a score between 0 and 100</p>
                         <input type="number" 
                                name="hrd_score" 
                                class="kt-input" 
                                step="0.01"
-                               min="0" 
-                               max="100" 
                                value="{{ old('hrd_score', $form->hrd_score) }}" 
                                required>
                         @error('hrd_score')

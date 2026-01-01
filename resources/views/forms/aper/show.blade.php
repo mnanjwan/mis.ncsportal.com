@@ -123,10 +123,10 @@
                         <p class="text-sm text-foreground">{{ $form->accepted_at->format('d/m/Y H:i') }}</p>
                     </div>
                 @endif
-                @if($form->hrd_score !== null)
+                @if($form->hrd_score !== null && (auth()->user()->hasRole('HRD') || auth()->user()->hasRole('Staff Officer')))
                     <div>
                         <label class="kt-form-label text-sm">HRD Score</label>
-                        <p class="text-sm font-semibold text-success">{{ number_format($form->hrd_score, 2) }} / 100</p>
+                        <p class="text-sm font-semibold text-success">{{ number_format($form->hrd_score, 2) }}</p>
                         @if($form->hrd_graded_at)
                             <p class="text-xs text-secondary-foreground mt-1">
                                 Graded on {{ $form->hrd_graded_at->format('d/m/Y H:i') }}
