@@ -1,23 +1,35 @@
 <!-- Section 10: Aspects of Performance -->
-<div class="kt-card">
-    <div class="kt-card-header">
-        <h3 class="kt-card-title">Section 10: Aspects of Performance</h3>
-        <p class="text-sm text-secondary-foreground">
-            In assessing Performance you are to consider some or all of the following aspects and comment on as well as assess them separately. 
-            Each aspect is described in terms of Outstanding (A) and Very poor (F). The four intermediate ratings (B,C,D,E) represent behaviour 
-            between these extremes. Rating 'A' OR 'F' should be given if you believe it is a generally true statement. Either of the two ratings 
-            however, must be supported in paragraph 14 and General Remarks.
-        </p>
-        <p class="text-sm text-secondary-foreground mt-2">
-            <strong>Grading Weights:</strong> A: 6, B: 5, C: 4, D: 3, E: 2, F: 1
-        </p>
+<div class="kt-card shadow-sm">
+    <div class="kt-card-header bg-muted/50 border-b border-border">
+        <h3 class="kt-card-title text-lg font-semibold">Section 10: Aspects of Performance</h3>
+        <div class="mt-3 space-y-2">
+            <p class="text-sm text-secondary-foreground leading-relaxed">
+                In assessing Performance you are to consider some or all of the following aspects and comment on as well as assess them separately. 
+                Each aspect is described in terms of Outstanding (A) and Very poor (F). The four intermediate ratings (B,C,D,E) represent behaviour 
+                between these extremes. Rating 'A' OR 'F' should be given if you believe it is a generally true statement. Either of the two ratings 
+                however, must be supported in paragraph 14 and General Remarks.
+            </p>
+            <div class="flex items-center gap-2 p-3 bg-primary/10 rounded-md border border-primary/20">
+                <span class="text-sm font-semibold text-primary">Grading Weights:</span>
+                <div class="flex gap-4 text-sm">
+                    <span>A: <strong>6</strong></span>
+                    <span>B: <strong>5</strong></span>
+                    <span>C: <strong>4</strong></span>
+                    <span>D: <strong>3</strong></span>
+                    <span>E: <strong>2</strong></span>
+                    <span>F: <strong>1</strong></span>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="kt-card-content">
+    <div class="kt-card-content p-6">
         <div class="flex flex-col gap-6">
             <!-- Sub-section (1) Job Assessment/General Ability -->
-            <div class="flex flex-col gap-4">
-                <h4 class="text-lg font-semibold">(1) Job Assessment/General Ability</h4>
-                <p class="text-sm text-secondary-foreground italic">(Assess objectively how the officer has performed his set tasks)</p>
+            <div class="flex flex-col gap-5 border-b border-border/50 pb-6">
+                <div class="flex flex-col gap-2">
+                    <h4 class="text-lg font-semibold text-foreground">(1) Job Assessment/General Ability</h4>
+                    <p class="text-sm text-secondary-foreground italic">(Assess objectively how the officer has performed his set tasks)</p>
+                </div>
                 
                 @php
                     $jobAssessmentFields = [
@@ -38,8 +50,8 @@
                 @endforeach
 
                 <!-- Effectiveness of Communications -->
-                <div class="mt-4 p-4 bg-muted/50 rounded-lg">
-                    <h5 class="font-semibold mb-3">Effectiveness of communications:</h5>
+                <div class="mt-4 p-5 bg-primary/5 rounded-lg border border-primary/10">
+                    <h5 class="font-semibold mb-4 text-foreground">Effectiveness of communications:</h5>
                     @include('forms.aper.partials.reporting-officer.grade-field', [
                         'fieldName' => 'written_expression',
                         'label' => '(f) Expression on paper',
@@ -53,8 +65,8 @@
                 </div>
 
                 <!-- Human Relations -->
-                <div class="mt-4 p-4 bg-muted/50 rounded-lg">
-                    <h5 class="font-semibold mb-3">Human Relations:</h5>
+                <div class="mt-4 p-5 bg-success/5 rounded-lg border border-success/10">
+                    <h5 class="font-semibold mb-4 text-foreground">Human Relations:</h5>
                     @include('forms.aper.partials.reporting-officer.grade-field', [
                         'fieldName' => 'staff_relations',
                         'label' => '(h) Relation with staff',
@@ -74,8 +86,10 @@
             </div>
 
             <!-- Quality of Work -->
-            <div class="flex flex-col gap-4 border-t border-border pt-6">
-                <h4 class="text-lg font-semibold">Quality of Work</h4>
+            <div class="flex flex-col gap-5 border-t border-border/50 pt-6">
+                <div class="flex flex-col gap-2">
+                    <h4 class="text-lg font-semibold text-foreground">(2) Quality of Work</h4>
+                </div>
                 @php
                     $qualityFields = [
                         ['name' => 'quality_of_work', 'label' => '(k) Quality of work'],
@@ -94,9 +108,11 @@
             </div>
 
             <!-- Character Traits -->
-            <div class="flex flex-col gap-4 border-t border-border pt-6">
-                <h4 class="text-lg font-semibold">Section (H) Character Traits</h4>
-                <p class="text-sm text-secondary-foreground italic">In assessing character traits, consideration should be given to:</p>
+            <div class="flex flex-col gap-5 border-t border-border/50 pt-6">
+                <div class="flex flex-col gap-2">
+                    <h4 class="text-lg font-semibold text-foreground">(3) Character Traits</h4>
+                    <p class="text-sm text-secondary-foreground italic">In assessing character traits, consideration should be given to:</p>
+                </div>
                 @php
                     $characterFields = [
                         ['name' => 'dependability', 'label' => '(a) Dependability (whether he/she is able to work consistently without Close supervision, inspection or compulsion)'],
@@ -117,9 +133,11 @@
             </div>
 
             <!-- Work Habits -->
-            <div class="flex flex-col gap-4 border-t border-border pt-6">
-                <h4 class="text-lg font-semibold">Section (III) Work Habits</h4>
-                <h5 class="font-semibold">(A) Criteria:</h5>
+            <div class="flex flex-col gap-5 border-t border-border/50 pt-6">
+                <div class="flex flex-col gap-2">
+                    <h4 class="text-lg font-semibold text-foreground">(4) Work Habits</h4>
+                    <h5 class="font-medium text-foreground">Criteria:</h5>
+                </div>
                 @php
                     $workHabitFields = [
                         ['name' => 'punctuality', 'label' => '(i) Punctuality to work'],
@@ -138,40 +156,42 @@
             </div>
 
             <!-- Sanctions -->
-            <div class="flex flex-col gap-4 border-t border-border pt-6">
-                <h4 class="text-lg font-semibold">Section (b) Sanctions</h4>
-                <div class="flex flex-col gap-2">
-                    <label class="kt-form-label mb-1">Has any disciplinary action been taken against the officer during the period covered by this report?</label>
-                    <div class="flex flex-col gap-2">
-                        <select name="disciplinary_action" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="YES" {{ old('disciplinary_action', $form->disciplinary_action) == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('disciplinary_action', $form->disciplinary_action) == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
-                        <textarea name="disciplinary_action_details" class="kt-input" rows="3" placeholder="If Yes give details of sanctions">{{ old('disciplinary_action_details', $form->disciplinary_action_details) }}</textarea>
-                    </div>
+            <div class="flex flex-col gap-4 border-t border-border/50 pt-6">
+                <div class="flex flex-col gap-2 mb-4">
+                    <h4 class="text-lg font-semibold text-foreground">(5) Sanctions</h4>
+                </div>
+                <div class="flex flex-col gap-3 p-4 bg-warning/5 rounded-lg border border-warning/10">
+                    <label class="kt-form-label mb-0 font-medium">Has any disciplinary action been taken against the officer during the period covered by this report?</label>
+                    <select name="disciplinary_action" class="kt-input max-w-xs">
+                        <option value="">-- Select YES or NO --</option>
+                        <option value="YES" {{ old('disciplinary_action', $form->disciplinary_action) == 'YES' ? 'selected' : '' }}>YES</option>
+                        <option value="NO" {{ old('disciplinary_action', $form->disciplinary_action) == 'NO' ? 'selected' : '' }}>NO</option>
+                    </select>
+                    <textarea name="disciplinary_action_details" class="kt-input" rows="3" placeholder="If YES, provide details of sanctions...">{{ old('disciplinary_action_details', $form->disciplinary_action_details) }}</textarea>
                 </div>
             </div>
 
             <!-- Rewards -->
-            <div class="flex flex-col gap-4 border-t border-border pt-6">
-                <h4 class="text-lg font-semibold">Section (C) REWARD</h4>
-                <div class="flex flex-col gap-2">
-                    <label class="kt-form-label mb-1">Has the officer received any special commendation (WRITTEN) during the year for outstanding performance?</label>
-                    <div class="flex flex-col gap-2">
-                        <select name="special_commendation" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="YES" {{ old('special_commendation', $form->special_commendation) == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('special_commendation', $form->special_commendation) == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
-                        <textarea name="special_commendation_details" class="kt-input" rows="3" placeholder="If yes give details">{{ old('special_commendation_details', $form->special_commendation_details) }}</textarea>
-                    </div>
+            <div class="flex flex-col gap-4 border-t border-border/50 pt-6">
+                <div class="flex flex-col gap-2 mb-4">
+                    <h4 class="text-lg font-semibold text-foreground">(6) Rewards</h4>
+                </div>
+                <div class="flex flex-col gap-3 p-4 bg-success/5 rounded-lg border border-success/10">
+                    <label class="kt-form-label mb-0 font-medium">Has the officer received any special commendation (WRITTEN) during the year for outstanding performance?</label>
+                    <select name="special_commendation" class="kt-input max-w-xs">
+                        <option value="">-- Select YES or NO --</option>
+                        <option value="YES" {{ old('special_commendation', $form->special_commendation) == 'YES' ? 'selected' : '' }}>YES</option>
+                        <option value="NO" {{ old('special_commendation', $form->special_commendation) == 'NO' ? 'selected' : '' }}>NO</option>
+                    </select>
+                    <textarea name="special_commendation_details" class="kt-input" rows="3" placeholder="If YES, provide details...">{{ old('special_commendation_details', $form->special_commendation_details) }}</textarea>
                 </div>
             </div>
 
             <!-- Leadership Attainment -->
-            <div class="flex flex-col gap-4 border-t border-border pt-6">
-                <h4 class="text-lg font-semibold">Section (IV) Leadership Attainment</h4>
+            <div class="flex flex-col gap-5 border-t border-border/50 pt-6">
+                <div class="flex flex-col gap-2">
+                    <h4 class="text-lg font-semibold text-foreground">(7) Leadership Attainment</h4>
+                </div>
                 @php
                     $leadershipFields = [
                         ['name' => 'encourage_standards', 'label' => '(i) Does he/she encourage his/her subordinate to define agreed Standards and measures for effectiveness before hand'],

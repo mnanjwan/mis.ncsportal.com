@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\APERCountersigningAvailableMail;
 use App\Models\APERForm;
+use App\Models\Notification;
 use App\Models\Officer;
 use App\Models\User;
 use App\Services\RankComparisonService;
@@ -46,8 +47,22 @@ class SendAPERCountersigningPoolMailJob implements ShouldQueue
         foreach ($potentialCSOs as $csoOfficer) {
             // Rank Verification: CSO Rank >= Reporting Officer Rank
             if ($rankService->isRankHigherOrEqual($csoOfficer->id, $reportingOfficer->id)) {
-                if ($csoOfficer->user && $csoOfficer->user->email) {
-                    Mail::to($csoOfficer->user->email)->send(new APERCountersigningAvailableMail($this->form, $csoOfficer->user));
+                if ($csoOfficer->user) {
+                    // Send email notification
+                    if ($csoOfficer->user->email) {
+                        Mail::to($csoOfficer->user->email)->send(new APERCountersigningAvailableMail($this->form, $csoOfficer->user));
+                    }
+                    
+                    // Create app notification
+                    Notification::create([
+                        'user_id' => $csoOfficer->user->id,
+                        'notification_type' => 'APER_COUNTERSIGNING_AVAILABLE',
+                        'title' => 'APER Form Available for Countersigning',
+                        'message' => "APER form for {$evaluatedOfficer->initials} {$evaluatedOfficer->surname} ({$evaluatedOfficer->service_number}) is ready for countersigning.",
+                        'entity_type' => 'APERForm',
+                        'entity_id' => $this->form->id,
+                        'is_read' => false,
+                    ]);
                 }
             }
         }

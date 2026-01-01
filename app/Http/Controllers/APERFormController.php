@@ -682,23 +682,33 @@ class APERFormController extends Controller
 
         // Validate that essential fields are filled
         $requiredFields = [
-            'job_understanding_grade',
-            'knowledge_application_grade',
-            'accomplishment_grade',
-            'judgement_grade',
-            'work_speed_accuracy_grade',
-            'written_expression_grade',
-            'oral_expression_grade',
-            'staff_relations_grade',
-            'public_relations_grade',
-            'overall_assessment',
-            'promotability'
+            'job_understanding_grade' => 'Job Understanding',
+            'knowledge_application_grade' => 'Knowledge Application',
+            'accomplishment_grade' => 'Accomplishment',
+            'judgement_grade' => 'Judgement',
+            'work_speed_accuracy_grade' => 'Work Speed & Accuracy',
+            'written_expression_grade' => 'Written Expression',
+            'oral_expression_grade' => 'Oral Expression',
+            'staff_relations_grade' => 'Staff Relations',
+            'public_relations_grade' => 'Public Relations',
+            'overall_assessment' => 'Overall Assessment',
+            'promotability' => 'Promotability'
         ];
 
-        foreach ($requiredFields as $field) {
+        $missingFields = [];
+        foreach ($requiredFields as $field => $label) {
             if (empty($form->$field)) {
-                return redirect()->back()->with('error', 'You must complete the assessment grades before forwarding the form.');
+                $missingFields[] = $label;
             }
+        }
+
+        if (!empty($missingFields)) {
+            $fieldsList = implode(', ', $missingFields);
+            $errorMessage = count($missingFields) === 1 
+                ? "Please complete the following required field before forwarding: {$fieldsList}"
+                : "Please complete the following required fields before forwarding: {$fieldsList}";
+            
+            return redirect()->back()->with('error', $errorMessage);
         }
 
         DB::beginTransaction();
@@ -714,7 +724,14 @@ class APERFormController extends Controller
             // Notify potential Countersigning Officers in the command pool
             \App\Jobs\SendAPERCountersigningPoolMailJob::dispatch($form);
 
-            return redirect()->back()->with('success', 'APER form forwarded to Countersigning Officer.');
+            // Redirect to appropriate page based on user role
+            if ($user->hasRole('Staff Officer') || $user->hasRole('HRD')) {
+                return redirect()->route('staff-officer.aper-forms.reporting-officer.search')
+                    ->with('success', 'APER form forwarded to Countersigning Officer.');
+            } else {
+                return redirect()->route('officer.aper-forms.search-officers')
+                    ->with('success', 'APER form forwarded to Countersigning Officer.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Failed to complete form: ' . $e->getMessage());
@@ -817,7 +834,34 @@ class APERFormController extends Controller
             ]);
 
             DB::commit();
-            return redirect()->back()->with('success', 'APER form forwarded to Officer for review.');
+
+            // Send notification to officer (email and app notification)
+            if ($form->officer->user) {
+                // Email notification
+                if ($form->officer->user->email) {
+                    \App\Jobs\SendAPERFormReadyForReviewMailJob::dispatch($form);
+                }
+                
+                // App notification
+                \App\Models\Notification::create([
+                    'user_id' => $form->officer->user->id,
+                    'notification_type' => 'APER_FORM_READY_FOR_REVIEW',
+                    'title' => 'APER Form Ready for Review',
+                    'message' => "Your APER form for {$form->year} has been countersigned and is ready for your review.",
+                    'entity_type' => 'APERForm',
+                    'entity_id' => $form->id,
+                    'is_read' => false,
+                ]);
+            }
+
+            // Redirect to appropriate page based on user role - avoid redirect loop
+            if ($user->hasRole('Staff Officer') || $user->hasRole('HRD')) {
+                return redirect()->route('staff-officer.aper-forms.reporting-officer.search')
+                    ->with('success', 'APER form forwarded to Officer for review.');
+            } else {
+                return redirect()->route('officer.aper-forms.countersigning.search')
+                    ->with('success', 'APER form forwarded to Officer for review.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Failed to complete form: ' . $e->getMessage());
@@ -1309,8 +1353,6 @@ class APERFormController extends Controller
             'accomplishment_comment' => 'nullable|string',
             'judgement_grade' => 'nullable|string|max:1',
             'judgement_comment' => 'nullable|string',
-            'work_speed_accuracy_grade' => 'nullable|string|max:1',
-            'work_speed_accuracy_comment' => 'nullable|string',
             'written_expression_grade' => 'nullable|string|max:1',
             'written_expression_comment' => 'nullable|string',
             'oral_expression_grade' => 'nullable|string|max:1',
