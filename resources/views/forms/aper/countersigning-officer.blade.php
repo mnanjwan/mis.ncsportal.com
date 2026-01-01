@@ -95,11 +95,29 @@
                         <textarea name="countersigning_officer_declaration" 
                                   class="kt-input" 
                                   rows="6" 
-                                  placeholder="Enter your declaration statement..."
+                                  placeholder="Enter your declaration statement (minimum 20 characters)..."
                                   required>{{ old('countersigning_officer_declaration', $form->countersigning_officer_declaration) }}</textarea>
+                        <p class="text-xs text-secondary-foreground mt-1">
+                            Minimum 20 characters required. Current: <span id="char-count">0</span> characters
+                        </p>
                         @error('countersigning_officer_declaration')
                             <span class="text-sm text-danger">{{ $message }}</span>
                         @enderror
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const textarea = document.querySelector('textarea[name="countersigning_officer_declaration"]');
+                                const charCount = document.getElementById('char-count');
+                                if (textarea && charCount) {
+                                    function updateCharCount() {
+                                        const length = textarea.value.trim().length;
+                                        charCount.textContent = length;
+                                        charCount.style.color = length >= 20 ? '#10b981' : '#dc3545';
+                                    }
+                                    textarea.addEventListener('input', updateCharCount);
+                                    updateCharCount(); // Initial count
+                                }
+                            });
+                        </script>
                     </div>
 
                     <div class="p-4 bg-warning/10 border border-warning/20 rounded-lg">
@@ -138,13 +156,6 @@
         </div>
     </form>
 
-    <!-- Separate form for completion -->
-    <form id="complete-forward-form"
-        action="{{ (auth()->user()->hasRole('Staff Officer') || auth()->user()->hasRole('HRD')) ? route('staff-officer.aper-forms.complete-countersigning-officer', $form->id) : route('officer.aper-forms.complete-countersigning-officer', $form->id) }}" 
-        method="POST"
-        style="display: none;">
-        @csrf
-    </form>
 
     <!-- Divider with Label -->
     <div class="flex items-center gap-4 my-6">
@@ -164,11 +175,27 @@
     // Complete & Forward confirmation
     document.addEventListener('DOMContentLoaded', function () {
         const completeForwardBtn = document.getElementById('complete-forward-btn');
-        const completeForwardForm = document.getElementById('complete-forward-form');
+        const mainForm = document.getElementById('countersigning-form');
 
-        if (completeForwardBtn && completeForwardForm) {
+        if (completeForwardBtn && mainForm) {
             completeForwardBtn.addEventListener('click', function (e) {
                 e.preventDefault();
+
+                // First, validate the declaration length client-side
+                const declarationField = mainForm.querySelector('textarea[name="countersigning_officer_declaration"]');
+                if (declarationField) {
+                    const declarationValue = declarationField.value.trim();
+                    if (!declarationValue || declarationValue.length < 20) {
+                        Swal.fire({
+                            title: 'Incomplete Declaration',
+                            html: `<p>You must provide a valid countersigning declaration with at least 20 characters.</p><p class="text-sm mt-2 text-secondary-foreground">Current length: ${declarationValue.length} characters</p>`,
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#dc3545'
+                        });
+                        return;
+                    }
+                }
 
                 // Show confirmation dialog using SweetAlert2
                 Swal.fire({
@@ -183,7 +210,15 @@
                     cancelButtonColor: '#6b7280'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        completeForwardForm.submit();
+                        // Add hidden input to indicate complete and forward action
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'complete_and_forward';
+                        hiddenInput.value = '1';
+                        mainForm.appendChild(hiddenInput);
+                        
+                        // Submit the main form with all data
+                        mainForm.submit();
                     }
                 });
             });

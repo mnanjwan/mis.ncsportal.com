@@ -99,12 +99,6 @@
             </div>
         </form>
 
-        <!-- Separate form for completion -->
-        <form id="complete-forward-form"
-            action="{{ (auth()->user()->hasRole('Staff Officer') || auth()->user()->hasRole('HRD')) ? route('staff-officer.aper-forms.complete-reporting-officer', $form->id) : route('officer.aper-forms.complete-reporting-officer', $form->id) }}" method="POST"
-            style="display: none;">
-            @csrf
-        </form>
     </div>
 
     <script>
@@ -135,9 +129,9 @@
 
             // Complete & Forward confirmation with validation
             const completeForwardBtn = document.getElementById('complete-forward-btn');
-            const completeForwardForm = document.getElementById('complete-forward-form');
+            const mainForm = document.getElementById('reporting-officer-form');
 
-            if (completeForwardBtn) {
+            if (completeForwardBtn && mainForm) {
                 completeForwardBtn.addEventListener('click', function (e) {
                     e.preventDefault();
 
@@ -193,7 +187,15 @@
                         cancelButtonColor: '#6b7280'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            completeForwardForm.submit();
+                            // Add hidden input to indicate complete and forward action
+                            const hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'complete_and_forward';
+                            hiddenInput.value = '1';
+                            mainForm.appendChild(hiddenInput);
+                            
+                            // Submit the main form with all data
+                            mainForm.submit();
                         }
                     });
                 });

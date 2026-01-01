@@ -667,11 +667,77 @@ class APERFormController extends Controller
         DB::beginTransaction();
         try {
             $form->update($validated);
+            
+            // Check if this is a "complete and forward" action
+            if ($request->has('complete_and_forward') && $request->input('complete_and_forward') === '1') {
+                // Validate that essential fields are filled
+                $requiredFields = [
+                    'job_understanding_grade' => 'Job Understanding',
+                    'knowledge_application_grade' => 'Knowledge Application',
+                    'accomplishment_grade' => 'Accomplishment',
+                    'judgement_grade' => 'Judgement',
+                    'work_speed_accuracy_grade' => 'Work Speed & Accuracy',
+                    'written_expression_grade' => 'Written Expression',
+                    'oral_expression_grade' => 'Oral Expression',
+                    'staff_relations_grade' => 'Staff Relations',
+                    'public_relations_grade' => 'Public Relations',
+                    'overall_assessment' => 'Overall Assessment',
+                    'promotability' => 'Promotability'
+                ];
+
+                $missingFields = [];
+                foreach ($requiredFields as $field => $label) {
+                    if (empty($form->$field)) {
+                        $missingFields[] = $label;
+                    }
+                }
+
+                if (!empty($missingFields)) {
+                    DB::rollBack();
+                    $fieldsList = implode(', ', $missingFields);
+                    $errorMessage = count($missingFields) === 1 
+                        ? "Please complete the following required field before forwarding: {$fieldsList}"
+                        : "Please complete the following required fields before forwarding: {$fieldsList}";
+                    
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', $errorMessage);
+                }
+                
+                // Complete and forward
+                $form->update([
+                    'status' => 'COUNTERSIGNING_OFFICER',
+                    'reporting_officer_completed_at' => now(),
+                    'reporting_officer_user_id' => $user->id,
+                ]);
+                
+                // Notify potential Countersigning Officers in the command pool
+                \App\Jobs\SendAPERCountersigningPoolMailJob::dispatch($form);
+                
             DB::commit();
-            return redirect()->back()->with('success', 'APER form updated successfully.');
+                
+                // Redirect to appropriate page based on user role
+                if ($user->hasRole('Staff Officer') || $user->hasRole('HRD')) {
+                    return redirect()->route('staff-officer.aper-forms.reporting-officer.search')
+                        ->with('success', 'APER form forwarded to Countersigning Officer.');
+                } else {
+                    return redirect()->route('officer.aper-forms.search-officers')
+                        ->with('success', 'APER form forwarded to Countersigning Officer.');
+                }
+            }
+            
+            DB::commit();
+            return redirect()->back()->with('success', 'Assessment saved successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($e->errors());
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to update form: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update form: ' . $e->getMessage());
         }
     }
 
@@ -807,16 +873,77 @@ class APERFormController extends Controller
 
         DB::beginTransaction();
         try {
+            // Check if this is a "complete and forward" action
+            if ($request->has('complete_and_forward') && $request->input('complete_and_forward') === '1') {
+                // Validate declaration length (using mb_strlen for proper character count)
+                if (empty($validated['countersigning_officer_declaration']) || mb_strlen(trim($validated['countersigning_officer_declaration'])) < 20) {
+                    DB::rollBack();
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'You must provide a valid countersigning declaration (minimum 20 characters) before completing.');
+                }
+                
+                // Update form with declaration and complete status
+                $form->update(array_merge($validated, [
+                    'status' => 'OFFICER_REVIEW',
+                    'countersigning_officer_completed_at' => now(),
+                    'countersigning_officer_user_id' => $user->id,
+                ]));
+            } else {
+                // Just save the declaration
             $form->update($validated);
+            }
+            
             DB::commit();
-            return redirect()->back()->with('success', 'APER form updated successfully.');
+            
+            // Check if this is a "complete and forward" action
+            if ($request->has('complete_and_forward') && $request->input('complete_and_forward') === '1') {
+                // Send notification to officer (email and app notification)
+                if ($form->officer->user) {
+                    // Email notification
+                    if ($form->officer->user->email) {
+                        \App\Jobs\SendAPERFormReadyForReviewMailJob::dispatch($form);
+                    }
+                    
+                    // App notification
+                    \App\Models\Notification::create([
+                        'user_id' => $form->officer->user->id,
+                        'notification_type' => 'APER_FORM_READY_FOR_REVIEW',
+                        'title' => 'APER Form Ready for Review',
+                        'message' => "Your APER form for {$form->year} has been countersigned and is ready for your review.",
+                        'entity_type' => 'APERForm',
+                        'entity_id' => $form->id,
+                        'is_read' => false,
+                    ]);
+                }
+                
+                // Redirect to appropriate page based on user role - avoid redirect loop
+                if ($user->hasRole('Staff Officer') || $user->hasRole('HRD')) {
+                    return redirect()->route('staff-officer.aper-forms.reporting-officer.search')
+                        ->with('success', 'APER form forwarded to Officer for review.');
+                } else {
+                    return redirect()->route('officer.aper-forms.countersigning.search')
+                        ->with('success', 'APER form forwarded to Officer for review.');
+                }
+            }
+            
+            return redirect()->back()->with('success', 'Declaration saved successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($e->errors());
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to update form: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update form: ' . $e->getMessage());
         }
     }
 
     // Countersigning Officer: Complete and forward to Officer
+    // NOTE: This method is kept for backwards compatibility but should not be used directly
+    // The complete and forward action is now handled in updateCountersigningOfficer
     public function completeCountersigningOfficer($id)
     {
         $user = auth()->user();
@@ -826,8 +953,9 @@ class APERFormController extends Controller
             return redirect()->back()->with('error', 'Unauthorized access.');
         }
 
-        if (empty($form->countersigning_officer_declaration) || strlen($form->countersigning_officer_declaration) < 50) {
-            return redirect()->back()->with('error', 'You must provide a valid countersigning declaration (min 50 chars) before completing.');
+        // Validate declaration length using mb_strlen for proper character counting
+        if (empty($form->countersigning_officer_declaration) || mb_strlen(trim($form->countersigning_officer_declaration)) < 20) {
+            return redirect()->back()->with('error', 'You must provide a valid countersigning declaration (minimum 20 characters) before completing.');
         }
 
         DB::beginTransaction();
@@ -1467,11 +1595,18 @@ class APERFormController extends Controller
 
     private function validateCountersigningOfficerData(Request $request)
     {
-        return $request->validate([
-            'countersigning_officer_declaration' => 'required|string|min:50|max:2000',
-        ], [
+        // Use mb_strlen for proper character counting (handles multibyte characters correctly)
+        $rules = [
+            'countersigning_officer_declaration' => ['required', 'string', 'max:2000', function ($attribute, $value, $fail) {
+                if (mb_strlen(trim($value)) < 20) {
+                    $fail('The declaration must be at least 20 characters.');
+                }
+            }],
+        ];
+        
+        return $request->validate($rules, [
             'countersigning_officer_declaration.required' => 'Declaration is required.',
-            'countersigning_officer_declaration.min' => 'Declaration must be at least 50 characters.',
+            'countersigning_officer_declaration.min' => 'Declaration must be at least 20 characters.',
         ]);
     }
 
