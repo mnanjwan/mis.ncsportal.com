@@ -199,114 +199,137 @@
                 <h3 class="kt-card-title">PART 2: Leave Records, Target Setting & Job Description</h3>
             </div>
             <div class="kt-card-content">
-                <div class="grid grid-cols-1 gap-4">
-                    @if($form->main_duties)
-                        <div>
-                            <label class="kt-form-label text-sm font-semibold">Main Duties</label>
-                            <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->main_duties }}</p>
+                <div class="flex flex-col gap-6">
+                    <!-- Leave Records -->
+                    @if(($form->sick_leave_records && is_array($form->sick_leave_records) && count($form->sick_leave_records) > 0) || 
+                        ($form->maternity_leave_records && is_array($form->maternity_leave_records) && count($form->maternity_leave_records) > 0) || 
+                        ($form->annual_casual_leave_records && is_array($form->annual_casual_leave_records) && count($form->annual_casual_leave_records) > 0))
+                        <div class="flex flex-col gap-4">
+                            <h4 class="text-lg font-semibold">4. Leave Records</h4>
+                            
+                            @if($form->sick_leave_records && is_array($form->sick_leave_records) && count($form->sick_leave_records) > 0)
+                                <div class="p-4 bg-muted/50 rounded-lg">
+                                    <label class="kt-form-label font-semibold mb-3">(A) Sick Leave Records</label>
+                                    <div class="overflow-x-auto">
+                                        <table class="kt-table w-full">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-2 px-3 text-sm">Type</th>
+                                                    <th class="text-left py-2 px-3 text-sm">From</th>
+                                                    <th class="text-left py-2 px-3 text-sm">To</th>
+                                                    <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($form->sick_leave_records as $record)
+                                                    @if(!empty($record['type']) || !empty($record['from']) || !empty($record['to']))
+                                                        <tr>
+                                                            <td class="py-2 px-3 text-sm">{{ $record['type'] ?? 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
+                            
+                            @if($form->maternity_leave_records && is_array($form->maternity_leave_records) && count($form->maternity_leave_records) > 0)
+                                <div class="p-4 bg-muted/50 rounded-lg">
+                                    <label class="kt-form-label font-semibold mb-3">(B) Maternity Leave Records</label>
+                                    <div class="overflow-x-auto">
+                                        <table class="kt-table w-full">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-2 px-3 text-sm">From</th>
+                                                    <th class="text-left py-2 px-3 text-sm">To</th>
+                                                    <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($form->maternity_leave_records as $record)
+                                                    @if(!empty($record['from']) || !empty($record['to']))
+                                                        <tr>
+                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
+                            
+                            @if($form->annual_casual_leave_records && is_array($form->annual_casual_leave_records) && count($form->annual_casual_leave_records) > 0)
+                                <div class="p-4 bg-muted/50 rounded-lg">
+                                    <label class="kt-form-label font-semibold mb-3">(C) Annual/Casual Leave Records</label>
+                                    <div class="overflow-x-auto">
+                                        <table class="kt-table w-full">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-2 px-3 text-sm">From</th>
+                                                    <th class="text-left py-2 px-3 text-sm">To</th>
+                                                    <th class="text-left py-2 px-3 text-sm">No. of Days</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($form->annual_casual_leave_records as $record)
+                                                    @if(!empty($record['from']) || !empty($record['to']))
+                                                        <tr>
+                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['from']) ? \Carbon\Carbon::parse($record['from'])->format('d/m/Y') : 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ !empty($record['to']) ? \Carbon\Carbon::parse($record['to'])->format('d/m/Y') : 'N/A' }}</td>
+                                                            <td class="py-2 px-3 text-sm">{{ $record['days'] ?? 'N/A' }}</td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @endif
-                    @if($form->joint_discussion)
-                        <div>
-                            <label class="kt-form-label text-sm font-semibold">Joint Discussion</label>
-                            <p class="text-sm text-foreground">{{ $form->joint_discussion }}</p>
-                        </div>
-                    @endif
-                    @if($form->final_evaluation)
-                        <div>
-                            <label class="kt-form-label text-sm font-semibold">Final Evaluation</label>
-                            <p class="text-sm text-foreground">{{ $form->final_evaluation }}</p>
-                        </div>
-                    @endif
-                    @if($form->difficulties_encountered)
-                        <div>
-                            <label class="kt-form-label text-sm font-semibold">Difficulties Encountered</label>
-                            <p class="text-sm text-foreground">{{ $form->difficulties_encountered }}</p>
-                        </div>
-                    @endif
+                    
+                    <!-- Job Description and Other Details -->
+                    <div class="flex flex-col gap-4">
+                        @if($form->main_duties)
+                            <div>
+                                <label class="kt-form-label text-sm font-semibold">Main Duties</label>
+                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->main_duties }}</p>
+                            </div>
+                        @endif
+                        @if($form->joint_discussion)
+                            <div>
+                                <label class="kt-form-label text-sm font-semibold">Joint Discussion</label>
+                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->joint_discussion }}</p>
+                            </div>
+                        @endif
+                        @if($form->final_evaluation)
+                            <div>
+                                <label class="kt-form-label text-sm font-semibold">Final Evaluation</label>
+                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->final_evaluation }}</p>
+                            </div>
+                        @endif
+                        @if($form->difficulties_encountered)
+                            <div>
+                                <label class="kt-form-label text-sm font-semibold">Difficulties Encountered</label>
+                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->difficulties_encountered }}</p>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Part 3: Performance Assessment -->
-        <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">PART 3: Performance Assessment</h3>
-            </div>
-            <div class="kt-card-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @if($form->job_understanding_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Job Understanding</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->job_understanding_grade }}</strong> - {{ $form->job_understanding_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->knowledge_application_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Knowledge Application</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->knowledge_application_grade }}</strong> - {{ $form->knowledge_application_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->accomplishment_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Accomplishment</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->accomplishment_grade }}</strong> - {{ $form->accomplishment_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->judgement_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Judgement</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->judgement_grade }}</strong> - {{ $form->judgement_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->staff_relations_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Staff Relations</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->staff_relations_grade }}</strong> - {{ $form->staff_relations_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->public_relations_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Public Relations</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->public_relations_grade }}</strong> - {{ $form->public_relations_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->quality_of_work_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Quality of Work</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->quality_of_work_grade }}</strong> - {{ $form->quality_of_work_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                    @if($form->punctuality_grade)
-                        <div>
-                            <label class="kt-form-label text-sm">Punctuality</label>
-                            <p class="text-sm text-foreground"><strong>{{ $form->punctuality_grade }}</strong> - {{ $form->punctuality_comment ?? '' }}</p>
-                        </div>
-                    @endif
-                </div>
-                
-                @if($form->overall_assessment)
-                    <div class="mt-4">
-                        <label class="kt-form-label text-sm font-semibold">Overall Assessment</label>
-                        <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->overall_assessment }}</p>
-                    </div>
-                @endif
-                
-                @if($form->general_remarks)
-                    <div class="mt-4">
-                        <label class="kt-form-label text-sm font-semibold">General Remarks</label>
-                        <p class="text-sm text-foreground whitespace-pre-wrap">{{ $form->general_remarks }}</p>
-                    </div>
-                @endif
-                
-                @if($form->promotability)
-                    <div class="mt-4">
-                        <label class="kt-form-label text-sm font-semibold">Promotability</label>
-                        <p class="text-sm text-foreground">{{ $form->promotability }}</p>
-                    </div>
-                @endif
-            </div>
-        </div>
+        <!-- Part 3: Performance Assessment - Comprehensive Reporting Officer Assessment -->
+        @if($form->status !== 'DRAFT')
+            @include('forms.aper.partials.reporting-officer-display', ['form' => $form])
+        @endif
     @else
         <!-- Draft Form Preview -->
         <div class="kt-card">
