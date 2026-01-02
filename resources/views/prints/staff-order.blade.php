@@ -193,7 +193,7 @@
           
             <div class="main-header">
                 <h1>NIGERIA CUSTOMS SERVICE</h1>
-                <h2>of the Deputy Comptroller-General, Human Resource Development</h2>
+                <h2>Deputy Comptroller-General, Human Resource Development</h2>
             </div>
             <div style="width: 100px;"></div>
         </div>

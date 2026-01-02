@@ -94,77 +94,155 @@
                             @enderror
                         </div>
 
-                        <!-- Officer Selection -->
+                        <!-- Officer Selection (Searchable Select) -->
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label">Officer <span class="text-danger">*</span></label>
-                            <select name="officer_id" 
-                                    id="officer_id" 
-                                    class="kt-input" 
-                                    required
-                                    onchange="updateFromCommand(this)">
-                                <option value="">Select Officer</option>
-                                @foreach($officers as $officer)
-                                    <option value="{{ $officer->id }}" 
-                                            data-command-id="{{ $officer->present_station }}"
-                                            data-command-name="{{ $officer->presentStation->name ?? 'N/A' }}"
-                                            {{ old('officer_id') == $officer->id ? 'selected' : '' }}>
-                                        {{ $officer->initials ?? '' }} {{ $officer->surname ?? '' }} 
-                                        - {{ $officer->service_number ?? 'N/A' }}
-                                        @if($officer->presentStation)
-                                            ({{ $officer->presentStation->name }})
+                            <div class="relative">
+                                <input type="hidden" name="officer_id" id="officer_id" value="{{ old('officer_id') }}" required>
+                                <button type="button" 
+                                        id="officer_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('officer_id') border-danger @enderror">
+                                    <span id="officer_select_text">
+                                        @if(old('officer_id'))
+                                            @php $selectedOfficer = $officers->find(old('officer_id')); @endphp
+                                            {{ $selectedOfficer ? $selectedOfficer->initials . ' ' . $selectedOfficer->surname . ' (' . ($selectedOfficer->service_number ?? 'N/A') . ')' : 'Select an officer...' }}
+                                        @else
+                                            Select an officer...
                                         @endif
-                                    </option>
+                                    </span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="officer_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="officer_search_input" 
+                                                   class="kt-input w-full" 
+                                                   placeholder="Search officers..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="officer_options" class="max-h-60 overflow-y-auto">
+                                        @foreach($officers as $officer)
+                                            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 officer-option" 
+                                                 data-id="{{ $officer->id }}" 
+                                                 data-name="{{ $officer->initials }} {{ $officer->surname }}"
+                                                 data-service="{{ $officer->service_number ?? 'N/A' }}"
+                                                 data-command-id="{{ $officer->present_station }}"
+                                                 data-command-name="{{ $officer->presentStation->name ?? 'N/A' }}">
+                                                <div class="text-sm text-foreground font-medium">{{ $officer->initials }} {{ $officer->surname }}</div>
+                                                <div class="text-xs text-secondary-foreground">{{ $officer->service_number ?? 'N/A' }}@if($officer->presentStation) - {{ $officer->presentStation->name }}@endif</div>
+                                            </div>
                                 @endforeach
-                            </select>
-                            <span class="text-xs text-secondary-foreground mt-1">
-                                The "From Command" will be auto-filled when you select an officer
-                            </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-xs text-secondary-foreground">The "From Command" will be auto-filled when you select an officer.</span>
                             @error('officer_id')
                                 <span class="text-sm text-danger">{{ $message }}</span>
                             @enderror
                         </div>
 
-                        <!-- From Command (Auto-filled from officer) -->
+                        <!-- From Command Selection (Searchable Select) -->
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label">From Command <span class="text-danger">*</span></label>
-                            <select name="from_command_id" 
-                                    id="from_command_id" 
-                                    class="kt-input" 
-                                    required>
-                                <option value="">Select Command (will auto-fill when officer is selected)</option>
-                                @foreach($commands as $command)
-                                    <option value="{{ $command->id }}" 
-                                            {{ old('from_command_id') == $command->id ? 'selected' : '' }}>
-                                        {{ $command->name }}
-                                        @if($command->zone)
-                                            ({{ $command->zone->name }})
+                            <div class="relative">
+                                <input type="hidden" name="from_command_id" id="from_command_id" value="{{ old('from_command_id') }}" required>
+                                <button type="button" 
+                                        id="from_command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('from_command_id') border-danger @enderror">
+                                    <span id="from_command_select_text">
+                                        @if(old('from_command_id'))
+                                            @php $selectedCommand = $commands->find(old('from_command_id')); @endphp
+                                            {{ $selectedCommand ? $selectedCommand->name . ($selectedCommand->zone ? ' (' . $selectedCommand->zone->name . ')' : '') : 'Select a command...' }}
+                                        @else
+                                            Select a command (will auto-fill when officer is selected)...
                                         @endif
-                                    </option>
+                                    </span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="from_command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="from_command_search_input" 
+                                                   class="kt-input w-full" 
+                                                   placeholder="Search commands..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="from_command_options" class="max-h-60 overflow-y-auto">
+                                        @foreach($commands as $command)
+                                            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 from-command-option" 
+                                                 data-id="{{ $command->id }}" 
+                                                 data-name="{{ $command->name }}"
+                                                 data-zone="{{ $command->zone ? $command->zone->name : '' }}">
+                                                <div class="text-sm text-foreground font-medium">{{ $command->name }}</div>
+                                                @if($command->zone)
+                                                    <div class="text-xs text-secondary-foreground">{{ $command->zone->name }}</div>
+                                                @endif
+                                            </div>
                                 @endforeach
-                            </select>
+                                    </div>
+                                </div>
+                            </div>
                             @error('from_command_id')
                                 <span class="text-sm text-danger">{{ $message }}</span>
                             @enderror
                         </div>
 
-                        <!-- To Command -->
+                        <!-- To Command Selection (Searchable Select) -->
                         <div class="flex flex-col gap-1">
                             <label class="kt-form-label">To Command <span class="text-danger">*</span></label>
-                            <select name="to_command_id" 
-                                    id="to_command_id" 
-                                    class="kt-input" 
-                                    required>
-                                <option value="">Select Command</option>
-                                @foreach($commands as $command)
-                                    <option value="{{ $command->id }}" 
-                                            {{ old('to_command_id') == $command->id ? 'selected' : '' }}>
-                                        {{ $command->name }}
-                                        @if($command->zone)
-                                            ({{ $command->zone->name }})
+                            <div class="relative">
+                                <input type="hidden" name="to_command_id" id="to_command_id" value="{{ old('to_command_id') }}" required>
+                                <button type="button" 
+                                        id="to_command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('to_command_id') border-danger @enderror">
+                                    <span id="to_command_select_text">
+                                        @if(old('to_command_id'))
+                                            @php $selectedCommand = $commands->find(old('to_command_id')); @endphp
+                                            {{ $selectedCommand ? $selectedCommand->name . ($selectedCommand->zone ? ' (' . $selectedCommand->zone->name . ')' : '') : 'Select a command...' }}
+                                        @else
+                                            Select a command...
                                         @endif
-                                    </option>
+                                    </span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="to_command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="to_command_search_input" 
+                                                   class="kt-input w-full" 
+                                                   placeholder="Search commands..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="to_command_options" class="max-h-60 overflow-y-auto">
+                                        @foreach($commands as $command)
+                                            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 to-command-option" 
+                                                 data-id="{{ $command->id }}" 
+                                                 data-name="{{ $command->name }}"
+                                                 data-zone="{{ $command->zone ? $command->zone->name : '' }}">
+                                                <div class="text-sm text-foreground font-medium">{{ $command->name }}</div>
+                                                @if($command->zone)
+                                                    <div class="text-xs text-secondary-foreground">{{ $command->zone->name }}</div>
+                                                @endif
+                                            </div>
                                 @endforeach
-                            </select>
+                                    </div>
+                                </div>
+                            </div>
                             @error('to_command_id')
                                 <span class="text-sm text-danger">{{ $message }}</span>
                             @enderror
@@ -243,64 +321,352 @@
 
     @push('scripts')
     <script>
-        // Order Number Edit Toggle
-        document.getElementById('edit-order-number').addEventListener('click', function() {
-            const input = document.getElementById('order_number');
-            if (input.readOnly) {
-                input.readOnly = false;
-                input.focus();
-                this.innerHTML = '<i class="ki-filled ki-check"></i>';
-                this.title = 'Lock order number';
-            } else {
-                input.readOnly = true;
-                this.innerHTML = '<i class="ki-filled ki-pencil"></i>';
-                this.title = 'Edit order number';
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Officers data
+            @php
+                $officersData = $officers->map(function($officer) {
+                    return [
+                        'id' => $officer->id,
+                        'name' => $officer->initials . ' ' . $officer->surname,
+                        'service_number' => $officer->service_number ?? 'N/A',
+                        'command_id' => $officer->present_station,
+                        'command_name' => $officer->presentStation->name ?? 'N/A'
+                    ];
+                })->values();
+            @endphp
+            const officers = @json($officersData);
 
-        // Auto-fill From Command when officer is selected
-        function updateFromCommand(select) {
-            const officerId = select.value;
-            if (officerId) {
-                const selectedOption = select.options[select.selectedIndex];
-                const commandId = selectedOption.getAttribute('data-command-id');
-                const commandName = selectedOption.getAttribute('data-command-name');
-                
-                if (commandId) {
-                    const fromCommandSelect = document.getElementById('from_command_id');
-                    fromCommandSelect.value = commandId;
+            // Commands data
+            @php
+                $commandsData = $commands->map(function($command) {
+                    return [
+                        'id' => $command->id,
+                        'name' => $command->name,
+                        'zone' => $command->zone ? $command->zone->name : ''
+                    ];
+                })->values();
+            @endphp
+            const commands = @json($commandsData);
+
+            // Order Number Edit Toggle
+            document.getElementById('edit-order-number').addEventListener('click', function() {
+                const input = document.getElementById('order_number');
+                if (input.readOnly) {
+                    input.readOnly = false;
+                    input.focus();
+                    this.innerHTML = '<i class="ki-filled ki-check"></i>';
+                    this.title = 'Lock order number';
+                } else {
+                    input.readOnly = true;
+                    this.innerHTML = '<i class="ki-filled ki-pencil"></i>';
+                    this.title = 'Edit order number';
                 }
-            }
-        }
+            });
 
-        // Form validation before submit
-        document.getElementById('staff-order-form').addEventListener('submit', function(e) {
-            const officerId = document.getElementById('officer_id').value;
-            const fromCommandId = document.getElementById('from_command_id').value;
-            const toCommandId = document.getElementById('to_command_id').value;
-            
-            if (!officerId || !fromCommandId || !toCommandId) {
-                e.preventDefault();
-                let missing = [];
-                if (!officerId) missing.push('Officer');
-                if (!fromCommandId) missing.push('From Command');
-                if (!toCommandId) missing.push('To Command');
-                alert('Please select: ' + missing.join(', '));
-                return false;
+            // ========== Officer Searchable Select ==========
+            const officerSelectTrigger = document.getElementById('officer_select_trigger');
+            const officerSelectText = document.getElementById('officer_select_text');
+            const officerHiddenInput = document.getElementById('officer_id');
+            const officerDropdown = document.getElementById('officer_dropdown');
+            const officerOptions = document.getElementById('officer_options');
+            const officerSearchInput = document.getElementById('officer_search_input');
+
+            function renderOfficerOptions(officersList) {
+                if (officersList.length === 0) {
+                    officerOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found</div>';
+                    return;
+                }
+                
+                officerOptions.innerHTML = officersList.map(officer => {
+                    const serviceText = officer.service_number !== 'N/A' ? officer.service_number : '';
+                    const commandText = officer.command_name !== 'N/A' ? ' - ' + officer.command_name : '';
+                    
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 officer-option" 
+                             data-id="${officer.id}" 
+                             data-name="${officer.name}"
+                             data-service="${officer.service_number}"
+                             data-command-id="${officer.command_id}"
+                             data-command-name="${officer.command_name}">
+                            <div class="text-sm text-foreground font-medium">${officer.name}</div>
+                            <div class="text-xs text-secondary-foreground">${serviceText}${commandText}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add click handlers
+                officerOptions.querySelectorAll('.officer-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        const service = this.dataset.service;
+                        const commandId = this.dataset.commandId;
+                        const commandName = this.dataset.commandName;
+                        
+                        // Update hidden input
+                        officerHiddenInput.value = id;
+                        
+                        // Update display text
+                        const displayText = name + (service !== 'N/A' ? ' (' + service + ')' : '');
+                        officerSelectText.textContent = displayText;
+                        
+                        // Close dropdown
+                        officerDropdown.classList.add('hidden');
+                        
+                        // Clear search
+                        officerSearchInput.value = '';
+                        
+                        // Re-render all options
+                        renderOfficerOptions(officers);
+                        
+                        // Auto-fill From Command
+                        if (commandId) {
+                            updateFromCommandSelect(commandId, commandName);
+                        }
+                        
+                        // Trigger change event
+                        officerHiddenInput.dispatchEvent(new Event('change'));
+                    });
+                });
             }
-            
-            if (fromCommandId === toCommandId) {
-                e.preventDefault();
-                alert('From Command and To Command cannot be the same.');
-                return false;
+
+            function setupOfficerSearch() {
+                officerSearchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const filtered = officers.filter(officer => {
+                        const nameMatch = officer.name.toLowerCase().includes(searchTerm);
+                        const serviceMatch = officer.service_number && officer.service_number.toLowerCase().includes(searchTerm);
+                        const commandMatch = officer.command_name && officer.command_name.toLowerCase().includes(searchTerm);
+                        return nameMatch || serviceMatch || commandMatch;
+                    });
+                    
+                    renderOfficerOptions(filtered);
+                });
             }
-            
-            // Ensure all required fields are set
-            if (!document.getElementById('effective_date').value) {
-                e.preventDefault();
-                alert('Please select an Effective Date');
-                return false;
+
+            renderOfficerOptions(officers);
+            setupOfficerSearch();
+
+            officerSelectTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                officerDropdown.classList.toggle('hidden');
+                
+                if (!officerDropdown.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        officerSearchInput.focus();
+                    }, 100);
+                }
+            });
+
+            // ========== From Command Searchable Select ==========
+            const fromCommandSelectTrigger = document.getElementById('from_command_select_trigger');
+            const fromCommandSelectText = document.getElementById('from_command_select_text');
+            const fromCommandHiddenInput = document.getElementById('from_command_id');
+            const fromCommandDropdown = document.getElementById('from_command_dropdown');
+            const fromCommandOptions = document.getElementById('from_command_options');
+            const fromCommandSearchInput = document.getElementById('from_command_search_input');
+
+            function updateFromCommandSelect(commandId, commandName) {
+                fromCommandHiddenInput.value = commandId;
+                fromCommandSelectText.textContent = commandName;
             }
+
+            function renderFromCommandOptions(commandsList) {
+                if (commandsList.length === 0) {
+                    fromCommandOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No commands found</div>';
+                    return;
+                }
+                
+                fromCommandOptions.innerHTML = commandsList.map(command => {
+                    const zoneText = command.zone ? ' (' + command.zone + ')' : '';
+                    
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 from-command-option" 
+                             data-id="${command.id}" 
+                             data-name="${command.name}"
+                             data-zone="${command.zone}">
+                            <div class="text-sm text-foreground font-medium">${command.name}</div>
+                            ${command.zone ? '<div class="text-xs text-secondary-foreground">' + command.zone + '</div>' : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                fromCommandOptions.querySelectorAll('.from-command-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        const zone = this.dataset.zone;
+                        
+                        fromCommandHiddenInput.value = id;
+                        fromCommandSelectText.textContent = name + (zone ? ' (' + zone + ')' : '');
+                        fromCommandDropdown.classList.add('hidden');
+                        fromCommandSearchInput.value = '';
+                        renderFromCommandOptions(commands);
+                    });
+                });
+            }
+
+            function setupFromCommandSearch() {
+                fromCommandSearchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const filtered = commands.filter(command => {
+                        const nameMatch = command.name.toLowerCase().includes(searchTerm);
+                        const zoneMatch = command.zone && command.zone.toLowerCase().includes(searchTerm);
+                        return nameMatch || zoneMatch;
+                    });
+                    
+                    renderFromCommandOptions(filtered);
+                });
+            }
+
+            renderFromCommandOptions(commands);
+            setupFromCommandSearch();
+
+            fromCommandSelectTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                fromCommandDropdown.classList.toggle('hidden');
+                
+                if (!fromCommandDropdown.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        fromCommandSearchInput.focus();
+                    }, 100);
+                }
+            });
+
+            // ========== To Command Searchable Select ==========
+            const toCommandSelectTrigger = document.getElementById('to_command_select_trigger');
+            const toCommandSelectText = document.getElementById('to_command_select_text');
+            const toCommandHiddenInput = document.getElementById('to_command_id');
+            const toCommandDropdown = document.getElementById('to_command_dropdown');
+            const toCommandOptions = document.getElementById('to_command_options');
+            const toCommandSearchInput = document.getElementById('to_command_search_input');
+
+            function renderToCommandOptions(commandsList) {
+                if (commandsList.length === 0) {
+                    toCommandOptions.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No commands found</div>';
+                    return;
+                }
+                
+                toCommandOptions.innerHTML = commandsList.map(command => {
+                    const zoneText = command.zone ? ' (' + command.zone + ')' : '';
+                    
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 to-command-option" 
+                             data-id="${command.id}" 
+                             data-name="${command.name}"
+                             data-zone="${command.zone}">
+                            <div class="text-sm text-foreground font-medium">${command.name}</div>
+                            ${command.zone ? '<div class="text-xs text-secondary-foreground">' + command.zone + '</div>' : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                toCommandOptions.querySelectorAll('.to-command-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        const zone = this.dataset.zone;
+                        
+                        toCommandHiddenInput.value = id;
+                        toCommandSelectText.textContent = name + (zone ? ' (' + zone + ')' : '');
+                        toCommandDropdown.classList.add('hidden');
+                        toCommandSearchInput.value = '';
+                        renderToCommandOptions(commands);
+                    });
+                });
+            }
+
+            function setupToCommandSearch() {
+                toCommandSearchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const filtered = commands.filter(command => {
+                        const nameMatch = command.name.toLowerCase().includes(searchTerm);
+                        const zoneMatch = command.zone && command.zone.toLowerCase().includes(searchTerm);
+                        return nameMatch || zoneMatch;
+                    });
+                    
+                    renderToCommandOptions(filtered);
+                });
+            }
+
+            renderToCommandOptions(commands);
+            setupToCommandSearch();
+
+            toCommandSelectTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toCommandDropdown.classList.toggle('hidden');
+                
+                if (!toCommandDropdown.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        toCommandSearchInput.focus();
+                    }, 100);
+                }
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (officerDropdown && !officerDropdown.contains(e.target) && !officerSelectTrigger.contains(e.target)) {
+                    officerDropdown.classList.add('hidden');
+                }
+                if (fromCommandDropdown && !fromCommandDropdown.contains(e.target) && !fromCommandSelectTrigger.contains(e.target)) {
+                    fromCommandDropdown.classList.add('hidden');
+                }
+                if (toCommandDropdown && !toCommandDropdown.contains(e.target) && !toCommandSelectTrigger.contains(e.target)) {
+                    toCommandDropdown.classList.add('hidden');
+                }
+            });
+
+            // Set initial selected values if old input exists
+            @if(old('officer_id'))
+                const selectedOfficer = officers.find(o => o.id == {{ old('officer_id') }});
+                if (selectedOfficer) {
+                    const displayText = selectedOfficer.name + (selectedOfficer.service_number !== 'N/A' ? ' (' + selectedOfficer.service_number + ')' : '');
+                    officerSelectText.textContent = displayText;
+                }
+            @endif
+
+            @if(old('from_command_id'))
+                const selectedFromCommand = commands.find(c => c.id == {{ old('from_command_id') }});
+                if (selectedFromCommand) {
+                    fromCommandSelectText.textContent = selectedFromCommand.name + (selectedFromCommand.zone ? ' (' + selectedFromCommand.zone + ')' : '');
+                }
+            @endif
+
+            @if(old('to_command_id'))
+                const selectedToCommand = commands.find(c => c.id == {{ old('to_command_id') }});
+                if (selectedToCommand) {
+                    toCommandSelectText.textContent = selectedToCommand.name + (selectedToCommand.zone ? ' (' + selectedToCommand.zone + ')' : '');
+                }
+            @endif
+
+            // Form validation before submit
+            document.getElementById('staff-order-form').addEventListener('submit', function(e) {
+                const officerId = officerHiddenInput.value;
+                const fromCommandId = fromCommandHiddenInput.value;
+                const toCommandId = toCommandHiddenInput.value;
+                
+                if (!officerId || !fromCommandId || !toCommandId) {
+                    e.preventDefault();
+                    let missing = [];
+                    if (!officerId) missing.push('Officer');
+                    if (!fromCommandId) missing.push('From Command');
+                    if (!toCommandId) missing.push('To Command');
+                    alert('Please select: ' + missing.join(', '));
+                    return false;
+                }
+                
+                if (fromCommandId === toCommandId) {
+                    e.preventDefault();
+                    alert('From Command and To Command cannot be the same.');
+                    return false;
+                }
+                
+                if (!document.getElementById('effective_date').value) {
+                    e.preventDefault();
+                    alert('Please select an Effective Date');
+                    return false;
+                }
+            });
         });
     </script>
     @endpush
