@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4;
-            margin: 20mm;
+            margin: 10mm;
         }
         * {
             margin: 0;
@@ -16,28 +16,29 @@
         }
         html, body {
             font-family: 'Times New Roman', serif !important;
-            font-size: 11pt !important;
-            line-height: 1.6 !important;
+            font-size: 10pt !important;
+            line-height: 1.4 !important;
             color: #000 !important;
             background: #fff !important;
         }
         body {
             position: relative;
-            padding: 20px;
+            padding: 10px;
         }
         .document-container {
             max-width: 210mm;
             margin: 0 auto;
-            background: #fff;
-            padding: 20mm;
+            background: transparent;
+            padding: 10mm;
             font-family: 'Times New Roman', serif;
-            font-size: 11pt;
-            line-height: 1.6;
+            font-size: 10pt;
+            line-height: 1.4;
             color: #000;
+            position: relative;
+            z-index: 1;
         }
         /* Watermark */
-        body::after {
-            content: "NCS Management Information System (MIS)";
+        .watermark {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -46,91 +47,102 @@
             font-weight: bold;
             color: #228B22; /* Forest Green color */
             opacity: 0.25;
-            z-index: -1;
+            z-index: 0;
             pointer-events: none;
             white-space: nowrap;
             font-family: 'Times New Roman', serif;
-            display: block;
             width: 80%;
-            max-width: 80%;
             text-align: center;
         }
         @media print {
-            body::after {
+            .watermark {
                 opacity: 0.20;
-                z-index: -1;
                 font-size: 24pt;
                 width: 70%;
-                max-width: 70%;
+            }
+            .document-container {
+                background: transparent;
             }
         }
         .restricted {
             text-align: center !important;
             font-weight: bold !important;
-            font-size: 12pt !important;
-            margin: 10px 0 !important;
+            font-size: 10pt !important;
+            margin: 5px 0 !important;
         }
         .header {
             text-align: center !important;
-            margin-bottom: 20px !important;
+            margin-bottom: 8px !important;
         }
         .header h1 {
-            font-size: 16pt !important;
+            font-size: 14pt !important;
             font-weight: bold !important;
             text-decoration: underline !important;
-            margin: 5px 0 !important;
+            margin: 3px 0 !important;
             text-align: center !important;
         }
         .header-info {
-            margin: 15px 0;
+            margin: 8px 0;
         }
         .header-info p {
-            margin: 3px 0;
+            margin: 2px 0;
+            font-size: 9pt;
         }
         .leave-type-section {
-            margin: 15px 0;
-            font-size: 11pt;
+            margin: 8px 0;
+            font-size: 10pt;
         }
         .leave-type-section strong {
             background-color: #ffff00;
-            padding: 2px 5px;
+            padding: 1px 3px;
         }
         .officer-info {
-            margin: 15px 0;
+            margin: 8px 0;
         }
         .officer-info p {
-            margin: 5px 0;
+            margin: 3px 0;
         }
         .leave-details {
-            margin: 15px 0;
+            margin: 8px 0;
         }
         .leave-details p {
-            margin: 5px 0;
+            margin: 3px 0;
         }
         .instructions {
-            margin: 20px 0;
+            margin: 10px 0;
         }
         .instructions ol {
-            margin: 10px 0;
-            padding-left: 25px;
+            margin: 5px 0;
+            padding-left: 20px;
         }
         .instructions li {
-            margin: 8px 0;
+            margin: 4px 0;
+            font-size: 9.5pt;
         }
         .instructions .blank-line {
             border-bottom: 1px solid #000;
-            min-height: 20px;
-            margin: 5px 0;
+            min-height: 15px;
+            margin: 3px 0;
+            display: inline-block;
+            min-width: 150px;
         }
         .signature-section {
-            margin-top: 30px;
+            margin-top: 15px;
         }
         .signature-line {
             border-top: 1px solid #000;
             width: 250px;
-            margin: 30px 0 5px 0;
+            margin: 15px 0 3px 0;
+        }
+        .signature-section p {
+            margin: 3px 0;
+            font-size: 9.5pt;
         }
         @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
             * {
                 margin: 0;
                 padding: 0;
@@ -139,14 +151,58 @@
                 margin: 0;
                 padding: 0;
                 background: #fff;
+                font-size: 10pt !important;
+                line-height: 1.4 !important;
             }
             .document-container {
                 margin: 0;
-                padding: 0;
+                padding: 10mm;
                 max-width: 100%;
+                background: transparent;
+                font-size: 10pt;
+                line-height: 1.4;
             }
             .no-print {
                 display: none;
+            }
+            .restricted {
+                margin: 3px 0 !important;
+            }
+            .header {
+                margin-bottom: 5px !important;
+            }
+            .header-info {
+                margin: 5px 0;
+            }
+            .header-info p {
+                margin: 1px 0;
+            }
+            .leave-type-section {
+                margin: 5px 0;
+            }
+            .officer-info {
+                margin: 5px 0;
+            }
+            .officer-info p {
+                margin: 2px 0;
+            }
+            .leave-details {
+                margin: 5px 0;
+            }
+            .leave-details p {
+                margin: 2px 0;
+            }
+            .instructions {
+                margin: 8px 0;
+            }
+            .instructions li {
+                margin: 3px 0;
+            }
+            .signature-section {
+                margin-top: 10px;
+            }
+            .signature-line {
+                margin: 10px 0 2px 0;
             }
         }
     </style>
@@ -158,6 +214,9 @@
         </button>
     </div>
 
+    <!-- Watermark -->
+    <div class="watermark">NCS Management Information System (MIS)</div>
+    
     <div class="document-container">
         <div class="restricted">RESTRICTED</div>
     
@@ -201,6 +260,21 @@
                 <div class="blank-line"></div>
             </li>
             <li>
+                It is expected you will remain in the post until
+                <div class="blank-line"></div>
+            </li>
+            <li>
+                Please furnish your leave address.
+            </li>
+            <li>
+                Date increment due
+                <div class="blank-line"></div>
+            </li>
+            <li>
+                Date confidential report to reach the secretary
+                <div class="blank-line"></div>
+            </li>
+            <li>
                 <strong>Report on correct position of travelling files:</strong>
                 <ul style="list-style-type: lower-alpha; margin-left: 20px;">
                     <li>Open:</li>
@@ -208,8 +282,8 @@
                 </ul>
             </li>
         </ol>
-        <p style="margin-top: 15px;"><strong>7.</strong> Your {{ now()->format('Y') }} annual leave has been taken into account.</p>
-        <p><strong>8.</strong> This change is to take place within seven days.</p>
+        <p style="margin-top: 8px;"><strong>7.</strong> Your {{ now()->format('Y') }} annual leave has been taken into account.</p>
+        <p style="margin-top: 3px;"><strong>8.</strong> This change is to take place within seven days.</p>
     </div>
 
     <div class="signature-section">
@@ -233,7 +307,7 @@
         </div>
     </div>
 
-        <div class="restricted" style="margin-top: 30px;">RESTRICTED</div>
+        <div class="restricted" style="margin-top: 10px;">RESTRICTED</div>
     </div>
 </body>
 </html>

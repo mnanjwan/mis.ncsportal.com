@@ -13,6 +13,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PrintController extends Controller
 {
@@ -21,27 +22,15 @@ class PrintController extends Controller
      */
     public function internalStaffOrder(Request $request, $id)
     {
-        $internalStaffOrder = InternalStaffOrder::with(['command', 'preparedBy'])->findOrFail($id);
+        $internalStaffOrder = InternalStaffOrder::with([
+            'command', 
+            'officer',
+            'preparedBy.officer'
+        ])->findOrFail($id);
+        
         $command = $internalStaffOrder->command;
-        
-        // Get officer from request parameter or try to find from postings
-        $officer = null;
-        $newPosting = $internalStaffOrder->description ?? 'TO BE ASSIGNED';
-        
-        if ($request->has('officer_id')) {
-            $officer = Officer::findOrFail($request->get('officer_id'));
-        } else {
-            // Try to get officer from recent postings in this command
-            $posting = OfficerPosting::with('officer')
-                ->where('command_id', $internalStaffOrder->command_id)
-                ->where('is_current', true)
-                ->latest()
-                ->first();
-            
-            if ($posting) {
-                $officer = $posting->officer;
-            }
-        }
+        $officer = $internalStaffOrder->officer;
+        $newPosting = $internalStaffOrder->target_unit ?? 'TO BE ASSIGNED';
         
         // Get the authenticated user who is the staff officer for this command
         $currentUser = Auth::user();
@@ -58,6 +47,9 @@ class PrintController extends Controller
                     ->exists();
                 
                 if ($isStaffOfficer) {
+                    if (!$currentUser->relationLoaded('officer')) {
+                        $currentUser->load('officer');
+                    }
                     $staffOfficer = $currentUser->officer;
                 }
             }
@@ -67,8 +59,6 @@ class PrintController extends Controller
         if (!$staffOfficer) {
             $staffOfficer = $this->getStaffOfficerForCommand($internalStaffOrder->command_id);
         }
-        
-        $command = $internalStaffOrder->command;
         
         return view('prints.internal-staff-order', compact(
             'internalStaffOrder',
@@ -147,7 +137,12 @@ class PrintController extends Controller
             'approval.staffOfficer.officer'
         ])->findOrFail($id);
         
-        // Get command
+        // Ensure officer is loaded
+        if (!$leaveApplication->relationLoaded('officer')) {
+            $leaveApplication->load('officer.presentStation');
+        }
+        
+        // Get command - use officer's present station
         $command = $leaveApplication->officer->presentStation ?? Command::first();
         
         // Get Area Controller
@@ -163,7 +158,7 @@ class PrintController extends Controller
         $currentUser = Auth::user();
         $staffOfficer = null;
         
-        // Check if current user is the staff officer for this command
+        // First: Check if current user is the staff officer for this command
         if ($currentUser && $command) {
             $staffOfficerRole = Role::where('name', 'Staff Officer')->first();
             if ($staffOfficerRole) {
@@ -174,19 +169,56 @@ class PrintController extends Controller
                     ->exists();
                 
                 if ($isStaffOfficer) {
-                    $staffOfficer = $currentUser->officer;
+                    // Load the officer relationship if not already loaded
+                    if (!$currentUser->relationLoaded('officer')) {
+                        $currentUser->load('officer');
+                    }
+                    if ($currentUser->officer) {
+                        $staffOfficer = $currentUser->officer;
+                    }
                 }
             }
         }
         
-        // Fallback: get staff officer from approval or command
+        // Second: Get staff officer from approval record
         if (!$staffOfficer) {
-            if ($leaveApplication->approval && $leaveApplication->approval->staffOfficer) {
+            if ($leaveApplication->approval) {
                 $staffOfficerUser = $leaveApplication->approval->staffOfficer;
-                $staffOfficer = $staffOfficerUser->officer ?? null;
-            } else {
-                $staffOfficer = $this->getStaffOfficerForCommand($command->id ?? null);
+                if ($staffOfficerUser) {
+                    // Load officer relationship if not loaded
+                    if (!$staffOfficerUser->relationLoaded('officer')) {
+                        $staffOfficerUser->load('officer');
+                    }
+                    $staffOfficer = $staffOfficerUser->officer ?? null;
+                }
             }
+        }
+        
+        // Third: Get staff officer from command using helper method
+        if (!$staffOfficer && $command) {
+            $staffOfficer = $this->getStaffOfficerForCommand($command->id);
+        }
+        
+        // Fourth: Final fallback - use current user's officer if available (as last resort)
+        if (!$staffOfficer && $currentUser) {
+            if (!$currentUser->relationLoaded('officer')) {
+                $currentUser->load('officer');
+            }
+            if ($currentUser->officer) {
+                $staffOfficer = $currentUser->officer;
+            }
+        }
+        
+        // Debug: Log if still not found (remove in production)
+        if (!$staffOfficer) {
+            Log::warning('Leave Document: Could not find staff officer', [
+                'leave_application_id' => $id,
+                'command_id' => $command->id ?? null,
+                'command_name' => $command->name ?? null,
+                'user_id' => $currentUser->id ?? null,
+                'has_approval' => $leaveApplication->approval ? 'yes' : 'no',
+                'approval_staff_officer_id' => $leaveApplication->approval->staff_officer_id ?? null,
+            ]);
         }
         
         return view('prints.leave-document', compact('leaveApplication', 'command', 'areaController', 'staffOfficer'));
@@ -199,17 +231,17 @@ class PrintController extends Controller
     {
         $passApplication = PassApplication::with([
             'officer.presentStation',
-            'approval.staffOfficer'
+            'approval.staffOfficer.officer'
         ])->findOrFail($id);
         
-        // Get command
+        // Get command - use officer's present station
         $command = $passApplication->officer->presentStation ?? Command::first();
         
         // Get the authenticated user who is the staff officer for this command
         $currentUser = Auth::user();
         $authorizingOfficer = null;
         
-        // Check if current user is the staff officer for this command
+        // First: Check if current user is the staff officer for this command
         if ($currentUser && $command) {
             $staffOfficerRole = Role::where('name', 'Staff Officer')->first();
             if ($staffOfficerRole) {
@@ -220,19 +252,56 @@ class PrintController extends Controller
                     ->exists();
                 
                 if ($isStaffOfficer) {
-                    $authorizingOfficer = $currentUser->officer;
+                    // Load the officer relationship if not already loaded
+                    if (!$currentUser->relationLoaded('officer')) {
+                        $currentUser->load('officer');
+                    }
+                    if ($currentUser->officer) {
+                        $authorizingOfficer = $currentUser->officer;
+                    }
                 }
             }
         }
         
-        // Fallback: get staff officer from approval or command
+        // Second: Get staff officer from approval record
         if (!$authorizingOfficer) {
-            if ($passApplication->approval && $passApplication->approval->staffOfficer) {
+            if ($passApplication->approval) {
                 $staffOfficerUser = $passApplication->approval->staffOfficer;
-                $authorizingOfficer = $staffOfficerUser->officer ?? null;
-            } else {
-                $authorizingOfficer = $this->getStaffOfficerForCommand($command->id ?? null);
+                if ($staffOfficerUser) {
+                    // Load officer relationship if not loaded
+                    if (!$staffOfficerUser->relationLoaded('officer')) {
+                        $staffOfficerUser->load('officer');
+                    }
+                    $authorizingOfficer = $staffOfficerUser->officer ?? null;
+                }
             }
+        }
+        
+        // Third: Get staff officer from command using helper method
+        if (!$authorizingOfficer && $command) {
+            $authorizingOfficer = $this->getStaffOfficerForCommand($command->id);
+        }
+        
+        // Fourth: Final fallback - use current user's officer if available (as last resort)
+        if (!$authorizingOfficer && $currentUser) {
+            if (!$currentUser->relationLoaded('officer')) {
+                $currentUser->load('officer');
+            }
+            if ($currentUser->officer) {
+                $authorizingOfficer = $currentUser->officer;
+            }
+        }
+        
+        // Debug: Log if still not found (remove in production)
+        if (!$authorizingOfficer) {
+            Log::warning('Pass Document: Could not find authorizing officer', [
+                'pass_application_id' => $id,
+                'command_id' => $command->id ?? null,
+                'command_name' => $command->name ?? null,
+                'user_id' => $currentUser->id ?? null,
+                'has_approval' => $passApplication->approval ? 'yes' : 'no',
+                'approval_staff_officer_id' => $passApplication->approval->staff_officer_id ?? null,
+            ]);
         }
         
         return view('prints.pass-document', compact('passApplication', 'command', 'authorizingOfficer'));

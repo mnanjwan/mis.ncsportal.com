@@ -327,9 +327,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/internal-staff-orders/create', [InternalStaffOrderController::class, 'create'])->name('internal-staff-orders.create');
         Route::post('/internal-staff-orders', [InternalStaffOrderController::class, 'store'])->name('internal-staff-orders.store');
         Route::get('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'show'])->name('internal-staff-orders.show');
+        Route::post('/internal-staff-orders/{id}/submit', [InternalStaffOrderController::class, 'submit'])->name('internal-staff-orders.submit');
         Route::get('/internal-staff-orders/{id}/edit', [InternalStaffOrderController::class, 'edit'])->name('internal-staff-orders.edit');
         Route::put('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'update'])->name('internal-staff-orders.update');
         Route::delete('/internal-staff-orders/{id}', [InternalStaffOrderController::class, 'destroy'])->name('internal-staff-orders.destroy');
+        
+        // AJAX endpoints for Internal Staff Orders
+        Route::post('/internal-staff-orders/get-officer-assignment', [InternalStaffOrderController::class, 'getOfficerAssignment'])->name('internal-staff-orders.get-officer-assignment');
+        Route::post('/internal-staff-orders/check-conflicts', [InternalStaffOrderController::class, 'checkConflicts'])->name('internal-staff-orders.check-conflicts');
 
         Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
