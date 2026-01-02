@@ -188,6 +188,7 @@ Route::middleware('auth')->group(function () {
 
         // APER Forms Management
         Route::get('/aper-forms', [APERFormController::class, 'hrdIndex'])->name('aper-forms');
+        Route::get('/aper-forms/kpi/print', [APERFormController::class, 'kpiReport'])->name('aper-forms.kpi.print');
         Route::get('/aper-forms/{id}', [APERFormController::class, 'show'])->name('aper-forms.show');
         Route::get('/aper-forms/{id}/grade', [APERFormController::class, 'hrdGrade'])->name('aper-forms.grade');
         Route::post('/aper-forms/{id}/grade', [APERFormController::class, 'hrdGradeSubmit'])->name('aper-forms.grade.submit');

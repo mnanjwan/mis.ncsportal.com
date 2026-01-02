@@ -18,6 +18,12 @@
         </div>
         <div class="kt-card-content">
             <form method="GET" action="{{ route('hrd.aper-forms') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                @if(request('sort_by'))
+                    <input type="hidden" name="sort_by" value="{{ request('sort_by') }}">
+                @endif
+                @if(request('sort_order'))
+                    <input type="hidden" name="sort_order" value="{{ request('sort_order') }}">
+                @endif
                 <div>
                     <label class="kt-form-label text-sm">Search</label>
                     <input type="text" 
@@ -61,8 +67,13 @@
 
     <!-- Forms List Card -->
     <div class="kt-card overflow-hidden">
-        <div class="kt-card-header">
+        <div class="kt-card-header flex items-center justify-between">
             <h3 class="kt-card-title">APER Forms</h3>
+            <button type="button" 
+                    class="kt-btn kt-btn-primary" 
+                    data-kt-modal-toggle="#kpi-report-modal">
+                <i class="ki-filled ki-file-down"></i> KPI Report
+            </button>
         </div>
         <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
             @if($forms->count() > 0)
@@ -70,13 +81,83 @@
                     <table class="kt-table" style="min-width: 1000px; width: 100%;">
                         <thead>
                             <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Year</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">HRD Score</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Reporting Officer</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Submitted</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'year', 'sort_order' => request('sort_by') === 'year' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Year
+                                        @if(request('sort_by') === 'year')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'officer', 'sort_order' => request('sort_by') === 'officer' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Officer
+                                        @if(request('sort_by') === 'officer')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Service Number
+                                        @if(request('sort_by') === 'service_number')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'status', 'sort_order' => request('sort_by') === 'status' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Status
+                                        @if(request('sort_by') === 'status')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'hrd_score', 'sort_order' => request('sort_by') === 'hrd_score' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        HRD Score
+                                        @if(request('sort_by') === 'hrd_score')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'reporting_officer', 'sort_order' => request('sort_by') === 'reporting_officer' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Reporting Officer
+                                        @if(request('sort_by') === 'reporting_officer')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'submitted_at', 'sort_order' => request('sort_by') === 'submitted_at' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                       class="flex items-center gap-1 hover:text-primary transition-colors">
+                                        Submitted
+                                        @if(request('sort_by') === 'submitted_at')
+                                            <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                        @else
+                                            <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                        @endif
+                                    </a>
+                                </th>
                                 <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
                             </tr>
                         </thead>
@@ -192,6 +273,88 @@
             <div class="kt-modal-footer">
                 <button type="button" class="kt-btn kt-btn-secondary" onclick="closeReassignModal()">Cancel</button>
                 <button type="submit" class="kt-btn kt-btn-primary">Reassign</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPI Report Modal -->
+<div class="kt-modal" data-kt-modal="true" id="kpi-report-modal">
+    <div class="kt-modal-content max-w-[600px]">
+        <div class="kt-modal-header py-4 px-5">
+            <h3 class="text-lg font-semibold text-foreground">KPI Report - High Performers</h3>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <form id="kpi-report-form" method="GET" action="{{ route('hrd.aper-forms.kpi.print') }}" target="_blank">
+            <div class="kt-modal-body py-5 px-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="kt-form-label mb-2">Minimum Score</label>
+                        <input type="number" 
+                               name="min_score" 
+                               id="min_score"
+                               class="kt-input" 
+                               placeholder="0.00"
+                               step="0.01"
+                               min="0"
+                               max="100">
+                    </div>
+                    <div>
+                        <label class="kt-form-label mb-2">Maximum Score</label>
+                        <input type="number" 
+                               name="max_score" 
+                               id="max_score"
+                               class="kt-input" 
+                               placeholder="20.00"
+                               step="0.01"
+                               min="0"
+                               max="100">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="kt-form-label mb-2">Year</label>
+                        <input type="number" 
+                               name="year" 
+                               id="kpi_year"
+                               class="kt-input" 
+                               placeholder="Year"
+                               min="2020"
+                               max="2100"
+                               value="{{ request('year') ?? date('Y') }}">
+                    </div>
+                    <div>
+                        <label class="kt-form-label mb-2">Sort By</label>
+                        <select name="sort_by" id="kpi_sort_by" class="kt-input">
+                            <option value="hrd_score">Performance Rating (HRD Score)</option>
+                            <option value="rank">Rank</option>
+                            <option value="name">Name</option>
+                            <option value="service_number">Service Number</option>
+                            <option value="command">Command</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="kt-form-label mb-2">Sort Order</label>
+                    <select name="sort_order" id="kpi_sort_order" class="kt-input">
+                        <option value="desc">Descending (Highest First)</option>
+                        <option value="asc">Ascending (Lowest First)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="kt-modal-footer py-4 px-5 flex flex-wrap items-center justify-end gap-2.5">
+                <button type="button" class="kt-btn kt-btn-sm kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                <button type="submit" name="format" value="print" class="kt-btn kt-btn-sm kt-btn-primary">
+                    <i class="ki-filled ki-printer"></i> Print
+                </button>
+                <button type="submit" name="format" value="pdf" class="kt-btn kt-btn-sm kt-btn-success">
+                    <i class="ki-filled ki-file-down"></i> Download PDF
+                </button>
+                <button type="submit" name="format" value="csv" class="kt-btn kt-btn-sm kt-btn-info">
+                    <i class="ki-filled ki-file-down"></i> Download CSV
+                </button>
             </div>
         </form>
     </div>

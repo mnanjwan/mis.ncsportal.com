@@ -1611,9 +1611,167 @@ class APERFormController extends Controller
             });
         }
 
-        $forms = $query->orderBy('created_at', 'desc')->paginate(20);
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        $sortableColumns = [
+            'year' => 'year',
+            'officer' => function($query, $order) {
+                $query->leftJoin('officers', 'aper_forms.officer_id', '=', 'officers.id')
+                      ->orderBy('officers.surname', $order)
+                      ->orderBy('officers.initials', $order);
+            },
+            'service_number' => function($query, $order) {
+                $query->leftJoin('officers', 'aper_forms.officer_id', '=', 'officers.id')
+                      ->orderBy('officers.service_number', $order);
+            },
+            'status' => 'status',
+            'hrd_score' => 'hrd_score',
+            'reporting_officer' => function($query, $order) {
+                $query->leftJoin('users', 'aper_forms.reporting_officer_id', '=', 'users.id')
+                      ->orderBy('users.email', $order);
+            },
+            'submitted_at' => 'submitted_at',
+            'created_at' => 'created_at',
+        ];
+
+        $column = $sortableColumns[$sortBy] ?? 'created_at';
+        $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+
+        if (is_callable($column)) {
+            $column($query, $order);
+        } else {
+            $query->orderBy($column, $order);
+        }
+
+        $forms = $query->select('aper_forms.*')->paginate(20)->withQueryString();
 
         return view('dashboards.hrd.aper-forms', compact('forms'));
+    }
+
+    // HRD: KPI Report - High Performers
+    public function kpiReport(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('HRD')) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        $minScore = $request->get('min_score', 70);
+        $maxScore = $request->get('max_score', 100);
+        $year = $request->get('year', date('Y'));
+        $sortBy = $request->get('sort_by', 'hrd_score');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $format = $request->get('format', 'print');
+
+        // Query forms with HRD scores in the specified range
+        $query = APERForm::with(['officer.presentStation', 'officer.presentStation.zone'])
+            ->whereNotNull('hrd_score')
+            ->whereBetween('hrd_score', [$minScore, $maxScore])
+            ->where('year', $year)
+            ->whereIn('status', ['ACCEPTED', 'FINALIZED']);
+
+        // Apply sorting
+        $sortableColumns = [
+            'hrd_score' => 'hrd_score',
+            'rank' => function($query, $order) {
+                $query->leftJoin('officers', 'aper_forms.officer_id', '=', 'officers.id')
+                      ->orderBy('officers.substantive_rank', $order);
+            },
+            'name' => function($query, $order) {
+                $query->leftJoin('officers', 'aper_forms.officer_id', '=', 'officers.id')
+                      ->orderBy('officers.surname', $order)
+                      ->orderBy('officers.initials', $order);
+            },
+            'service_number' => function($query, $order) {
+                $query->leftJoin('officers', 'aper_forms.officer_id', '=', 'officers.id')
+                      ->orderBy('officers.service_number', $order);
+            },
+            'command' => function($query, $order) {
+                $query->leftJoin('officers', 'aper_forms.officer_id', '=', 'officers.id')
+                      ->leftJoin('commands', 'officers.present_station', '=', 'commands.id')
+                      ->orderBy('commands.name', $order);
+            },
+        ];
+
+        $column = $sortableColumns[$sortBy] ?? 'hrd_score';
+        $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+
+        if (is_callable($column)) {
+            $column($query, $order);
+        } else {
+            $query->orderBy($column, $order);
+        }
+
+        $forms = $query->select('aper_forms.*')->get();
+
+        // Format data for display
+        $kpiData = $forms->map(function($form, $index) {
+            return [
+                'serial_number' => $index + 1,
+                'rank' => $form->officer->rank ?? $form->officer->substantive_rank ?? 'N/A',
+                'name' => ($form->officer->initials ?? '') . ' ' . ($form->officer->surname ?? ''),
+                'service_number' => $form->officer->service_number ?? 'N/A',
+                'command' => $form->officer->presentStation->name ?? 'N/A',
+                'hrd_score' => number_format($form->hrd_score, 2),
+            ];
+        });
+
+        if ($format === 'csv') {
+            return $this->exportKpiCsv($kpiData, $year, $minScore, $maxScore);
+        } elseif ($format === 'pdf') {
+            return $this->exportKpiPdf($kpiData, $year, $minScore, $maxScore);
+        } else {
+            // Print format
+            return view('prints.aper-kpi-report', compact('kpiData', 'year', 'minScore', 'maxScore'));
+        }
+    }
+
+    // Export KPI Report as CSV
+    private function exportKpiCsv($kpiData, $year, $minScore, $maxScore)
+    {
+        $filename = "KPI_Report_{$year}_Score_{$minScore}-{$maxScore}_" . date('Y-m-d') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($kpiData) {
+            $file = fopen('php://output', 'w');
+            
+            // Add BOM for UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Headers
+            fputcsv($file, ['S/N', 'Rank', 'Name', 'Service No', 'Command', 'Performance Rating (HRD Score)']);
+            
+            // Data
+            foreach ($kpiData as $row) {
+                fputcsv($file, [
+                    $row['serial_number'],
+                    $row['rank'],
+                    $row['name'],
+                    $row['service_number'],
+                    $row['command'],
+                    $row['hrd_score'],
+                ]);
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // Export KPI Report as PDF
+    private function exportKpiPdf($kpiData, $year, $minScore, $maxScore)
+    {
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('prints.aper-kpi-report', compact('kpiData', 'year', 'minScore', 'maxScore'));
+        $filename = "KPI_Report_{$year}_Score_{$minScore}-{$maxScore}_" . date('Y-m-d') . '.pdf';
+        return $pdf->download($filename);
     }
 
     // HRD: Grade APER form (show form)
