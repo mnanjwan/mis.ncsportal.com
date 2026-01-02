@@ -340,7 +340,24 @@ class OfficerDeletionController extends Controller
             // 11. Investigations
             \App\Models\Investigation::where('officer_id', $officer->id)->delete();
 
-            // 12. Emoluments
+            // 12. Emoluments (must delete in correct order due to foreign key constraints)
+            // First, get all emolument IDs for this officer
+            $emolumentIds = \App\Models\Emolument::where('officer_id', $officer->id)->pluck('id');
+            
+            if ($emolumentIds->isNotEmpty()) {
+                // Get all assessment IDs for these emoluments
+                $assessmentIds = \App\Models\EmolumentAssessment::whereIn('emolument_id', $emolumentIds)->pluck('id');
+                
+                // Delete emolument validations first (they reference assessments)
+                if ($assessmentIds->isNotEmpty()) {
+                    \App\Models\EmolumentValidation::whereIn('assessment_id', $assessmentIds)->delete();
+                }
+                
+                // Delete emolument assessments (they reference emoluments)
+                \App\Models\EmolumentAssessment::whereIn('emolument_id', $emolumentIds)->delete();
+            }
+            
+            // Finally, delete emoluments (they reference officers)
             \App\Models\Emolument::where('officer_id', $officer->id)->delete();
 
             // 13. Promotions
@@ -368,35 +385,41 @@ class OfficerDeletionController extends Controller
             // 20. Retirement list items
             \App\Models\RetirementListItem::where('officer_id', $officer->id)->delete();
 
-            // 21. Chat room members
+            // 21. Retirement alerts
+            \App\Models\RetirementAlert::where('officer_id', $officer->id)->delete();
+
+            // 22. Chat room members
             \App\Models\ChatRoomMember::where('officer_id', $officer->id)->delete();
 
-            // 22. Deceased officer records
+            // 23. Chat messages (sent by this officer)
+            \App\Models\ChatMessage::where('sender_id', $officer->id)->delete();
+
+            // 24. Deceased officer records
             \App\Models\DeceasedOfficer::where('officer_id', $officer->id)->delete();
 
-            // 23. Release letters
+            // 25. Release letters
             \App\Models\ReleaseLetter::where('officer_id', $officer->id)->delete();
 
-            // 24. Promotion eligibility list items
+            // 26. Promotion eligibility list items
             \App\Models\PromotionEligibilityListItem::where('officer_id', $officer->id)->delete();
 
-            // 25. Notifications (for the user)
+            // 27. Notifications (for the user)
             if ($officer->user) {
                 Notification::where('user_id', $officer->user->id)->delete();
             }
 
-            // 26. User roles (remove all role assignments)
+            // 28. User roles (remove all role assignments)
             if ($officer->user) {
                 DB::table('user_roles')->where('user_id', $officer->user->id)->delete();
             }
 
-            // 27. User account
+            // 29. User account
             if ($officer->user) {
                 $userId = $officer->user->id;
                 $officer->user->delete();
             }
 
-            // 28. Finally, delete the officer record
+            // 30. Finally, delete the officer record
             $officer->delete();
 
             // Create audit log

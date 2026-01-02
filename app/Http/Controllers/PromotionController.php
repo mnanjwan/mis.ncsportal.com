@@ -113,6 +113,32 @@ class PromotionController extends Controller
             // Limit to reasonable number for processing
             $eligibleOfficers = $eligibleOfficers->take(100);
             
+            $officersCount = $eligibleOfficers->count();
+            
+            if ($officersCount === 0) {
+                // Delete the empty list
+                $list->delete();
+                
+                // Calculate future years when officers will become eligible
+                $futureEligibilityYears = $this->calculateFutureEligibilityYears($allOfficers, $criteria);
+                
+                $yearsSuggestion = '';
+                if (!empty($futureEligibilityYears)) {
+                    $yearsList = implode(', ', $futureEligibilityYears);
+                    $yearsSuggestion = "<strong>Tip:</strong> Officers will become eligible for promotion in the following years: {$yearsList}. Consider checking those years instead.";
+                } else {
+                    $yearsSuggestion = "<strong>Tip:</strong> No officers found who will become eligible for promotion in the near future. Please check if promotion criteria are properly configured.";
+                }
+                
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', "No officers found who are currently eligible for promotion based on the configured criteria. 
+                    
+                    {$yearsSuggestion}
+                    
+                    The system checks for officers who meet the years-in-rank requirement for their current rank. Officers who are interdicted, suspended, dismissed, under investigation, or deceased are excluded.");
+            }
+            
             $serialNumber = 1;
             foreach ($eligibleOfficers as $officer) {
                 $yearsInRank = $officer->date_of_present_appointment ? 
@@ -132,7 +158,7 @@ class PromotionController extends Controller
             }
             
             return redirect()->route('hrd.promotion-eligibility')
-                ->with('success', "Promotion eligibility list created successfully with {$eligibleOfficers->count()} officers!");
+                ->with('success', "Promotion eligibility list created successfully with {$officersCount} officers!");
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
@@ -303,6 +329,59 @@ class PromotionController extends Controller
                 ->withInput()
                 ->with('error', 'Failed to update criteria: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Calculate future years when officers will become eligible for promotion
+     * 
+     * @param \Illuminate\Support\Collection $officers
+     * @param \Illuminate\Support\Collection $criteria
+     * @return array Array of years (sorted, unique)
+     */
+    private function calculateFutureEligibilityYears($officers, $criteria)
+    {
+        $futureYears = collect();
+        $currentYear = now()->year;
+        $maxFutureYear = $currentYear + 20; // Look up to 20 years ahead
+        
+        foreach ($officers as $officer) {
+            $currentRank = $officer->substantive_rank;
+            $normalizedRank = $this->normalizeRankToAbbreviation($currentRank);
+            
+            // Check if criteria exists for this rank
+            if (!$criteria->has($normalizedRank)) {
+                continue;
+            }
+            
+            $criterion = $criteria->get($normalizedRank);
+            
+            // Skip if officer doesn't have date_of_present_appointment
+            if (!$officer->date_of_present_appointment) {
+                continue;
+            }
+            
+            // Calculate current years in rank
+            $dateOfAppointment = Carbon::parse($officer->date_of_present_appointment);
+            $yearsInRank = $dateOfAppointment->diffInYears(now());
+            
+            // If already eligible, skip (we're looking for future eligibility)
+            if ($yearsInRank >= $criterion->years_in_rank_required) {
+                continue;
+            }
+            
+            // Calculate when officer will become eligible
+            // Add the required years to appointment date to get eligibility date
+            $eligibilityDate = $dateOfAppointment->copy()->addYears($criterion->years_in_rank_required);
+            $eligibilityYear = $eligibilityDate->year;
+            
+            // Only include years within reasonable range
+            if ($eligibilityYear >= $currentYear && $eligibilityYear <= $maxFutureYear) {
+                $futureYears->push($eligibilityYear);
+            }
+        }
+        
+        // Return sorted, unique years
+        return $futureYears->unique()->sort()->values()->toArray();
     }
 
     /**
