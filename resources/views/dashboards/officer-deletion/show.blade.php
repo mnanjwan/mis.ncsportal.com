@@ -435,20 +435,31 @@
                     if (!response.ok) {
                         if (contentType && contentType.includes('application/json')) {
                             return response.json().then(data => {
-                                // Handle Laravel validation errors
+                                // Handle Laravel validation errors (422 status)
                                 if (data.errors) {
                                     const errorMessages = [];
                                     for (const field in data.errors) {
-                                        errorMessages.push(...data.errors[field]);
+                                        if (Array.isArray(data.errors[field])) {
+                                            errorMessages.push(...data.errors[field]);
+                                        } else {
+                                            errorMessages.push(data.errors[field]);
+                                        }
                                     }
-                                    throw new Error(errorMessages.join(', ') || data.message || 'Validation failed');
+                                    throw new Error(errorMessages.join('. ') || data.message || 'Validation failed');
                                 }
-                                throw new Error(data.message || data.error || 'An error occurred');
+                                // Use the actual error message from the server
+                                const errorMsg = data.message || data.error || 'An error occurred';
+                                throw new Error(errorMsg);
                             });
                         } else {
                             // If not JSON, get text response
                             return response.text().then(text => {
-                                throw new Error('An error occurred: ' + response.statusText);
+                                // Try to extract error message from HTML if possible
+                                const errorMatch = text.match(/<div[^>]*class="[^"]*error[^"]*"[^>]*>([^<]+)<\/div>/i);
+                                if (errorMatch) {
+                                    throw new Error(errorMatch[1]);
+                                }
+                                throw new Error('Server error: ' + response.statusText + ' (Status: ' + response.status + ')');
                             });
                         }
                     }
@@ -474,11 +485,13 @@
                             if (data.redirect_url) {
                                 // Create a temporary success message element
                                 const successDiv = document.createElement('div');
-                                successDiv.className = 'fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg';
+                                successDiv.className = 'fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl border border-green-700';
+                                successDiv.style.opacity = '1';
+                                successDiv.style.backgroundColor = '#16a34a'; // green-600
                                 successDiv.innerHTML = `
                                     <div class="flex items-center gap-3">
-                                        <i class="ki-filled ki-check text-xl"></i>
-                                        <span>${data.message}</span>
+                                        <i class="ki-filled ki-check text-xl text-white font-bold"></i>
+                                        <span class="text-white font-semibold text-base">${data.message}</span>
                                     </div>
                                 `;
                                 document.body.appendChild(successDiv);
@@ -486,7 +499,7 @@
                                 // Redirect after showing message
                                 setTimeout(() => {
                                     window.location.href = data.redirect_url;
-                                }, 1500);
+                                }, 2000);
                             }
                         }, 1000);
                     }

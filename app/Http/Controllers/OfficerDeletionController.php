@@ -229,10 +229,22 @@ class OfficerDeletionController extends Controller
     {
         $this->authorizeAccess();
 
-        $request->validate([
-            'confirmation_text' => 'required|in:DELETE',
-            'reason' => 'nullable|string|max:1000',
-        ]);
+        try {
+            $request->validate([
+                'confirmation_text' => 'required|in:DELETE',
+                'reason' => 'nullable|string|max:1000',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors in JSON format for AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all()),
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            throw $e;
+        }
 
         $officer = Officer::with(['user', 'presentStation'])->findOrFail($id);
 
@@ -415,13 +427,20 @@ class OfficerDeletionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $errorMessage = 'An error occurred while deleting the officer. Please try again or contact support.';
+            // Get the actual error message
+            $errorMessage = $e->getMessage();
+            
+            // If it's a database error, provide a more user-friendly message
+            if (str_contains($errorMessage, 'SQLSTATE') || str_contains($errorMessage, 'database')) {
+                $errorMessage = 'Database error: ' . $errorMessage;
+            }
 
             // Return JSON response for AJAX requests
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage,
+                    'error' => $errorMessage,
                 ], 500);
             }
 
