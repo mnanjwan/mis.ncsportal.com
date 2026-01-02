@@ -337,11 +337,17 @@
             const deleteButtonText = document.getElementById('deleteButtonText');
             const cancelButton = document.getElementById('cancelButton');
             const confirmationInput = document.getElementById('confirmation_text');
+            const errorMessage = document.getElementById('errorMessage');
             
             deleteModal.classList.add('hidden');
             deleteModal.classList.remove('flex');
             document.body.style.overflow = '';
             deleteForm.reset();
+            
+            // Hide error message
+            if (errorMessage) {
+                errorMessage.classList.add('hidden');
+            }
             
             // Reset button state
             if (deleteButton) {
@@ -392,7 +398,18 @@
                     errorMessage.classList.add('hidden');
                 }
 
-                // Disable form elements during deletion
+                // Get form data BEFORE disabling fields (disabled fields don't submit)
+                const formData = new FormData(deleteForm);
+                // Explicitly ensure confirmation_text is included
+                const confirmationValue = confirmationInput.value.trim();
+                if (confirmationValue) {
+                    formData.set('confirmation_text', confirmationValue);
+                }
+                // Ensure _method is set for DELETE
+                formData.set('_method', 'DELETE');
+                const url = deleteForm.action;
+
+                // Now disable form elements during deletion
                 deleteButton.disabled = true;
                 cancelButton.disabled = true;
                 confirmationInput.disabled = true;
@@ -402,14 +419,6 @@
                 // Update button to show loading state
                 deleteButtonText.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...</span>';
                 deleteButton.classList.add('opacity-75', 'cursor-not-allowed');
-
-                // Get form data - ensure all fields are included
-                const formData = new FormData(deleteForm);
-                // Explicitly add the confirmation_text to ensure it's sent
-                if (confirmationInput.value) {
-                    formData.set('confirmation_text', confirmationInput.value);
-                }
-                const url = deleteForm.action;
 
                 // Send AJAX request
                 fetch(url, {
@@ -426,6 +435,14 @@
                     if (!response.ok) {
                         if (contentType && contentType.includes('application/json')) {
                             return response.json().then(data => {
+                                // Handle Laravel validation errors
+                                if (data.errors) {
+                                    const errorMessages = [];
+                                    for (const field in data.errors) {
+                                        errorMessages.push(...data.errors[field]);
+                                    }
+                                    throw new Error(errorMessages.join(', ') || data.message || 'Validation failed');
+                                }
                                 throw new Error(data.message || data.error || 'An error occurred');
                             });
                         } else {
@@ -486,29 +503,16 @@
                     deleteButtonText.innerHTML = '<i class="ki-filled ki-trash"></i> Delete Permanently';
                     deleteButton.classList.remove('opacity-75', 'cursor-not-allowed');
 
-                    // Show error message in a better way
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'fixed top-4 right-4 z-50 bg-red-600 text-white px-6 py-4 rounded-lg shadow-lg max-w-md';
-                    errorDiv.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <i class="ki-filled ki-information-2 text-xl"></i>
-                            <div>
-                                <div class="font-semibold">Deletion Failed</div>
-                                <div class="text-sm">${error.message || 'An error occurred while deleting the officer. Please try again.'}</div>
-                            </div>
-                            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
-                                <i class="ki-filled ki-cross"></i>
-                            </button>
-                        </div>
-                    `;
-                    document.body.appendChild(errorDiv);
-
-                    // Auto-remove error message after 5 seconds
-                    setTimeout(() => {
-                        if (errorDiv.parentElement) {
-                            errorDiv.remove();
-                        }
-                    }, 5000);
+                    // Show error message in the modal
+                    const errorMessage = document.getElementById('errorMessage');
+                    const errorMessageText = document.getElementById('errorMessageText');
+                    if (errorMessage && errorMessageText) {
+                        errorMessageText.textContent = error.message || 'An error occurred while deleting the officer. Please try again.';
+                        errorMessage.classList.remove('hidden');
+                        
+                        // Scroll to error message
+                        errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
                 });
             });
         });
