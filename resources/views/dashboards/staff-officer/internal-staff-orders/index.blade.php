@@ -33,14 +33,8 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
-        <!-- Header Actions -->
         <div class="flex items-center justify-between">
-            <div>
                 <h2 class="text-xl font-semibold text-foreground">Internal Staff Orders</h2>
-                @if($command)
-                    <p class="text-sm text-secondary-foreground mt-1">{{ $command->name }}</p>
-                @endif
-            </div>
             <a href="{{ route('staff-officer.internal-staff-orders.create') }}" class="kt-btn kt-btn-primary">
                 <i class="ki-filled ki-plus"></i> Create Internal Staff Order
             </a>
@@ -57,20 +51,22 @@
             <div class="kt-card-content">
                 <!-- Search Form -->
                 <form method="GET" action="{{ route('staff-officer.internal-staff-orders.index') }}" class="mb-4">
-                    <div class="flex gap-2">
+                    <div class="flex flex-col sm:flex-row gap-2">
                         <input type="text" 
                                name="search" 
                                value="{{ request('search') }}"
                                placeholder="Search by order number or description..." 
                                class="kt-input flex-1">
-                        <button type="submit" class="kt-btn kt-btn-primary">
-                            <i class="ki-filled ki-magnifier"></i> Search
+                        <div class="flex gap-2">
+                            <button type="submit" class="kt-btn kt-btn-primary flex-1 sm:flex-none">
+                                <i class="ki-filled ki-magnifier"></i> <span class="hidden sm:inline">Search</span><span class="sm:hidden">Search</span>
                         </button>
                         @if(request('search'))
                             <a href="{{ route('staff-officer.internal-staff-orders.index') }}" class="kt-btn kt-btn-ghost">
-                                <i class="ki-filled ki-cross"></i> Clear
+                                    <i class="ki-filled ki-cross"></i> <span class="hidden sm:inline">Clear</span>
                             </a>
                         @endif
+                        </div>
                     </div>
                 </form>
 
@@ -178,11 +174,11 @@
                                                     <i class="ki-filled ki-printer"></i>
                                                 </a>
                                                 @if($order->status === 'DRAFT')
-                                                    <a href="{{ route('staff-officer.internal-staff-orders.edit', $order->id) }}" 
-                                                       class="kt-btn kt-btn-sm kt-btn-ghost"
-                                                       title="Edit">
-                                                        <i class="ki-filled ki-pencil"></i>
-                                                    </a>
+                                                <a href="{{ route('staff-officer.internal-staff-orders.edit', $order->id) }}" 
+                                                   class="kt-btn kt-btn-sm kt-btn-ghost"
+                                                   title="Edit">
+                                                    <i class="ki-filled ki-pencil"></i>
+                                                </a>
                                                 <button type="button" 
                                                         class="kt-btn kt-btn-sm kt-btn-danger"
                                                         title="Delete"
@@ -214,12 +210,12 @@
                                                                 Cancel
                                                             </button>
                                                             <form action="{{ route('staff-officer.internal-staff-orders.destroy', $order->id) }}" method="POST" class="inline">
-                                                                @csrf
-                                                                @method('DELETE')
+                                                    @csrf
+                                                    @method('DELETE')
                                                                 <button type="submit" class="kt-btn kt-btn-danger">
                                                                     <i class="ki-filled ki-trash"></i> Delete Order
-                                                                </button>
-                                                            </form>
+                                                    </button>
+                                                </form>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -292,10 +288,10 @@
                                         <i class="ki-filled ki-printer"></i> Print
                                     </a>
                                     @if($order->status === 'DRAFT')
-                                        <a href="{{ route('staff-officer.internal-staff-orders.edit', $order->id) }}" 
-                                           class="kt-btn kt-btn-sm kt-btn-ghost">
-                                            <i class="ki-filled ki-pencil"></i>
-                                        </a>
+                                    <a href="{{ route('staff-officer.internal-staff-orders.edit', $order->id) }}" 
+                                       class="kt-btn kt-btn-sm kt-btn-ghost">
+                                        <i class="ki-filled ki-pencil"></i>
+                                    </a>
                                     <button type="button" 
                                             class="kt-btn kt-btn-sm kt-btn-danger"
                                             data-kt-modal-toggle="#delete-order-modal-mobile-{{ $order->id }}">
@@ -326,12 +322,12 @@
                                                     Cancel
                                                 </button>
                                                 <form action="{{ route('staff-officer.internal-staff-orders.destroy', $order->id) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    @method('DELETE')
+                                        @csrf
+                                        @method('DELETE')
                                                     <button type="submit" class="kt-btn kt-btn-danger">
                                                         <i class="ki-filled ki-trash"></i> Delete Order
-                                                    </button>
-                                                </form>
+                                        </button>
+                                    </form>
                                             </div>
                                         </div>
                                     </div>

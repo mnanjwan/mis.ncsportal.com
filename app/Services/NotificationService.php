@@ -2363,4 +2363,304 @@ class NotificationService
 
         return $notifications;
     }
+
+    /**
+     * Notify DC Admins about submitted internal staff order ready for approval
+     */
+    public function notifyInternalStaffOrderSubmitted($order): array
+    {
+        $command = $order->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandId = $command->id;
+        $preparedBy = $order->preparedBy;
+        $preparedByName = $preparedBy ? ($preparedBy->name ?? $preparedBy->email) : 'Staff Officer';
+        $officer = $order->officer;
+        $officerName = $officer ? "{$officer->initials} {$officer->surname}" : 'N/A';
+        $serviceNumber = $officer ? $officer->service_number : 'N/A';
+        $targetUnit = $order->target_unit ?? 'N/A';
+        $targetRole = $order->target_role ?? 'N/A';
+
+        // Get DC Admins for the command
+        $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'DC Admin')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        if ($dcAdmins->isEmpty()) {
+            return [];
+        }
+
+        $notifications = [];
+        foreach ($dcAdmins as $dcAdmin) {
+            // Create in-app notification
+            $notification = $this->notify(
+                $dcAdmin,
+                'internal_staff_order_submitted',
+                'Internal Staff Order Submitted - Requires Approval',
+                "An internal staff order has been submitted by {$preparedByName}. Officer: {$officerName} ({$serviceNumber}). Target: {$targetUnit} - {$targetRole}. Please review and approve.",
+                'internal_staff_order',
+                $order->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($dcAdmin->email) {
+                try {
+                    \App\Jobs\SendInternalStaffOrderSubmittedMailJob::dispatch(
+                        $order,
+                        $dcAdmin,
+                        $command->name,
+                        $preparedByName,
+                        $officerName,
+                        $serviceNumber,
+                        $targetUnit,
+                        $targetRole
+                    );
+                    Log::info('Internal staff order submitted email job dispatched to DC Admin', [
+                        'user_id' => $dcAdmin->id,
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch internal staff order submitted email job to DC Admin', [
+                        'user_id' => $dcAdmin->id,
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
+    }
+
+    /**
+     * Notify Staff Officer and affected officers when internal staff order is approved
+     */
+    public function notifyInternalStaffOrderApproved($order, $outgoingOfficer = null): array
+    {
+        // Ensure order has all necessary relationships loaded
+        if (!$order->relationLoaded('command')) {
+            $order->load('command');
+        }
+        if (!$order->relationLoaded('preparedBy')) {
+            $order->load('preparedBy');
+        }
+        if (!$order->relationLoaded('officer')) {
+            $order->load('officer');
+        }
+
+        $command = $order->command;
+        $commandName = $command ? $command->name : 'Unknown Command';
+        $staffOfficer = $order->preparedBy;
+        $officer = $order->officer;
+        $targetUnit = $order->target_unit ?? 'N/A';
+        $targetRole = $order->target_role ?? 'N/A';
+        $officerName = $officer ? "{$officer->initials} {$officer->surname}" : 'N/A';
+        $serviceNumber = $officer ? $officer->service_number : 'N/A';
+
+        $notifications = [];
+
+        // Notify Staff Officer about approval
+        if ($staffOfficer) {
+            $message = "Your internal staff order (Order #{$order->order_number}) has been approved. Officer {$officerName} ({$serviceNumber}) has been reassigned to {$targetUnit} as {$targetRole}.";
+
+            $notification = $this->notify(
+                $staffOfficer,
+                'internal_staff_order_approved',
+                'Internal Staff Order Approved',
+                $message,
+                'internal_staff_order',
+                $order->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($staffOfficer->email) {
+                try {
+                    \App\Jobs\SendInternalStaffOrderApprovedMailJob::dispatch(
+                        $order,
+                        $staffOfficer,
+                        $commandName,
+                        $officerName,
+                        $serviceNumber,
+                        $targetUnit,
+                        $targetRole,
+                        $outgoingOfficer
+                    );
+                    Log::info('Internal staff order approved email job dispatched to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch internal staff order approved email job to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        // Notify the officer being reassigned
+        if ($officer && $officer->user) {
+            $message = "You have been reassigned to {$targetUnit} as {$targetRole} per Internal Staff Order #{$order->order_number}.";
+            if ($order->current_unit) {
+                $message .= " Previous assignment: {$order->current_unit}.";
+            }
+
+            $notification = $this->notify(
+                $officer->user,
+                'internal_staff_order_approved',
+                'Internal Staff Order - Reassignment',
+                $message,
+                'internal_staff_order',
+                $order->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($officer->user->email) {
+                try {
+                    \App\Jobs\SendInternalStaffOrderApprovedMailJob::dispatch(
+                        $order,
+                        $officer->user,
+                        $commandName,
+                        $officerName,
+                        $serviceNumber,
+                        $targetUnit,
+                        $targetRole,
+                        $outgoingOfficer
+                    );
+                    Log::info('Internal staff order approved email job dispatched to Officer', [
+                        'user_id' => $officer->user->id,
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch internal staff order approved email job to Officer', [
+                        'user_id' => $officer->user->id,
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        // Notify outgoing officer if applicable (OIC/2IC being replaced)
+        if ($outgoingOfficer && $outgoingOfficer->user) {
+            $message = "You have been replaced as {$targetRole} of {$targetUnit} per Internal Staff Order #{$order->order_number}. You have been reassigned as a regular member of the unit.";
+            $outgoingOfficerName = "{$outgoingOfficer->initials} {$outgoingOfficer->surname}";
+
+            $notification = $this->notify(
+                $outgoingOfficer->user,
+                'internal_staff_order_approved',
+                'Internal Staff Order - Role Change',
+                $message,
+                'internal_staff_order',
+                $order->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($outgoingOfficer->user->email) {
+                try {
+                    \App\Jobs\SendInternalStaffOrderApprovedMailJob::dispatch(
+                        $order,
+                        $outgoingOfficer->user,
+                        $commandName,
+                        $outgoingOfficerName,
+                        $outgoingOfficer->service_number ?? 'N/A',
+                        $targetUnit,
+                        'Regular Member',
+                        null
+                    );
+                    Log::info('Internal staff order approved email job dispatched to Outgoing Officer', [
+                        'user_id' => $outgoingOfficer->user->id,
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch internal staff order approved email job to Outgoing Officer', [
+                        'user_id' => $outgoingOfficer->user->id,
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
+    }
+
+    /**
+     * Notify Staff Officer when internal staff order is rejected
+     */
+    public function notifyInternalStaffOrderRejected($order, $rejectedBy, $rejectionReason): array
+    {
+        // Ensure order has relationships loaded
+        if (!$order->relationLoaded('command')) {
+            $order->load('command');
+        }
+        if (!$order->relationLoaded('preparedBy')) {
+            $order->load('preparedBy');
+        }
+
+        $command = $order->command;
+        $commandName = $command ? $command->name : 'Unknown Command';
+        $rejectedByName = $rejectedBy ? ($rejectedBy->name ?? $rejectedBy->email) : 'DC Admin';
+        $staffOfficer = $order->preparedBy;
+
+        $notifications = [];
+
+        if ($staffOfficer) {
+            $message = "Your internal staff order (Order #{$order->order_number}) has been rejected by {$rejectedByName}. Reason: {$rejectionReason}";
+
+            $notification = $this->notify(
+                $staffOfficer,
+                'internal_staff_order_rejected',
+                'Internal Staff Order Rejected',
+                $message,
+                'internal_staff_order',
+                $order->id,
+                false // Don't send email via notify method, we'll use job
+            );
+
+            // Send email via job
+            if ($staffOfficer->email) {
+                try {
+                    \App\Jobs\SendInternalStaffOrderRejectedMailJob::dispatch(
+                        $order,
+                        $staffOfficer,
+                        $rejectedByName,
+                        $rejectionReason,
+                        $commandName
+                    );
+                    Log::info('Internal staff order rejected email job dispatched to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch internal staff order rejected email job to Staff Officer', [
+                        'user_id' => $staffOfficer->id,
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
+    }
 }

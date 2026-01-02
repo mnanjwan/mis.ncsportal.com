@@ -764,7 +764,29 @@ class DashboardController extends Controller
         }
         $recentRosters = $recentRostersQuery->get();
 
-        return view('dashboards.dc-admin.dashboard', compact('pendingRosters', 'recentRosters'));
+        // Get pending internal staff orders count
+        $pendingInternalStaffOrdersQuery = \App\Models\InternalStaffOrder::where('status', 'PENDING_APPROVAL');
+        if ($commandId) {
+            $pendingInternalStaffOrdersQuery->where('command_id', $commandId);
+        }
+        $pendingInternalStaffOrders = $pendingInternalStaffOrdersQuery->count();
+
+        // Get recent pending internal staff orders
+        $recentInternalStaffOrdersQuery = \App\Models\InternalStaffOrder::with(['command', 'officer', 'preparedBy'])
+            ->where('status', 'PENDING_APPROVAL')
+            ->orderBy('created_at', 'desc')
+            ->limit(5);
+        if ($commandId) {
+            $recentInternalStaffOrdersQuery->where('command_id', $commandId);
+        }
+        $recentInternalStaffOrders = $recentInternalStaffOrdersQuery->get();
+
+        return view('dashboards.dc-admin.dashboard', compact(
+            'pendingRosters', 
+            'recentRosters',
+            'pendingInternalStaffOrders',
+            'recentInternalStaffOrders'
+        ));
     }
 
     // Admin Dashboard

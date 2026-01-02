@@ -453,6 +453,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/roster/{id}/approve', [DutyRosterController::class, 'dcAdminApprove'])->name('roster.approve');
         Route::post('/roster/{id}/reject', [DutyRosterController::class, 'dcAdminReject'])->name('roster.reject');
 
+        // Internal Staff Order Routes
+        Route::get('/internal-staff-orders', [\App\Http\Controllers\DcAdminInternalStaffOrderController::class, 'index'])->name('internal-staff-orders');
+        Route::get('/internal-staff-orders/{id}', [\App\Http\Controllers\DcAdminInternalStaffOrderController::class, 'show'])->name('internal-staff-orders.show');
+        Route::post('/internal-staff-orders/{id}/approve', [\App\Http\Controllers\DcAdminInternalStaffOrderController::class, 'approve'])->name('internal-staff-orders.approve');
+        Route::post('/internal-staff-orders/{id}/reject', [\App\Http\Controllers\DcAdminInternalStaffOrderController::class, 'reject'])->name('internal-staff-orders.reject');
+
         // Query Management Routes
         Route::prefix('queries')->name('queries.')->group(function () {
             Route::get('/', [\App\Http\Controllers\DcAdminQueryController::class, 'index'])->name('index');

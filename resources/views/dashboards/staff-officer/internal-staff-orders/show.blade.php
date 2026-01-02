@@ -35,33 +35,6 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
-        <!-- Back Button -->
-            <div class="flex items-center justify-between">
-            <a href="{{ route('staff-officer.internal-staff-orders.index') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
-                <i class="ki-filled ki-arrow-left"></i> Back to Internal Staff Orders
-            </a>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('print.internal-staff-order', $order->id) }}" 
-                   target="_blank"
-                   class="kt-btn kt-btn-primary">
-                    <i class="ki-filled ki-printer"></i> Print Order
-                </a>
-                @if($order->status === 'DRAFT')
-                    <button type="button" class="kt-btn kt-btn-success" data-kt-modal-toggle="#submit-order-modal">
-                        <i class="ki-filled ki-check"></i> Submit for Approval
-                    </button>
-                    <a href="{{ route('staff-officer.internal-staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-ghost">
-                        <i class="ki-filled ki-pencil"></i> Edit
-                    </a>
-                @elseif($order->status === 'PENDING_APPROVAL')
-                    <span class="kt-badge kt-badge-warning">Pending DC Admin Approval</span>
-                @elseif($order->status === 'APPROVED')
-                    <span class="kt-badge kt-badge-success">Approved</span>
-                @elseif($order->status === 'REJECTED')
-                    <span class="kt-badge kt-badge-danger">Rejected</span>
-                @endif
-            </div>
-        </div>
 
         <!-- Order Details Card -->
         <div class="kt-card">
@@ -243,7 +216,10 @@
                 @endif
 
                 <!-- Actions -->
-                <div class="flex items-center gap-3 mt-5 pt-5 border-t border-border">
+                <div class="flex gap-3 pt-5 border-t border-border">
+                    <a href="{{ route('staff-officer.internal-staff-orders.index') }}" class="kt-btn kt-btn-secondary">
+                        Back to List
+                    </a>
                     <a href="{{ route('print.internal-staff-order', $order->id) }}" 
                        target="_blank"
                        class="kt-btn kt-btn-primary">

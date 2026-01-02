@@ -305,6 +305,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('dc-admin.dashboard')],
                 ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('dc-admin.leave-pass')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('dc-admin.roster')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('dc-admin.internal-staff-orders')],
                 ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('dc-admin.queries.index')],
             ];
             break;
