@@ -365,23 +365,38 @@ class OfficerDeletionController extends Controller
             // 19. Training results
             \App\Models\TrainingResult::where('officer_id', $officer->id)->delete();
 
-            // 20. Notifications (for the user)
+            // 20. Retirement list items
+            \App\Models\RetirementListItem::where('officer_id', $officer->id)->delete();
+
+            // 21. Chat room members
+            \App\Models\ChatRoomMember::where('officer_id', $officer->id)->delete();
+
+            // 22. Deceased officer records
+            \App\Models\DeceasedOfficer::where('officer_id', $officer->id)->delete();
+
+            // 23. Release letters
+            \App\Models\ReleaseLetter::where('officer_id', $officer->id)->delete();
+
+            // 24. Promotion eligibility list items
+            \App\Models\PromotionEligibilityListItem::where('officer_id', $officer->id)->delete();
+
+            // 25. Notifications (for the user)
             if ($officer->user) {
                 Notification::where('user_id', $officer->user->id)->delete();
             }
 
-            // 21. User roles (remove all role assignments)
+            // 26. User roles (remove all role assignments)
             if ($officer->user) {
                 DB::table('user_roles')->where('user_id', $officer->user->id)->delete();
             }
 
-            // 22. User account
+            // 27. User account
             if ($officer->user) {
                 $userId = $officer->user->id;
                 $officer->user->delete();
             }
 
-            // 23. Finally, delete the officer record
+            // 28. Finally, delete the officer record
             $officer->delete();
 
             // Create audit log
