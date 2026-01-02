@@ -38,7 +38,12 @@
     <div class="kt-card">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Course Nominations</h3>
-            <div class="kt-card-toolbar">
+            <div class="kt-card-toolbar flex items-center gap-2">
+                <a href="{{ route('hrd.courses.print') }}" 
+                   class="kt-btn kt-btn-sm kt-btn-primary"
+                   target="_blank">
+                    <i class="ki-filled ki-printer"></i> Print All
+                </a>
                 <a href="{{ route('hrd.courses.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Nominate Officer
                 </a>

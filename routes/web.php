@@ -14,6 +14,7 @@ use App\Http\Controllers\LeavePassController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\ManningRequestController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\CourseManagementController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\MovementOrderController;
@@ -251,11 +252,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/courses', [CourseController::class, 'index'])->name('courses');
         Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
         Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
+        Route::get('/courses/print', [CourseController::class, 'print'])->name('courses.print');
         Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
         Route::get('/courses/{id}/edit', [CourseController::class, 'edit'])->name('courses.edit');
         Route::put('/courses/{id}', [CourseController::class, 'update'])->name('courses.update');
         Route::post('/courses/{id}/complete', [CourseController::class, 'markComplete'])->name('courses.complete');
         Route::delete('/courses/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
+
+        // Course Management (CRUD for Course master data)
+        Route::resource('course-management', CourseManagementController::class)->names([
+            'index' => 'course-management.index',
+            'create' => 'course-management.create',
+            'store' => 'course-management.store',
+            'show' => 'course-management.show',
+            'edit' => 'course-management.edit',
+            'update' => 'course-management.update',
+            'destroy' => 'course-management.destroy',
+        ]);
 
         Route::get('/system-settings', [SystemSettingController::class, 'index'])->name('system-settings');
         Route::put('/system-settings', [SystemSettingController::class, 'update'])->name('system-settings.update');

@@ -226,6 +226,7 @@
                     'submenu' => [
                         ['title' => 'Zones', 'href' => route('hrd.zones.index')],
                         ['title' => 'Commands', 'href' => route('hrd.commands.index')],
+                        ['title' => 'Courses', 'href' => route('hrd.course-management.index')],
                         ['title' => 'System Settings', 'href' => route('hrd.system-settings')],
                     ]
                 ],

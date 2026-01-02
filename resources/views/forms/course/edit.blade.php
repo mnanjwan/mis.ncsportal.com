@@ -93,15 +93,34 @@
                     <label for="course_name" class="block text-sm font-medium text-foreground">
                         Course Name <span class="text-danger">*</span>
                     </label>
+                    <div class="flex gap-2">
+                        <select name="course_name" 
+                                id="course_name"
+                                class="kt-input @error('course_name') kt-input-error @enderror flex-1"
+                                required>
+                            <option value="">Select a course or enter new...</option>
+                            @foreach($courses as $courseOption)
+                                <option value="{{ $courseOption->name }}" {{ (old('course_name', $course->course_name) == $courseOption->name) ? 'selected' : '' }}>
+                                    {{ $courseOption->name }}
+                                </option>
+                            @endforeach
+                            <option value="__NEW__" {{ (old('course_name') && !$courses->contains('name', old('course_name', $course->course_name))) ? 'selected' : '' }}>
+                                + Add New Course
+                            </option>
+                        </select>
+                    </div>
                     <input type="text" 
-                           name="course_name" 
-                           id="course_name"
-                           value="{{ old('course_name', $course->course_name) }}"
-                           class="kt-input @error('course_name') kt-input-error @enderror"
-                           required>
+                           name="course_name_custom" 
+                           id="course_name_custom"
+                           value="{{ old('course_name_custom', (old('course_name', $course->course_name) && !$courses->contains('name', old('course_name', $course->course_name))) ? old('course_name', $course->course_name) : '') }}"
+                           class="kt-input @error('course_name') kt-input-error @enderror {{ (!$courses->contains('name', old('course_name', $course->course_name))) ? '' : 'hidden' }}"
+                           placeholder="Enter new course name...">
                     @error('course_name')
                         <p class="text-sm text-danger">{{ $message }}</p>
                     @enderror
+                    <p class="text-xs text-secondary-foreground">
+                        Select from existing courses or choose "Add New Course" to enter a custom course name.
+                    </p>
                 </div>
 
                 <!-- Course Type -->
@@ -310,6 +329,45 @@
     officerSearchInput.addEventListener('focus', function() {
         if (this.value.trim().length > 0) {
             this.dispatchEvent(new Event('input'));
+        }
+    });
+
+    // Handle course name dropdown/input switching
+    const courseNameSelect = document.getElementById('course_name');
+    const courseNameCustom = document.getElementById('course_name_custom');
+    
+    courseNameSelect.addEventListener('change', function() {
+        if (this.value === '__NEW__') {
+            courseNameCustom.classList.remove('hidden');
+            courseNameCustom.required = true;
+            courseNameSelect.required = false;
+            courseNameCustom.focus();
+        } else {
+            courseNameCustom.classList.add('hidden');
+            courseNameCustom.required = false;
+            courseNameSelect.required = true;
+        }
+    });
+
+    // Initialize on page load
+    if (courseNameSelect.value === '__NEW__' || courseNameCustom.classList.contains('hidden') === false) {
+        if (!courseNameCustom.classList.contains('hidden')) {
+            courseNameCustom.required = true;
+            courseNameSelect.required = false;
+        }
+    }
+
+    // Form submission - use custom input if "__NEW__" is selected
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (courseNameSelect.value === '__NEW__') {
+            if (!courseNameCustom.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a course name');
+                courseNameCustom.focus();
+                return false;
+            }
+            // Set the custom value to course_name field
+            courseNameSelect.value = courseNameCustom.value.trim();
         }
     });
 </script>

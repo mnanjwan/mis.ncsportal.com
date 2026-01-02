@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement List - Print</title>
+    <title>Course Nominations - Print</title>
     <style>
         @page {
             size: A4 landscape;
@@ -60,10 +60,14 @@
             font-weight: bold;
             margin: 3px 0;
         }
-        .annex-info {
-            text-align: right;
-            font-size: 9pt;
-            margin-bottom: 10px;
+        .course-title {
+            text-align: center;
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            padding: 5px;
+            background-color: #f0f0f0;
+            border: 1px solid #000;
         }
         table {
             width: 100%;
@@ -84,17 +88,11 @@
             text-align: center;
             font-size: 8pt;
         }
-        .sn-col { width: 3%; }
-        .svc-col { width: 8%; }
-        .rank-col { width: 6%; }
-        .initials-col { width: 6%; }
-        .surname-col { width: 12%; }
-        .cond-col { width: 6%; }
-        .dob-col { width: 8%; }
-        .dofa-col { width: 8%; }
-        .dopr-col { width: 8%; }
-        .ret-col { width: 8%; }
-        .remarks-col { width: 27%; }
+        .sn-col { width: 5%; }
+        .svcno-col { width: 12%; }
+        .rank-col { width: 12%; }
+        .name-col { width: 35%; }
+        .rmk-col { width: 36%; }
         @media print {
             body {
                 margin: 0;
@@ -116,47 +114,42 @@
     <div class="restricted">RESTRICTED</div>
     
     <div class="header">
-        <h1>FINAL STATUTORY RETIREMENT LIST FOR {{ $retirementYear ?? now()->addYear()->format('Y') }}</h1>
+        <h1>NIGERIA CUSTOMS SERVICE</h1>
+        <h1>LIST OF SUCCESSFUL CANDIDATES</h1>
     </div>
 
-    <div class="annex-info">
-        <strong>ANNEX A TO NCS/ADM/EST/098/S.I DATED {{ now()->format('d M Y') }}</strong>
-    </div>
+    @foreach($printData as $courseData)
+        <div class="course-title">
+            {{ $courseData['course_name'] }}
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th class="sn-col">S/N</th>
-                <th class="svc-col">SVC-NO</th>
-                <th class="rank-col">RANK</th>
-                <th class="initials-col">INITIALS</th>
-                <th class="surname-col">SURNAME</th>
-                <th class="cond-col">COND FOR RET</th>
-                <th class="dob-col">DOB</th>
-                <th class="dofa-col">DOFA</th>
-                <th class="dopr-col">DOPR</th>
-                <th class="ret-col">RET</th>
-                <th class="remarks-col">REMARKS</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($retirements as $index => $retirement)
-            <tr>
-                <td>{{ $index + 1 }}</td>
-                <td>{{ $retirement['service_number'] ?? 'N/A' }}</td>
-                <td>{{ strtoupper($retirement['rank'] ?? 'N/A') }}</td>
-                <td>{{ strtoupper($retirement['initials'] ?? '') }}</td>
-                <td>{{ strtoupper($retirement['surname'] ?? '') }}</td>
-                <td>{{ strtoupper($retirement['retirement_type'] ?? 'N/A') }}</td>
-                <td>{{ $retirement['date_of_birth'] ? \Carbon\Carbon::parse($retirement['date_of_birth'])->format('d/m/Y') : 'N/A' }}</td>
-                <td>{{ $retirement['date_of_first_appointment'] ? \Carbon\Carbon::parse($retirement['date_of_first_appointment'])->format('d/m/Y') : 'N/A' }}</td>
-                <td>{{ $retirement['date_of_promotion'] ? \Carbon\Carbon::parse($retirement['date_of_promotion'])->format('d/m/Y') : 'N/A' }}</td>
-                <td>{{ $retirement['retirement_date'] ? \Carbon\Carbon::parse($retirement['retirement_date'])->format('d/m/Y') : 'N/A' }}</td>
-                <td>{{ $retirement['remarks'] ?? '' }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
+        <table>
+            <thead>
+                <tr>
+                    <th class="sn-col">SNO</th>
+                    <th class="svcno-col">SVCNO</th>
+                    <th class="rank-col">RANK</th>
+                    <th class="name-col">NAMES</th>
+                    <th class="rmk-col">RMK</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($courseData['officers'] as $officer)
+                    <tr>
+                        <td>{{ $officer['serial_number'] }}</td>
+                        <td>{{ $officer['service_number'] }}</td>
+                        <td>{{ $officer['rank'] }}</td>
+                        <td>{{ $officer['name'] }}</td>
+                        <td>{{ $officer['remarks'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @if(!$loop->last)
+            <div style="page-break-after: always;"></div>
+        @endif
+    @endforeach
 
     <div class="restricted" style="margin-top: 20px;">RESTRICTED</div>
 </body>

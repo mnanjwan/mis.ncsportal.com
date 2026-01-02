@@ -155,6 +155,7 @@
     </div>
 
     <div class="document-container">
+    <div class="restricted" style="text-align: center; font-weight: bold; font-size: 11pt; margin: 5px 0;">RESTRICTED</div>
         <div class="header-section">
             <div class="main-header">
                 <h1>NIGERIA CUSTOMS SERVICE</h1>
@@ -217,6 +218,8 @@
             @endif
         </div>
         @endforeach
+
+    <div class="restricted" style="text-align: center; font-weight: bold; font-size: 11pt; margin-top: 20px;">RESTRICTED</div>
     </div>
 </body>
 </html>

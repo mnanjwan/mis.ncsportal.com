@@ -171,6 +171,8 @@
             @endforelse
         </tbody>
     </table>
+
+    <div class="restricted" style="margin-top: 20px;">RESTRICTED</div>
 </body>
 </html>
 

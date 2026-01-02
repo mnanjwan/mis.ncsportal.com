@@ -60,7 +60,12 @@ class CourseController extends Controller
             ->orderBy('surname')
             ->get();
         
-        return view('forms.course.create', compact('officers'));
+        // Get active courses for dropdown
+        $courses = \App\Models\Course::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        return view('forms.course.create', compact('officers', 'courses'));
     }
 
     public function store(Request $request)
@@ -114,7 +119,12 @@ class CourseController extends Controller
             ->orderBy('surname')
             ->get();
         
-        return view('forms.course.edit', compact('course', 'officers'));
+        // Get active courses for dropdown
+        $courses = \App\Models\Course::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        return view('forms.course.edit', compact('course', 'officers', 'courses'));
     }
 
     public function update(Request $request, $id)
@@ -201,6 +211,50 @@ class CourseController extends Controller
             return redirect()->route('hrd.courses')
                 ->with('error', 'Failed to delete course: ' . $e->getMessage());
         }
+    }
+
+    // Print Course Nominations grouped by course
+    public function print(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('HRD')) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        // Get all course nominations grouped by course name
+        $courseNominations = OfficerCourse::with(['officer.presentStation'])
+            ->whereHas('officer', function($q) {
+                $q->where('is_active', true)
+                  ->where('is_deceased', false);
+            })
+            ->orderBy('course_name')
+            ->orderBy('officer_id')
+            ->get()
+            ->groupBy('course_name');
+
+        // Format data for print
+        $printData = [];
+        foreach ($courseNominations as $courseName => $nominations) {
+            $courseData = [
+                'course_name' => $courseName,
+                'officers' => []
+            ];
+
+            foreach ($nominations as $index => $nomination) {
+                $courseData['officers'][] = [
+                    'serial_number' => $index + 1,
+                    'service_number' => $nomination->officer->service_number ?? 'N/A',
+                    'rank' => $nomination->officer->substantive_rank ?? 'N/A',
+                    'name' => ($nomination->officer->initials ?? '') . ' ' . ($nomination->officer->surname ?? ''),
+                    'remarks' => '', // Empty as per image
+                ];
+            }
+
+            $printData[] = $courseData;
+        }
+
+        return view('prints.course-nominations', compact('printData'));
     }
 }
 
