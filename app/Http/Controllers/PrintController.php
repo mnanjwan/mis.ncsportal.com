@@ -11,6 +11,9 @@ use App\Models\Command;
 use App\Models\OfficerPosting;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\PromotionEligibilityList;
+use App\Models\DutyRoster;
+use App\Models\RosterAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -363,6 +366,148 @@ class PrintController extends Controller
         });
         
         return view('prints.retirement-list', compact('retirements', 'retirementYear'));
+    }
+
+    /**
+     * Print Promotion Eligibility List
+     */
+    public function promotionEligibilityList($id)
+    {
+        $list = PromotionEligibilityList::with(['items.officer', 'generatedBy'])
+            ->findOrFail($id);
+        
+        // Get all items with their officers
+        $items = $list->items->map(function($item) {
+            $officer = $item->officer;
+            
+            // Get unit from current active roster (as OIC/2IC or from assignment)
+            $unit = null;
+            
+            // Check if officer is OIC or 2IC of an active roster
+            $activeRosterAsOIC = DutyRoster::where('oic_officer_id', $officer->id)
+                ->where('status', 'APPROVED')
+                ->where('roster_period_start', '<=', now())
+                ->where('roster_period_end', '>=', now())
+                ->first();
+            
+            if ($activeRosterAsOIC && $activeRosterAsOIC->unit) {
+                $unit = $activeRosterAsOIC->unit;
+            } else {
+                // Check if officer is 2IC of an active roster
+                $activeRosterAs2IC = DutyRoster::where('second_in_command_officer_id', $officer->id)
+                    ->where('status', 'APPROVED')
+                    ->where('roster_period_start', '<=', now())
+                    ->where('roster_period_end', '>=', now())
+                    ->first();
+                
+                if ($activeRosterAs2IC && $activeRosterAs2IC->unit) {
+                    $unit = $activeRosterAs2IC->unit;
+                } else {
+                    // Check if officer has a roster assignment with an active roster
+                    $currentRosterAssignment = RosterAssignment::where('officer_id', $officer->id)
+                        ->whereHas('roster', function ($query) {
+                            $query->where('status', 'APPROVED')
+                                  ->where('roster_period_start', '<=', now())
+                                  ->where('roster_period_end', '>=', now());
+                        })
+                        ->with(['roster:id,unit'])
+                        ->latest('duty_date')
+                        ->first();
+                    
+                    if ($currentRosterAssignment && $currentRosterAssignment->roster && $currentRosterAssignment->roster->unit) {
+                        $unit = $currentRosterAssignment->roster->unit;
+                    }
+                }
+            }
+            
+            return [
+                'serial_number' => $item->serial_number,
+                'rank' => $item->current_rank ?? ($officer->substantive_rank ?? 'N/A'),
+                'initials' => $officer->initials ?? '',
+                'name' => $officer->surname ?? '',
+                'unit' => $unit,
+                'state' => $item->state ?? ($officer->state_of_origin ?? 'N/A'),
+                'date_of_birth' => $item->date_of_birth ?? ($officer->date_of_birth ?? null),
+                'date_of_first_appointment' => $item->date_of_first_appointment ?? ($officer->date_of_first_appointment ?? null),
+            ];
+        })->toArray();
+        
+        // Sort by rank in descending order: CGC, DCG, ACG, CC, DC, AC, CSC, SC, DSC, ASC I, ASC II, IC, AIC, CA I, CA II, CA III
+        $rankOrder = [
+            'CGC' => 1,
+            'DCG' => 2,
+            'ACG' => 3,
+            'CC' => 4,
+            'DC' => 5,
+            'AC' => 6,
+            'CSC' => 7,
+            'SC' => 8,
+            'DSC' => 9,
+            'ASC I' => 10,
+            'ASC II' => 11,
+            'IC' => 12,
+            'AIC' => 13,
+            'CA I' => 14,
+            'CA II' => 15,
+            'CA III' => 16,
+        ];
+        
+        usort($items, function($a, $b) use ($rankOrder) {
+            $rankA = $this->normalizeRankForSorting($a['rank'], $rankOrder);
+            $rankB = $this->normalizeRankForSorting($b['rank'], $rankOrder);
+            
+            // If ranks are equal, maintain original order
+            if ($rankA === $rankB) {
+                return 0;
+            }
+            
+            // Sort in descending order (lower number = higher rank)
+            return $rankA <=> $rankB;
+        });
+        
+        // Reassign serial numbers after sorting
+        foreach ($items as $index => &$item) {
+            $item['serial_number'] = $index + 1;
+        }
+        unset($item);
+        
+        return view('prints.promotion-eligibility-list', compact('list', 'items'));
+    }
+
+    /**
+     * Normalize rank for sorting (extract abbreviation from full rank names)
+     */
+    private function normalizeRankForSorting($rank, $rankOrder)
+    {
+        if (empty($rank)) {
+            return 999; // Put empty ranks at the end
+        }
+        
+        // Standard rank abbreviations
+        $standardRanks = array_keys($rankOrder);
+        
+        // If already an abbreviation, return its order
+        if (isset($rankOrder[$rank])) {
+            return $rankOrder[$rank];
+        }
+        
+        // Try to extract abbreviation from parentheses
+        if (preg_match('/\(([A-Z\s]+)\)/', $rank, $matches)) {
+            $abbr = trim($matches[1]);
+            if (isset($rankOrder[$abbr])) {
+                return $rankOrder[$abbr];
+            }
+        }
+        
+        // Try partial matching
+        foreach ($rankOrder as $abbr => $order) {
+            if (stripos($rank, $abbr) !== false) {
+                return $order;
+            }
+        }
+        
+        // If no match found, put at end
+        return 999;
     }
 
     /**

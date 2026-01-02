@@ -64,7 +64,7 @@ class PromotionController extends Controller
             $list = PromotionEligibilityList::create([
                 'year' => $validated['year'],
                 'generated_by' => auth()->id(),
-                'status' => 'DRAFT',
+                'status' => 'ACTIVE',
             ]);
             
             // Get all active promotion criteria

@@ -26,9 +26,13 @@
                 <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between">
                         <h2 class="text-2xl font-semibold text-mono">Promotion Eligibility List - Year {{ $list->year ?? 'N/A' }}</h2>
-                        <span class="kt-badge kt-badge-{{ $list->status === 'FINALIZED' ? 'success' : ($list->status === 'SUBMITTED_TO_BOARD' ? 'info' : 'secondary') }} kt-badge-sm">
-                            {{ $list->status ?? 'DRAFT' }}
-                        </span>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('print.promotion-eligibility.print', $list->id) }}" 
+                               class="kt-btn kt-btn-sm kt-btn-primary" 
+                               target="_blank">
+                                <i class="ki-filled ki-printer"></i> Print
+                            </a>
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-4 text-sm">
                         <span class="text-secondary-foreground">
