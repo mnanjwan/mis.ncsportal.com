@@ -51,6 +51,32 @@
             font-size: 12pt;
             margin: 10px 0;
         }
+        .restricted-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            padding: 5px 0;
+            background: white;
+            z-index: 1000;
+            display: none;
+        }
+        .restricted-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            padding: 5px 0;
+            background: white;
+            z-index: 1000;
+            display: none;
+        }
         .header {
             text-align: center;
             margin-bottom: 15px;
@@ -117,11 +143,23 @@
             line-height: 1.6;
         }
         @media print {
+            @page {
+                margin-top: 20mm;
+                margin-bottom: 20mm;
+            }
             body {
                 margin: 0;
-                padding: 0;
+                padding-top: 15mm;
+                padding-bottom: 15mm;
             }
             .no-print {
+                display: none;
+            }
+            .restricted-header,
+            .restricted-footer {
+                display: block;
+            }
+            .restricted:not(.restricted-header):not(.restricted-footer) {
                 display: none;
             }
         }
@@ -133,6 +171,9 @@
             Print Document
         </button>
     </div>
+
+    <div class="restricted-header">RESTRICTED</div>
+    <div class="restricted-footer">RESTRICTED</div>
 
     <div class="restricted">RESTRICTED</div>
     
@@ -199,8 +240,6 @@
             @endif
         </div>
     </div>
-
-    <div class="restricted" style="margin-top: 20px;">RESTRICTED</div>
 </body>
 </html>
 

@@ -70,6 +70,32 @@
             font-size: 12pt !important;
             margin: 10px 0 !important;
         }
+        .restricted-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            padding: 5px 0;
+            background: white;
+            z-index: 1000;
+            display: none;
+        }
+        .restricted-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            padding: 5px 0;
+            background: white;
+            z-index: 1000;
+            display: none;
+        }
         .header {
             text-align: center !important;
             margin-bottom: 20px !important;
@@ -127,13 +153,18 @@
             margin: 30px 0 5px 0;
         }
         @media print {
+            @page {
+                margin-top: 20mm;
+                margin-bottom: 20mm;
+            }
             * {
                 margin: 0;
                 padding: 0;
             }
             body {
                 margin: 0;
-                padding: 0;
+                padding-top: 15mm;
+                padding-bottom: 15mm;
                 background: #fff;
             }
             .document-container {
@@ -143,6 +174,13 @@
                 background: transparent;
             }
             .no-print {
+                display: none;
+            }
+            .restricted-header,
+            .restricted-footer {
+                display: block;
+            }
+            .restricted:not(.restricted-header):not(.restricted-footer) {
                 display: none;
             }
         }
@@ -157,6 +195,9 @@
 
     <!-- Watermark -->
     <div class="watermark">NCS Management Information System (MIS)</div>
+    
+    <div class="restricted-header">RESTRICTED</div>
+    <div class="restricted-footer">RESTRICTED</div>
     
     <div class="document-container">
         <div class="restricted">RESTRICTED</div>
@@ -203,8 +244,6 @@
                 <strong>Date & Stamp:</strong> {{ now()->format('d/m/Y') }}
             </div>
         </div>
-
-        <div class="restricted" style="margin-top: 30px;">RESTRICTED</div>
     </div>
 </body>
 </html>

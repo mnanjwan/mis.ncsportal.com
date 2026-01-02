@@ -67,6 +67,32 @@
             font-size: 10pt;
             margin: 5px 0;
         }
+        .restricted-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 10pt;
+            padding: 5px 0;
+            background: white;
+            z-index: 1000;
+            display: none;
+        }
+        .restricted-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 10pt;
+            padding: 5px 0;
+            background: white;
+            z-index: 1000;
+            display: none;
+        }
         .header {
             text-align: center;
             margin-bottom: 8px;
@@ -130,11 +156,13 @@
         @media print {
             @page {
                 size: A4;
-                margin: 10mm;
+                margin-top: 20mm;
+                margin-bottom: 20mm;
             }
             body {
                 margin: 0;
-                padding: 0;
+                padding-top: 15mm;
+                padding-bottom: 15mm;
                 font-size: 10pt !important;
                 line-height: 1.4 !important;
             }
@@ -147,8 +175,12 @@
             .no-print {
                 display: none;
             }
-            .restricted {
-                margin: 3px 0 !important;
+            .restricted-header,
+            .restricted-footer {
+                display: block;
+            }
+            .restricted:not(.restricted-header):not(.restricted-footer) {
+                display: none;
             }
             .header {
                 margin-bottom: 5px !important;
@@ -183,6 +215,9 @@
 
     <!-- Watermark -->
     <div class="watermark">NCS Management Information System (MIS)</div>
+
+    <div class="restricted-header">RESTRICTED</div>
+    <div class="restricted-footer">RESTRICTED</div>
 
     <div class="document-container">
         <div class="restricted">RESTRICTED</div>
@@ -267,7 +302,6 @@
             </div>
         </div>
 
-        <div class="restricted" style="margin-top: 10px;">RESTRICTED</div>
     </div>
 </body>
 </html>

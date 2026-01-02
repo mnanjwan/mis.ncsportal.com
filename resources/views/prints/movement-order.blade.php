@@ -139,7 +139,22 @@
             padding: 20px;
         }
         @media print {
+            @page {
+                margin-top: 20mm;
+                margin-bottom: 20mm;
+            }
+            body {
+                padding-top: 15mm;
+                padding-bottom: 15mm;
+            }
             .no-print {
+                display: none;
+            }
+            .restricted-header,
+            .restricted-footer {
+                display: block !important;
+            }
+            .restricted:not(.restricted-header):not(.restricted-footer) {
                 display: none;
             }
         }
@@ -153,6 +168,9 @@
             Print Document
         </button>
     </div>
+
+    <div class="restricted-header" style="text-align: center; font-weight: bold; font-size: 11pt; padding: 5px 0; background: white; z-index: 1000; display: none; position: fixed; top: 0; left: 0; right: 0;">RESTRICTED</div>
+    <div class="restricted-footer" style="text-align: center; font-weight: bold; font-size: 11pt; padding: 5px 0; background: white; z-index: 1000; display: none; position: fixed; bottom: 0; left: 0; right: 0;">RESTRICTED</div>
 
     <div class="document-container">
     <div class="restricted" style="text-align: center; font-weight: bold; font-size: 11pt; margin: 5px 0;">RESTRICTED</div>
@@ -219,7 +237,6 @@
         </div>
         @endforeach
 
-    <div class="restricted" style="text-align: center; font-weight: bold; font-size: 11pt; margin-top: 20px;">RESTRICTED</div>
     </div>
 </body>
 </html>
