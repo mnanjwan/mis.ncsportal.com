@@ -211,11 +211,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/movement-orders/{id}', [MovementOrderController::class, 'update'])->name('movement-orders.update');
         Route::get('/movement-orders/{id}/eligible-officers', [MovementOrderController::class, 'eligibleOfficers'])->name('movement-orders.eligible-officers');
         Route::post('/movement-orders/{id}/post-officers', [MovementOrderController::class, 'postOfficers'])->name('movement-orders.post-officers');
+        Route::post('/movement-orders/{id}/publish', [MovementOrderController::class, 'publish'])->name('movement-orders.publish');
 
         Route::get('/promotion-eligibility', [PromotionController::class, 'index'])->name('promotion-eligibility');
         Route::get('/promotion-eligibility/create', [PromotionController::class, 'createEligibilityList'])->name('promotion-eligibility.create');
         Route::post('/promotion-eligibility', [PromotionController::class, 'storeEligibilityList'])->name('promotion-eligibility.store');
         Route::get('/promotion-eligibility/{id}', [PromotionController::class, 'showEligibilityList'])->name('promotion-eligibility.show');
+        Route::get('/promotion-eligibility/{id}/export', [PromotionController::class, 'exportEligibilityList'])->name('promotion-eligibility.export');
         Route::delete('/promotion-eligibility/{id}', [PromotionController::class, 'destroyEligibilityList'])->name('promotion-eligibility.destroy');
 
         Route::get('/promotion-criteria', [PromotionController::class, 'criteria'])->name('promotion-criteria');
@@ -330,6 +332,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/roster/{id}', [DutyRosterController::class, 'update'])->name('roster.update');
         Route::post('/roster/{id}/submit', [DutyRosterController::class, 'submit'])->name('roster.submit');
         Route::get('/roster/{id}', [DutyRosterController::class, 'show'])->name('roster.show');
+        Route::get('/roster/print/all', [PrintController::class, 'printAllRosters'])->name('roster.print-all');
+        Route::get('/roster/{id}/print', [PrintController::class, 'printRoster'])->name('roster.print');
 
         // Internal Staff Orders Routes
         Route::get('/internal-staff-orders', [InternalStaffOrderController::class, 'index'])->name('internal-staff-orders.index');
@@ -655,6 +659,7 @@ Route::prefix('print')->name('print.')->middleware('auth')->group(function () {
     Route::get('/pass-document/{id}', [PrintController::class, 'passDocument'])->name('pass-document');
     Route::get('/retirement-list', [PrintController::class, 'retirementList'])->name('retirement-list');
     Route::get('/promotion-eligibility-list/{id}', [PrintController::class, 'promotionEligibilityList'])->name('promotion-eligibility.print');
+    Route::get('/movement-order/{id}', [PrintController::class, 'movementOrder'])->name('movement-order.print');
 
     // Report Prints
     Route::get('/accommodation-report', [PrintController::class, 'accommodationReport'])->name('accommodation-report');

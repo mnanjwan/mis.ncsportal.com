@@ -51,6 +51,16 @@
                     <form method="GET" action="{{ route('staff-officer.roster') }}" class="inline">
                         <input type="month" name="month" value="{{ $month }}" class="kt-input" onchange="this.form.submit()" />
                     </form>
+                    @php
+                        $approvedRostersCount = $rosters->where('status', 'APPROVED')->count();
+                    @endphp
+                    @if($approvedRostersCount > 0)
+                        <a href="{{ route('staff-officer.roster.print-all', ['month' => $month]) }}" 
+                           class="kt-btn kt-btn-secondary" 
+                           target="_blank">
+                            <i class="ki-filled ki-printer"></i> Print All
+                        </a>
+                    @endif
                     <a href="{{ route('staff-officer.roster.create') }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-plus"></i> Create Roster
                     </a>

@@ -59,6 +59,13 @@
                 </p>
             </div>
             <div class="flex-shrink-0 flex gap-2">
+                @if($roster->status === 'APPROVED')
+                    <a href="{{ route('staff-officer.roster.print', $roster->id) }}" 
+                       class="kt-btn kt-btn-secondary" 
+                       target="_blank">
+                        <i class="ki-filled ki-printer"></i> Print
+                    </a>
+                @endif
                 @if($roster->status === 'DRAFT')
                     <a href="{{ route('staff-officer.roster.edit', $roster->id) }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-pencil"></i> Edit

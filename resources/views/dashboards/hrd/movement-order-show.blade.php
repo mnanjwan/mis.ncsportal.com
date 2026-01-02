@@ -19,12 +19,21 @@
                 <i class="ki-filled ki-arrow-left"></i> Back to Movement Orders
             </a>
             <div class="flex items-center gap-2">
-                @if($order->status !== 'CANCELLED')
+                @if($order->status === 'DRAFT')
                     <a href="{{ route('hrd.movement-orders.eligible-officers', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
                         <i class="ki-filled ki-search"></i> Search Eligible Officers
                     </a>
                     <a href="{{ route('hrd.movement-orders.edit', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-secondary">
                         <i class="ki-filled ki-pencil"></i> Edit Order
+                    </a>
+                    @if($order->postings && $order->postings->count() > 0)
+                        <button type="button" class="kt-btn kt-btn-sm kt-btn-success" data-kt-modal-toggle="#publish-modal">
+                            <i class="ki-filled ki-check"></i> Publish Order
+                        </button>
+                    @endif
+                @elseif($order->status === 'PUBLISHED')
+                    <a href="{{ route('print.movement-order.print', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-secondary" target="_blank">
+                        <i class="ki-filled ki-printer"></i> Print
                     </a>
                 @endif
             </div>
@@ -170,6 +179,39 @@
                         @endif
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Publish Confirmation Modal -->
+    <div class="kt-modal" data-kt-modal="true" id="publish-modal">
+        <div class="kt-modal-content max-w-[500px]">
+            <div class="kt-modal-header py-4 px-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
+                        <i class="ki-filled ki-check-circle text-success text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-foreground">Publish Movement Order</h3>
+                </div>
+                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                    <i class="ki-filled ki-cross"></i>
+                </button>
+            </div>
+            <div class="kt-modal-body py-5 px-5">
+                <p class="text-sm text-secondary-foreground">
+                    Are you sure you want to publish this movement order? This will process all officer postings and send notifications.
+                </p>
+            </div>
+            <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                    Cancel
+                </button>
+                <form action="{{ route('hrd.movement-orders.publish', $order->id) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="kt-btn kt-btn-success">
+                        <i class="ki-filled ki-check"></i> Publish Order
+                    </button>
+                </form>
             </div>
         </div>
     </div>

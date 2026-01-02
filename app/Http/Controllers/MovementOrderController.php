@@ -80,11 +80,11 @@ class MovementOrderController extends Controller
         $validated = $request->validate([
             'criteria_months_at_station' => 'required|integer|min:1',
             'manning_request_id' => 'nullable|exists:manning_requests,id',
-            'status' => 'required|in:DRAFT,PUBLISHED,CANCELLED',
         ]);
 
         $validated['order_number'] = $orderNumber;
         $validated['created_by'] = auth()->id();
+        $validated['status'] = 'DRAFT'; // Always create as DRAFT
         
         try {
             $order = \App\Models\MovementOrder::create($validated);
@@ -178,25 +178,10 @@ class MovementOrderController extends Controller
             'order_number' => 'required|string|max:100|unique:movement_orders,order_number,' . $id,
             'criteria_months_at_station' => 'required|integer|min:1',
             'manning_request_id' => 'nullable|exists:manning_requests,id',
-            'status' => 'required|in:DRAFT,PUBLISHED,CANCELLED',
         ]);
 
-        $oldStatus = $order->status;
+        // Don't allow status change through edit - use publish action instead
         $order->update($validated);
-
-        // If status changed to PUBLISHED and there are postings, process workflow
-        if ($oldStatus !== 'PUBLISHED' && $validated['status'] === 'PUBLISHED') {
-            $postings = $order->postings()->whereNull('documented_at')->get();
-            if ($postings->count() > 0) {
-                try {
-                    $workflowService = new PostingWorkflowService();
-                    $officerIds = $postings->pluck('officer_id')->toArray();
-                    $workflowService->processMovementOrder($order, $officerIds);
-                } catch (\Exception $e) {
-                    Log::error("Failed to process movement order workflow: " . $e->getMessage());
-                }
-            }
-        }
 
         return redirect()->route('hrd.movement-orders.show', $order->id)
             ->with('success', 'Movement order updated successfully!');
@@ -324,9 +309,7 @@ class MovementOrderController extends Controller
 
         DB::beginTransaction();
         try {
-            $workflowService = new PostingWorkflowService();
             $postedCount = 0;
-            $postedOfficerIds = [];
 
             foreach ($officersToPost as $postingData) {
                 $officer = \App\Models\Officer::find($postingData['officer_id']);
@@ -336,7 +319,7 @@ class MovementOrderController extends Controller
                     continue;
                 }
 
-                // Create posting record
+                // Create posting record (workflow will process when order is published)
                 $posting = \App\Models\OfficerPosting::create([
                     'officer_id' => $officer->id,
                     'command_id' => $toCommand->id,
@@ -347,12 +330,6 @@ class MovementOrderController extends Controller
                 ]);
 
                 $postedCount++;
-                $postedOfficerIds[] = $officer->id;
-            }
-
-            // Process workflow if order is PUBLISHED
-            if ($order->status === 'PUBLISHED' && !empty($postedOfficerIds)) {
-                $workflowService->processMovementOrder($order, $postedOfficerIds);
             }
 
             DB::commit();
@@ -365,6 +342,51 @@ class MovementOrderController extends Controller
             return redirect()->back()
                 ->with('error', 'Failed to post officers: ' . $e->getMessage())
                 ->withInput();
+        }
+    }
+
+    /**
+     * Publish movement order and process workflow
+     */
+    public function publish($id)
+    {
+        $order = \App\Models\MovementOrder::findOrFail($id);
+
+        if ($order->status === 'PUBLISHED') {
+            return redirect()->route('hrd.movement-orders.show', $order->id)
+                ->with('error', 'Movement order is already published.');
+        }
+
+        if ($order->status === 'CANCELLED') {
+            return redirect()->route('hrd.movement-orders.show', $order->id)
+                ->with('error', 'Cannot publish a cancelled movement order.');
+        }
+
+        // Check if there are postings
+        $postings = $order->postings()->whereNull('documented_at')->get();
+        if ($postings->isEmpty()) {
+            return redirect()->route('hrd.movement-orders.show', $order->id)
+                ->with('error', 'Cannot publish movement order without any officer postings.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update status to PUBLISHED
+            $order->update(['status' => 'PUBLISHED']);
+
+            // Dispatch job to process workflow asynchronously
+            $officerIds = $postings->pluck('officer_id')->toArray();
+            \App\Jobs\ProcessMovementOrderJob::dispatch($order, $officerIds);
+
+            DB::commit();
+
+            return redirect()->route('hrd.movement-orders.show', $order->id)
+                ->with('success', 'Movement order published successfully! Workflow is being processed in the background.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Failed to publish movement order: " . $e->getMessage());
+            return redirect()->route('hrd.movement-orders.show', $order->id)
+                ->with('error', 'Failed to publish movement order: ' . $e->getMessage());
         }
     }
 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\PromotionEligibilityList;
 use App\Models\PromotionEligibilityCriterion;
+use App\Models\DutyRoster;
+use App\Models\RosterAssignment;
 use Carbon\Carbon;
 
 class PromotionController extends Controller
@@ -197,6 +199,165 @@ class PromotionController extends Controller
             return redirect()->route('hrd.promotion-eligibility')
                 ->with('error', 'Failed to delete eligibility list: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export Promotion Eligibility List as CSV
+     */
+    public function exportEligibilityList($id)
+    {
+        $list = PromotionEligibilityList::with(['items.officer', 'generatedBy'])
+            ->findOrFail($id);
+        
+        // Get all items with their officers (same logic as print)
+        $items = $list->items->map(function($item) {
+            $officer = $item->officer;
+            
+            // Get unit from current active roster (as OIC/2IC or from assignment)
+            $unit = null;
+            
+            // Check if officer is OIC or 2IC of an active roster
+            $activeRosterAsOIC = DutyRoster::where('oic_officer_id', $officer->id)
+                ->where('status', 'APPROVED')
+                ->where('roster_period_start', '<=', now())
+                ->where('roster_period_end', '>=', now())
+                ->first();
+            
+            if ($activeRosterAsOIC && $activeRosterAsOIC->unit) {
+                $unit = $activeRosterAsOIC->unit;
+            } else {
+                // Check if officer is 2IC of an active roster
+                $activeRosterAs2IC = DutyRoster::where('second_in_command_officer_id', $officer->id)
+                    ->where('status', 'APPROVED')
+                    ->where('roster_period_start', '<=', now())
+                    ->where('roster_period_end', '>=', now())
+                    ->first();
+                
+                if ($activeRosterAs2IC && $activeRosterAs2IC->unit) {
+                    $unit = $activeRosterAs2IC->unit;
+                } else {
+                    // Check if officer has a roster assignment with an active roster
+                    $currentRosterAssignment = RosterAssignment::where('officer_id', $officer->id)
+                        ->whereHas('roster', function ($query) {
+                            $query->where('status', 'APPROVED')
+                                  ->where('roster_period_start', '<=', now())
+                                  ->where('roster_period_end', '>=', now());
+                        })
+                        ->with(['roster:id,unit'])
+                        ->latest('duty_date')
+                        ->first();
+                    
+                    if ($currentRosterAssignment && $currentRosterAssignment->roster && $currentRosterAssignment->roster->unit) {
+                        $unit = $currentRosterAssignment->roster->unit;
+                    }
+                }
+            }
+            
+            return [
+                'serial_number' => $item->serial_number,
+                'rank' => $item->current_rank ?? ($officer->substantive_rank ?? 'N/A'),
+                'initials' => $officer->initials ?? '',
+                'name' => $officer->surname ?? '',
+                'unit' => $unit,
+                'state' => $item->state ?? ($officer->state_of_origin ?? 'N/A'),
+                'date_of_birth' => $item->date_of_birth ?? ($officer->date_of_birth ?? null),
+                'date_of_first_appointment' => $item->date_of_first_appointment ?? ($officer->date_of_first_appointment ?? null),
+            ];
+        })->toArray();
+        
+        // Sort by rank in descending order (same as print)
+        $rankOrder = [
+            'CGC' => 1, 'DCG' => 2, 'ACG' => 3, 'CC' => 4, 'DC' => 5, 'AC' => 6,
+            'CSC' => 7, 'SC' => 8, 'DSC' => 9, 'ASC I' => 10, 'ASC II' => 11,
+            'IC' => 12, 'AIC' => 13, 'CA I' => 14, 'CA II' => 15, 'CA III' => 16,
+        ];
+        
+        usort($items, function($a, $b) use ($rankOrder) {
+            $rankA = $this->normalizeRankForSorting($a['rank'], $rankOrder);
+            $rankB = $this->normalizeRankForSorting($b['rank'], $rankOrder);
+            return $rankA <=> $rankB;
+        });
+        
+        // Reassign serial numbers after sorting
+        foreach ($items as $index => &$item) {
+            $item['serial_number'] = $index + 1;
+        }
+        unset($item);
+        
+        // Generate filename
+        $filename = 'promotion_eligibility_list_' . $list->year . '_' . date('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+        
+        $callback = function() use ($items) {
+            $file = fopen('php://output', 'w');
+            
+            // Write CSV headers
+            fputcsv($file, [
+                'S/N',
+                'Rank',
+                'Initial',
+                'Name',
+                'Unit',
+                'State',
+                'Date of Birth (DOB)',
+                'Date of First Appointment (DOFA)'
+            ]);
+            
+            // Write data rows
+            foreach ($items as $item) {
+                fputcsv($file, [
+                    $item['serial_number'],
+                    $item['rank'],
+                    $item['initials'],
+                    $item['name'],
+                    $item['unit'] ?? '',
+                    $item['state'],
+                    $item['date_of_birth'] ? Carbon::parse($item['date_of_birth'])->format('d/m/Y') : '',
+                    $item['date_of_first_appointment'] ? Carbon::parse($item['date_of_first_appointment'])->format('d/m/Y') : '',
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Normalize rank for sorting (extract abbreviation from full rank names)
+     */
+    private function normalizeRankForSorting($rank, $rankOrder)
+    {
+        if (empty($rank)) {
+            return 999; // Put empty ranks at the end
+        }
+        
+        // If already an abbreviation, return its order
+        if (isset($rankOrder[$rank])) {
+            return $rankOrder[$rank];
+        }
+        
+        // Try to extract abbreviation from parentheses
+        if (preg_match('/\(([A-Z\s]+)\)/', $rank, $matches)) {
+            $abbr = trim($matches[1]);
+            if (isset($rankOrder[$abbr])) {
+                return $rankOrder[$abbr];
+            }
+        }
+        
+        // Try partial matching
+        foreach ($rankOrder as $abbr => $order) {
+            if (stripos($rank, $abbr) !== false) {
+                return $order;
+            }
+        }
+        
+        // If no match found, put at end
+        return 999;
     }
 
     // Promotion Criteria Management Methods

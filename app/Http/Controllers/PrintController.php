@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\PromotionEligibilityList;
 use App\Models\DutyRoster;
 use App\Models\RosterAssignment;
+use App\Models\MovementOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -777,6 +778,301 @@ class PrintController extends Controller
             ->first();
         
         return $adminUser ? $adminUser->officer : null;
+    }
+
+    /**
+     * Print Single Duty Roster
+     */
+    public function printRoster($id)
+    {
+        $roster = DutyRoster::with([
+            'command',
+            'preparedBy.officer',
+            'approvedBy.user.roles',
+            'oicOfficer',
+            'secondInCommandOfficer',
+            'assignments.officer'
+        ])->findOrFail($id);
+
+        // Build deployment list (OIC, 2IC, and assigned officers)
+        $deployments = collect();
+
+        // Add OIC if exists
+        if ($roster->oicOfficer) {
+            $deployments->push([
+                'service_number' => $roster->oicOfficer->service_number ?? 'N/A',
+                'rank' => $roster->oicOfficer->substantive_rank ?? 'N/A',
+                'name' => trim(($roster->oicOfficer->initials ?? '') . ' ' . ($roster->oicOfficer->surname ?? '')),
+                'role' => 'O/C',
+                'unit' => $roster->unit ?? 'N/A',
+            ]);
+        }
+
+        // Add 2IC if exists
+        if ($roster->secondInCommandOfficer) {
+            $deployments->push([
+                'service_number' => $roster->secondInCommandOfficer->service_number ?? 'N/A',
+                'rank' => $roster->secondInCommandOfficer->substantive_rank ?? 'N/A',
+                'name' => trim(($roster->secondInCommandOfficer->initials ?? '') . ' ' . ($roster->secondInCommandOfficer->surname ?? '')),
+                'role' => '2iC',
+                'unit' => $roster->unit ?? 'N/A',
+            ]);
+        }
+
+        // Add assigned officers (excluding OIC and 2IC)
+        foreach ($roster->assignments as $assignment) {
+            $officer = $assignment->officer;
+            if ($officer && 
+                $officer->id !== $roster->oic_officer_id && 
+                $officer->id !== $roster->second_in_command_officer_id) {
+                $deployments->push([
+                    'service_number' => $officer->service_number ?? 'N/A',
+                    'rank' => $officer->substantive_rank ?? 'N/A',
+                    'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
+                    'role' => '',
+                    'unit' => $roster->unit ?? 'N/A',
+                ]);
+            }
+        }
+
+        // Get prepared by Staff Officer
+        $staffOfficer = null;
+        if ($roster->preparedBy && $roster->preparedBy->officer) {
+            $staffOfficer = $roster->preparedBy->officer;
+        }
+
+        // Get approver
+        $approver = null;
+        $approverRole = null;
+        if ($roster->approvedBy) {
+            $approver = $roster->approvedBy;
+            // Check if approver's user has DC Admin role
+            if ($approver->user && $approver->user->hasRole('DC Admin')) {
+                $approverRole = 'DC Admin';
+            } else {
+                $approverRole = 'Comptroller';
+            }
+        }
+
+        $deploymentDate = $roster->roster_period_start ? $roster->roster_period_start->format('d M Y') : now()->format('d M Y');
+
+        return view('prints.duty-roster', compact(
+            'roster',
+            'deployments',
+            'staffOfficer',
+            'approver',
+            'approverRole',
+            'deploymentDate'
+        ));
+    }
+
+    /**
+     * Print All Active Rosters for a Month
+     */
+    public function printAllRosters(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Get Staff Officer's command
+        $staffOfficerRole = $user->roles()
+            ->where('name', 'Staff Officer')
+            ->wherePivot('is_active', true)
+            ->first();
+
+        $commandId = $staffOfficerRole?->pivot->command_id ?? null;
+        $command = $commandId ? Command::find($commandId) : null;
+
+        // Get month from request or use current month
+        $month = $request->get('month', date('Y-m'));
+
+        // Get all APPROVED rosters for this command and month
+        $rosters = DutyRoster::where('command_id', $commandId)
+            ->where('status', 'APPROVED')
+            ->whereYear('roster_period_start', date('Y', strtotime($month . '-01')))
+            ->whereMonth('roster_period_start', date('m', strtotime($month . '-01')))
+            ->with([
+                'command',
+                'preparedBy.officer',
+                'approvedBy.user.roles',
+                'oicOfficer',
+                'secondInCommandOfficer',
+                'assignments.officer'
+            ])
+            ->orderBy('unit')
+            ->orderBy('roster_period_start')
+            ->get();
+
+        if ($rosters->isEmpty()) {
+            return redirect()->route('staff-officer.roster', ['month' => $month])
+                ->with('error', 'No approved rosters found for the selected month.');
+        }
+
+        // Process each roster into deployments
+        $allDeployments = [];
+        foreach ($rosters as $roster) {
+            $rosterDeployments = collect();
+
+            // Add OIC
+            if ($roster->oicOfficer) {
+                $rosterDeployments->push([
+                    'service_number' => $roster->oicOfficer->service_number ?? 'N/A',
+                    'rank' => $roster->oicOfficer->substantive_rank ?? 'N/A',
+                    'name' => trim(($roster->oicOfficer->initials ?? '') . ' ' . ($roster->oicOfficer->surname ?? '')),
+                    'role' => 'O/C',
+                    'unit' => $roster->unit ?? 'N/A',
+                ]);
+            }
+
+            // Add 2IC
+            if ($roster->secondInCommandOfficer) {
+                $rosterDeployments->push([
+                    'service_number' => $roster->secondInCommandOfficer->service_number ?? 'N/A',
+                    'rank' => $roster->secondInCommandOfficer->substantive_rank ?? 'N/A',
+                    'name' => trim(($roster->secondInCommandOfficer->initials ?? '') . ' ' . ($roster->secondInCommandOfficer->surname ?? '')),
+                    'role' => '2iC',
+                    'unit' => $roster->unit ?? 'N/A',
+                ]);
+            }
+
+            // Add assigned officers
+            foreach ($roster->assignments as $assignment) {
+                $officer = $assignment->officer;
+                if ($officer && 
+                    $officer->id !== $roster->oic_officer_id && 
+                    $officer->id !== $roster->second_in_command_officer_id) {
+                    $rosterDeployments->push([
+                        'service_number' => $officer->service_number ?? 'N/A',
+                        'rank' => $officer->substantive_rank ?? 'N/A',
+                        'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
+                        'role' => '',
+                        'unit' => $roster->unit ?? 'N/A',
+                    ]);
+                }
+            }
+
+            $allDeployments[] = [
+                'roster' => $roster,
+                'deployments' => $rosterDeployments->toArray(),
+            ];
+        }
+
+        // Get Staff Officer (from first roster's preparedBy)
+        $staffOfficer = null;
+        if ($rosters->first() && $rosters->first()->preparedBy && $rosters->first()->preparedBy->officer) {
+            $staffOfficer = $rosters->first()->preparedBy->officer;
+        }
+
+        // Get approver from first roster (assuming all approved by same person)
+        $approver = null;
+        $approverRole = null;
+        if ($rosters->first() && $rosters->first()->approvedBy) {
+            $approver = $rosters->first()->approvedBy;
+            if ($approver->user && $approver->user->hasRole('DC Admin')) {
+                $approverRole = 'DC Admin';
+            } else {
+                $approverRole = 'Comptroller';
+            }
+        }
+
+        $deploymentDate = date('d M Y', strtotime($month . '-01'));
+
+        return view('prints.duty-roster-all', compact(
+            'rosters',
+            'allDeployments',
+            'command',
+            'staffOfficer',
+            'approver',
+            'approverRole',
+            'deploymentDate',
+            'month'
+        ));
+    }
+
+    /**
+     * Print Movement Order
+     */
+    public function movementOrder($id)
+    {
+        $order = MovementOrder::with([
+            'postings.officer.presentStation',
+            'postings.command',
+            'createdBy'
+        ])->findOrFail($id);
+
+        // Build items list with from/to commands
+        $items = collect();
+        
+        foreach ($order->postings as $posting) {
+            if (!$posting->officer) {
+                continue;
+            }
+
+            $officer = $posting->officer;
+            $fromCommand = null;
+            $toCommand = $posting->command;
+
+            // Get from command (present posting)
+            if ($posting->officer->presentStation) {
+                $fromCommand = $posting->officer->presentStation;
+            } else {
+                // Try to find previous posting
+                $previousPosting = \App\Models\OfficerPosting::where('officer_id', $officer->id)
+                    ->where('id', '<', $posting->id)
+                    ->with('command')
+                    ->orderBy('id', 'desc')
+                    ->first();
+                
+                if ($previousPosting && $previousPosting->command) {
+                    $fromCommand = $previousPosting->command;
+                }
+            }
+
+            $items->push([
+                'serial_number' => 0, // Will be reassigned after sorting
+                'service_number' => $officer->service_number ?? 'N/A',
+                'rank' => $officer->substantive_rank ?? 'N/A',
+                'initials' => $officer->initials ?? '',
+                'name' => $officer->surname ?? '',
+                'present_posting' => $fromCommand ? $fromCommand->name : 'N/A',
+                'new_posting' => $toCommand ? $toCommand->name : 'N/A',
+            ]);
+        }
+
+        // Group items by destination command (new_posting)
+        $groupedByCommand = $items->groupBy('new_posting');
+        
+        // Sort by rank (descending: CGC to CA III)
+        $rankOrder = [
+            'CGC' => 1, 'DCG' => 2, 'ACG' => 3, 'CC' => 4, 'DC' => 5, 'AC' => 6,
+            'CSC' => 7, 'SC' => 8, 'DSC' => 9, 'ASC I' => 10, 'ASC II' => 11,
+            'IC' => 12, 'AIC' => 13, 'CA I' => 14, 'CA II' => 15, 'CA III' => 16,
+        ];
+
+        // Process each command group
+        $commandGroups = [];
+        foreach ($groupedByCommand as $commandName => $commandItems) {
+            $itemsArray = $commandItems->toArray();
+            
+            // Sort by rank within each command group
+            usort($itemsArray, function($a, $b) use ($rankOrder) {
+                $rankA = $this->normalizeRankForSorting($a['rank'], $rankOrder);
+                $rankB = $this->normalizeRankForSorting($b['rank'], $rankOrder);
+                return $rankA <=> $rankB;
+            });
+
+            // Reassign serial numbers after sorting (starting from 1 for each command)
+            foreach ($itemsArray as $index => &$item) {
+                $item['serial_number'] = $index + 1;
+            }
+            unset($item);
+
+            $commandGroups[] = [
+                'command_name' => $commandName,
+                'items' => $itemsArray
+            ];
+        }
+
+        return view('prints.movement-order', compact('order', 'commandGroups'));
     }
 }
 

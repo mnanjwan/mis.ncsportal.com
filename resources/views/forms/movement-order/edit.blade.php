@@ -135,19 +135,6 @@
                             @enderror
                         </div>
 
-                        <!-- Status -->
-                        <div class="flex flex-col gap-1">
-                            <label class="kt-form-label">Status <span class="text-danger">*</span></label>
-                            <select name="status" id="status" class="kt-input" required>
-                                <option value="DRAFT" {{ old('status', $order->status) == 'DRAFT' ? 'selected' : '' }}>Draft</option>
-                                <option value="PUBLISHED" {{ old('status', $order->status) == 'PUBLISHED' ? 'selected' : '' }}>Published</option>
-                                <option value="CANCELLED" {{ old('status', $order->status) == 'CANCELLED' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                            <span class="text-xs text-secondary-foreground">Draft: Order is being prepared. Published: Order is active and postings can be created.</span>
-                            @error('status')
-                                <span class="text-sm text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
 
                         <!-- Form Actions -->
                         <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">

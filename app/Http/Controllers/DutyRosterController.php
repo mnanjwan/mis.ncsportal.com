@@ -852,8 +852,12 @@ class DutyRosterController extends Controller
             // Check if this is a re-approval (roster was previously approved)
             $isReapproval = !is_null($roster->approved_at);
 
+            // Get the officer ID of the approving user (Area Controller/Comptroller)
+            $approvingOfficer = $user->officer;
+            
             $roster->status = 'APPROVED';
             $roster->approved_at = now();
+            $roster->approved_by = $approvingOfficer?->id;
             $roster->save();
 
             // Refresh roster to load all relationships
@@ -994,8 +998,12 @@ class DutyRosterController extends Controller
             // Check if this is a re-approval (roster was previously approved)
             $isReapproval = !is_null($roster->approved_at);
 
+            // Get the officer ID of the approving user (DC Admin)
+            $approvingOfficer = $user->officer;
+            
             $roster->status = 'APPROVED';
             $roster->approved_at = now();
+            $roster->approved_by = $approvingOfficer?->id;
             $roster->save();
 
             // Refresh roster to load all relationships

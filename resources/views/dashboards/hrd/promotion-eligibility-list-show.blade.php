@@ -27,6 +27,10 @@
                     <div class="flex items-center justify-between">
                         <h2 class="text-2xl font-semibold text-mono">Promotion Eligibility List - Year {{ $list->year ?? 'N/A' }}</h2>
                         <div class="flex items-center gap-3">
+                            <a href="{{ route('hrd.promotion-eligibility.export', $list->id) }}" 
+                               class="kt-btn kt-btn-sm kt-btn-secondary">
+                                <i class="ki-filled ki-file-down"></i> Export CSV
+                            </a>
                             <a href="{{ route('print.promotion-eligibility.print', $list->id) }}" 
                                class="kt-btn kt-btn-sm kt-btn-primary" 
                                target="_blank">
