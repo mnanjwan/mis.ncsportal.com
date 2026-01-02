@@ -80,13 +80,31 @@ class PrintController extends Controller
         $fromCommand = $staffOrder->fromCommand;
         $toCommand = $staffOrder->toCommand;
         
-        // Get the officer who created the order (HRD officer)
-        $createdByOfficer = null;
-        if ($staffOrder->createdBy && $staffOrder->createdBy->officer) {
-            $createdByOfficer = $staffOrder->createdBy->officer;
+        // Get HRD officer (authorizing officer) - prioritize authenticated user
+        $hrdOfficer = null;
+        
+        // First: Use authenticated user's officer details if available
+        $currentUser = Auth::user();
+        if ($currentUser) {
+            if (!$currentUser->relationLoaded('officer')) {
+                $currentUser->load('officer');
+            }
+            if ($currentUser->officer) {
+                $hrdOfficer = $currentUser->officer;
+            }
         }
         
-        return view('prints.staff-order', compact('staffOrder', 'officer', 'fromCommand', 'toCommand', 'createdByOfficer'));
+        // Second: Get the officer who created the order (HRD officer)
+        if (!$hrdOfficer && $staffOrder->createdBy && $staffOrder->createdBy->officer) {
+            $hrdOfficer = $staffOrder->createdBy->officer;
+        }
+        
+        // Third: Get HRD user from role
+        if (!$hrdOfficer) {
+            $hrdOfficer = $this->getHrdOfficer();
+        }
+        
+        return view('prints.staff-order', compact('staffOrder', 'officer', 'fromCommand', 'toCommand', 'hrdOfficer'));
     }
 
     /**
@@ -568,6 +586,52 @@ class PrintController extends Controller
         })->first();
         
         return $staffOfficerUser ? $staffOfficerUser->officer : null;
+    }
+
+    /**
+     * Get HRD Officer (for authorizing staff orders)
+     */
+    private function getHrdOfficer()
+    {
+        // Try to find a user with HRD role
+        $hrdRole = Role::where('name', 'HRD')->first();
+        if ($hrdRole) {
+            $hrdUser = User::whereHas('roles', function($query) use ($hrdRole) {
+                $query->where('roles.id', $hrdRole->id)
+                      ->where('user_roles.is_active', true);
+            })
+            ->where('is_active', true)
+            ->with('officer')
+            ->first();
+            
+            if ($hrdUser && $hrdUser->officer) {
+                return $hrdUser->officer;
+            }
+        }
+        
+        // Fallback: Try DC Admin role
+        $dcAdminRole = Role::where('name', 'DC Admin')->first();
+        if ($dcAdminRole) {
+            $dcAdminUser = User::whereHas('roles', function($query) use ($dcAdminRole) {
+                $query->where('roles.id', $dcAdminRole->id)
+                      ->where('user_roles.is_active', true);
+            })
+            ->where('is_active', true)
+            ->with('officer')
+            ->first();
+            
+            if ($dcAdminUser && $dcAdminUser->officer) {
+                return $dcAdminUser->officer;
+            }
+        }
+        
+        // Final fallback: Get any active user with officer record (prefer admin users)
+        $adminUser = User::where('is_active', true)
+            ->with('officer')
+            ->whereHas('officer')
+            ->first();
+        
+        return $adminUser ? $adminUser->officer : null;
     }
 }
 

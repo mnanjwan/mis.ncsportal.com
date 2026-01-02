@@ -38,6 +38,7 @@ use App\Http\Controllers\OfficerQueryController;
 use App\Http\Controllers\InvestigationController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\InternalStaffOrderController;
+use App\Http\Controllers\OfficerDeletionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -153,6 +154,14 @@ Route::middleware('auth')->group(function () {
     // HRD Routes
     Route::prefix('hrd')->name('hrd.')->middleware('role:HRD')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'hrd'])->name('dashboard');
+        
+        // Officer Deletion Routes (must come before /officers/{id} to avoid route conflict)
+        Route::prefix('officers/delete')->name('officers.delete.')->group(function () {
+            Route::get('/', [OfficerDeletionController::class, 'index'])->name('index');
+            Route::get('/{id}', [OfficerDeletionController::class, 'show'])->name('show');
+            Route::delete('/{id}', [OfficerDeletionController::class, 'destroy'])->name('destroy');
+        });
+        
         Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
@@ -548,6 +557,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/onboarding/{id}/verify', [EstablishmentController::class, 'verifyRecruit'])->name('onboarding.verify');
         Route::post('/onboarding/{id}/resend-link', [EstablishmentController::class, 'resendOnboardingLink'])->name('onboarding.resend-link');
         Route::get('/new-recruits/{id}/view', [EstablishmentController::class, 'viewRecruit'])->name('new-recruits.view');
+
+        // Officer Deletion Routes
+        Route::prefix('officers/delete')->name('officers.delete.')->group(function () {
+            Route::get('/', [OfficerDeletionController::class, 'index'])->name('index');
+            Route::get('/{id}', [OfficerDeletionController::class, 'show'])->name('show');
+            Route::delete('/{id}', [OfficerDeletionController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // TRADOC Routes

@@ -13,17 +13,6 @@
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
-        <!-- Back Button -->
-        <div class="flex items-center justify-between">
-            <a href="{{ route('hrd.staff-orders') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
-                <i class="ki-filled ki-arrow-left"></i> Back to Staff Orders
-            </a>
-            <div class="flex gap-2">
-                <a href="{{ route('hrd.staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                    <i class="ki-filled ki-pencil"></i> Edit Order
-                </a>
-            </div>
-        </div>
 
         <!-- Order Header -->
         <div class="kt-card">
@@ -145,6 +134,25 @@
                             </div>
                         @endif
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="kt-card">
+            <div class="kt-card-content">
+                <div class="flex gap-3">
+                    <a href="{{ route('hrd.staff-orders') }}" class="kt-btn kt-btn-secondary">
+                        Back to List
+                    </a>
+                    <a href="{{ route('print.staff-order', $order->id) }}" 
+                       target="_blank"
+                       class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-printer"></i> Print Order
+                    </a>
+                    <a href="{{ route('hrd.staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-ghost">
+                        <i class="ki-filled ki-pencil"></i> Edit Order
+                    </a>
                 </div>
             </div>
         </div>

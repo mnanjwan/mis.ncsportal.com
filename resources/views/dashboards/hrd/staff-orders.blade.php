@@ -24,15 +24,17 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-foreground">Staff Orders</h2>
+            <a href="{{ route('hrd.staff-orders.create') }}" class="kt-btn kt-btn-primary">
+                <i class="ki-filled ki-plus"></i> Create Staff Order
+            </a>
+        </div>
+
         <!-- Staff Orders List Card -->
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Staff Orders</h3>
-                <div class="kt-card-toolbar">
-                    <a href="{{ route('hrd.staff-orders.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                        <i class="ki-filled ki-plus"></i> Create Staff Order
-                    </a>
-                </div>
             </div>
             <div class="kt-card-content">
                 <!-- Desktop Table View -->

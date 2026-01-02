@@ -180,6 +180,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('hrd.dashboard')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('hrd.officers')],
+                ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('hrd.officers.delete.index')],
                 ['icon' => 'ki-filled ki-user', 'title' => 'Officer Onboarding', 'href' => route('hrd.onboarding')],
                 [
                     'title' => 'User Management',
@@ -352,6 +353,7 @@
                 ['icon' => 'ki-filled ki-abstract-26', 'title' => 'Service Numbers', 'href' => route('establishment.service-numbers')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'New Intakes', 'href' => route('establishment.new-recruits')],
                 ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Training Results', 'href' => route('establishment.training-results')],
+                ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('establishment.officers.delete.index')],
             ];
             break;
         case 'Welfare':
