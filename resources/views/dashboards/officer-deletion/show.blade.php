@@ -477,31 +477,38 @@
                         deleteButton.classList.remove('kt-btn-danger');
                         deleteButton.classList.add('bg-green-600', 'hover:bg-green-700');
 
-                        // Close modal after a brief delay
-                        setTimeout(() => {
-                            closeDeleteModal();
-                            
-                            // Show success message and redirect
-                            if (data.redirect_url) {
-                                // Create a temporary success message element
-                                const successDiv = document.createElement('div');
-                                successDiv.className = 'fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl border border-green-700';
-                                successDiv.style.opacity = '1';
-                                successDiv.style.backgroundColor = '#16a34a'; // green-600
-                                successDiv.innerHTML = `
-                                    <div class="flex items-center gap-3">
-                                        <i class="ki-filled ki-check text-xl text-white font-bold"></i>
-                                        <span class="text-white font-semibold text-base">${data.message}</span>
-                                    </div>
-                                `;
-                                document.body.appendChild(successDiv);
-
-                                // Redirect after showing message
-                                setTimeout(() => {
+                        // Close modal immediately
+                        closeDeleteModal();
+                        
+                        // Show success message using SweetAlert and redirect
+                        if (data.redirect_url) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Officer Deleted Successfully',
+                                text: data.message,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#16a34a',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                timer: 2000,
+                                timerProgressBar: true,
+                                didClose: () => {
                                     window.location.href = data.redirect_url;
-                                }, 2000);
-                            }
-                        }, 1000);
+                                }
+                            }).then((result) => {
+                                if (result.isConfirmed || result.dismiss === Swal.DismissReason.timer) {
+                                    window.location.href = data.redirect_url;
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Officer Deleted Successfully',
+                                text: data.message,
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#16a34a'
+                            });
+                        }
                     }
                 })
                 .catch(error => {
