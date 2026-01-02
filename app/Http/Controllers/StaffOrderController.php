@@ -260,6 +260,9 @@ class StaffOrderController extends Controller
         try {
             $order = StaffOrder::create($validated);
             
+            // Load relationships needed for notification
+            $order->load(['officer.user', 'fromCommand', 'toCommand']);
+            
             // Notify officer about staff order creation
             $notificationService = app(NotificationService::class);
             $notificationService->notifyStaffOrderCreated($order);

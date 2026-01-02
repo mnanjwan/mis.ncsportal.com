@@ -230,15 +230,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             const zoneSelect = document.getElementById('zone_id');
             const commandSelect = document.getElementById('command_id');
+            const form = document.getElementById('filterForm');
             
-            // Handle zone change - clear command if zone is cleared (but don't auto-submit)
+            // Handle zone change - update commands and submit form
             zoneSelect.addEventListener('change', function() {
                 const zoneId = this.value;
                 
-                // Clear command selection if no zone selected
-                if (!zoneId) {
-                    commandSelect.value = '';
+                // Clear command selection when zone changes
+                commandSelect.value = '';
+                
+                // Clear search when zone changes
+                const searchInput = form.querySelector('input[name="search"]');
+                if (searchInput) {
+                    searchInput.value = '';
                 }
+                
+                // Submit form to reload with commands for selected zone
+                form.submit();
             });
         });
     </script>

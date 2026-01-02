@@ -293,6 +293,7 @@
                     <div class="flex gap-3 justify-end">
                         <button type="button" 
                                 onclick="closeDeleteModal()" 
+                                id="cancelButton"
                                 class="kt-btn kt-btn-outline">
                             Cancel
                         </button>
@@ -300,7 +301,7 @@
                                 id="deleteButton"
                                 class="kt-btn kt-btn-danger"
                                 disabled>
-                            <i class="ki-filled ki-trash"></i> Delete Permanently
+                            <i class="ki-filled ki-trash"></i> <span id="deleteButtonText">Delete Permanently</span>
                         </button>
                     </div>
                 </form>
@@ -316,11 +317,35 @@
         }
 
         function closeDeleteModal() {
-            document.getElementById('deleteModal').classList.add('hidden');
-            document.getElementById('deleteModal').classList.remove('flex');
+            const deleteModal = document.getElementById('deleteModal');
+            const deleteForm = document.getElementById('deleteForm');
+            const deleteButton = document.getElementById('deleteButton');
+            const deleteButtonText = document.getElementById('deleteButtonText');
+            const cancelButton = document.getElementById('cancelButton');
+            const confirmationInput = document.getElementById('confirmation_text');
+            
+            deleteModal.classList.add('hidden');
+            deleteModal.classList.remove('flex');
             document.body.style.overflow = '';
-            document.getElementById('deleteForm').reset();
-            document.getElementById('deleteButton').disabled = true;
+            deleteForm.reset();
+            
+            // Reset button state
+            if (deleteButton) {
+                deleteButton.disabled = true;
+                deleteButton.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-green-600', 'hover:bg-green-700');
+                deleteButton.classList.add('kt-btn-danger');
+            }
+            if (deleteButtonText) {
+                deleteButtonText.innerHTML = '<i class="ki-filled ki-trash"></i> Delete Permanently';
+            }
+            
+            // Re-enable form elements
+            if (cancelButton) cancelButton.disabled = false;
+            if (confirmationInput) confirmationInput.disabled = false;
+            const reasonInput = document.getElementById('reason');
+            if (reasonInput) reasonInput.disabled = false;
+            const understandCheckbox = document.getElementById('understand');
+            if (understandCheckbox) understandCheckbox.disabled = false;
         }
 
         // Enable delete button only when DELETE is typed and checkbox is checked
@@ -328,6 +353,9 @@
             const confirmationInput = document.getElementById('confirmation_text');
             const understandCheckbox = document.getElementById('understand');
             const deleteButton = document.getElementById('deleteButton');
+            const deleteButtonText = document.getElementById('deleteButtonText');
+            const deleteForm = document.getElementById('deleteForm');
+            const cancelButton = document.getElementById('cancelButton');
 
             function checkDeleteConditions() {
                 const confirmationText = confirmationInput.value.trim();
@@ -339,6 +367,112 @@
 
             confirmationInput.addEventListener('input', checkDeleteConditions);
             understandCheckbox.addEventListener('change', checkDeleteConditions);
+
+            // Handle form submission via AJAX
+            deleteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Disable form elements during deletion
+                deleteButton.disabled = true;
+                cancelButton.disabled = true;
+                confirmationInput.disabled = true;
+                document.getElementById('reason').disabled = true;
+                document.getElementById('understand').disabled = true;
+
+                // Update button to show loading state
+                deleteButtonText.innerHTML = '<span class="inline-flex items-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...</span>';
+                deleteButton.classList.add('opacity-75', 'cursor-not-allowed');
+
+                // Get form data
+                const formData = new FormData(deleteForm);
+                const url = deleteForm.action;
+
+                // Send AJAX request
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || 'An error occurred');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        deleteButtonText.innerHTML = '<i class="ki-filled ki-check"></i> Deleted Successfully';
+                        deleteButton.classList.remove('kt-btn-danger');
+                        deleteButton.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                        // Close modal after a brief delay
+                        setTimeout(() => {
+                            closeDeleteModal();
+                            
+                            // Show success message and redirect
+                            if (data.redirect_url) {
+                                // Create a temporary success message element
+                                const successDiv = document.createElement('div');
+                                successDiv.className = 'fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg';
+                                successDiv.innerHTML = `
+                                    <div class="flex items-center gap-3">
+                                        <i class="ki-filled ki-check text-xl"></i>
+                                        <span>${data.message}</span>
+                                    </div>
+                                `;
+                                document.body.appendChild(successDiv);
+
+                                // Redirect after showing message
+                                setTimeout(() => {
+                                    window.location.href = data.redirect_url;
+                                }, 1500);
+                            }
+                        }, 1000);
+                    }
+                })
+                .catch(error => {
+                    // Re-enable form elements
+                    deleteButton.disabled = false;
+                    cancelButton.disabled = false;
+                    confirmationInput.disabled = false;
+                    document.getElementById('reason').disabled = false;
+                    document.getElementById('understand').disabled = false;
+
+                    // Reset button
+                    deleteButtonText.innerHTML = '<i class="ki-filled ki-trash"></i> Delete Permanently';
+                    deleteButton.classList.remove('opacity-75', 'cursor-not-allowed');
+
+                    // Show error message in a better way
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'fixed top-4 right-4 z-50 bg-red-600 text-white px-6 py-4 rounded-lg shadow-lg max-w-md';
+                    errorDiv.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <i class="ki-filled ki-information-2 text-xl"></i>
+                            <div>
+                                <div class="font-semibold">Deletion Failed</div>
+                                <div class="text-sm">${error.message || 'An error occurred while deleting the officer. Please try again.'}</div>
+                            </div>
+                            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
+                                <i class="ki-filled ki-cross"></i>
+                            </button>
+                        </div>
+                    `;
+                    document.body.appendChild(errorDiv);
+
+                    // Auto-remove error message after 5 seconds
+                    setTimeout(() => {
+                        if (errorDiv.parentElement) {
+                            errorDiv.remove();
+                        }
+                    }, 5000);
+                });
+            });
         });
 
         // Close modal on outside click

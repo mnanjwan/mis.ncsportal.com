@@ -66,18 +66,17 @@ class OfficerDeletionController extends Controller
 
         $query = Officer::with(['presentStation.zone', 'currentPosting']);
 
-        // Filter by zone
-        if ($selectedZoneId) {
+        // Filter by command (if command is selected, use it; otherwise filter by zone if zone is selected)
+        if ($selectedCommandId) {
+            // If command is selected, filter by that specific command
+            $query->where('present_station', $selectedCommandId);
+        } elseif ($selectedZoneId) {
+            // If only zone is selected (no command), filter by all commands in that zone
             $zoneCommandIds = Command::where('zone_id', $selectedZoneId)
                 ->where('is_active', true)
                 ->pluck('id')
                 ->toArray();
             $query->whereIn('present_station', $zoneCommandIds);
-        }
-
-        // Filter by command
-        if ($selectedCommandId) {
-            $query->where('present_station', $selectedCommandId);
         }
 
         // Search filter
@@ -394,8 +393,19 @@ class OfficerDeletionController extends Controller
                 ? 'hrd.officers.delete.index' 
                 : 'establishment.officers.delete.index';
             
+            $successMessage = "Officer {$appointmentNumber} ({$officerName}) has been permanently deleted from the system.";
+
+            // Return JSON response for AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMessage,
+                    'redirect_url' => route($redirectRoute),
+                ]);
+            }
+            
             return redirect()->route($redirectRoute)
-                ->with('success', "Officer {$appointmentNumber} ({$officerName}) has been permanently deleted from the system.");
+                ->with('success', $successMessage);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -405,8 +415,18 @@ class OfficerDeletionController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            $errorMessage = 'An error occurred while deleting the officer. Please try again or contact support.';
+
+            // Return JSON response for AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                ], 500);
+            }
+
             return redirect()->back()
-                ->with('error', 'An error occurred while deleting the officer. Please try again or contact support.');
+                ->with('error', $errorMessage);
         }
     }
 

@@ -576,14 +576,40 @@ class NotificationService
             $fromCommand = $staffOrder->fromCommand ? $staffOrder->fromCommand->name : 'Unknown';
             $toCommand = $staffOrder->toCommand ? $staffOrder->toCommand->name : 'Unknown';
 
-            $notifications[] = $this->notify(
+            // Create in-app notification (without email via notify method)
+            $notification = $this->notify(
                 $officer->user,
                 'staff_order_created',
                 'Staff Order Created',
                 "A new staff order has been created. You are being posted from {$fromCommand} to {$toCommand}. Order Number: {$staffOrder->order_number}",
                 'staff_order',
-                $staffOrder->id
+                $staffOrder->id,
+                false // Don't send email via notify method, we'll use job
             );
+
+            // Send email via job
+            if ($officer->user->email) {
+                try {
+                    \App\Jobs\SendStaffOrderCreatedMailJob::dispatch(
+                        $staffOrder,
+                        $officer->user,
+                        $fromCommand,
+                        $toCommand
+                    );
+                    Log::info('Staff order created email job dispatched', [
+                        'user_id' => $officer->user->id,
+                        'staff_order_id' => $staffOrder->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch staff order created email job', [
+                        'user_id' => $officer->user->id,
+                        'staff_order_id' => $staffOrder->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
         }
 
         return $notifications;
