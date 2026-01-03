@@ -380,7 +380,7 @@ class TestDataSeeder extends Seeder
                     PromotionEligibilityList::create([
                         'year' => 2025,
                         'generated_by' => $roleUsers['HRD']->id,
-                        'status' => 'ACTIVE',
+                        'status' => 'FINALIZED', // Valid values: DRAFT, FINALIZED, SUBMITTED_TO_BOARD
                     ]);
                 }
                 $this->command->info("✅ Created 3 Promotion Eligibility Lists");
@@ -397,7 +397,7 @@ class TestDataSeeder extends Seeder
                     RetirementList::create([
                         'year' => 2025,
                         'generated_by' => $roleUsers['HRD']->id,
-                        'status' => 'ACTIVE',
+                        'status' => 'FINALIZED', // Valid values: DRAFT, FINALIZED, NOTIFIED
                     ]);
                 }
                 $this->command->info("✅ Created 2 Retirement Lists");

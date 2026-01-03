@@ -294,7 +294,7 @@ class HRDTestDataSeeder extends Seeder
                     'order_number' => $orderNumber,
                     'criteria_months_at_station' => rand(12, 36),
                     'manning_request_id' => $request->id,
-                    'status' => ['DRAFT', 'ACTIVE'][rand(0, 1)],
+                    'status' => ['DRAFT', 'PUBLISHED'][rand(0, 1)], // Valid values: DRAFT, PUBLISHED, CANCELLED
                     'created_by' => $userId,
                 ]);
             }
