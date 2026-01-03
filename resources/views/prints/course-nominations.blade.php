@@ -173,7 +173,7 @@
     
     <div class="header">
         <h1>NIGERIA CUSTOMS SERVICE</h1>
-        <h1>LIST OF SUCCESSFUL CANDIDATES</h1>
+        <h1>LIST OF NOMINATED OFFICERS</h1>
         @php
             $statusText = '';
             if (isset($tab)) {
