@@ -6,6 +6,7 @@ use App\Models\Officer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class NewRecruitCreatedMail extends Mailable
 {
@@ -28,6 +29,12 @@ class NewRecruitCreatedMail extends Mailable
      */
     public function build()
     {
+        Log::info('NewRecruitCreatedMail: build() method called', [
+            'recruit_id' => $this->recruit->id ?? null,
+            'recruit_email' => $this->recruit->email ?? null,
+            'appointment_number' => $this->recruit->appointment_number ?? null,
+        ]);
+
         return $this->subject('Welcome to NCS - Your Recruit Profile Has Been Created')
                     ->view('emails.new-recruit-created')
                     ->with([
