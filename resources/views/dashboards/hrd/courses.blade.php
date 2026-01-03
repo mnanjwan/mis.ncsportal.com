@@ -306,23 +306,38 @@
         </div>
         <form action="{{ route('hrd.courses.print') }}" method="GET" target="_blank">
             <div class="kt-modal-body py-5 px-5 space-y-4">
-                <!-- Course Selection -->
+                <!-- Course Selection (Searchable) -->
                 <div class="space-y-2">
-                    <label for="print_course_name" class="block text-sm font-medium text-foreground">
+                    <label for="print_course_search" class="block text-sm font-medium text-foreground">
                         Course <span class="text-danger">*</span>
                     </label>
-                    <select name="course_name" 
-                            id="print_course_name"
-                            class="kt-input w-full"
-                            required>
-                        <option value="">All Courses</option>
-                        @php
-                            $uniqueCourses = \App\Models\OfficerCourse::distinct()->orderBy('course_name')->pluck('course_name');
-                        @endphp
-                        @foreach($uniqueCourses as $courseName)
-                            <option value="{{ $courseName }}">{{ $courseName }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative">
+                        <input type="text" 
+                               id="print_course_search" 
+                               class="kt-input w-full" 
+                               placeholder="Search course or select 'All Courses'..."
+                               autocomplete="off"
+                               value="">
+                        <input type="hidden" 
+                               name="course_name" 
+                               id="print_course_name"
+                               value=""
+                               required>
+                        <div id="print_course_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                            <!-- Options will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div id="print_selected_course" class="mt-2 p-2 bg-muted/50 rounded-lg hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium" id="print_selected_course_name"></span>
+                            <button type="button" 
+                                    id="print_clear_course" 
+                                    class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
+                                <i class="ki-filled ki-cross"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Status Selection -->
@@ -372,6 +387,117 @@
             timerProgressBar: true
         });
     @endif
+
+    // Course search functionality for print modal
+    @php
+        $uniqueCourses = \App\Models\OfficerCourse::distinct()->orderBy('course_name')->pluck('course_name');
+        $coursesData = $uniqueCourses->map(function($courseName) {
+            return [
+                'name' => $courseName,
+                'value' => $courseName,
+            ];
+        })->values();
+        // Add "All Courses" option
+        $coursesData->prepend(['name' => 'All Courses', 'value' => '']);
+    @endphp
+    const printCourses = @json($coursesData);
+    let selectedPrintCourse = null;
+
+    const printCourseSearchInput = document.getElementById('print_course_search');
+    const printCourseHiddenInput = document.getElementById('print_course_name');
+    const printCourseDropdown = document.getElementById('print_course_dropdown');
+    const printSelectedCourseDiv = document.getElementById('print_selected_course');
+    const printSelectedCourseName = document.getElementById('print_selected_course_name');
+    const printClearCourseBtn = document.getElementById('print_clear_course');
+
+    if (printCourseSearchInput && printCourseHiddenInput && printCourseDropdown) {
+        // Search functionality
+        printCourseSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            if (searchTerm.length === 0) {
+                printCourseDropdown.classList.add('hidden');
+                return;
+            }
+
+            const filtered = printCourses.filter(course => {
+                return course.name.toLowerCase().includes(searchTerm);
+            });
+
+            if (filtered.length > 0) {
+                printCourseDropdown.innerHTML = filtered.map(course => {
+                    return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
+                                'data-value="' + (course.value || '') + '" ' +
+                                'data-name="' + course.name.replace(/"/g, '&quot;') + '">' +
+                                '<div class="text-sm font-medium text-foreground">' + course.name + '</div>' +
+                            '</div>';
+                }).join('');
+                printCourseDropdown.classList.remove('hidden');
+            } else {
+                printCourseDropdown.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No courses found</div>';
+                printCourseDropdown.classList.remove('hidden');
+            }
+        });
+
+        // Handle option selection
+        printCourseDropdown.addEventListener('click', function(e) {
+            const option = e.target.closest('[data-value]');
+            if (option) {
+                const courseValue = option.dataset.value || '';
+                const courseName = option.dataset.name;
+                
+                selectedPrintCourse = { value: courseValue, name: courseName };
+                printCourseHiddenInput.value = courseValue;
+                printCourseSearchInput.value = courseName;
+                
+                if (courseValue === '') {
+                    printSelectedCourseDiv.classList.add('hidden');
+                } else {
+                    printSelectedCourseName.textContent = courseName;
+                    printSelectedCourseDiv.classList.remove('hidden');
+                }
+                
+                printCourseDropdown.classList.add('hidden');
+            }
+        });
+
+        // Show dropdown when focusing on search input
+        printCourseSearchInput.addEventListener('focus', function() {
+            if (this.value.trim().length > 0) {
+                this.dispatchEvent(new Event('input'));
+            } else {
+                // Show all courses when focused and empty
+                printCourseDropdown.innerHTML = printCourses.map(course => {
+                    return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
+                                'data-value="' + (course.value || '') + '" ' +
+                                'data-name="' + course.name.replace(/"/g, '&quot;') + '">' +
+                                '<div class="text-sm font-medium text-foreground">' + course.name + '</div>' +
+                            '</div>';
+                }).join('');
+                printCourseDropdown.classList.remove('hidden');
+            }
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (printCourseSearchInput && !printCourseSearchInput.contains(e.target) && 
+                printCourseDropdown && !printCourseDropdown.contains(e.target) && 
+                printSelectedCourseDiv && !printSelectedCourseDiv.contains(e.target)) {
+                printCourseDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Clear selection
+    if (printClearCourseBtn) {
+        printClearCourseBtn.addEventListener('click', function() {
+            selectedPrintCourse = null;
+            if (printCourseHiddenInput) printCourseHiddenInput.value = '';
+            if (printCourseSearchInput) printCourseSearchInput.value = '';
+            if (printSelectedCourseDiv) printSelectedCourseDiv.classList.add('hidden');
+            if (printCourseDropdown) printCourseDropdown.classList.add('hidden');
+        });
+    }
 </script>
 @endpush
 @endsection
