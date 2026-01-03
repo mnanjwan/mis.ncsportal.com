@@ -65,7 +65,32 @@ class CompleteSystemSeeder extends Seeder
         // Step 2: Ensure prerequisites exist
         $this->command->info("\n📋 Step 2: Ensuring prerequisites exist...");
         $commands = $this->ensurePrerequisites();
+        
+        // Ensure APAPA command exists (required for testing)
         $apapaCommand = Command::where('code', 'APAPA')->first();
+        if (!$apapaCommand) {
+            $this->command->warn('⚠️  APAPA command not found after ZoneAndCommandSeeder. Creating it now...');
+            $zoneA = Zone::where('code', 'ZONE_A')->first();
+            if (!$zoneA) {
+                $zoneA = Zone::firstOrCreate(
+                    ['code' => 'ZONE_A'],
+                    ['name' => 'Zone A HQ', 'description' => 'Zone A Headquarters', 'is_active' => true]
+                );
+                $this->command->info("   ✓ Created ZONE_A");
+            }
+            $apapaCommand = Command::firstOrCreate(
+                ['code' => 'APAPA'],
+                [
+                    'name' => 'APAPA',
+                    'location' => 'Lagos',
+                    'zone_id' => $zoneA->id,
+                    'is_active' => true,
+                ]
+            );
+            $this->command->info("   ✓ Created APAPA command (ID: {$apapaCommand->id})");
+        } else {
+            $this->command->info("   ✓ APAPA command found (ID: {$apapaCommand->id})");
+        }
 
         // Step 3: Create users for ALL roles
         $this->command->info("\n📋 Step 3: Creating users for all roles...");
