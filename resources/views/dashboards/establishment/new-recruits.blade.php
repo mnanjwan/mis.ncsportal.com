@@ -588,7 +588,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                                             <span>Assign Appointment</span>
                                                         </button>
                                                     @endif
-                                                    @if($recruit->onboarding_status === 'pending' || $recruit->onboarding_status === 'link_sent')
+                                                    @if($recruit->onboarding_status === 'pending' || ($recruit->onboarding_status === 'link_sent' && !$recruit->onboarding_token))
                                                         <form action="{{ route('establishment.onboarding.initiate') }}" method="POST" class="inline">
                                                             @csrf
                                                             <input type="hidden" name="recruit_id" value="{{ $recruit->id }}">
@@ -600,7 +600,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                                             </button>
                                                         </form>
                                                     @endif
-                                                    @if($recruit->onboarding_status === 'link_sent' || $recruit->onboarding_status === 'in_progress')
+                                                    @if($recruit->onboarding_status === 'link_sent' || $recruit->onboarding_status === 'in_progress' || ($recruit->onboarding_status === 'pending' && $recruit->onboarding_token))
                                                         <form action="{{ route('establishment.onboarding.resend-link', $recruit->id) }}" method="POST" class="inline">
                                                             @csrf
                                                             <button type="submit" 

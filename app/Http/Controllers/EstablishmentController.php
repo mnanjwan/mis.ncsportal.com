@@ -1559,6 +1559,12 @@ class EstablishmentController extends Controller
             // Refresh model to ensure token is loaded
             $recruit->refresh();
 
+            // Update status to link_sent immediately so "Resend Link" option shows
+            $recruit->update([
+                'onboarding_status' => 'link_sent',
+                'onboarding_link_sent_at' => now(),
+            ]);
+
             // Generate onboarding link (public route)
             $onboardingLink = route('recruit.onboarding.step1', ['token' => $onboardingToken]);
 
@@ -1613,7 +1619,8 @@ class EstablishmentController extends Controller
             $onboardingToken = Str::random(64);
             $recruit->update([
                 'onboarding_token' => $onboardingToken,
-                'onboarding_status' => 'pending',
+                'onboarding_status' => 'link_sent', // Set immediately so "Resend Link" option shows
+                'onboarding_link_sent_at' => now(),
             ]);
             $recruit->refresh(); // Ensure token is loaded
 
