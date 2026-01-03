@@ -598,7 +598,7 @@ class ComprehensiveSeeder extends Seeder
             'order_number' => 'MO/2025/001',
             'criteria_months_at_station' => 24,
             'created_by' => $hrdUser->id,
-            'status' => 'ACTIVE',
+            'status' => 'PUBLISHED', // Changed from 'ACTIVE' - enum values are now: DRAFT, PUBLISHED, CANCELLED
         ]);
         
         // Create postings for some officers
