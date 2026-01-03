@@ -148,16 +148,17 @@ class CompleteSystemSeeder extends Seeder
 
     private function ensurePrerequisites(): \Illuminate\Database\Eloquent\Collection
     {
+        // Always ensure zones and commands are up-to-date (even if they exist)
+        // This ensures correct zone relationships and command data
+        $this->call(ZoneAndCommandSeeder::class);
         $commands = Command::all();
-        if ($commands->isEmpty()) {
-            $this->call(ZoneAndCommandSeeder::class);
-            $commands = Command::all();
-        }
 
+        // Ensure roles exist (will updateOrCreate if needed)
         if (Role::count() < 18) {
             $this->call(RoleSeeder::class);
         }
 
+        // Ensure leave types exist
         if (LeaveType::count() < 5) {
             $this->call(LeaveTypeSeeder::class);
         }

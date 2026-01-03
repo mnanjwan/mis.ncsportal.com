@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\ChatRoom;
 use App\Models\ChatRoomMember;
 use App\Models\Command;
+use App\Models\Zone;
 use App\Models\DeceasedOfficer;
 use App\Models\DutyRoster;
 use App\Models\Emolument;
@@ -38,12 +39,12 @@ class ComprehensiveSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Ensure Roles and Commands exist (assuming RoleSeeder and CommandSeeder ran)
-        $commands = Command::all();
-        if ($commands->isEmpty()) {
-            $this->call(CommandSeeder::class);
-            $commands = Command::all();
+        // 1. Ensure Roles, Zones and Commands exist (always ensure they're up-to-date)
+        // Use ZoneAndCommandSeeder to ensure zones/commands are correct
+        if (Command::count() == 0 || Zone::count() == 0) {
+            $this->call(ZoneAndCommandSeeder::class);
         }
+        $commands = Command::all();
 
         // 2. Create Users for each Role
         $roles = Role::all();
