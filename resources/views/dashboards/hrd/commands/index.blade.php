@@ -45,16 +45,13 @@
                 <form method="GET" action="{{ route('hrd.commands.index') }}" class="flex flex-col gap-4">
                     <div class="flex flex-col md:flex-row gap-3 items-end">
                         <!-- Search Input -->
-                        <div class="flex-1 min-w-[250px]">
+                        <div class="w-full md:flex-1">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
-                            <div class="relative">
-                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                                <input type="text" 
-                                       name="search" 
-                                       value="{{ request('search') }}"
-                                       class="kt-input pl-10 w-full" 
-                                       placeholder="Search by name, code, or location...">
-                            </div>
+                            <input type="text" 
+                                   name="search" 
+                                   value="{{ request('search') }}"
+                                   class="kt-input w-full" 
+                                   placeholder="Search by name, code, or location...">
                         </div>
 
                         <!-- Zone Select -->
