@@ -264,6 +264,9 @@ class CourseController extends Controller
         // Get tab filter (all, in_progress, completed)
         $tab = $request->get('tab', 'all');
 
+        // Get course name filter
+        $courseName = $request->get('course_name');
+
         // Get date range filters
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
@@ -274,6 +277,11 @@ class CourseController extends Controller
                 $q->where('is_active', true)
                   ->where('is_deceased', false);
             });
+
+        // Apply course name filter if provided
+        if ($courseName) {
+            $query->where('course_name', $courseName);
+        }
 
         // Apply tab filter (status filter)
         if ($tab === 'in_progress') {
@@ -319,7 +327,7 @@ class CourseController extends Controller
             $printData[] = $courseData;
         }
 
-        return view('prints.course-nominations', compact('printData', 'startDate', 'endDate', 'tab'));
+        return view('prints.course-nominations', compact('printData', 'startDate', 'endDate', 'tab', 'courseName'));
     }
 }
 

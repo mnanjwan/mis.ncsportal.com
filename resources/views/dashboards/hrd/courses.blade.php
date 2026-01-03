@@ -28,11 +28,11 @@
         <div class="kt-card-header">
             <h3 class="kt-card-title">Course Nominations</h3>
             <div class="kt-card-toolbar flex items-center gap-2">
-                <a href="{{ route('hrd.courses.print', ['tab' => $tab ?? 'all']) }}" 
-                   class="kt-btn kt-btn-sm kt-btn-primary"
-                   target="_blank">
+                <button type="button" 
+                        data-kt-modal-toggle="#print-modal"
+                        class="kt-btn kt-btn-sm kt-btn-primary">
                     <i class="ki-filled ki-printer"></i> Print
-                </a>
+                </button>
                 <a href="{{ route('hrd.courses.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Nominate Officers
                 </a>
@@ -294,6 +294,69 @@
         </div>
     @endif
 @endforeach
+
+<!-- Print Options Modal -->
+<div class="kt-modal" data-kt-modal="true" id="print-modal">
+    <div class="kt-modal-content max-w-[500px]">
+        <div class="kt-modal-header py-4 px-5">
+            <h3 class="kt-modal-title">Print Course Nominations</h3>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <form action="{{ route('hrd.courses.print') }}" method="GET" target="_blank">
+            <div class="kt-modal-body py-5 px-5 space-y-4">
+                <!-- Course Selection -->
+                <div class="space-y-2">
+                    <label for="print_course_name" class="block text-sm font-medium text-foreground">
+                        Course <span class="text-danger">*</span>
+                    </label>
+                    <select name="course_name" 
+                            id="print_course_name"
+                            class="kt-input w-full"
+                            required>
+                        <option value="">All Courses</option>
+                        @php
+                            $uniqueCourses = \App\Models\OfficerCourse::distinct()->orderBy('course_name')->pluck('course_name');
+                        @endphp
+                        @foreach($uniqueCourses as $courseName)
+                            <option value="{{ $courseName }}">{{ $courseName }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Status Selection -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-foreground">
+                        Status <span class="text-danger">*</span>
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="tab" value="all" class="kt-radio" checked>
+                            <span class="text-sm text-foreground">All</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="tab" value="in_progress" class="kt-radio">
+                            <span class="text-sm text-foreground">In Progress</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="tab" value="completed" class="kt-radio">
+                            <span class="text-sm text-foreground">Completed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
+                    Cancel
+                </button>
+                <button type="submit" class="kt-btn kt-btn-primary">
+                    <i class="ki-filled ki-printer"></i> Print
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @push('scripts')
 <script>

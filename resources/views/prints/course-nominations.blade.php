@@ -146,6 +146,9 @@
     <div class="no-print" style="text-align: center; margin-bottom: 20px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
         <form method="GET" action="{{ route('hrd.courses.print') }}" style="display: flex; gap: 15px; align-items: flex-end; justify-content: center; flex-wrap: wrap; margin-bottom: 15px;">
             <input type="hidden" name="tab" value="{{ $tab ?? 'all' }}">
+            @if(isset($courseName) && $courseName)
+                <input type="hidden" name="course_name" value="{{ $courseName }}">
+            @endif
             <div style="display: flex; flex-direction: column; gap: 5px;">
                 <label for="start_date" style="font-weight: 600; font-size: 14px;">Start Date:</label>
                 <input type="date" id="start_date" name="start_date" value="{{ $startDate ?? '' }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
@@ -157,8 +160,14 @@
             <button type="submit" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: 600;">
                 Filter
             </button>
-            <a href="{{ route('hrd.courses.print', ['tab' => $tab ?? 'all']) }}" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-block;">
-                Clear
+            @php
+                $clearParams = ['tab' => $tab ?? 'all'];
+                if (isset($courseName) && $courseName) {
+                    $clearParams['course_name'] = $courseName;
+                }
+            @endphp
+            <a href="{{ route('hrd.courses.print', $clearParams) }}" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-block;">
+                Clear Dates
             </a>
         </form>
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: 600;">
