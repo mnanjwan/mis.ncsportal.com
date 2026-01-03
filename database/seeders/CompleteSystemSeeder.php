@@ -295,6 +295,12 @@ class CompleteSystemSeeder extends Seeder
 
     private function createOfficers($commands, $apapaCommand, $hrdUser): array
     {
+        // Ensure APAPA command exists
+        if (!$apapaCommand) {
+            $this->command->error('❌ APAPA command is required but not found! Cannot create officers.');
+            return [];
+        }
+        
         $ranks = [
             'CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC',
             'CSC', 'SC', 'DSC', 'ASC I', 'ASC II',
