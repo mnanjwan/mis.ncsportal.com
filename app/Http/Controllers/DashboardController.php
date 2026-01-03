@@ -1475,7 +1475,17 @@ class DashboardController extends Controller
             return redirect()->route('onboarding.step1')->with('error', 'Please complete all steps before preview.');
         }
 
-        return view('forms.onboarding.preview', compact('step1', 'step2', 'step3', 'step4'));
+        // Load zone and command names for display
+        $zone = null;
+        $command = null;
+        if (!empty($step2['zone_id'])) {
+            $zone = \App\Models\Zone::find($step2['zone_id']);
+        }
+        if (!empty($step2['command_id'])) {
+            $command = \App\Models\Command::find($step2['command_id']);
+        }
+
+        return view('forms.onboarding.preview', compact('step1', 'step2', 'step3', 'step4', 'zone', 'command'));
     }
 
     public function finalSubmitOnboarding(Request $request)

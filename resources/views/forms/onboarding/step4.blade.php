@@ -57,12 +57,12 @@
                         <!-- Next of Kin Section -->
                 <div class="flex flex-col gap-5 pt-5 border-t border-input">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div>
+                        <div class="flex-1">
                             <h3 class="text-lg font-semibold">Next of Kin Information</h3>
                             <p class="text-sm text-muted mt-1">You can add up to 5 next of kin. At least one must be marked as primary.</p>
                         </div>
-                        <button type="button" id="add-nok-btn" class="kt-btn kt-btn-sm text-white w-full sm:w-auto" style="background-color: #068b57; border-color: #068b57;">
-                            <i class="ki-filled ki-plus" style="color: white;"></i> Add Next of Kin
+                        <button type="button" id="add-nok-btn" class="kt-btn kt-btn-sm kt-btn-primary whitespace-nowrap flex-shrink-0">
+                            <i class="ki-filled ki-plus"></i> Add Next of Kin
                         </button>
                     </div>
                     
@@ -88,8 +88,19 @@
                 
                 <div class="flex flex-col gap-1 pt-5 border-t border-input">
                     <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
-                    <input type="file" name="documents[]" class="kt-input" multiple accept="image/jpeg,image/jpg,image/png"/>
-                    <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space.</small>
+                    <div class="flex flex-col gap-3">
+                        <div class="relative">
+                            <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png"/>
+                            <label for="documents-input" class="kt-btn kt-btn-primary cursor-pointer inline-flex items-center justify-center gap-2">
+                                <i class="ki-filled ki-file-up"></i>
+                                <span id="upload-button-text">Choose Files</span>
+                            </label>
+                        </div>
+                        <div id="selected-files-list" class="flex flex-col gap-2 hidden">
+                            <!-- Selected files will be displayed here -->
+                        </div>
+                        <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space.</small>
+                    </div>
                 </div>
                 
                 <div class="kt-alert kt-alert-warning mt-5">
@@ -129,7 +140,7 @@
                                                  alt="Profile Photo"
                                                  class="hidden"
                                                  style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;"
-                                                 src="{{ old('profile_picture_preview', $savedData['profile_picture_preview'] ?? '') }}" />
+                                                 src="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}" />
                                         </div>
                                         <!-- Passport photo label -->
                                         <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-white text-xs px-3 py-1 rounded whitespace-nowrap" style="background-color: #068b57;">
@@ -143,7 +154,7 @@
                                         Upload Photo
                                     </label>
                                     <input type="file" id="onboarding-profile-picture-upload" class="hidden" accept="image/*">
-                                    <input type="hidden" name="profile_picture_data" id="profile_picture_data" required>
+                                    <input type="hidden" name="profile_picture_data" id="profile_picture_data" value="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}" required>
                                     
                                     <!-- Error message for profile picture -->
                                     <span id="profile_picture_error" class="error-message text-danger text-sm font-medium hidden" style="color: #dc3545 !important;"></span>
@@ -247,6 +258,33 @@
         .text-primary {
             color: #068b57 !important;
         }
+        
+        /* Next of Kin Button Styles */
+        #add-nok-btn {
+            background-color: #068b57 !important;
+            border-color: #068b57 !important;
+            color: white !important;
+        }
+        
+        #add-nok-btn:hover {
+            background-color: #057a4d !important;
+            border-color: #057a4d !important;
+        }
+        
+        .remove-nok-btn {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+            color: white !important;
+        }
+        
+        .remove-nok-btn:hover {
+            background-color: #c82333 !important;
+            border-color: #c82333 !important;
+        }
+        
+        .remove-nok-btn i {
+            color: white !important;
+        }
     </style>
 @endpush
 
@@ -334,9 +372,9 @@ function addNOKEntry(data = null) {
     
     entryDiv.innerHTML = `
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-input">
-            <h4 class="text-md font-semibold">Next of Kin #${entryId + 1}</h4>
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                <label class="flex items-center gap-2 cursor-pointer">
+            <h4 class="text-md font-semibold flex-1">Next of Kin #${entryId + 1}</h4>
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <label class="flex items-center gap-2 cursor-pointer whitespace-nowrap">
                     <input type="radio" 
                            name="primary_nok" 
                            value="${entryId}"
@@ -346,7 +384,7 @@ function addNOKEntry(data = null) {
                     <span class="text-sm font-medium">Primary</span>
                 </label>
                 <button type="button" 
-                        class="kt-btn kt-btn-sm kt-btn-danger remove-nok-btn w-full sm:w-auto" 
+                        class="kt-btn kt-btn-sm kt-btn-danger remove-nok-btn whitespace-nowrap" 
                         onclick="removeNOKEntry(${entryId})">
                     <i class="ki-filled ki-trash"></i> Remove
                 </button>
@@ -633,6 +671,7 @@ function validateStep4() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeNOKSection();
     initializeProfilePictureUpload();
+    loadSavedDocuments();
 });
 
 // Profile Picture Upload Functionality
@@ -652,14 +691,41 @@ function initializeProfilePictureUpload() {
     // Check if there's a saved image on load
     if (profileImg) {
         const imgSrc = profileImg.getAttribute('src');
-        // If there's a valid image source (not default avatar and not empty)
-        if (imgSrc && imgSrc.trim() !== '' && !imgSrc.includes('300-1.png') && !imgSrc.includes('data:image') && imgSrc !== window.location.href) {
-            profileImg.classList.remove('hidden');
-            if (profileIcon) profileIcon.classList.add('hidden');
-        } else if (profileImg.src && profileImg.src.includes('data:image')) {
-            // If there's base64 data, show the image
-            profileImg.classList.remove('hidden');
-            if (profileIcon) profileIcon.classList.add('hidden');
+        // If there's base64 data (data:image), show the image
+        if (imgSrc && imgSrc.trim() !== '' && imgSrc.startsWith('data:image')) {
+            // Set up onload handler to show image when loaded
+            profileImg.onload = function() {
+                profileImg.classList.remove('hidden');
+                profileImg.style.display = 'block';
+                profileImg.style.visibility = 'visible';
+                profileImg.style.opacity = '1';
+                if (profileIcon) {
+                    profileIcon.classList.add('hidden');
+                    profileIcon.style.display = 'none';
+                }
+            };
+            profileImg.onerror = function() {
+                // If image fails to load, show icon
+                profileImg.classList.add('hidden');
+                profileImg.style.display = 'none';
+                if (profileIcon) {
+                    profileIcon.classList.remove('hidden');
+                    profileIcon.style.display = 'flex';
+                }
+            };
+            // Trigger load check
+            if (profileImg.complete && profileImg.naturalWidth > 0) {
+                profileImg.onload();
+            } else {
+                // Force reload to trigger onload
+                const currentSrc = profileImg.src;
+                profileImg.src = '';
+                profileImg.src = currentSrc;
+            }
+            // Also set the value in the hidden input
+            if (profilePictureData) {
+                profilePictureData.value = imgSrc;
+            }
         } else {
             // Otherwise show the icon
             profileImg.classList.add('hidden');
@@ -879,6 +945,197 @@ document.getElementById('accept_disclaimer').addEventListener('change', function
         }
     }
 });
+
+// Handle document file uploads
+const documentsInput = document.getElementById('documents-input');
+const selectedFilesList = document.getElementById('selected-files-list');
+const uploadButtonText = document.getElementById('upload-button-text');
+let selectedFiles = [];
+let filePreviewUrls = []; // Store object URLs for cleanup
+
+// Load saved documents from session
+function loadSavedDocuments() {
+    const savedDocuments = @json($savedData['documents'] ?? []);
+    
+    if (savedDocuments && Array.isArray(savedDocuments) && savedDocuments.length > 0) {
+        console.log('Loading saved documents:', savedDocuments);
+        savedDocuments.forEach((doc, index) => {
+            if (doc.temp_path || doc.name) {
+                // Determine MIME type from file extension if not provided
+                let mimeType = doc.type || 'application/octet-stream';
+                if (!mimeType || mimeType === 'application/octet-stream') {
+                    const fileName = doc.name || '';
+                    if (fileName.toLowerCase().endsWith('.png')) {
+                        mimeType = 'image/png';
+                    } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+                        mimeType = 'image/jpeg';
+                    } else if (fileName.toLowerCase().endsWith('.gif')) {
+                        mimeType = 'image/gif';
+                    }
+                }
+                
+                // Create a placeholder file object for display
+                const fileInfo = {
+                    name: doc.name || 'Document',
+                    size: doc.size || 0,
+                    type: mimeType,
+                    temp_path: doc.temp_path || null,
+                    isSaved: true, // Mark as saved document
+                    index: index
+                };
+                
+                console.log('Document info:', fileInfo);
+                
+                // Add to selectedFiles array
+                selectedFiles.push(fileInfo);
+                
+                // For images, create preview URL from server
+                if (mimeType.startsWith('image/') && doc.temp_path) {
+                    // Use server endpoint to preview saved document
+                    const previewUrl = `/onboarding/document-preview?path=${encodeURIComponent(doc.temp_path)}`;
+                    filePreviewUrls.push(previewUrl);
+                    console.log('Added preview URL for image:', previewUrl);
+                } else {
+                    filePreviewUrls.push(null);
+                }
+            }
+        });
+        
+        if (selectedFiles.length > 0) {
+            updateFileDisplay();
+        }
+    }
+}
+
+if (documentsInput) {
+    documentsInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        
+        // Add new files to the list
+        files.forEach(file => {
+            if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                selectedFiles.push(file);
+                // Create preview URL for images
+                if (file.type.startsWith('image/')) {
+                    filePreviewUrls.push(URL.createObjectURL(file));
+                } else {
+                    filePreviewUrls.push(null);
+                }
+            }
+        });
+        
+        updateFileDisplay();
+    });
+}
+
+function updateFileDisplay() {
+    if (selectedFiles.length === 0) {
+        selectedFilesList.classList.add('hidden');
+        uploadButtonText.textContent = 'Choose Files';
+        documentsInput.value = '';
+    } else {
+        selectedFilesList.classList.remove('hidden');
+        uploadButtonText.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`;
+        
+        selectedFilesList.innerHTML = selectedFiles.map((file, index) => {
+            const isImage = file.type && file.type.startsWith('image/');
+            const fileSize = file.size ? (file.size / 1024).toFixed(1) : '0';
+            const previewUrl = filePreviewUrls[index];
+            const isSaved = file.isSaved || false;
+            
+            // Determine image source
+            let imageSrc = null;
+            if (isSaved && isImage && file.temp_path) {
+                // For saved documents, always use server preview URL
+                imageSrc = `/onboarding/document-preview?path=${encodeURIComponent(file.temp_path)}`;
+                console.log('Setting imageSrc for saved document:', imageSrc, 'isImage:', isImage, 'temp_path:', file.temp_path);
+            } else if (!isSaved && isImage && previewUrl) {
+                // For new files, use the blob URL
+                imageSrc = previewUrl;
+            }
+            
+            console.log('File display:', {
+                name: file.name,
+                type: file.type,
+                isImage: isImage,
+                isSaved: isSaved,
+                temp_path: file.temp_path,
+                imageSrc: imageSrc,
+                previewUrl: previewUrl
+            });
+            
+            return `
+                <div class="relative p-3 bg-muted/50 rounded-lg border border-input" data-file-index="${index}">
+                    <div class="flex items-start gap-3">
+                        ${isImage && imageSrc ? `
+                            <div class="flex-shrink-0 relative">
+                                <img src="${imageSrc}" 
+                                     alt="${file.name}" 
+                                     class="w-20 h-20 object-cover rounded-lg border border-input cursor-pointer hover:opacity-80 transition-opacity"
+                                     style="display: block !important; max-width: 80px !important; max-height: 80px !important; min-width: 80px !important; min-height: 80px !important; width: 80px !important; height: 80px !important; visibility: visible !important; opacity: 1 !important;"
+                                     onclick="window.open('${imageSrc}', '_blank')"
+                                     title="Click to view full size"
+                                     onerror="console.error('Image failed to load:', '${imageSrc}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                     onload="console.log('Image loaded successfully:', '${file.name}'); this.style.display='block'; this.style.visibility='visible'; this.style.opacity='1';">
+                                <div class="w-20 h-20 hidden items-center justify-center bg-muted rounded-lg border border-input" style="display: none;">
+                                    <i class="ki-filled ki-file text-primary text-2xl"></i>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="flex-shrink-0 w-20 h-20 flex items-center justify-center bg-muted rounded-lg border border-input">
+                                <i class="ki-filled ki-file text-primary text-2xl"></i>
+                            </div>
+                        `}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-sm font-medium truncate" title="${file.name}">${file.name}</span>
+                                <button type="button" 
+                                        class="kt-btn kt-btn-sm kt-btn-ghost text-danger flex-shrink-0" 
+                                        onclick="removeFile(${index})"
+                                        title="Remove file">
+                                    <i class="ki-filled ki-cross"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-muted">
+                                <span>${fileSize} KB</span>
+                                ${isImage ? `<span>• Image</span>` : `<span>• ${file.type || 'File'}</span>`}
+                                ${isSaved ? `<span class="text-success">• Saved</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Update the file input with remaining files
+        updateFileInput();
+    }
+}
+
+function removeFile(index) {
+    // Revoke object URL to prevent memory leak (only for blob URLs, not server URLs)
+    if (filePreviewUrls[index] && typeof filePreviewUrls[index] === 'string' && filePreviewUrls[index].startsWith('blob:')) {
+        URL.revokeObjectURL(filePreviewUrls[index]);
+    }
+    
+    selectedFiles.splice(index, 1);
+    filePreviewUrls.splice(index, 1);
+    updateFileDisplay();
+}
+
+function updateFileInput() {
+    // Create a new DataTransfer object to hold only NEW files (not saved ones)
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => {
+        // Only add files that are not saved (i.e., newly uploaded)
+        if (!file.isSaved && file instanceof File) {
+            dataTransfer.items.add(file);
+        }
+    });
+    
+    // Replace the files in the input (only new files)
+    documentsInput.files = dataTransfer.files;
+}
 </script>
 @endpush
 @endsection
