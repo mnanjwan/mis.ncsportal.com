@@ -227,42 +227,6 @@
                 <!-- Pagination -->
                 @if($commands->hasPages())
                     <div class="mt-6 pt-4 border-t border-border px-4">
-                    <div class="flex flex-col gap-4">
-                        @forelse($commands as $command)
-                            <div class="kt-card">
-                                <div class="kt-card-content p-4">
-                                    <div class="flex items-start justify-between mb-3">
-                                        <div class="flex-1">
-                                            <h4 class="text-sm font-semibold text-foreground mb-1">{{ $command->name }}</h4>
-                                            <p class="text-xs text-secondary-foreground font-mono mb-2">{{ $command->code }}</p>
-                                            @if($command->zone)
-                                                <p class="text-xs text-secondary-foreground">Zone: {{ $command->zone->name }}</p>
-                                            @endif
-                                        </div>
-                                        <span class="kt-badge kt-badge-{{ $command->is_active ? 'success' : 'danger' }} kt-badge-sm">
-                                            {{ $command->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('hrd.commands.show', $command->id) }}" 
-                                           class="kt-btn kt-btn-sm kt-btn-ghost">
-                                            <i class="ki-filled ki-eye"></i>
-                                        </a>
-                                        <a href="{{ route('hrd.commands.edit', $command->id) }}" 
-                                           class="kt-btn kt-btn-sm kt-btn-ghost">
-                                            <i class="ki-filled ki-notepad-edit"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center py-12">
-                                <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
-                                <p class="text-secondary-foreground mb-4">No commands found</p>
-                                <a href="{{ route('hrd.commands.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                                    <i class="ki-filled ki-plus"></i> Create First Command
-                                </a>
-                            </div>
                         {{ $commands->withQueryString()->links() }}
                     </div>
                 @endif
