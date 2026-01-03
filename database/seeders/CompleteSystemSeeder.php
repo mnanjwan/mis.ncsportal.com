@@ -351,15 +351,20 @@ class CompleteSystemSeeder extends Seeder
                 $dateOfBirth = Carbon::now()->subYears(rand(25, 50))->subDays(rand(0, 365));
                 $datePostedToStation = $dateOfPresentAppointment->copy()->subMonths(rand(0, 6));
 
-                $user = User::create([
-                    'email' => "officer{$serviceNumber}@ncs.gov.ng",
-                    'password' => Hash::make('password123'),
-                    'is_active' => true,
-                    'email_verified_at' => now(),
-                    'created_by' => $hrdUser->id ?? null,
-                ]);
+                $user = User::firstOrCreate(
+                    ['email' => "officer{$serviceNumber}@ncs.gov.ng"],
+                    [
+                        'password' => Hash::make('password123'),
+                        'is_active' => true,
+                        'email_verified_at' => now(),
+                        'created_by' => $hrdUser->id ?? null,
+                    ]
+                );
 
-                $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
+                // Attach role if not already attached
+                if (!$user->hasRole('OFFICER')) {
+                    $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
+                }
 
                 $officer = Officer::create([
                     'user_id' => $user->id,
@@ -432,15 +437,20 @@ class CompleteSystemSeeder extends Seeder
                 $dateOfFirstAppointment = Carbon::now()->subYears(rand(3, 10));
                 $dateOfPresentAppointment = Carbon::now()->subYears(rand(0, 5));
 
-                $user = User::create([
-                    'email' => "officer{$serviceNumber}@ncs.gov.ng",
-                    'password' => Hash::make('password123'),
-                    'is_active' => true,
-                    'email_verified_at' => now(),
-                    'created_by' => $hrdUser->id ?? null,
-                ]);
+                $user = User::firstOrCreate(
+                    ['email' => "officer{$serviceNumber}@ncs.gov.ng"],
+                    [
+                        'password' => Hash::make('password123'),
+                        'is_active' => true,
+                        'email_verified_at' => now(),
+                        'created_by' => $hrdUser->id ?? null,
+                    ]
+                );
 
-                $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
+                // Attach role if not already attached
+                if (!$user->hasRole('OFFICER')) {
+                    $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
+                }
 
                 $officer = Officer::create([
                     'user_id' => $user->id,
