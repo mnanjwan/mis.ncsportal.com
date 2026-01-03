@@ -41,6 +41,7 @@ class TestDataSeeder extends Seeder
         }
         
         // Delete only from tables that exist
+        // NOTE: Don't delete commands/zones - they should be managed by ZoneAndCommandSeeder
         $tables = [
             'emolument_validations',
             'emolument_assessments',
@@ -59,7 +60,7 @@ class TestDataSeeder extends Seeder
             'officers',
             'user_roles',
             'users',
-            'commands',
+            // 'commands' - Don't delete commands, let ZoneAndCommandSeeder manage them
         ];
         
         foreach ($tables as $table) {
@@ -82,18 +83,16 @@ class TestDataSeeder extends Seeder
         $this->command->info('✅ Data cleared');
         
         // Get existing commands (created by ZoneAndCommandSeeder)
-        // Don't create commands here to avoid duplicates
+        // Commands should already exist since ZoneAndCommandSeeder runs first in DatabaseSeeder
         $commands = Command::all();
         if ($commands->isEmpty()) {
             $this->command->warn('⚠️  No commands found. Please run ZoneAndCommandSeeder first.');
-            // Create minimal commands as fallback
-            $commands = [
-                ['code' => 'APAPA', 'name' => 'APAPA', 'location' => 'Lagos', 'is_active' => true],
-            ];
-            foreach ($commands as $cmd) {
-                Command::firstOrCreate(['code' => $cmd['code']], $cmd);
-            }
+            // Try to call ZoneAndCommandSeeder if commands don't exist
+            $this->call(ZoneAndCommandSeeder::class);
             $commands = Command::all();
+        }
+        if ($commands->count() < 2) {
+            $this->command->warn('⚠️  Less than 2 commands found. Some features may be limited.');
         }
         $this->command->info("✅ Using {$commands->count()} existing Commands");
         
