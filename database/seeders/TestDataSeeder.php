@@ -33,7 +33,12 @@ class TestDataSeeder extends Seeder
         $this->command->info('🗑️  Clearing existing data...');
         
         // Clear all data in correct order (respecting foreign keys)
-        DB::statement('PRAGMA foreign_keys=OFF;'); // SQLite specific
+        // Disable foreign key checks based on database driver
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=OFF;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         
         // Delete only from tables that exist
         $tables = [
@@ -67,7 +72,12 @@ class TestDataSeeder extends Seeder
             }
         }
         
-        DB::statement('PRAGMA foreign_keys=ON;');
+        // Re-enable foreign key checks
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=ON;');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
         
         $this->command->info('✅ Data cleared');
         
