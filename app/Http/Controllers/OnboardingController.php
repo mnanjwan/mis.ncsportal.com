@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\OnboardingLinkMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Services\NotificationService;
 
 class OnboardingController extends Controller
 {
@@ -141,12 +140,6 @@ class OnboardingController extends Controller
             $user->update([
                 'email_verified_at' => $emailDelivered ? now() : null,
             ]);
-
-            // Notify user about onboarding initiation (if email was sent)
-            if ($emailSent) {
-                $notificationService = app(NotificationService::class);
-                $notificationService->notifyOnboardingInitiated($officer, $validated['email']);
-            }
 
             $message = "Onboarding initiated for " . ($validated['name'] ?? $officer->service_number) . ".";
             if ($emailSent) {

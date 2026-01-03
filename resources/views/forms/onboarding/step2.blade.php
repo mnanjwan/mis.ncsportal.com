@@ -213,9 +213,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const zonesData = await zonesRes.json();
             const commandsData = await commandsRes.json();
             
-            // Populate zones dropdown
+            // Validate that zones data contains zone objects (not commands)
+            // Zones should have 'name' and 'id', and should NOT have 'zone_id' or 'zone' properties
             const zones = zonesData.data || zonesData; // Handle both response formats
             if (zones && Array.isArray(zones)) {
+                // Additional validation: ensure we're not getting commands instead of zones
+                const firstItem = zones[0];
+                if (firstItem && (firstItem.zone_id !== undefined || firstItem.zone !== undefined)) {
+                    console.error('ERROR: Zones endpoint appears to be returning commands data instead of zones!', zonesData);
+                    alert('Error: Zones endpoint is returning incorrect data. Please contact support.');
+                    return;
+                }
+                
                 const zoneSelect = document.getElementById('zone_id');
                 zones.forEach(zone => {
                     const option = document.createElement('option');
@@ -261,12 +270,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('Commands data format error:', commandsData);
             }
         } else {
+            const zonesText = await zonesRes.text().catch(() => '');
+            const commandsText = await commandsRes.text().catch(() => '');
             console.error('Error loading zones or commands:', {
-                zones: zonesRes.status,
-                commands: commandsRes.status,
-                zonesText: await zonesRes.text().catch(() => ''),
-                commandsText: await commandsRes.text().catch(() => '')
+                zonesStatus: zonesRes.status,
+                commandsStatus: commandsRes.status,
+                zonesText: zonesText,
+                commandsText: commandsText,
+                zonesUrl: zonesRes.url,
+                commandsUrl: commandsRes.url
             });
+            
+            // Show user-friendly error message
+            if (!zonesRes.ok) {
+                alert('Failed to load zones. Status: ' + zonesRes.status + '. Please refresh the page or contact support if the issue persists.');
+            }
         }
     } catch (error) {
         console.error('Error loading zones/commands:', error);

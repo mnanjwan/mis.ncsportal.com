@@ -4,9 +4,15 @@
 @section('page-title', 'Create Staff Order')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
-    <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.staff-orders') }}">Staff Orders</a>
+    @if($routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+        <span>/</span>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.staff-orders') }}">Staff Orders</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+        <span>/</span>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.staff-orders') }}">Staff Orders</a>
+    @endif
     <span>/</span>
     <span class="text-primary">Create</span>
 @endsection
@@ -15,7 +21,7 @@
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Back Button -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('hrd.staff-orders') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+            <a href="{{ route($routePrefix . '.staff-orders') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Staff Orders
             </a>
         </div>
@@ -66,7 +72,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('hrd.staff-orders.store') }}" method="POST" id="staff-order-form">
+                <form action="{{ route($routePrefix . '.staff-orders.store') }}" method="POST" id="staff-order-form">
                     @csrf
 
                     <div class="flex flex-col gap-5">
@@ -306,7 +312,7 @@
 
                         <!-- Form Actions -->
                         <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                            <a href="{{ route('hrd.staff-orders') }}" class="kt-btn kt-btn-secondary">
+                            <a href="{{ route($routePrefix . '.staff-orders') }}" class="kt-btn kt-btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="kt-btn kt-btn-primary">

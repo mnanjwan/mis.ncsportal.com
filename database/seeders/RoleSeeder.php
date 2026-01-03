@@ -83,7 +83,7 @@ class RoleSeeder extends Seeder
                 'access_level' => 'system_wide',
             ],
             [
-                'name' => 'Zonal Coordinator',
+                'name' => 'Zone Coordinator',
                 'code' => 'ZONE_COORDINATOR',
                 'description' => 'Zone Coordinator - Zonal Posting Manager',
                 'access_level' => 'zone_level',
@@ -121,7 +121,7 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($roles as $role) {
-            Role::firstOrCreate(
+            Role::updateOrCreate(
                 ['code' => $role['code']],
                 $role
             );

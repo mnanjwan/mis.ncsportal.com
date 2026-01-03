@@ -4,7 +4,11 @@
 @section('page-title', 'Staff Orders')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @if(isset($routePrefix) && $routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @endif
     <span>/</span>
     <span class="text-primary">Staff Orders</span>
 @endsection
@@ -26,7 +30,7 @@
     <div class="grid gap-5 lg:gap-7.5">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-foreground">Staff Orders</h2>
-            <a href="{{ route('hrd.staff-orders.create') }}" class="kt-btn kt-btn-primary">
+            <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.create') }}" class="kt-btn kt-btn-primary">
                 <i class="ki-filled ki-plus"></i> Create Staff Order
             </a>
         </div>
@@ -147,7 +151,7 @@
                                             {{ $order->effective_date ? $order->effective_date->format('d/m/Y') : 'N/A' }}
                                         </td>
                                         <td class="py-3 px-4 text-right">
-                                            <a href="{{ route('hrd.staff-orders.show', $order->id) }}" 
+                                            <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.show', $order->id) }}" 
                                                class="kt-btn kt-btn-sm kt-btn-ghost">
                                                 View
                                             </a>
@@ -158,7 +162,7 @@
                                         <td colspan="7" class="py-12 text-center">
                                             <i class="ki-filled ki-file-up text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground mb-4">No staff orders found</p>
-                                            <a href="{{ route('hrd.staff-orders.create') }}" class="kt-btn kt-btn-primary">
+                                            <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.create') }}" class="kt-btn kt-btn-primary">
                                                 Create First Staff Order
                                             </a>
                                         </td>
@@ -209,7 +213,7 @@
                                     <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-sm">
                                         {{ $order->status ?? 'DRAFT' }}
                                     </span>
-                                    <a href="{{ route('hrd.staff-orders.show', $order->id) }}" 
+                                    <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.show', $order->id) }}" 
                                        class="kt-btn kt-btn-sm kt-btn-ghost">
                                         View
                                     </a>
@@ -219,7 +223,7 @@
                             <div class="text-center py-12">
                                 <i class="ki-filled ki-file-up text-4xl text-muted-foreground mb-4"></i>
                                 <p class="text-secondary-foreground mb-4">No staff orders found</p>
-                                <a href="{{ route('hrd.staff-orders.create') }}" class="kt-btn kt-btn-primary">
+                                <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.create') }}" class="kt-btn kt-btn-primary">
                                     Create First Staff Order
                                 </a>
                             </div>

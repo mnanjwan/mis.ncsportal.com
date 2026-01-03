@@ -91,7 +91,10 @@ class StaffOrderController extends Controller
 
         $orders = $query->select('staff_orders.*')->paginate(20)->withQueryString();
         
-        return view('dashboards.hrd.staff-orders', compact('orders', 'isZoneCoordinator'));
+        // Determine route prefix based on role
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        
+        return view('dashboards.hrd.staff-orders', compact('orders', 'isZoneCoordinator', 'routePrefix'));
     }
 
     public function create()
@@ -154,7 +157,10 @@ class StaffOrderController extends Controller
         $lastOrder = StaffOrder::orderBy('created_at', 'desc')->first();
         $orderNumber = 'SO-' . date('Y') . '-' . date('md') . '-' . str_pad(($lastOrder ? (int)substr($lastOrder->order_number, -3) + 1 : 1), 3, '0', STR_PAD_LEFT);
         
-        return view('forms.staff-order.create', compact('officers', 'commands', 'orderNumber', 'isZoneCoordinator'));
+        // Determine route prefix based on role
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        
+        return view('forms.staff-order.create', compact('officers', 'commands', 'orderNumber', 'isZoneCoordinator', 'routePrefix'));
     }
 
     public function show($id)
@@ -164,7 +170,14 @@ class StaffOrderController extends Controller
         $order = StaffOrder::with(['officer', 'fromCommand', 'toCommand', 'createdBy'])
             ->findOrFail($id);
         
-        return view('dashboards.hrd.staff-order-show', compact('order'));
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        
+        // Determine route prefix based on role
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        
+        return view('dashboards.hrd.staff-order-show', compact('order', 'routePrefix'));
     }
 
     public function store(Request $request)
@@ -277,7 +290,9 @@ class StaffOrderController extends Controller
                 ? 'Staff order created and published successfully! Officer has been posted.'
                 : 'Staff order created successfully! (Draft - not yet effective)';
             
-            return redirect()->route('hrd.staff-orders')
+            // Redirect based on user role
+            $redirectRoute = $isZoneCoordinator ? 'zone-coordinator.staff-orders' : 'hrd.staff-orders';
+            return redirect()->route($redirectRoute)
                 ->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->back()

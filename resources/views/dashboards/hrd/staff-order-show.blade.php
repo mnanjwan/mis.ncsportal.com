@@ -4,9 +4,13 @@
 @section('page-title', 'Staff Order Details')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @if(isset($routePrefix) && $routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @endif
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.staff-orders') }}">Staff Orders</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders') }}">Staff Orders</a>
     <span>/</span>
     <span class="text-primary">View Order</span>
 @endsection
@@ -142,7 +146,7 @@
         <div class="kt-card">
             <div class="kt-card-content">
                 <div class="flex gap-3">
-                    <a href="{{ route('hrd.staff-orders') }}" class="kt-btn kt-btn-secondary">
+                    <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders') }}" class="kt-btn kt-btn-secondary">
                         Back to List
                     </a>
                     <a href="{{ route('print.staff-order', $order->id) }}" 
@@ -150,9 +154,11 @@
                        class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-printer"></i> Print Order
                     </a>
-                    <a href="{{ route('hrd.staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-ghost">
-                        <i class="ki-filled ki-pencil"></i> Edit Order
-                    </a>
+                    @if(!isset($routePrefix) || $routePrefix !== 'zone-coordinator')
+                        <a href="{{ route('hrd.staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-ghost">
+                            <i class="ki-filled ki-pencil"></i> Edit Order
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
