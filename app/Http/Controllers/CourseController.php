@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\OfficerCourse;
 use App\Models\Officer;
+use App\Models\Course;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 
@@ -101,6 +102,12 @@ class CourseController extends Controller
                         ->with('error', 'Please enter a course name.');
                 }
                 $courseName = trim($validated['course_name_custom']);
+                
+                // Create the course in the master Course table if it doesn't exist
+                Course::firstOrCreate(
+                    ['name' => $courseName],
+                    ['is_active' => true]
+                );
             }
             
             $createdCount = 0;
