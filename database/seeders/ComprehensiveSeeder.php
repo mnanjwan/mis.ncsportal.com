@@ -400,7 +400,7 @@ class ComprehensiveSeeder extends Seeder
         $this->createQuarters($commands, $officers);
 
         // 13. Create Duty Rosters
-        $this->createDutyRosters($commands, $staffOfficerUser, $areaControllerUser);
+        $this->createDutyRosters($commands, $staffOfficerUser, $areaControllerUser, $officers);
 
         // 14. Create Officer Postings
         $this->createOfficerPostings($officers, $commands);
@@ -547,13 +547,25 @@ class ComprehensiveSeeder extends Seeder
         $qualifications = ['B.Sc', 'M.Sc', 'LLB'];
         
         // Find area controller officer (approved_by must be an officer_id, not user_id)
+        // Use an officer from the newly created officers array to ensure it exists
         $areaControllerOfficer = null;
-        if ($areaControllerUser) {
-            $areaControllerOfficer = Officer::where('user_id', $areaControllerUser->id)->first();
-        }
-        // If no officer found for area controller user, use first available officer
-        if (!$areaControllerOfficer && !empty($officers)) {
-            $areaControllerOfficer = $officers[0];
+        if (!empty($officers)) {
+            // First try to find an officer associated with area controller user
+            if ($areaControllerUser) {
+                foreach ($officers as $officer) {
+                    if ($officer->user_id == $areaControllerUser->id) {
+                        $areaControllerOfficer = $officer;
+                        break;
+                    }
+                }
+            }
+            // If not found, use first available officer from the array
+            if (!$areaControllerOfficer) {
+                $areaControllerOfficer = $officers[0];
+            }
+        } else {
+            // Fallback: try to find any officer from database
+            $areaControllerOfficer = Officer::first();
         }
         
         foreach ($commands->take(5) as $command) {
@@ -639,15 +651,36 @@ class ComprehensiveSeeder extends Seeder
         $this->command->info("Created Quarters and Quarter Allocations");
     }
 
-    private function createDutyRosters($commands, $staffOfficerUser, $areaControllerUser)
+    private function createDutyRosters($commands, $staffOfficerUser, $areaControllerUser, $officers = [])
     {
+        // Find area controller officer (approved_by must be an officer_id, not user_id)
+        $areaControllerOfficer = null;
+        if (!empty($officers)) {
+            // First try to find an officer associated with area controller user
+            if ($areaControllerUser) {
+                foreach ($officers as $officer) {
+                    if ($officer->user_id == $areaControllerUser->id) {
+                        $areaControllerOfficer = $officer;
+                        break;
+                    }
+                }
+            }
+            // If not found, use first available officer from the array
+            if (!$areaControllerOfficer) {
+                $areaControllerOfficer = $officers[0];
+            }
+        } else {
+            // Fallback: try to find any officer from database
+            $areaControllerOfficer = Officer::first();
+        }
+        
         foreach ($commands->take(5) as $command) {
             $roster = DutyRoster::create([
                 'command_id' => $command->id,
                 'roster_period_start' => now()->startOfMonth(),
                 'roster_period_end' => now()->endOfMonth(),
                 'prepared_by' => $staffOfficerUser->id,
-                'approved_by' => $areaControllerUser->id,
+                'approved_by' => $areaControllerOfficer ? $areaControllerOfficer->id : null,
                 'status' => 'APPROVED',
             ]);
             
