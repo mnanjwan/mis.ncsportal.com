@@ -391,7 +391,7 @@ class ComprehensiveSeeder extends Seeder
         $this->command->info("Created Pass Applications with approvals");
 
         // 10. Create Manning Requests
-        $this->createManningRequests($commands, $staffOfficerUser, $areaControllerUser, $roleUsers['HRD']);
+        $this->createManningRequests($commands, $staffOfficerUser, $areaControllerUser, $roleUsers['HRD'], $officers);
 
         // 11. Create Movement Orders
         $this->createMovementOrders($commands, $officers, $roleUsers['HRD']);
@@ -540,11 +540,21 @@ class ComprehensiveSeeder extends Seeder
         return $user;
     }
 
-    private function createManningRequests($commands, $staffOfficerUser, $areaControllerUser, $hrdUser)
+    private function createManningRequests($commands, $staffOfficerUser, $areaControllerUser, $hrdUser, $officers = [])
     {
         $ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC'];
         $sexOptions = ['M', 'F', 'ANY'];
         $qualifications = ['B.Sc', 'M.Sc', 'LLB'];
+        
+        // Find area controller officer (approved_by must be an officer_id, not user_id)
+        $areaControllerOfficer = null;
+        if ($areaControllerUser) {
+            $areaControllerOfficer = Officer::where('user_id', $areaControllerUser->id)->first();
+        }
+        // If no officer found for area controller user, use first available officer
+        if (!$areaControllerOfficer && !empty($officers)) {
+            $areaControllerOfficer = $officers[0];
+        }
         
         foreach ($commands->take(5) as $command) {
             $manningRequest = ManningRequest::create([
@@ -552,7 +562,7 @@ class ComprehensiveSeeder extends Seeder
                 'requested_by' => $staffOfficerUser->id,
                 'status' => 'APPROVED',
                 'notes' => 'Manning level request for ' . $command->name,
-                'approved_by' => $areaControllerUser->id,
+                'approved_by' => $areaControllerOfficer ? $areaControllerOfficer->id : null,
                 'submitted_at' => now()->subDays(rand(5, 15)),
             ]);
             
