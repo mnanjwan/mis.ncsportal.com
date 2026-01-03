@@ -113,7 +113,7 @@ class TestDataSeeder extends Seeder
         $roles = Role::all()->keyBy('code');
         $this->command->info("✅ Roles ready");
         
-        // Create Role Users
+        // Create Role Users (use firstOrCreate to avoid conflicts with CompleteSystemSeeder)
         $this->command->info('👤 Creating Role Users...');
         $roleUsers = [];
         $roleEmails = [
@@ -126,15 +126,21 @@ class TestDataSeeder extends Seeder
         ];
         
         foreach ($roleEmails as $code => $email) {
-            $user = User::create([
-                'email' => $email,
-                'password' => Hash::make('password123'),
-                'is_active' => true,
-            ]);
-            $user->roles()->attach($roles[$code]->id, ['is_active' => true, 'assigned_at' => now()]);
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'password' => Hash::make('password123'),
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]
+            );
+            // Attach role if not already attached
+            if (!$user->hasRole($roles[$code]->name)) {
+                $user->roles()->attach($roles[$code]->id, ['is_active' => true, 'assigned_at' => now()]);
+            }
             $roleUsers[$code] = $user;
         }
-        $this->command->info("✅ Created Role Users");
+        $this->command->info("✅ Created/Updated Role Users");
         
         // Seed 100 Officers
         $this->command->info('👮 Seeding 100 Officers...');
