@@ -184,7 +184,8 @@ class HRDTestDataSeeder extends Seeder
             ->whereNotNull('present_station')
             ->take(10)
             ->get();
-        $commands = Command::whereIn('code', ['LAG', 'ABJ', 'KAN', 'PHC', 'IBD'])->get();
+        // Use actual command codes from ZoneAndCommandSeeder
+        $commands = Command::whereIn('code', ['APAPA', 'FCT', 'KADUNA', 'PH_I_BAYELSA', 'OYO_OSUN'])->get();
         
         if ($officers->isEmpty() || $commands->count() < 2) {
             $this->command->warn('Skipping staff orders - need at least 2 commands and officers with present_station');
@@ -224,7 +225,8 @@ class HRDTestDataSeeder extends Seeder
 
     private function createManningRequests($userId)
     {
-        $commands = Command::whereIn('code', ['LAG', 'ABJ', 'KAN', 'PHC', 'IBD'])->get();
+        // Use actual command codes from ZoneAndCommandSeeder
+        $commands = Command::whereIn('code', ['APAPA', 'FCT', 'KADUNA', 'PH_I_BAYELSA', 'OYO_OSUN'])->get();
         
         if ($commands->isEmpty() || !$userId) {
             $this->command->warn('Skipping manning requests - no commands or user available');
