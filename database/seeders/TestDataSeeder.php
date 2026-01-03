@@ -287,22 +287,36 @@ class TestDataSeeder extends Seeder
         
         // Create Staff Orders
         $this->command->info('📋 Creating Staff Orders...');
-        for ($i = 0; $i < 10; $i++) {
-            $officer = $officers[rand(10, 50)];
-            $fromCommand = $commands->where('id', $officer->present_station)->first();
-            $toCommand = $commands->where('id', '!=', $officer->present_station)->random();
-            
-            StaffOrder::create([
-                'order_number' => 'SO-' . date('Y') . '-' . date('md') . '-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-                'officer_id' => $officer->id,
-                'from_command_id' => $fromCommand->id,
-                'to_command_id' => $toCommand->id,
-                'effective_date' => Carbon::now()->addDays(rand(10, 60)),
-                'order_type' => ['POSTING', 'TRANSFER', 'DEPLOYMENT'][array_rand(['POSTING', 'TRANSFER', 'DEPLOYMENT'])],
-                'created_by' => $roleUsers['HRD']->id,
-            ]);
+        // Need at least 2 commands to create staff orders
+        if ($commands->count() < 2) {
+            $this->command->warn('⚠️  Skipping Staff Orders - need at least 2 commands. Please run ZoneAndCommandSeeder first.');
+        } else {
+            $staffOrdersCreated = 0;
+            for ($i = 0; $i < 10; $i++) {
+                $officer = $officers[rand(10, 50)];
+                $fromCommand = $commands->where('id', $officer->present_station)->first();
+                $availableCommands = $commands->where('id', '!=', $officer->present_station);
+                
+                // Skip if no other command available
+                if ($availableCommands->isEmpty()) {
+                    continue;
+                }
+                
+                $toCommand = $availableCommands->random();
+                
+                StaffOrder::create([
+                    'order_number' => 'SO-' . date('Y') . '-' . date('md') . '-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT),
+                    'officer_id' => $officer->id,
+                    'from_command_id' => $fromCommand->id,
+                    'to_command_id' => $toCommand->id,
+                    'effective_date' => Carbon::now()->addDays(rand(10, 60)),
+                    'order_type' => ['POSTING', 'TRANSFER', 'DEPLOYMENT'][array_rand(['POSTING', 'TRANSFER', 'DEPLOYMENT'])],
+                    'created_by' => $roleUsers['HRD']->id,
+                ]);
+                $staffOrdersCreated++;
+            }
+            $this->command->info("✅ Created {$staffOrdersCreated} Staff Orders");
         }
-        $this->command->info("✅ Created 10 Staff Orders");
         
         // Create Manning Requests
         $this->command->info('📝 Creating Manning Requests...');
