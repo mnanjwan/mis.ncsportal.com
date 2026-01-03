@@ -79,16 +79,14 @@ class HRDTestDataSeeder extends Seeder
 
     private function createCommands()
     {
-        $commands = [
-            ['name' => 'Lagos Command', 'code' => 'LAG', 'is_active' => true],
-            ['name' => 'Abuja Command', 'code' => 'ABJ', 'is_active' => true],
-            ['name' => 'Kano Command', 'code' => 'KAN', 'is_active' => true],
-            ['name' => 'Port Harcourt Command', 'code' => 'PHC', 'is_active' => true],
-            ['name' => 'Ibadan Command', 'code' => 'IBD', 'is_active' => true],
-        ];
-
-        foreach ($commands as $cmd) {
-            Command::firstOrCreate(['code' => $cmd['code']], $cmd);
+        // Don't create commands here - use existing commands from ZoneAndCommandSeeder
+        // This prevents duplicate commands with different codes
+        // HRDTestDataSeeder should work with commands that already exist
+        $existingCommands = Command::all();
+        if ($existingCommands->isEmpty()) {
+            $this->command->warn('⚠️  No commands found. ZoneAndCommandSeeder should run first.');
+        } else {
+            $this->command->info('✅ Using existing commands from ZoneAndCommandSeeder');
         }
     }
 

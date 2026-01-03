@@ -81,24 +81,21 @@ class TestDataSeeder extends Seeder
         
         $this->command->info('✅ Data cleared');
         
-        // Seed Commands
-        $this->command->info('🏢 Seeding Commands...');
-        $commands = [
-            ['code' => 'HQ', 'name' => 'Headquarters', 'location' => 'Abuja', 'is_active' => true],
-            ['code' => 'LAGOS', 'name' => 'Lagos Command', 'location' => 'Lagos', 'is_active' => true],
-            ['code' => 'KANO', 'name' => 'Kano Command', 'location' => 'Kano', 'is_active' => true],
-            ['code' => 'RIVERS', 'name' => 'Rivers Command', 'location' => 'Port Harcourt', 'is_active' => true],
-            ['code' => 'ABIA', 'name' => 'Abia Command', 'location' => 'Umuahia', 'is_active' => true],
-            ['code' => 'ENUGU', 'name' => 'Enugu Command', 'location' => 'Enugu', 'is_active' => true],
-            ['code' => 'KADUNA', 'name' => 'Kaduna Command', 'location' => 'Kaduna', 'is_active' => true],
-            ['code' => 'IBADAN', 'name' => 'Ibadan Command', 'location' => 'Ibadan', 'is_active' => true],
-        ];
-        
-        foreach ($commands as $cmd) {
-            Command::create($cmd);
-        }
+        // Get existing commands (created by ZoneAndCommandSeeder)
+        // Don't create commands here to avoid duplicates
         $commands = Command::all();
-        $this->command->info("✅ Created {$commands->count()} Commands");
+        if ($commands->isEmpty()) {
+            $this->command->warn('⚠️  No commands found. Please run ZoneAndCommandSeeder first.');
+            // Create minimal commands as fallback
+            $commands = [
+                ['code' => 'APAPA', 'name' => 'APAPA', 'location' => 'Lagos', 'is_active' => true],
+            ];
+            foreach ($commands as $cmd) {
+                Command::firstOrCreate(['code' => $cmd['code']], $cmd);
+            }
+            $commands = Command::all();
+        }
+        $this->command->info("✅ Using {$commands->count()} existing Commands");
         
         // Seed Roles (if not exists)
         $this->command->info('👥 Ensuring Roles exist...');
