@@ -1516,14 +1516,29 @@ class NotificationService
         $endDate = $course->end_date ? \Carbon\Carbon::parse($course->end_date)->format('d/m/Y') : 'TBD';
         $courseType = $course->course_type ? " ({$course->course_type})" : '';
 
-        return $this->notify(
-            $officer->user,
-            'course_nomination_created',
-            'Course Nomination',
-            "You have been nominated for the course: {$course->course_name}{$courseType}. Start date: {$startDate}, End date: {$endDate}.",
-            'officer_course',
-            $course->id
-        );
+        // Create notification first
+        $notification = Notification::create([
+            'user_id' => $officer->user->id,
+            'notification_type' => 'course_nomination_created',
+            'title' => 'Course Nomination',
+            'message' => "You have been nominated for the course: {$course->course_name}{$courseType}. Start date: {$startDate}, End date: {$endDate}.",
+            'entity_type' => 'officer_course',
+            'entity_id' => $course->id,
+            'is_read' => false,
+        ]);
+
+        // Dispatch job to send email asynchronously for better performance
+        if ($officer->user->email) {
+            \App\Jobs\SendNotificationEmailJob::dispatch($officer->user, $notification);
+        }
+
+        Log::info('Course nomination notification created and email job dispatched', [
+            'user_id' => $officer->user->id,
+            'notification_id' => $notification->id,
+            'course_id' => $course->id,
+        ]);
+
+        return $notification;
     }
 
     /**

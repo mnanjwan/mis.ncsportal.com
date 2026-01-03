@@ -45,44 +45,36 @@
             <form action="{{ route('hrd.courses.store') }}" method="POST" class="space-y-6">
                 @csrf
 
-                <!-- Officer (Searchable) -->
+                <!-- Officers (Multiple Selection with Search and Checkboxes) -->
                 <div class="space-y-2">
                     <label for="officer_search" class="block text-sm font-medium text-foreground">
-                        Officer <span class="text-danger">*</span>
+                        Officers <span class="text-danger">*</span>
                     </label>
                     <div class="relative">
                         <input type="text" 
                                id="officer_search" 
-                               class="kt-input @error('officer_id') kt-input-error @enderror w-full" 
-                               placeholder="Search officer by name or service number..."
-                               autocomplete="off"
-                               value="{{ old('officer_search') }}">
-                        <input type="hidden" 
-                               name="officer_id" 
-                               id="officer_id"
-                               value="{{ old('officer_id') }}"
-                               required>
+                               class="kt-input @error('officer_ids') kt-input-error @enderror w-full" 
+                               placeholder="Search officers by name or service number..."
+                               autocomplete="off">
                         <div id="officer_dropdown" 
                              class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
                             <!-- Options will be populated by JavaScript -->
                         </div>
                     </div>
-                    <div id="selected_officer" class="mt-2 p-2 bg-muted/50 rounded-lg hidden">
-                        <div class="flex items-center justify-between">
-                            <div class="flex flex-col gap-1">
-                                <span class="text-sm font-medium" id="selected_officer_name"></span>
-                                <span class="text-xs text-secondary-foreground" id="selected_officer_details"></span>
-                            </div>
-                            <button type="button" 
-                                    id="clear_officer" 
-                                    class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
-                                <i class="ki-filled ki-cross"></i>
-                            </button>
-                        </div>
+                    <div id="selected_officers" class="mt-2 space-y-2">
+                        <!-- Selected officers will be displayed here -->
                     </div>
-                    @error('officer_id')
+                    <!-- Hidden inputs for officer IDs will be added dynamically -->
+                    <div id="officer_ids_hidden"></div>
+                    @error('officer_ids')
                         <p class="text-sm text-danger">{{ $message }}</p>
                     @enderror
+                    @error('officer_ids.*')
+                        <p class="text-sm text-danger">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-secondary-foreground">
+                        Search and select multiple officers by checking the boxes in the dropdown.
+                    </p>
                 </div>
 
                 <!-- Course Name -->
@@ -101,7 +93,7 @@
                                     {{ $course->name }}
                                 </option>
                             @endforeach
-                            <option value="__NEW__" {{ old('course_name') && !$courses->contains('name', old('course_name')) ? 'selected' : '' }}>
+                            <option value="__NEW__" {{ old('course_name') === '__NEW__' || (old('course_name') && !$courses->contains('name', old('course_name')) && old('course_name') !== '__NEW__') ? 'selected' : '' }}>
                                 + Add New Course
                             </option>
                         </select>
@@ -109,7 +101,7 @@
                     <input type="text" 
                            name="course_name_custom" 
                            id="course_name_custom"
-                           value="{{ old('course_name_custom', old('course_name')) }}"
+                           value="{{ old('course_name_custom', (old('course_name') && old('course_name') !== '__NEW__' && !$courses->contains('name', old('course_name'))) ? old('course_name') : '') }}"
                            class="kt-input @error('course_name') kt-input-error @enderror hidden"
                            placeholder="Enter new course name...">
                     @error('course_name')
@@ -192,7 +184,7 @@
                     </a>
                     <button type="submit" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-check"></i>
-                        Nominate Officer
+                        Nominate Officers
                     </button>
                 </div>
             </form>
@@ -214,28 +206,69 @@
         })->values();
     @endphp
     const officers = @json($officersData);
-    let selectedOfficer = null;
+    let selectedOfficers = new Map(); // Map of officerId -> officer object
 
     const officerSearchInput = document.getElementById('officer_search');
-    const officerHiddenInput = document.getElementById('officer_id');
     const officerDropdown = document.getElementById('officer_dropdown');
-    const selectedOfficerDiv = document.getElementById('selected_officer');
-    const selectedOfficerName = document.getElementById('selected_officer_name');
-    const selectedOfficerDetails = document.getElementById('selected_officer_details');
+    const selectedOfficersDiv = document.getElementById('selected_officers');
 
-    // Initialize selected officer if old input exists
-    @if(old('officer_id'))
-        const oldOfficerId = {{ old('officer_id') }};
-        const oldOfficer = officers.find(o => o.id == oldOfficerId);
-        if (oldOfficer) {
-            selectedOfficer = oldOfficer;
-            officerHiddenInput.value = oldOfficer.id;
-            officerSearchInput.value = oldOfficer.name.trim();
-            selectedOfficerName.textContent = oldOfficer.name.trim();
-            selectedOfficerDetails.textContent = oldOfficer.service_number + (oldOfficer.rank !== 'N/A' ? ' - ' + oldOfficer.rank : '');
-            selectedOfficerDiv.classList.remove('hidden');
-        }
+    // Initialize selected officers if old input exists (for error recovery)
+    @if(old('officer_ids'))
+        const oldOfficerIds = @json(old('officer_ids', []));
+        oldOfficerIds.forEach(officerId => {
+            const officer = officers.find(o => o.id == officerId);
+            if (officer) {
+                selectedOfficers.set(officer.id, officer);
+            }
+        });
+        updateSelectedOfficersDisplay();
+        updateOfficerIdsInput();
     @endif
+
+    // Update the hidden inputs with selected officer IDs
+    function updateOfficerIdsInput() {
+        const ids = Array.from(selectedOfficers.keys());
+        const hiddenContainer = document.getElementById('officer_ids_hidden');
+        hiddenContainer.innerHTML = ids.map(id => 
+            '<input type="hidden" name="officer_ids[]" value="' + id + '">'
+        ).join('');
+    }
+
+    // Update the display of selected officers
+    function updateSelectedOfficersDisplay() {
+        if (selectedOfficers.size === 0) {
+            selectedOfficersDiv.innerHTML = '';
+            return;
+        }
+
+        selectedOfficersDiv.innerHTML = Array.from(selectedOfficers.values()).map(officer => {
+            const displayName = officer.name.trim();
+            const displayDetails = officer.service_number + (officer.rank !== 'N/A' ? ' - ' + officer.rank : '');
+            return '<div class="flex items-center justify-between p-2 bg-muted/50 rounded-lg" data-officer-id="' + officer.id + '">' +
+                        '<div class="flex flex-col gap-1">' +
+                            '<span class="text-sm font-medium">' + displayName + '</span>' +
+                            '<span class="text-xs text-secondary-foreground">' + displayDetails + '</span>' +
+                        '</div>' +
+                        '<button type="button" class="kt-btn kt-btn-sm kt-btn-ghost text-danger remove-officer" data-officer-id="' + officer.id + '">' +
+                            '<i class="ki-filled ki-cross"></i>' +
+                        '</button>' +
+                    '</div>';
+        }).join('');
+
+        // Attach remove event listeners
+        selectedOfficersDiv.querySelectorAll('.remove-officer').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const officerId = parseInt(this.dataset.officerId);
+                selectedOfficers.delete(officerId);
+                updateSelectedOfficersDisplay();
+                updateOfficerIdsInput();
+                // Refresh dropdown to update checkbox states
+                if (officerSearchInput.value.trim().length > 0) {
+                    officerSearchInput.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+    }
 
     // Search functionality
     officerSearchInput.addEventListener('input', function() {
@@ -257,12 +290,14 @@
             officerDropdown.innerHTML = filtered.map(officer => {
                 const displayName = officer.name.trim();
                 const displayDetails = officer.service_number + (officer.rank !== 'N/A' ? ' - ' + officer.rank : '');
-                return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
-                            'data-id="' + officer.id + '" ' +
-                            'data-name="' + displayName.replace(/"/g, '&quot;') + '" ' +
-                            'data-details="' + displayDetails.replace(/"/g, '&quot;') + '">' +
+                const isChecked = selectedOfficers.has(officer.id);
+                return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 flex items-center gap-3" ' +
+                            'data-id="' + officer.id + '">' +
+                            '<input type="checkbox" class="kt-checkbox officer-checkbox" data-officer-id="' + officer.id + '" ' + (isChecked ? 'checked' : '') + '>' +
+                            '<div class="flex-1" data-selectable="true">' +
                             '<div class="text-sm font-medium text-foreground">' + displayName + '</div>' +
                             '<div class="text-xs text-secondary-foreground">' + displayDetails + '</div>' +
+                            '</div>' +
                         '</div>';
             }).join('');
             officerDropdown.classList.remove('hidden');
@@ -270,39 +305,42 @@
             officerDropdown.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found</div>';
             officerDropdown.classList.remove('hidden');
         }
-    });
 
-    // Handle option selection
-    officerDropdown.addEventListener('click', function(e) {
-        const option = e.target.closest('[data-id]');
-        if (option) {
-            const foundOfficer = officers.find(o => o.id == parseInt(option.dataset.id));
-            if (foundOfficer) {
-                selectedOfficer = foundOfficer;
-                officerHiddenInput.value = foundOfficer.id;
-                const displayName = foundOfficer.name.trim();
-                const displayDetails = foundOfficer.service_number + (foundOfficer.rank !== 'N/A' ? ' - ' + foundOfficer.rank : '');
-                officerSearchInput.value = displayName;
-                selectedOfficerName.textContent = displayName;
-                selectedOfficerDetails.textContent = displayDetails;
-                selectedOfficerDiv.classList.remove('hidden');
-                officerDropdown.classList.add('hidden');
+        // Attach checkbox event listeners
+        officerDropdown.querySelectorAll('.officer-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function(e) {
+                e.stopPropagation();
+                const officerId = parseInt(this.dataset.officerId);
+                const officer = officers.find(o => o.id === officerId);
+                if (officer) {
+                    if (this.checked) {
+                        selectedOfficers.set(officer.id, officer);
+                    } else {
+                        selectedOfficers.delete(officer.id);
+                    }
+                    updateSelectedOfficersDisplay();
+                    updateOfficerIdsInput();
+                }
+            });
+        });
+
+        // Also allow clicking on the row to toggle checkbox
+        officerDropdown.querySelectorAll('[data-id]').forEach(row => {
+            row.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    const checkbox = this.querySelector('.officer-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
             }
         }
     });
-
-    // Clear selection
-    document.getElementById('clear_officer')?.addEventListener('click', function() {
-        selectedOfficer = null;
-        officerHiddenInput.value = '';
-        officerSearchInput.value = '';
-        selectedOfficerDiv.classList.add('hidden');
-        officerDropdown.classList.add('hidden');
+        });
     });
 
     // Hide dropdown when clicking outside
     document.addEventListener('click', function(e) {
-        if (!officerSearchInput.contains(e.target) && !officerDropdown.contains(e.target) && !selectedOfficerDiv.contains(e.target)) {
+        if (!officerSearchInput.contains(e.target) && !officerDropdown.contains(e.target) && !selectedOfficersDiv.contains(e.target)) {
             officerDropdown.classList.add('hidden');
         }
     });
@@ -331,15 +369,27 @@
         }
     });
 
-    // Initialize on page load
-    if (courseNameSelect.value === '__NEW__') {
+    // Initialize on page load - check if "__NEW__" is selected or if custom input has a value
+    if (courseNameSelect.value === '__NEW__' || (courseNameCustom.value && courseNameCustom.value.trim().length > 0)) {
+        if (courseNameSelect.value !== '__NEW__') {
+            courseNameSelect.value = '__NEW__';
+        }
         courseNameCustom.classList.remove('hidden');
         courseNameCustom.required = true;
         courseNameSelect.required = false;
     }
 
-    // Form submission - use custom input if "__NEW__" is selected
+    // Form submission - use custom input if "__NEW__" is selected and validate officer selection
     document.querySelector('form').addEventListener('submit', function(e) {
+        // Validate at least one officer is selected
+        if (selectedOfficers.size === 0) {
+            e.preventDefault();
+            alert('Please select at least one officer');
+            officerSearchInput.focus();
+            return false;
+        }
+
+        // Validate course name
         if (courseNameSelect.value === '__NEW__') {
             if (!courseNameCustom.value.trim()) {
                 e.preventDefault();
@@ -347,8 +397,8 @@
                 courseNameCustom.focus();
                 return false;
             }
-            // Set the custom value to course_name field
-            courseNameSelect.value = courseNameCustom.value.trim();
+            // Keep course_name as "__NEW__" so controller knows to use course_name_custom
+            // Don't change courseNameSelect.value here
         }
     });
 </script>

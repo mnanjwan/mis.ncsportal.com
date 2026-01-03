@@ -23,6 +23,14 @@ class CourseController extends Controller
     {
         $query = OfficerCourse::with(['officer', 'nominatedBy']);
 
+        // Filter by status tab
+        $tab = $request->get('tab', 'all'); // 'all', 'in_progress', 'completed'
+        if ($tab === 'in_progress') {
+            $query->where('is_completed', false);
+        } elseif ($tab === 'completed') {
+            $query->where('is_completed', true);
+        }
+
         // Sorting
         $sortBy = $request->get('sort_by', 'start_date');
         $sortOrder = $request->get('sort_order', 'desc');
@@ -50,7 +58,7 @@ class CourseController extends Controller
 
         $courses = $query->select('officer_courses.*')->paginate(20)->withQueryString();
         
-        return view('dashboards.hrd.courses', compact('courses'));
+        return view('dashboards.hrd.courses', compact('courses', 'tab'));
     }
 
     public function create()
@@ -71,8 +79,10 @@ class CourseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'officer_id' => 'required|exists:officers,id',
+            'officer_ids' => 'required|array|min:1',
+            'officer_ids.*' => 'required|exists:officers,id',
             'course_name' => 'required|string|max:255',
+            'course_name_custom' => 'nullable|string|max:255',
             'course_type' => 'nullable|string|max:100',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -80,26 +90,48 @@ class CourseController extends Controller
         ]);
 
         try {
-            $course = OfficerCourse::create([
-                'officer_id' => $validated['officer_id'],
-                'course_name' => $validated['course_name'],
-                'course_type' => $validated['course_type'] ?? null,
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'] ?? null,
-                'is_completed' => false,
-                'nominated_by' => auth()->id(),
-                'notes' => $validated['notes'] ?? null,
-            ]);
+            $officerIds = $validated['officer_ids'];
+            
+            // Handle course_name: if it's "__NEW__", use course_name_custom instead
+            $courseName = $validated['course_name'];
+            if ($courseName === '__NEW__') {
+                if (empty($validated['course_name_custom'])) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Please enter a course name.');
+                }
+                $courseName = trim($validated['course_name_custom']);
+            }
+            
+            $createdCount = 0;
 
-            // Send notification to officer
-            $this->notificationService->notifyCourseNominationCreated($course);
+            foreach ($officerIds as $officerId) {
+                $course = OfficerCourse::create([
+                    'officer_id' => $officerId,
+                    'course_name' => $courseName,
+                    'course_type' => $validated['course_type'] ?? null,
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'] ?? null,
+                    'is_completed' => false,
+                    'nominated_by' => auth()->id(),
+                    'notes' => $validated['notes'] ?? null,
+                ]);
+
+                // Dispatch job to send notification and email asynchronously
+                \App\Jobs\SendCourseNominationNotificationJob::dispatch($course);
+                $createdCount++;
+            }
+
+            $message = $createdCount === 1 
+                ? 'Officer nominated for course successfully!'
+                : "{$createdCount} officers nominated for course successfully!";
 
             return redirect()->route('hrd.courses')
-                ->with('success', 'Officer nominated for course successfully!');
+                ->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Failed to nominate officer: ' . $e->getMessage());
+                ->with('error', 'Failed to nominate officers: ' . $e->getMessage());
         }
     }
 
@@ -222,12 +254,38 @@ class CourseController extends Controller
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
-        // Get all course nominations grouped by course name
-        $courseNominations = OfficerCourse::with(['officer.presentStation'])
+        // Get tab filter (all, in_progress, completed)
+        $tab = $request->get('tab', 'all');
+
+        // Get date range filters
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+
+        // Build query
+        $query = OfficerCourse::with(['officer.presentStation'])
             ->whereHas('officer', function($q) {
                 $q->where('is_active', true)
                   ->where('is_deceased', false);
-            })
+            });
+
+        // Apply tab filter (status filter)
+        if ($tab === 'in_progress') {
+            $query->where('is_completed', false);
+        } elseif ($tab === 'completed') {
+            $query->where('is_completed', true);
+        }
+        // 'all' tab doesn't need additional filtering
+
+        // Apply date range filters if provided
+        if ($startDate) {
+            $query->where('start_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->where('start_date', '<=', $endDate);
+        }
+
+        // Get all course nominations grouped by course name
+        $courseNominations = $query
             ->orderBy('course_name')
             ->orderBy('officer_id')
             ->get()
@@ -254,7 +312,7 @@ class CourseController extends Controller
             $printData[] = $courseData;
         }
 
-        return view('prints.course-nominations', compact('printData'));
+        return view('prints.course-nominations', compact('printData', 'startDate', 'endDate', 'tab'));
     }
 }
 

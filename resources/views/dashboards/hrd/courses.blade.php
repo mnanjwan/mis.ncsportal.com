@@ -11,18 +11,7 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
-    <!-- Success/Error Messages -->
-    @if(session('success'))
-        <div class="kt-card bg-success/10 border border-success/20">
-            <div class="kt-card-content p-4">
-                <div class="flex items-center gap-3">
-                    <i class="ki-filled ki-check-circle text-success text-xl"></i>
-                    <p class="text-sm text-success font-medium">{{ session('success') }}</p>
-                </div>
-            </div>
-        </div>
-    @endif
-
+    <!-- Error Messages (Success handled by SweetAlert) -->
     @if(session('error'))
         <div class="kt-card bg-danger/10 border border-danger/20">
             <div class="kt-card-content p-4">
@@ -39,13 +28,13 @@
         <div class="kt-card-header">
             <h3 class="kt-card-title">Course Nominations</h3>
             <div class="kt-card-toolbar flex items-center gap-2">
-                <a href="{{ route('hrd.courses.print') }}" 
+                <a href="{{ route('hrd.courses.print', ['tab' => $tab ?? 'all']) }}" 
                    class="kt-btn kt-btn-sm kt-btn-primary"
                    target="_blank">
-                    <i class="ki-filled ki-printer"></i> Print All
+                    <i class="ki-filled ki-printer"></i> Print
                 </a>
                 <a href="{{ route('hrd.courses.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
-                    <i class="ki-filled ki-plus"></i> Nominate Officer
+                    <i class="ki-filled ki-plus"></i> Nominate Officers
                 </a>
             </div>
         </div>
@@ -53,6 +42,22 @@
             <p class="text-sm text-secondary-foreground mb-4">
                 Nominate officers for courses and track completion. Completed courses are automatically recorded in the officer's record.
             </p>
+
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-6 border-b border-border">
+                <a href="{{ request()->fullUrlWithQuery(['tab' => 'all']) }}" 
+                   class="px-4 py-2 text-sm font-medium transition-colors border-b-2 {{ ($tab ?? 'all') === 'all' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground hover:text-primary' }}">
+                    All
+                </a>
+                <a href="{{ request()->fullUrlWithQuery(['tab' => 'in_progress']) }}" 
+                   class="px-4 py-2 text-sm font-medium transition-colors border-b-2 {{ ($tab ?? 'all') === 'in_progress' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground hover:text-primary' }}">
+                    In Progress
+                </a>
+                <a href="{{ request()->fullUrlWithQuery(['tab' => 'completed']) }}" 
+                   class="px-4 py-2 text-sm font-medium transition-colors border-b-2 {{ ($tab ?? 'all') === 'completed' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground hover:text-primary' }}">
+                    Completed
+                </a>
+            </div>
 
             <!-- Desktop Table View -->
             <div class="hidden lg:block">
@@ -289,5 +294,22 @@
         </div>
     @endif
 @endforeach
+
+@push('scripts')
+<script>
+    // Show success message using SweetAlert
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: '{{ session('success') }}',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#16a34a',
+            timer: 3000,
+            timerProgressBar: true
+        });
+    @endif
+</script>
+@endpush
 @endsection
 

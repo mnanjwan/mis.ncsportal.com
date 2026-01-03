@@ -143,8 +143,25 @@
     </style>
 </head>
 <body>
-    <div class="no-print" style="text-align: center; margin-bottom: 20px; padding: 20px;">
-        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px;">
+    <div class="no-print" style="text-align: center; margin-bottom: 20px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+        <form method="GET" action="{{ route('hrd.courses.print') }}" style="display: flex; gap: 15px; align-items: flex-end; justify-content: center; flex-wrap: wrap; margin-bottom: 15px;">
+            <input type="hidden" name="tab" value="{{ $tab ?? 'all' }}">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label for="start_date" style="font-weight: 600; font-size: 14px;">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ $startDate ?? '' }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label for="end_date" style="font-weight: 600; font-size: 14px;">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ $endDate ?? '' }}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+            <button type="submit" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: 600;">
+                Filter
+            </button>
+            <a href="{{ route('hrd.courses.print', ['tab' => $tab ?? 'all']) }}" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-block;">
+                Clear
+            </a>
+        </form>
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: 600;">
             Print Document
         </button>
     </div>
@@ -157,6 +174,32 @@
     <div class="header">
         <h1>NIGERIA CUSTOMS SERVICE</h1>
         <h1>LIST OF SUCCESSFUL CANDIDATES</h1>
+        @php
+            $statusText = '';
+            if (isset($tab)) {
+                if ($tab === 'in_progress') {
+                    $statusText = ' (In Progress)';
+                } elseif ($tab === 'completed') {
+                    $statusText = ' (Completed)';
+                }
+            }
+        @endphp
+        @if($statusText)
+            <p style="font-size: 10pt; margin-top: 5px; font-weight: bold;">
+                {{ $statusText }}
+            </p>
+        @endif
+        @if(isset($startDate) || isset($endDate))
+            <p style="font-size: 10pt; margin-top: 5px;">
+                @if(isset($startDate) && isset($endDate))
+                    Date Range: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                @elseif(isset($startDate))
+                    From: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}
+                @elseif(isset($endDate))
+                    Until: {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                @endif
+            </p>
+        @endif
     </div>
 
     @foreach($printData as $courseData)
