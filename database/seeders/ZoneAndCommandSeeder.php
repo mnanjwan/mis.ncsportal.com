@@ -51,11 +51,13 @@ class ZoneAndCommandSeeder extends Seeder
 
         $zoneModels = [];
         foreach ($zones as $zoneData) {
-            $zoneModels[$zoneData['code']] = Zone::firstOrCreate(
+            // Use updateOrCreate to ensure zones are updated if they already exist
+            $zoneModels[$zoneData['code']] = Zone::updateOrCreate(
                 ['code' => $zoneData['code']],
                 $zoneData
             );
         }
+        $this->command->info('✅ Created/Updated ' . count($zoneModels) . ' zones');
 
         // Define Commands by Zone
         $commandsByZone = [
@@ -124,10 +126,12 @@ class ZoneAndCommandSeeder extends Seeder
         ];
 
         $commandModels = [];
+        $totalCommands = 0;
         foreach ($commandsByZone as $zoneCode => $commands) {
             $zone = $zoneModels[$zoneCode];
             foreach ($commands as $commandData) {
-                $command = Command::firstOrCreate(
+                // Use updateOrCreate to ensure commands are updated with correct zone_id
+                $command = Command::updateOrCreate(
                     ['code' => $commandData['code']],
                     [
                         'name' => $commandData['name'],
@@ -136,13 +140,11 @@ class ZoneAndCommandSeeder extends Seeder
                         'is_active' => true,
                     ]
                 );
-                // Update zone_id if command already existed
-                if (!$command->wasRecentlyCreated) {
-                    $command->update(['zone_id' => $zone->id]);
-                }
                 $commandModels[$commandData['code']] = $command;
+                $totalCommands++;
             }
         }
+        $this->command->info('✅ Created/Updated ' . $totalCommands . ' commands across all zones');
 
         // Create Test Users
         $this->createTestUsers($commandModels);
