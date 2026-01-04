@@ -124,6 +124,87 @@
                                         </ul>
                                     </div>
                                     @endif
+                                    
+                                    @php
+                                        $hasStep2Documents = isset($step2['documents']) && is_array($step2['documents']) && count($step2['documents']) > 0;
+                                    @endphp
+                                    
+                                    @if($hasStep2Documents)
+                                    <div class="mt-4 pt-4 border-t border-input">
+                                        <strong class="block mb-3 text-base">Uploaded Documents ({{ count($step2['documents']) }})</strong>
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                            @foreach($step2['documents'] as $index => $doc)
+                                            <div class="flex flex-col items-center p-3 border border-input rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
+                                                @php
+                                                    $isImage = isset($doc['type']) && str_starts_with($doc['type'], 'image/');
+                                                    $imageSrc = null;
+                                                    
+                                                    if ($isImage && isset($doc['temp_path'])) {
+                                                        // Check if file exists using Storage
+                                                        if (\Illuminate\Support\Facades\Storage::disk('local')->exists($doc['temp_path'])) {
+                                                            try {
+                                                                // Use Storage facade to read file
+                                                                $fileContent = \Illuminate\Support\Facades\Storage::disk('local')->get($doc['temp_path']);
+                                                                if ($fileContent) {
+                                                                    $imageData = base64_encode($fileContent);
+                                                                    $imageSrc = 'data:' . $doc['type'] . ';base64,' . $imageData;
+                                                                }
+                                                            } catch (\Exception $e) {
+                                                                \Log::error('Error reading step2 document file via Storage', [
+                                                                    'temp_path' => $doc['temp_path'] ?? 'N/A',
+                                                                    'error' => $e->getMessage(),
+                                                                ]);
+                                                                // Fallback: try direct file read
+                                                                try {
+                                                                    $filePath = storage_path('app/' . $doc['temp_path']);
+                                                                    if (file_exists($filePath)) {
+                                                                        $imageData = base64_encode(file_get_contents($filePath));
+                                                                        $imageSrc = 'data:' . $doc['type'] . ';base64,' . $imageData;
+                                                                    }
+                                                                } catch (\Exception $e2) {
+                                                                    \Log::error('Fallback file read also failed for step2', [
+                                                                        'file' => $filePath ?? 'N/A',
+                                                                        'error' => $e2->getMessage(),
+                                                                    ]);
+                                                                }
+                                                            }
+                                                        } else {
+                                                            \Log::warning('Step2 document file not found in storage', [
+                                                                'temp_path' => $doc['temp_path'] ?? 'N/A',
+                                                            ]);
+                                                        }
+                                                    }
+                                                @endphp
+                                                
+                                                @if($imageSrc)
+                                                <img src="{{ $imageSrc }}" 
+                                                     alt="{{ $doc['name'] ?? 'Document' }}" 
+                                                     class="w-full h-32 object-cover rounded mb-2 cursor-pointer hover:opacity-80 transition-opacity border border-input document-thumbnail"
+                                                     data-image-src="{{ htmlspecialchars($imageSrc, ENT_QUOTES, 'UTF-8') }}"
+                                                     data-file-name="{{ htmlspecialchars($doc['name'] ?? 'Document', ENT_QUOTES, 'UTF-8') }}"
+                                                     title="Click to zoom">
+                                                @else
+                                                <div class="w-full h-32 flex items-center justify-center bg-muted rounded mb-2 border border-input cursor-pointer hover:bg-muted/60 transition-colors document-placeholder"
+                                                     data-file-name="{{ htmlspecialchars($doc['name'] ?? 'Document', ENT_QUOTES, 'UTF-8') }}"
+                                                     data-file-path="{{ htmlspecialchars($doc['temp_path'] ?? '', ENT_QUOTES, 'UTF-8') }}"
+                                                     title="Click to view">
+                                                    <i class="ki-filled ki-file text-primary text-3xl"></i>
+                                                </div>
+                                                @endif
+                                                
+                                                <div class="w-full text-center">
+                                                    <span class="text-xs font-medium truncate block w-full" title="{{ $doc['name'] ?? 'Document' }}">
+                                                        {{ $doc['name'] ?? 'Document' }}
+                                                    </span>
+                                                    <span class="text-xs text-muted mt-1 block">
+                                                        {{ isset($doc['size']) ? number_format($doc['size'] / 1024, 1) : '0' }} KB
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
                                 <div class="mt-4">
                                     <a href="{{ route('recruit.onboarding.step2', ['token' => request('token') ?? session('recruit_onboarding_token')]) }}" class="kt-btn kt-btn-sm kt-btn-secondary">Edit Step 2</a>
@@ -205,12 +286,6 @@
                                     @endforeach
                                 </div>
                                 @endif
-                                
-                                <div class="mt-4 grid grid-cols-3 gap-2 text-sm">
-                                    <div><strong>Interdicted:</strong> {{ ($step4['interdicted'] ?? false) ? 'Yes' : 'No' }}</div>
-                                    <div><strong>Suspended:</strong> {{ ($step4['suspended'] ?? false) ? 'Yes' : 'No' }}</div>
-                                    <div><strong>Quartered:</strong> {{ ($step4['quartered'] ?? false) ? 'Yes' : 'No' }}</div>
-                                </div>
                                 
                                 @php
                                     $hasDocuments = isset($step4['documents']) && is_array($step4['documents']) && count($step4['documents']) > 0;

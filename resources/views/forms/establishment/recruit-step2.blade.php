@@ -51,7 +51,7 @@
             </div>
             @endif
             
-            <form id="recruit-step2-form" method="POST" action="{{ route('recruit.onboarding.step2.save') }}" class="flex flex-col gap-5 w-full overflow-hidden">
+            <form id="recruit-step2-form" method="POST" action="{{ route('recruit.onboarding.step2.save') }}" enctype="multipart/form-data" class="flex flex-col gap-5 w-full overflow-hidden">
                 @csrf
                 <input type="hidden" name="token" value="{{ request('token') ?? session('recruit_onboarding_token') }}">
                 
@@ -156,7 +156,7 @@
                 
                 <!-- Document Upload Section -->
                 <div class="flex flex-col gap-1 pt-5 border-t border-input">
-                    <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
+                    <label class="kt-form-label">Upload Documents <span class="text-danger">*</span> <span class="text-muted">(Preferably in JPEG format)</span></label>
                     <div class="flex flex-col gap-3">
                         <div class="relative">
                             <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png"/>
@@ -168,7 +168,7 @@
                         <div id="selected-files-list" class="flex flex-col gap-2 hidden">
                             <!-- Selected files will be displayed here -->
                         </div>
-                        <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space.</small>
+                        <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space. <span class="text-danger">At least one document is required.</span></small>
                     </div>
                 </div>
                 
@@ -214,6 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize education entries
     initializeEducationSection();
+    
+    // Initialize document upload
+    loadSavedDocuments();
 });
 
 // Nigerian Institutions List (Universities and other institutions)
@@ -967,6 +970,43 @@ function validateStep2() {
         showError('date_posted_to_station', 'Date Posted to Station must be after Date of Present Appointment');
         isValid = false;
     }
+    
+    // Validate documents - at least one document is required (either new files or saved from session)
+    const documentsInput = document.getElementById('documents-input');
+    const selectedFilesList = document.getElementById('selected-files-list');
+    const hasNewFiles = documentsInput && documentsInput.files && documentsInput.files.length > 0;
+    // Check if there are saved files displayed in the list
+    const hasSavedFiles = selectedFilesList && 
+                         !selectedFilesList.classList.contains('hidden') && 
+                         selectedFilesList.children.length > 0;
+    // Also check the selectedFiles array if it exists
+    const hasFilesInArray = typeof selectedFiles !== 'undefined' && selectedFiles && selectedFiles.length > 0;
+    
+    if (!hasNewFiles && !hasSavedFiles && !hasFilesInArray) {
+        // Show error message near the document upload section
+        const uploadSection = documentsInput?.closest('.flex.flex-col.gap-1');
+        if (uploadSection) {
+            let errorDiv = uploadSection.querySelector('.document-error-message');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'document-error-message text-danger text-sm mt-1';
+                uploadSection.appendChild(errorDiv);
+            }
+            errorDiv.textContent = 'At least one document is required.';
+            errorDiv.classList.remove('hidden');
+        }
+        isValid = false;
+    } else {
+        // Clear error if documents exist
+        const uploadSection = documentsInput?.closest('.flex.flex-col.gap-1');
+        if (uploadSection) {
+            const errorDiv = uploadSection.querySelector('.document-error-message');
+            if (errorDiv) {
+                errorDiv.textContent = '';
+                errorDiv.classList.add('hidden');
+            }
+        }
+    }
 
     return isValid;
 }
@@ -1057,6 +1097,198 @@ document.querySelectorAll('#recruit-step2-form input, #recruit-step2-form select
         }
     });
 });
+
+// Handle document file uploads
+const documentsInput = document.getElementById('documents-input');
+const selectedFilesList = document.getElementById('selected-files-list');
+const uploadButtonText = document.getElementById('upload-button-text');
+let selectedFiles = [];
+let filePreviewUrls = []; // Store object URLs for cleanup
+
+// Load saved documents from session
+function loadSavedDocuments() {
+    const savedDocuments = @json($savedData['documents'] ?? []);
+    
+    if (savedDocuments && Array.isArray(savedDocuments) && savedDocuments.length > 0) {
+        console.log('Loading saved documents:', savedDocuments);
+        savedDocuments.forEach((doc, index) => {
+            if (doc.temp_path || doc.name) {
+                // Determine MIME type from file extension if not provided
+                let mimeType = doc.type || 'application/octet-stream';
+                if (!mimeType || mimeType === 'application/octet-stream') {
+                    const fileName = doc.name || '';
+                    if (fileName.toLowerCase().endsWith('.png')) {
+                        mimeType = 'image/png';
+                    } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+                        mimeType = 'image/jpeg';
+                    } else if (fileName.toLowerCase().endsWith('.gif')) {
+                        mimeType = 'image/gif';
+                    }
+                }
+                
+                // Create a placeholder file object for display
+                const fileInfo = {
+                    name: doc.name || 'Document',
+                    size: doc.size || 0,
+                    type: mimeType,
+                    temp_path: doc.temp_path || null,
+                    isSaved: true, // Mark as saved document
+                    index: index
+                };
+                
+                console.log('Document info:', fileInfo);
+                
+                // Add to selectedFiles array
+                selectedFiles.push(fileInfo);
+                
+                // For images, create preview URL from server
+                if (mimeType.startsWith('image/') && doc.temp_path) {
+                    // Use server endpoint to preview saved document
+                    const previewUrl = `/recruit/onboarding/document-preview?path=${encodeURIComponent(doc.temp_path)}`;
+                    filePreviewUrls.push(previewUrl);
+                    console.log('Added preview URL for image:', previewUrl);
+                } else {
+                    filePreviewUrls.push(null);
+                }
+            }
+        });
+        
+        if (selectedFiles.length > 0) {
+            updateFileDisplay();
+        }
+    }
+}
+
+if (documentsInput) {
+    documentsInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        
+        // Add new files to the list
+        files.forEach(file => {
+            if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                selectedFiles.push(file);
+                // Create preview URL for images
+                if (file.type.startsWith('image/')) {
+                    filePreviewUrls.push(URL.createObjectURL(file));
+                } else {
+                    filePreviewUrls.push(null);
+                }
+            }
+        });
+        
+        updateFileDisplay();
+    });
+}
+
+function updateFileDisplay() {
+    if (selectedFiles.length === 0) {
+        selectedFilesList.classList.add('hidden');
+        uploadButtonText.textContent = 'Choose Files';
+        documentsInput.value = '';
+    } else {
+        selectedFilesList.classList.remove('hidden');
+        uploadButtonText.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`;
+        
+        selectedFilesList.innerHTML = selectedFiles.map((file, index) => {
+            const isImage = file.type && file.type.startsWith('image/');
+            const fileSize = file.size ? (file.size / 1024).toFixed(1) : '0';
+            const previewUrl = filePreviewUrls[index];
+            const isSaved = file.isSaved || false;
+            
+            // Determine image source
+            let imageSrc = null;
+            if (isSaved && isImage && file.temp_path) {
+                // For saved documents, always use server preview URL
+                imageSrc = `/recruit/onboarding/document-preview?path=${encodeURIComponent(file.temp_path)}`;
+                console.log('Setting imageSrc for saved document:', imageSrc, 'isImage:', isImage, 'temp_path:', file.temp_path);
+            } else if (!isSaved && isImage && previewUrl) {
+                // For new files, use the blob URL
+                imageSrc = previewUrl;
+            }
+            
+            console.log('File display:', {
+                name: file.name,
+                type: file.type,
+                isImage: isImage,
+                isSaved: isSaved,
+                temp_path: file.temp_path,
+                imageSrc: imageSrc,
+                previewUrl: previewUrl
+            });
+            
+            return `
+                <div class="relative p-3 bg-muted/50 rounded-lg border border-input" data-file-index="${index}">
+                    <div class="flex items-start gap-3">
+                        ${isImage && imageSrc ? `
+                            <div class="flex-shrink-0 relative">
+                                <img src="${imageSrc}" 
+                                     alt="${file.name}" 
+                                     class="w-20 h-20 object-cover rounded-lg border border-input cursor-pointer hover:opacity-80 transition-opacity"
+                                     style="display: block !important; max-width: 80px !important; max-height: 80px !important; min-width: 80px !important; min-height: 80px !important; width: 80px !important; height: 80px !important; visibility: visible !important; opacity: 1 !important;"
+                                     onclick="window.open('${imageSrc}', '_blank')"
+                                     title="Click to view full size"
+                                     onerror="console.error('Image failed to load:', '${imageSrc}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                     onload="console.log('Image loaded successfully:', '${file.name}'); this.style.display='block'; this.style.visibility='visible'; this.style.opacity='1';">
+                                <div class="w-20 h-20 hidden items-center justify-center bg-muted rounded-lg border border-input" style="display: none;">
+                                    <i class="ki-filled ki-file text-primary text-2xl"></i>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="flex-shrink-0 w-20 h-20 flex items-center justify-center bg-muted rounded-lg border border-input">
+                                <i class="ki-filled ki-file text-primary text-2xl"></i>
+                            </div>
+                        `}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-sm font-medium truncate" title="${file.name}">${file.name}</span>
+                                <button type="button" 
+                                        class="kt-btn kt-btn-sm kt-btn-ghost text-danger flex-shrink-0" 
+                                        onclick="removeFile(${index})"
+                                        title="Remove file">
+                                    <i class="ki-filled ki-cross"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-muted">
+                                <span>${fileSize} KB</span>
+                                ${isImage ? `<span>• Image</span>` : `<span>• ${file.type || 'File'}</span>`}
+                                ${isSaved ? `<span class="text-success">• Saved</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Update the file input with remaining files
+        updateFileInput();
+    }
+}
+
+function removeFile(index) {
+    // Revoke object URL to prevent memory leak (only for blob URLs, not server URLs)
+    if (filePreviewUrls[index] && typeof filePreviewUrls[index] === 'string' && filePreviewUrls[index].startsWith('blob:')) {
+        URL.revokeObjectURL(filePreviewUrls[index]);
+    }
+    
+    selectedFiles.splice(index, 1);
+    filePreviewUrls.splice(index, 1);
+    updateFileDisplay();
+}
+
+function updateFileInput() {
+    // Create a new DataTransfer object to hold only NEW files (not saved ones)
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => {
+        // Only add files that are not saved (i.e., newly uploaded)
+        if (!file.isSaved && file instanceof File) {
+            dataTransfer.items.add(file);
+        }
+    });
+    
+    // Replace the files in the input (only new files)
+    documentsInput.files = dataTransfer.files;
+}
+
 </script>
 @endpush
 @endsection

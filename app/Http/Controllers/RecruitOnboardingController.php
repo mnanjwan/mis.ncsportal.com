@@ -336,7 +336,48 @@ class RecruitOnboardingController extends Controller
             'education.*.qualification' => 'required|string|max:255',
             'education.*.year_obtained' => 'required|integer|min:1950|max:' . date('Y'),
             'education.*.discipline' => 'nullable|string|max:255',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:jpeg,jpg,png|max:5120',
         ]);
+        
+        // Handle document uploads - store file info for preview (same as step4)
+        // Get existing documents from session first
+        $existingStep2 = session('recruit_onboarding_step2', []);
+        $existingDocuments = isset($existingStep2['documents']) && is_array($existingStep2['documents']) 
+            ? $existingStep2['documents'] 
+            : [];
+        
+        if ($request->hasFile('documents')) {
+            // Add new documents to existing ones
+            foreach ($request->file('documents') as $file) {
+                $tempPath = $file->store('temp/recruit-documents', 'local');
+                $existingDocuments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                    'type' => $file->getMimeType(),
+                    'temp_path' => $tempPath,
+                ];
+            }
+            $validated['documents'] = $existingDocuments;
+            Log::info('Recruit Onboarding Step 2 - Documents saved', [
+                'new_count' => count($request->file('documents')),
+                'total_count' => count($existingDocuments),
+                'files' => array_map(fn($d) => $d['name'], $existingDocuments),
+            ]);
+        } else {
+            // If no new documents uploaded, use existing ones from session
+            if (count($existingDocuments) > 0) {
+                $validated['documents'] = $existingDocuments;
+                Log::info('Recruit Onboarding Step 2 - Using existing documents from session', [
+                    'count' => count($existingDocuments),
+                ]);
+            }
+        }
+        
+        // Validate that at least one document exists (either new or from session)
+        if (empty($validated['documents']) || count($validated['documents']) < 1) {
+            return back()->withErrors(['documents' => 'At least one document is required.'])->withInput();
+        }
 
         session(['recruit_onboarding_step2' => $validated]);
         return redirect()->route('recruit.onboarding.step3', ['token' => $token]);
@@ -441,45 +482,17 @@ class RecruitOnboardingController extends Controller
             'next_of_kin.*.address' => 'required|string',
             'next_of_kin.*.is_primary' => 'nullable|in:0,1',
             'profile_picture_data' => 'required|string',
-            'documents' => 'nullable|array',
-            'documents.*' => 'file|mimes:jpeg,jpg,png|max:5120',
             'interdicted' => 'nullable|boolean',
             'suspended' => 'nullable|boolean',
             'quartered' => 'nullable|boolean',
         ]);
         
-        // Handle document uploads - store file info for preview
-        // Get existing documents from session first
-        $existingStep4 = session('recruit_onboarding_step4', []);
-        $existingDocuments = isset($existingStep4['documents']) && is_array($existingStep4['documents']) 
-            ? $existingStep4['documents'] 
-            : [];
-        
-        if ($request->hasFile('documents')) {
-            // Add new documents to existing ones
-            foreach ($request->file('documents') as $file) {
-                $tempPath = $file->store('temp/recruit-documents', 'local');
-                $existingDocuments[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'size' => $file->getSize(),
-                    'type' => $file->getMimeType(),
-                    'temp_path' => $tempPath,
-                ];
-            }
-            $validated['documents'] = $existingDocuments;
-            Log::info('Recruit Onboarding Step 4 - Documents saved', [
-                'new_count' => count($request->file('documents')),
-                'total_count' => count($existingDocuments),
-                'files' => array_map(fn($d) => $d['name'], $existingDocuments),
-            ]);
-        } else {
-            // If no new documents uploaded, use existing ones from session
-            if (count($existingDocuments) > 0) {
-                $validated['documents'] = $existingDocuments;
-                Log::info('Recruit Onboarding Step 4 - Using existing documents from session', [
-                    'count' => count($existingDocuments),
-                ]);
-            }
+        // Documents are now only uploaded in Step 2, so no document handling needed here
+        // Get existing documents from step2 session if any
+        $step2Data = session('recruit_onboarding_step2', []);
+        if (isset($step2Data['documents']) && is_array($step2Data['documents'])) {
+            // Keep step2 documents in step4 session for preview, but they're already saved in step2
+            $validated['documents'] = $step2Data['documents'];
         }
 
         // Validate at least one primary next of kin
@@ -678,19 +691,28 @@ class RecruitOnboardingController extends Controller
                 ]);
             }
 
+            // Merge documents from step2 and step4 (they save to the same place)
+            $allDocuments = [];
+            if (isset($step2['documents']) && is_array($step2['documents']) && count($step2['documents']) > 0) {
+                $allDocuments = array_merge($allDocuments, $step2['documents']);
+            }
+            if (isset($step4['documents']) && is_array($step4['documents']) && count($step4['documents']) > 0) {
+                $allDocuments = array_merge($allDocuments, $step4['documents']);
+            }
+            
             // Save uploaded documents to permanent storage and create OfficerDocument records
             Log::info('Recruit Onboarding Final Submit - Checking for documents', [
                 'recruit_id' => $recruit->id,
-                'has_documents_key' => isset($step4['documents']),
-                'documents_is_array' => isset($step4['documents']) && is_array($step4['documents']),
-                'documents_count' => isset($step4['documents']) && is_array($step4['documents']) ? count($step4['documents']) : 0,
+                'step2_documents_count' => isset($step2['documents']) && is_array($step2['documents']) ? count($step2['documents']) : 0,
+                'step4_documents_count' => isset($step4['documents']) && is_array($step4['documents']) ? count($step4['documents']) : 0,
+                'total_documents_count' => count($allDocuments),
             ]);
             
-            if (isset($step4['documents']) && is_array($step4['documents']) && count($step4['documents']) > 0) {
+            if (count($allDocuments) > 0) {
                 $savedCount = 0;
                 $failedCount = 0;
                 
-                foreach ($step4['documents'] as $index => $docData) {
+                foreach ($allDocuments as $index => $docData) {
                     Log::info('Processing document', [
                         'index' => $index,
                         'has_temp_path' => isset($docData['temp_path']),
@@ -760,13 +782,14 @@ class RecruitOnboardingController extends Controller
                 
                 Log::info('Document saving summary', [
                     'recruit_id' => $recruit->id,
-                    'total_documents' => count($step4['documents']),
+                    'total_documents' => count($allDocuments),
                     'saved_count' => $savedCount,
                     'failed_count' => $failedCount,
                 ]);
             } else {
-                Log::warning('No documents found in step4 data', [
+                Log::warning('No documents found in step2 or step4 data', [
                     'recruit_id' => $recruit->id,
+                    'step2_keys' => isset($step2) ? array_keys($step2) : [],
                     'step4_keys' => isset($step4) ? array_keys($step4) : [],
                 ]);
             }

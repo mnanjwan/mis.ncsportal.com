@@ -71,21 +71,6 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-5 border-t border-input">
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="interdicted" id="interdicted" value="1" {{ old('interdicted', $savedData['interdicted'] ?? false) ? 'checked' : '' }} class="kt-checkbox"/>
-                        <label for="interdicted" class="kt-form-label">Interdicted</label>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="suspended" id="suspended" value="1" {{ old('suspended', $savedData['suspended'] ?? false) ? 'checked' : '' }} class="kt-checkbox"/>
-                        <label for="suspended" class="kt-form-label">Suspended</label>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="quartered" id="quartered" value="1" {{ old('quartered', $savedData['quartered'] ?? false) ? 'checked' : '' }} class="kt-checkbox"/>
-                        <label for="quartered" class="kt-form-label">Quartered</label>
-                    </div>
-                </div>
-                
                 <div class="flex flex-col gap-1 pt-5 border-t border-input">
                     <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
                     <div class="flex flex-col gap-3">
