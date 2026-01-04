@@ -393,6 +393,73 @@
                 </div>
             </div>
             @endif
+
+            <!-- Uploaded Documents -->
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Uploaded Documents</h3>
+                </div>
+                <div class="kt-card-content">
+                    @php
+                        $documents = $officer->documents ?? collect();
+                        $documentsCount = $documents->count();
+                    @endphp
+                    @if($documentsCount > 0)
+                        <div class="mb-3">
+                            <p class="text-sm text-secondary-foreground">
+                                Found <strong>{{ $documentsCount }}</strong> document(s) for this officer.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            @foreach($documents as $doc)
+                                @php
+                                    $isImage = str_starts_with($doc->mime_type ?? '', 'image/');
+                                    $fileUrl = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) : null;
+                                    $fileExists = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->exists($doc->file_path) : false;
+                                @endphp
+                                <div class="border border-border rounded-lg p-3 hover:border-primary/50 transition-colors cursor-pointer document-item {{ !$fileExists ? 'border-danger/50 bg-danger/5' : '' }}"
+                                     data-file-url="{{ $fileUrl }}"
+                                     data-file-name="{{ $doc->file_name }}"
+                                     data-is-image="{{ $isImage ? '1' : '0' }}">
+                                    @if($isImage && $fileUrl && $fileExists)
+                                        <img src="{{ $fileUrl }}" 
+                                             alt="{{ $doc->file_name ?? 'Document' }}"
+                                             class="w-full h-32 object-cover rounded mb-2">
+                                    @else
+                                        <div class="w-full h-32 flex items-center justify-center bg-muted rounded mb-2 {{ !$fileExists ? 'bg-danger/10' : '' }}">
+                                            <i class="ki-filled ki-file text-primary text-3xl"></i>
+                                        </div>
+                                    @endif
+                                    <div class="text-xs font-medium text-foreground truncate" title="{{ $doc->file_name }}">
+                                        {{ $doc->file_name ?? 'Document' }}
+                                    </div>
+                                    @if($doc->file_size)
+                                    <div class="text-xs text-secondary-foreground">
+                                        {{ number_format($doc->file_size / 1024, 2) }} KB
+                                    </div>
+                                    @endif
+                                    @if($doc->document_type)
+                                    <div class="text-xs text-secondary-foreground">
+                                        Type: {{ ucfirst($doc->document_type) }}
+                                    </div>
+                                    @endif
+                                    @if(!$fileExists)
+                                    <div class="text-xs text-danger mt-1">
+                                        <i class="ki-filled ki-information"></i> File not found on disk
+                                    </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="space-y-3">
+                            <p class="text-sm text-secondary-foreground">
+                                <i class="ki-filled ki-information text-info"></i> No documents found for this officer.
+                            </p>
+                        </div>
+                    @endif
+                </div>
+            </div>
             </div>
         </div>
 
@@ -582,6 +649,23 @@
         }
     </style>
 
+    <!-- Document Modal -->
+    <div id="document-modal" class="kt-modal hidden" data-kt-modal="true">
+        <div class="kt-modal-content max-w-4xl">
+            <div class="kt-modal-header py-3 px-5 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-foreground" id="modal-document-name">Document</h3>
+                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" onclick="closeDocumentModal()">
+                    <i class="ki-filled ki-cross"></i>
+                </button>
+            </div>
+            <div class="kt-modal-body py-4 px-5">
+                <div id="modal-document-content" class="flex items-center justify-center min-h-[400px]">
+                    <!-- Document content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function switchTab(tabName) {
             // Hide all tab contents
@@ -602,6 +686,56 @@
             const activeTab = document.getElementById('tab-' + tabName);
             activeTab.classList.add('active', 'border-b-2', 'border-primary', 'text-foreground');
             activeTab.classList.remove('text-secondary-foreground');
+        }
+
+        // Document modal functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle document clicks
+            document.querySelectorAll('.document-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    const fileUrl = this.getAttribute('data-file-url');
+                    const fileName = this.getAttribute('data-file-name');
+                    const isImage = this.getAttribute('data-is-image') === '1';
+                    
+                    if (isImage && fileUrl) {
+                        showDocumentModal(fileUrl, fileName);
+                    } else {
+                        // For non-image files, open in new tab
+                        if (fileUrl) {
+                            window.open(fileUrl, '_blank');
+                        }
+                    }
+                });
+            });
+        });
+
+        function showDocumentModal(fileUrl, fileName) {
+            const modal = document.getElementById('document-modal');
+            const content = document.getElementById('modal-document-content');
+            const nameEl = document.getElementById('modal-document-name');
+            
+            nameEl.textContent = fileName || 'Document';
+            content.innerHTML = `<img src="${fileUrl}" alt="${fileName}" class="max-w-full max-h-[70vh] object-contain">`;
+            
+            modal.classList.remove('hidden');
+            if (typeof KTModal !== 'undefined') {
+                const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+                modalInstance.show();
+            } else {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeDocumentModal() {
+            const modal = document.getElementById('document-modal');
+            if (typeof KTModal !== 'undefined') {
+                const modalInstance = KTModal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            } else {
+                modal.classList.add('hidden');
+            }
         }
     </script>
 @endsection
