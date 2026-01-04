@@ -369,7 +369,7 @@
                             @foreach($documents as $doc)
                                 @php
                                     $isImage = str_starts_with($doc->mime_type ?? '', 'image/');
-                                    $fileUrl = $doc->file_path ? \Illuminate\Support\Facades\Storage::url($doc->file_path) : null;
+                                    $fileUrl = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) : null;
                                     $fileExists = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->exists($doc->file_path) : false;
                                 @endphp
                                 <div class="border border-border rounded-lg p-3 hover:border-primary/50 transition-colors cursor-pointer document-item {{ !$fileExists ? 'border-danger/50 bg-danger/5' : '' }}"
