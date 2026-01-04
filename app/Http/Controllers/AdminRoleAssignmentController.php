@@ -74,7 +74,7 @@ class AdminRoleAssignmentController extends Controller
             $search = $request->search;
             $query->whereHas('officer', function($q) use ($search) {
                 $q->where('surname', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('initials', 'like', "%{$search}%")
                   ->orWhere('service_number', 'like', "%{$search}%");
             });
         }
@@ -289,7 +289,7 @@ class AdminRoleAssignmentController extends Controller
             }
 
             return redirect()->route('admin.role-assignments')
-                ->with('success', "Role '{$role->name}' assigned successfully to {$officer->surname} {$officer->first_name}");
+                ->with('success', "Role '{$role->name}' assigned successfully to {$officer->surname} {$officer->initials}");
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()

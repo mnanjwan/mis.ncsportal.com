@@ -122,7 +122,7 @@
         @php
             $officersData = $officers->map(function($officer) {
                 // Match HRD version name structure
-                $name = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '') . ' ' . ($officer->first_name ?? ''));
+                $name = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
                 return [
                     'id' => $officer->id,
                     'name' => $name,
