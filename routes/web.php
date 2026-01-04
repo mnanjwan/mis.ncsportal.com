@@ -679,6 +679,7 @@ Route::prefix('print')->name('print.')->middleware('auth')->group(function () {
     Route::get('/leave-document/{id}', [PrintController::class, 'leaveDocument'])->name('leave-document');
     Route::get('/pass-document/{id}', [PrintController::class, 'passDocument'])->name('pass-document');
     Route::get('/retirement-list', [PrintController::class, 'retirementList'])->name('retirement-list');
+    Route::get('/retirement-list/{id}/print', [PrintController::class, 'printRetirementList'])->name('retirement-list.print');
     Route::get('/promotion-eligibility-list/{id}', [PrintController::class, 'promotionEligibilityList'])->name('promotion-eligibility.print');
     Route::get('/movement-order/{id}', [PrintController::class, 'movementOrder'])->name('movement-order.print');
 

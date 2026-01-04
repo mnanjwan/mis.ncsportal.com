@@ -98,7 +98,53 @@ class RetirementController extends Controller
             return true;
         })->values(); // Re-index the collection
         
+        // Sort by rank (descending order: CGC to CA III)
+        $rankOrder = [
+            'CGC' => 1, 'DCG' => 2, 'ACG' => 3, 'CC' => 4, 'DC' => 5, 'AC' => 6,
+            'CSC' => 7, 'SC' => 8, 'DSC' => 9, 'ASC I' => 10, 'ASC II' => 11,
+            'IC' => 12, 'AIC' => 13, 'CA I' => 14, 'CA II' => 15, 'CA III' => 16,
+        ];
+        
+        $list->items = $list->items->sort(function($a, $b) use ($rankOrder) {
+            $rankA = $this->normalizeRankForSorting($a->rank ?? ($a->officer->substantive_rank ?? ''), $rankOrder);
+            $rankB = $this->normalizeRankForSorting($b->rank ?? ($b->officer->substantive_rank ?? ''), $rankOrder);
+            return $rankA <=> $rankB;
+        })->values();
+        
         return view('dashboards.hrd.retirement-list-show', compact('list'));
+    }
+    
+    /**
+     * Normalize rank for sorting (extract abbreviation from full rank names)
+     */
+    private function normalizeRankForSorting($rank, $rankOrder)
+    {
+        if (empty($rank)) {
+            return 999; // Put empty ranks at the end
+        }
+        
+        // If already an abbreviation, return its order
+        if (isset($rankOrder[$rank])) {
+            return $rankOrder[$rank];
+        }
+        
+        // Try to extract abbreviation from parentheses
+        if (preg_match('/\(([A-Z\s]+)\)/', $rank, $matches)) {
+            $abbr = trim($matches[1]);
+            if (isset($rankOrder[$abbr])) {
+                return $rankOrder[$abbr];
+            }
+        }
+        
+        // Try partial matching
+        foreach ($rankOrder as $abbr => $order) {
+            if (stripos($rank, $abbr) !== false) {
+                return $order;
+            }
+        }
+        
+        // If no match found, put at end
+        return 999;
     }
 
     public function destroy($id)

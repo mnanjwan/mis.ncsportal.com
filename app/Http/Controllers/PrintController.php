@@ -12,6 +12,7 @@ use App\Models\OfficerPosting;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\PromotionEligibilityList;
+use App\Models\RetirementList;
 use App\Models\DutyRoster;
 use App\Models\RosterAssignment;
 use App\Models\MovementOrder;
@@ -495,6 +496,93 @@ class PrintController extends Controller
         unset($item);
         
         return view('prints.promotion-eligibility-list', compact('list', 'items'));
+    }
+
+    /**
+     * Print Retirement List
+     */
+    public function printRetirementList($id)
+    {
+        $list = RetirementList::with(['items.officer', 'generatedBy'])
+            ->findOrFail($id);
+        
+        // Filter out officers who are now ineligible (indicted/interdicted, suspended, dismissed, or under investigation)
+        $filteredItems = $list->items->filter(function($item) {
+            if (!$item->officer) {
+                return false;
+            }
+            
+            $officer = $item->officer;
+            
+            if ($officer->interdicted || 
+                $officer->suspended || 
+                $officer->ongoing_investigation || 
+                $officer->dismissed ||
+                $officer->is_deceased) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Get all items with their data
+        $items = $filteredItems->map(function($item) {
+            $officer = $item->officer;
+            
+            return [
+                'serial_number' => $item->serial_number,
+                'service_number' => $officer->service_number ?? 'N/A',
+                'rank' => $item->rank ?? ($officer->substantive_rank ?? 'N/A'),
+                'initials' => $item->initials ?? ($officer->initials ?? ''),
+                'name' => $item->name ?? ($officer->surname ?? ''),
+                'retirement_condition' => $item->retirement_condition ?? 'N/A',
+                'date_of_birth' => $item->date_of_birth ?? ($officer->date_of_birth ?? null),
+                'date_of_first_appointment' => $item->date_of_first_appointment ?? ($officer->date_of_first_appointment ?? null),
+                'date_of_pre_retirement_leave' => $item->date_of_pre_retirement_leave ?? null,
+                'retirement_date' => $item->retirement_date ?? null,
+            ];
+        })->toArray();
+        
+        // Sort by rank in descending order: CGC, DCG, ACG, CC, DC, AC, CSC, SC, DSC, ASC I, ASC II, IC, AIC, CA I, CA II, CA III
+        $rankOrder = [
+            'CGC' => 1,
+            'DCG' => 2,
+            'ACG' => 3,
+            'CC' => 4,
+            'DC' => 5,
+            'AC' => 6,
+            'CSC' => 7,
+            'SC' => 8,
+            'DSC' => 9,
+            'ASC I' => 10,
+            'ASC II' => 11,
+            'IC' => 12,
+            'AIC' => 13,
+            'CA I' => 14,
+            'CA II' => 15,
+            'CA III' => 16,
+        ];
+        
+        usort($items, function($a, $b) use ($rankOrder) {
+            $rankA = $this->normalizeRankForSorting($a['rank'], $rankOrder);
+            $rankB = $this->normalizeRankForSorting($b['rank'], $rankOrder);
+            
+            // If ranks are equal, maintain original order
+            if ($rankA === $rankB) {
+                return 0;
+            }
+            
+            // Sort in descending order (lower number = higher rank)
+            return $rankA <=> $rankB;
+        });
+        
+        // Reassign serial numbers after sorting
+        foreach ($items as $index => &$item) {
+            $item['serial_number'] = $index + 1;
+        }
+        unset($item);
+        
+        return view('prints.retirement-list-print', compact('list', 'items'));
     }
 
     /**

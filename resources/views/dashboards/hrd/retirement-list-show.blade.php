@@ -26,9 +26,16 @@
                 <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between">
                         <h2 class="text-2xl font-semibold text-mono">Retirement List - Year {{ $list->year ?? 'N/A' }}</h2>
-                        <span class="kt-badge kt-badge-{{ $list->status === 'FINALIZED' ? 'success' : ($list->status === 'NOTIFIED' ? 'info' : 'secondary') }} kt-badge-sm">
-                            {{ $list->status ?? 'DRAFT' }}
-                        </span>
+                        <div class="flex items-center gap-3">
+                            <span class="kt-badge kt-badge-{{ $list->status === 'FINALIZED' ? 'success' : ($list->status === 'NOTIFIED' ? 'info' : 'secondary') }} kt-badge-sm">
+                                {{ $list->status ?? 'DRAFT' }}
+                            </span>
+                            <a href="{{ route('print.retirement-list.print', $list->id) }}" 
+                               class="kt-btn kt-btn-sm kt-btn-primary" 
+                               target="_blank">
+                                <i class="ki-filled ki-printer"></i> Print
+                            </a>
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-4 text-sm">
                         <span class="text-secondary-foreground">
@@ -64,7 +71,8 @@
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Date of Birth</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Reason for Retirement</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Preretirement Leave Date</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Retirement Date</th>
                                     </tr>
                                 </thead>
@@ -94,7 +102,10 @@
                                                 {{ $item->rank ?? ($item->officer->substantive_rank ?? 'N/A') }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $item->date_of_birth ? $item->date_of_birth->format('d/m/Y') : 'N/A' }}
+                                                {{ $item->retirement_condition === 'AGE' ? 'Age' : ($item->retirement_condition === 'SVC' ? 'Service' : 'N/A') }}
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                                {{ $item->date_of_pre_retirement_leave ? $item->date_of_pre_retirement_leave->format('d/m/Y') : 'N/A' }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $item->retirement_date ? $item->retirement_date->format('d/m/Y') : 'N/A' }}
@@ -130,6 +141,12 @@
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
                                                 {{ $item->rank ?? ($item->officer->substantive_rank ?? 'N/A') }}
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground">
+                                                Reason: {{ $item->retirement_condition === 'AGE' ? 'Age' : ($item->retirement_condition === 'SVC' ? 'Service' : 'N/A') }}
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground">
+                                                Preretirement Leave: {{ $item->date_of_pre_retirement_leave ? $item->date_of_pre_retirement_leave->format('d/m/Y') : 'N/A' }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
                                                 Retirement: {{ $item->retirement_date ? $item->retirement_date->format('d/m/Y') : 'N/A' }}

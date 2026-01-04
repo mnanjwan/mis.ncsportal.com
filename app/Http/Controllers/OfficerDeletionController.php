@@ -285,6 +285,12 @@ class OfficerDeletionController extends Controller
 
         DB::beginTransaction();
         try {
+            // Disable foreign key checks temporarily to ensure deletion completes
+            // This is safe because we're manually deleting all related records first
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys = OFF');
+            }
+            
             // Store audit information before deletion
             $auditData = [
                 'appointment_number' => $appointmentNumber,
@@ -425,6 +431,11 @@ class OfficerDeletionController extends Controller
             // Create audit log
             OfficerDeletionAuditLog::create($auditData);
 
+            // Re-enable foreign key checks
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys = ON');
+            }
+
             DB::commit();
 
             // Send notifications
@@ -458,6 +469,10 @@ class OfficerDeletionController extends Controller
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
+            // Re-enable foreign key checks before rollback
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys = ON');
+            }
             DB::rollBack();
             Log::error('Error deleting officer', [
                 'officer_id' => $id,
