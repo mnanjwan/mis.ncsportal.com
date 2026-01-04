@@ -632,6 +632,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/resolve', [InvestigationController::class, 'resolve'])->name('resolve');
     });
 
+    // Session ping route to keep session alive
+    Route::post('/api/session/ping', function () {
+        // Update last activity in session
+        session()->put('last_activity', now()->timestamp);
+        return response()->json(['success' => true, 'message' => 'Session kept alive']);
+    })->name('session.ping');
+
     // Form Routes (Public within auth)
     Route::middleware('onboarding.complete')->group(function () {
         Route::get('/emolument/raise', [EmolumentController::class, 'create'])->name('emolument.raise');

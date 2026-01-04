@@ -1,5 +1,6 @@
 import './bootstrap';
 import Swal from 'sweetalert2';
+import './session-timeout';
 
 // Configure SweetAlert2 with site colors
 window.Swal = Swal.mixin({

@@ -68,6 +68,13 @@
                 </div>
             @endif
 
+            @if(session('error'))
+                <div class="mb-6 bg-red-50 border border-red-100 rounded p-4 flex items-start gap-3">
+                    <i class="ki-filled ki-information-2 text-red-600 text-xl mt-0.5"></i>
+                    <p class="text-sm text-red-600 font-medium">{{ session('error') }}</p>
+                </div>
+            @endif
+
             @if(session('success'))
                 <div class="mb-6 bg-green-50 border border-green-100 rounded p-4 flex items-center gap-3">
                     <i class="ki-filled ki-check-circle text-green-600 text-xl"></i>
