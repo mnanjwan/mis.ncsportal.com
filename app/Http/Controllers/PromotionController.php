@@ -20,7 +20,8 @@ class PromotionController extends Controller
     {
         // Check if user is HRD, show eligibility lists
         if (auth()->user()->hasRole('HRD')) {
-            $query = PromotionEligibilityList::withCount('items as officers_count');
+            $query = PromotionEligibilityList::withCount('items as officers_count')
+                ->with(['items.officer']);
 
             // Sorting
             $sortBy = $request->get('sort_by', 'created_at');
@@ -38,6 +39,36 @@ class PromotionController extends Controller
             $query->orderBy($column, $order);
 
             $lists = $query->paginate(20)->withQueryString();
+            
+            // Calculate eligible officers count for each list (excluding ineligible officers)
+            // This shows the actual count of officers who are currently eligible
+            // Excludes: Interdicted, Suspended, Under ongoing investigation, Dismissed, Deceased
+            $lists->getCollection()->transform(function($list) {
+                $eligibleCount = $list->items->filter(function($item) {
+                    if (!$item->officer) {
+                        return false;
+                    }
+                    
+                    $officer = $item->officer;
+                    
+                    // Exclude officers who are indicted/interdicted, suspended, dismissed, or under investigation
+                    // This matches the same exclusion criteria used in the listing display
+                    if ($officer->interdicted || 
+                        $officer->suspended || 
+                        $officer->ongoing_investigation || 
+                        $officer->dismissed ||
+                        $officer->is_deceased) {
+                        return false;
+                    }
+                    
+                    return true;
+                })->count();
+                
+                // Set eligible count (excludes ineligible officers)
+                $list->eligible_officers_count = $eligibleCount;
+                
+                return $list;
+            });
             
             return view('dashboards.hrd.promotion-eligibility', compact('lists'));
         }

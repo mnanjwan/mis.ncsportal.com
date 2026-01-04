@@ -98,7 +98,7 @@
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                        {{ $list->officers_count ?? 0 }} officers
+                                        {{ $list->eligible_officers_count ?? 0 }} officers
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         {{ $list->created_at->format('d/m/Y') }}
@@ -109,7 +109,7 @@
                                                class="kt-btn kt-btn-sm kt-btn-ghost">
                                                 View List
                                             </a>
-                                            @if(($list->officers_count ?? 0) == 0)
+                                            @if(($list->eligible_officers_count ?? 0) == 0)
                                                 <button type="button" 
                                                         data-kt-modal-toggle="#delete-modal-{{ $list->id }}"
                                                         class="kt-btn kt-btn-sm kt-btn-danger">
@@ -149,7 +149,7 @@
                                         Year: {{ $list->year ?? 'N/A' }}
                                     </span>
                                     <span class="text-xs text-secondary-foreground">
-                                        {{ $list->officers_count ?? 0 }} officers
+                                        {{ $list->eligible_officers_count ?? 0 }} officers
                                     </span>
                                     <span class="text-xs text-secondary-foreground">
                                         Generated: {{ $list->created_at->format('d/m/Y') }}
