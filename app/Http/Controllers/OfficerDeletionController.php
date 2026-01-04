@@ -419,13 +419,19 @@ class OfficerDeletionController extends Controller
                 DB::table('user_roles')->where('user_id', $officer->user->id)->delete();
             }
 
-            // 29. User account
+            // 29. Emolument validations where this user is the validator
+            // This must be done before deleting the user due to foreign key constraint
+            if ($officer->user) {
+                \App\Models\EmolumentValidation::where('validator_id', $officer->user->id)->delete();
+            }
+
+            // 30. User account
             if ($officer->user) {
                 $userId = $officer->user->id;
                 $officer->user->delete();
             }
 
-            // 30. Finally, delete the officer record
+            // 31. Finally, delete the officer record
             $officer->delete();
 
             // Create audit log
