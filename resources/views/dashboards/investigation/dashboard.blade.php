@@ -63,6 +63,20 @@
             </div>
         </a>
 
+        <a href="{{ route('investigation.index') }}?status=DISMISSED" class="kt-card hover:shadow-lg transition-shadow">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Dismissed</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $dismissedCount }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-danger/10">
+                        <i class="ki-filled ki-cross text-2xl text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+
         <a href="{{ route('investigation.index') }}?status=RESOLVED" class="kt-card hover:shadow-lg transition-shadow">
             <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                 <div class="flex items-center justify-between">
@@ -149,6 +163,8 @@
                                         <span class="kt-badge kt-badge-danger">Interdicted</span>
                                     @elseif($investigation->status === 'SUSPENDED')
                                         <span class="kt-badge kt-badge-danger">Suspended</span>
+                                    @elseif($investigation->status === 'DISMISSED')
+                                        <span class="kt-badge kt-badge-danger">Dismissed</span>
                                     @else
                                         <span class="kt-badge kt-badge-success">Resolved</span>
                                     @endif

@@ -39,7 +39,7 @@
         <div class="kt-card-header">
             <h3 class="kt-card-title">Investigation Details</h3>
             <div class="kt-card-toolbar">
-                @if($investigation->status !== 'RESOLVED')
+                @if($investigation->status !== 'RESOLVED' && $investigation->status !== 'DISMISSED')
                     <a href="{{ route('investigation.edit', $investigation->id) }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-pencil"></i> Update Status
                     </a>
@@ -83,6 +83,8 @@
                             <span class="kt-badge kt-badge-danger text-base">Interdicted</span>
                         @elseif($investigation->status === 'SUSPENDED')
                             <span class="kt-badge kt-badge-danger text-base">Suspended</span>
+                        @elseif($investigation->status === 'DISMISSED')
+                            <span class="kt-badge kt-badge-danger text-base">Dismissed</span>
                         @else
                             <span class="kt-badge kt-badge-success text-base">Resolved</span>
                         @endif

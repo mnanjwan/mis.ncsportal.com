@@ -31,6 +31,7 @@ class InvestigationController extends Controller
         $ongoingCount = Investigation::where('status', 'ONGOING_INVESTIGATION')->count();
         $interdictedCount = Investigation::where('status', 'INTERDICTED')->count();
         $suspendedCount = Investigation::where('status', 'SUSPENDED')->count();
+        $dismissedCount = Investigation::where('status', 'DISMISSED')->count();
         $resolvedCount = Investigation::where('status', 'RESOLVED')->count();
 
         // Get recent investigations
@@ -72,6 +73,7 @@ class InvestigationController extends Controller
             'ongoingCount',
             'interdictedCount',
             'suspendedCount',
+            'dismissedCount',
             'resolvedCount',
             'recentInvestigations'
         ));
@@ -268,7 +270,7 @@ class InvestigationController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:ONGOING_INVESTIGATION,INTERDICTED,SUSPENDED',
+            'status' => 'required|in:ONGOING_INVESTIGATION,INTERDICTED,SUSPENDED,DISMISSED,RESOLVED',
             'notes' => 'nullable|string',
         ]);
 
@@ -282,11 +284,19 @@ class InvestigationController extends Controller
             $newStatus = $request->status;
 
             // Update investigation record
-            $investigation->update([
+            $updateData = [
                 'status' => $newStatus,
                 'notes' => $request->notes,
                 'status_changed_at' => now(),
-            ]);
+            ];
+            
+            // If resolving, also set resolved_at
+            if ($newStatus === 'RESOLVED') {
+                $updateData['resolved_at'] = now();
+                $updateData['resolution_notes'] = $request->notes; // Use notes as resolution notes
+            }
+            
+            $investigation->update($updateData);
 
             // Update officer record based on status
             $officerUpdates = [];
@@ -299,6 +309,17 @@ class InvestigationController extends Controller
             } elseif ($newStatus === 'SUSPENDED') {
                 $officerUpdates['suspended'] = true;
                 $officerUpdates['ongoing_investigation'] = false; // Clear ongoing investigation if suspended
+            } elseif ($newStatus === 'DISMISSED') {
+                $officerUpdates['dismissed'] = true;
+                $officerUpdates['ongoing_investigation'] = false; // Clear ongoing investigation if dismissed
+                $officerUpdates['interdicted'] = false; // Clear interdiction if dismissed
+                $officerUpdates['suspended'] = false; // Clear suspension if dismissed
+            } elseif ($newStatus === 'RESOLVED') {
+                // Clear all investigation-related flags when resolved
+                $officerUpdates['ongoing_investigation'] = false;
+                $officerUpdates['interdicted'] = false;
+                $officerUpdates['suspended'] = false;
+                // Note: dismissed flag is NOT cleared on resolve - dismissal is permanent
             }
 
             // If changing from interdicted/suspended to ongoing investigation, clear those flags
@@ -317,6 +338,8 @@ class InvestigationController extends Controller
                 'ONGOING_INVESTIGATION' => 'You have been placed on ongoing investigation.',
                 'INTERDICTED' => 'You have been interdicted.',
                 'SUSPENDED' => 'You have been suspended.',
+                'DISMISSED' => 'You have been dismissed from service as a result of this investigation.',
+                'RESOLVED' => 'Your investigation has been resolved. You are now eligible for promotion again (if other criteria are met).',
             ];
 
             if ($officer->user) {

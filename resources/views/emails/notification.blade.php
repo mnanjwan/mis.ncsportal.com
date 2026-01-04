@@ -13,7 +13,11 @@
     
     @if($notification->entity_type && $notification->entity_id)
         <p>You can view the details by clicking the link below:</p>
-        <p><a href="{{ $appUrl }}/notifications/{{ $notification->id }}">{{ $appUrl }}/notifications/{{ $notification->id }}</a></p>
+        @if($notification->entity_type === 'investigation')
+            <p><a href="{{ $appUrl }}/investigation/{{ $notification->entity_id }}">View Investigation Details</a></p>
+        @else
+            <p><a href="{{ $appUrl }}/notifications/{{ $notification->id }}">View Notification</a></p>
+        @endif
     @endif
     
     <p>Thank you.</p>

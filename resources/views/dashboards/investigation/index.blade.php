@@ -56,6 +56,7 @@
                         <option value="ONGOING_INVESTIGATION" {{ request('status') === 'ONGOING_INVESTIGATION' ? 'selected' : '' }}>Ongoing Investigation</option>
                         <option value="INTERDICTED" {{ request('status') === 'INTERDICTED' ? 'selected' : '' }}>Interdicted</option>
                         <option value="SUSPENDED" {{ request('status') === 'SUSPENDED' ? 'selected' : '' }}>Suspended</option>
+                        <option value="DISMISSED" {{ request('status') === 'DISMISSED' ? 'selected' : '' }}>Dismissed</option>
                         <option value="RESOLVED" {{ request('status') === 'RESOLVED' ? 'selected' : '' }}>Resolved</option>
                     </select>
                     <button type="submit" class="kt-btn kt-btn-secondary">
@@ -96,6 +97,8 @@
                                             <span class="kt-badge kt-badge-danger">Interdicted</span>
                                         @elseif($investigation->status === 'SUSPENDED')
                                             <span class="kt-badge kt-badge-danger">Suspended</span>
+                                        @elseif($investigation->status === 'DISMISSED')
+                                            <span class="kt-badge kt-badge-danger">Dismissed</span>
                                         @else
                                             <span class="kt-badge kt-badge-success">Resolved</span>
                                         @endif

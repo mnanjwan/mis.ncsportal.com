@@ -54,6 +54,10 @@
                                 <span class="kt-badge kt-badge-danger">Interdicted</span>
                             @elseif($investigation->status === 'SUSPENDED')
                                 <span class="kt-badge kt-badge-danger">Suspended</span>
+                            @elseif($investigation->status === 'DISMISSED')
+                                <span class="kt-badge kt-badge-danger">Dismissed</span>
+                            @elseif($investigation->status === 'RESOLVED')
+                                <span class="kt-badge kt-badge-success">Resolved</span>
                             @endif
                         </p>
                     </div>
@@ -82,9 +86,15 @@
                             <option value="SUSPENDED" {{ old('status', $investigation->status) === 'SUSPENDED' ? 'selected' : '' }}>
                                 Suspended
                             </option>
+                            <option value="DISMISSED" {{ old('status', $investigation->status) === 'DISMISSED' ? 'selected' : '' }}>
+                                Dismissed
+                            </option>
+                            <option value="RESOLVED" {{ old('status', $investigation->status) === 'RESOLVED' ? 'selected' : '' }}>
+                                Resolved
+                            </option>
                         </select>
                         <p class="text-xs text-secondary-foreground mt-1">
-                            <strong>Note:</strong> Officers with Ongoing Investigation, Interdiction, or Suspension status cannot appear on Promotion Eligibility Lists. Interdicted officers will appear on Accounts unit's interdicted officers list.
+                            <strong>Note:</strong> Officers with Ongoing Investigation, Interdiction, Suspension, or Dismissal status cannot appear on Promotion Eligibility Lists. Interdicted officers will appear on Accounts unit's interdicted officers list. Setting status to Resolved will clear investigation flags (but not dismissal, which is permanent).
                         </p>
                         @error('status')
                             <p class="text-danger text-sm mt-1">{{ $message }}</p>
