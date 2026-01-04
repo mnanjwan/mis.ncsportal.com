@@ -79,10 +79,7 @@ class PromotionController extends Controller
             // under investigation, or deceased won't feature on the Eligibility List
             $allOfficers = \App\Models\Officer::where('is_active', true)
                 ->where('is_deceased', false)
-                ->where('interdicted', false)
-                ->where('suspended', false)
-                ->where('ongoing_investigation', false)
-                ->where('dismissed', false)
+                ->eligibleForPromotionAndRetirement()
                 ->whereNotNull('substantive_rank')
                 ->whereNotNull('date_of_birth')
                 ->whereNotNull('date_of_first_appointment')

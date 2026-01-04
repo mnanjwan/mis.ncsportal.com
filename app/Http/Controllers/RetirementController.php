@@ -132,8 +132,11 @@ class RetirementController extends Controller
             // Find officers who meet retirement criteria:
             // 1. Will be 60 years old by end of target year, OR
             // 2. Will complete 35 years of service by end of target year
+            // Exclude officers who are indicted/interdicted, suspended, dismissed, or under ongoing investigation
+            // Per specification: Officers with these statuses must NOT appear on retirement list until case is fully resolved
             $eligibleOfficers = \App\Models\Officer::where('is_active', true)
                 ->where('is_deceased', false)
+                ->eligibleForPromotionAndRetirement()
                 ->whereNotNull('date_of_birth')
                 ->where(function($query) use ($birthDateThreshold, $serviceDateThreshold) {
                     // Age-based retirement: date_of_birth <= (target year - 60)

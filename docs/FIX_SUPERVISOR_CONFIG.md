@@ -77,3 +77,4 @@ Your Laravel logs show emails ARE being sent:
 
 So the queue worker IS working, but the Supervisor config path is wrong which might cause issues later.
 
+

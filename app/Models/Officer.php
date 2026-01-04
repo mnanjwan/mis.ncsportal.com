@@ -420,5 +420,20 @@ class Officer extends Model
     {
         return $this->hasMany(RosterAssignment::class);
     }
+
+    /**
+     * Scope to exclude officers who are indicted/interdicted, suspended, dismissed, or under ongoing investigation.
+     * These officers should not appear on promotion eligibility lists or retirement processing lists.
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeEligibleForPromotionAndRetirement($query)
+    {
+        return $query->where('interdicted', false)
+            ->where('suspended', false)
+            ->where('ongoing_investigation', false)
+            ->where('dismissed', false);
+    }
 }
 
