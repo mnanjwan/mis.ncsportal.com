@@ -60,7 +60,7 @@
     <!-- End of Theme Mode -->
     
     <!-- Page -->
-    <div class="flex grow">
+    <div class="flex flex-col grow">
         <!-- Main Content -->
         <div class="flex flex-col grow bg-background">
             <!-- Content -->
@@ -74,18 +74,18 @@
             <!-- End of Content -->
         </div>
         <!-- End of Main Content -->
+        
+        <!-- Footer -->
+        <footer class="w-full mt-auto pt-6 pb-6 px-4 border-t border-input">
+            <div class="kt-container-fixed">
+                <div class="flex flex-col items-center justify-center gap-2 text-sm text-secondary-foreground py-4 text-center">
+                    <div>© 2025 Nigeria Customs Service. All rights reserved.</div>
+                    <div>Designed by NCS ICT - MOD</div>
+                </div>
+            </div>
+        </footer>
     </div>
     <!-- End of Page -->
-    
-    <!-- Footer -->
-    <footer class="mt-8 pt-6 pb-6 px-4 border-t border-input">
-        <div class="kt-container-fixed">
-            <div class="flex flex-col items-center justify-center gap-2 text-sm text-secondary-foreground py-4">
-                <div>© 2025 Nigeria Customs Service. All rights reserved.</div>
-                <div>Designed by NCS ICT - MOD</div>
-            </div>
-        </div>
-    </footer>
     
     <!-- Scripts -->
     <script src="{{ asset('ncs-employee-portal/dist/assets/js/core.bundle.js') }}"></script>

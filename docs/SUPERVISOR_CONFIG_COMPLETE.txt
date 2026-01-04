@@ -1,0 +1,14 @@
+# Complete Supervisor Configuration for Laravel Queue Worker
+# File: /etc/supervisor/conf.d/laravel-worker.conf
+
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=/usr/bin/php /home/mis.ncsportal.com/public_html/artisan queue:work --sleep=3 --tries=3 --timeout=90
+autostart=true
+autorestart=true
+user=nccsc9434
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/home/mis.ncsportal.com/public_html/storage/logs/worker.log
+stopwaitsecs=3600
+
