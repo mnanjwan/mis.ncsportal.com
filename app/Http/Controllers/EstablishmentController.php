@@ -1555,7 +1555,7 @@ class EstablishmentController extends Controller
                 'command_id' => $validated['command_id'],
                 'unit' => $validated['unit'] ?? null,
                 'sex' => 'M', // Default, will be updated during onboarding
-                'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
+                'date_of_birth' => '1980-01-01', // Placeholder, will be updated during onboarding
                 'state_of_origin' => 'TBD', // To be provided during onboarding
                 'lga' => 'TBD',
                 'geopolitical_zone' => 'TBD',
@@ -1723,7 +1723,7 @@ class EstablishmentController extends Controller
                         'command_id' => $entry['command_id'],
                         'unit' => $entry['unit'] ?? null,
                         'sex' => 'M', // Default, will be updated during onboarding
-                        'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
+                        'date_of_birth' => '1980-01-01', // Placeholder, will be updated during onboarding
                         'state_of_origin' => 'TBD', // To be provided during onboarding
                         'lga' => 'TBD',
                         'geopolitical_zone' => 'TBD',

@@ -60,7 +60,7 @@ class OnboardingController extends Controller
                     'initials' => $initials,
                     'surname' => $surname,
                     'sex' => 'M', // Default, will be updated during onboarding
-                    'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
+                    'date_of_birth' => '1980-01-01', // Placeholder, will be updated during onboarding
                     'date_of_first_appointment' => now()->toDateString(), // Placeholder
                     'date_of_present_appointment' => now()->toDateString(), // Placeholder
                     'substantive_rank' => 'TBD', // To Be Determined
@@ -194,7 +194,7 @@ class OnboardingController extends Controller
                             'initials' => $initials,
                             'surname' => $surname,
                             'sex' => 'M', // Default, will be updated during onboarding
-                            'date_of_birth' => '1900-01-01', // Placeholder, will be updated during onboarding
+                            'date_of_birth' => '1980-01-01', // Placeholder, will be updated during onboarding
                             'date_of_first_appointment' => now()->toDateString(), // Placeholder
                             'date_of_present_appointment' => now()->toDateString(), // Placeholder
                             'substantive_rank' => 'TBD', // To Be Determined
