@@ -93,7 +93,7 @@ class DashboardController extends Controller
     public function hrd()
     {
         // Get statistics
-        $totalOfficers = Officer::count();
+        $servingOfficers = Officer::where('is_active', true)->where('is_deceased', false)->count();
         $pendingEmoluments = Emolument::where('status', 'RAISED')->count();
         $activeTimeline = EmolumentTimeline::where('is_active', true)->first();
         $staffOrdersCount = StaffOrder::count();
@@ -112,7 +112,7 @@ class DashboardController extends Controller
         ];
 
         return view('dashboards.hrd.dashboard', compact(
-            'totalOfficers',
+            'servingOfficers',
             'pendingEmoluments',
             'activeTimeline',
             'staffOrdersCount',

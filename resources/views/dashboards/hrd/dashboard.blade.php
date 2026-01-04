@@ -11,8 +11,8 @@
             <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
-                        <span class="text-sm font-normal text-secondary-foreground">Total Officers</span>
-                        <span class="text-2xl font-semibold text-mono">{{ $totalOfficers ?? 0 }}</span>
+                        <span class="text-sm font-normal text-secondary-foreground">Serving Officers</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $servingOfficers ?? 0 }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
                         <i class="ki-filled ki-people text-2xl text-primary"></i>

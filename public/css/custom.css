@@ -2,6 +2,10 @@
 :root {
     --kt-active-color: #088a56;
     --kt-active-color-rgb: 8, 138, 86;
+    --kt-primary-color: #088a56;
+    --kt-info-color: #0ea5e9;
+    --kt-warning-color: #f59e0b;
+    --kt-success-color: #10b981;
 }
 
 /* All icons on the body use the active color */
@@ -45,6 +49,94 @@ body i.text-mono,
 body i.text-foreground,
 body i.text-secondary-foreground {
     color: var(--kt-active-color) !important;
+}
+
+/* Allow color classes to work on icons - more specific than global icon rule */
+/* Target icons with both ki- classes AND color classes - must come after global rule */
+/* These must be more specific than body .kt-card-content i */
+/* Direct class combinations for maximum specificity */
+body .kt-card-content .ki-filled.text-primary,
+body .kt-card-content .ki-outline.text-primary,
+body .kt-card-content i.ki-filled.text-primary,
+body .kt-card-content i.ki-outline.text-primary,
+body .kt-card-content i.text-primary[class*="ki-"],
+body .kt-card-content i.text-primary[class^="ki-"],
+body .kt-card-content i[class*="ki-"].text-primary,
+body .kt-card-content i[class^="ki-"].text-primary,
+body .ki-filled.text-primary,
+body .ki-outline.text-primary,
+body i.ki-filled.text-primary,
+body i.ki-outline.text-primary,
+body i.text-primary[class*="ki-"],
+body i.text-primary[class^="ki-"],
+body i[class*="ki-"].text-primary,
+body i[class^="ki-"].text-primary,
+body [class*="ki-"].text-primary,
+body [class^="ki-"].text-primary {
+    color: var(--kt-primary-color) !important;
+}
+
+body .kt-card-content .ki-filled.text-info,
+body .kt-card-content .ki-outline.text-info,
+body .kt-card-content i.ki-filled.text-info,
+body .kt-card-content i.ki-outline.text-info,
+body .kt-card-content i.text-info[class*="ki-"],
+body .kt-card-content i.text-info[class^="ki-"],
+body .kt-card-content i[class*="ki-"].text-info,
+body .kt-card-content i[class^="ki-"].text-info,
+body .ki-filled.text-info,
+body .ki-outline.text-info,
+body i.ki-filled.text-info,
+body i.ki-outline.text-info,
+body i.text-info[class*="ki-"],
+body i.text-info[class^="ki-"],
+body i[class*="ki-"].text-info,
+body i[class^="ki-"].text-info,
+body [class*="ki-"].text-info,
+body [class^="ki-"].text-info {
+    color: var(--kt-info-color) !important;
+}
+
+body .kt-card-content .ki-filled.text-warning,
+body .kt-card-content .ki-outline.text-warning,
+body .kt-card-content i.ki-filled.text-warning,
+body .kt-card-content i.ki-outline.text-warning,
+body .kt-card-content i.text-warning[class*="ki-"],
+body .kt-card-content i.text-warning[class^="ki-"],
+body .kt-card-content i[class*="ki-"].text-warning,
+body .kt-card-content i[class^="ki-"].text-warning,
+body .ki-filled.text-warning,
+body .ki-outline.text-warning,
+body i.ki-filled.text-warning,
+body i.ki-outline.text-warning,
+body i.text-warning[class*="ki-"],
+body i.text-warning[class^="ki-"],
+body i[class*="ki-"].text-warning,
+body i[class^="ki-"].text-warning,
+body [class*="ki-"].text-warning,
+body [class^="ki-"].text-warning {
+    color: var(--kt-warning-color) !important;
+}
+
+body .kt-card-content .ki-filled.text-success,
+body .kt-card-content .ki-outline.text-success,
+body .kt-card-content i.ki-filled.text-success,
+body .kt-card-content i.ki-outline.text-success,
+body .kt-card-content i.text-success[class*="ki-"],
+body .kt-card-content i.text-success[class^="ki-"],
+body .kt-card-content i[class*="ki-"].text-success,
+body .kt-card-content i[class^="ki-"].text-success,
+body .ki-filled.text-success,
+body .ki-outline.text-success,
+body i.ki-filled.text-success,
+body i.ki-outline.text-success,
+body i.text-success[class*="ki-"],
+body i.text-success[class^="ki-"],
+body i[class*="ki-"].text-success,
+body i[class^="ki-"].text-success,
+body [class*="ki-"].text-success,
+body [class^="ki-"].text-success {
+    color: var(--kt-success-color) !important;
 }
 
 /* Active menu items */
@@ -145,7 +237,20 @@ body i.text-secondary-foreground {
 }
 
 .text-primary {
-    color: var(--kt-active-color) !important;
+    color: var(--kt-primary-color) !important;
+}
+
+/* Text color classes for info, warning, and success */
+.text-info {
+    color: var(--kt-info-color) !important;
+}
+
+.text-warning {
+    color: var(--kt-warning-color) !important;
+}
+
+.text-success {
+    color: var(--kt-success-color) !important;
 }
 
 /* Any element with active class */
