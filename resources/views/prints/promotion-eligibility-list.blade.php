@@ -110,14 +110,15 @@
             text-align: center;
             font-size: 8pt;
         }
-        .sn-col { width: 4%; }
-        .rank-col { width: 8%; }
-        .initials-col { width: 6%; }
-        .name-col { width: 12%; }
-        .unit-col { width: 10%; }
-        .state-col { width: 8%; }
-        .dob-col { width: 10%; }
-        .dofa-col { width: 10%; }
+        .sn-col { width: 3%; }
+        .svc-col { width: 8%; }
+        .rank-col { width: 7%; }
+        .initials-col { width: 5%; }
+        .name-col { width: 10%; }
+        .unit-col { width: 9%; }
+        .state-col { width: 7%; }
+        .dob-col { width: 9%; }
+        .dofa-col { width: 9%; }
         @media print {
             @page {
                 margin-top: 20mm;
@@ -170,6 +171,7 @@
         <thead>
             <tr>
                 <th class="sn-col">S/N</th>
+                <th class="svc-col">Service Number</th>
                 <th class="rank-col">Rank</th>
                 <th class="initials-col">Initial</th>
                 <th class="name-col">Name</th>
@@ -183,6 +185,7 @@
             @foreach($items as $item)
                 <tr>
                     <td>{{ $item['serial_number'] }}</td>
+                    <td style="font-family: monospace;">{{ $item['service_number'] ?? 'N/A' }}</td>
                     <td>{{ $item['rank'] }}</td>
                     <td>{{ $item['initials'] }}</td>
                     <td>{{ $item['name'] }}</td>

@@ -377,8 +377,29 @@ class PrintController extends Controller
         $list = PromotionEligibilityList::with(['items.officer', 'generatedBy'])
             ->findOrFail($id);
         
+        // Filter out officers who are now ineligible (indicted/interdicted, suspended, dismissed, or under investigation)
+        // This ensures that even if a list was created before status changes, ineligible officers won't appear
+        $filteredItems = $list->items->filter(function($item) {
+            if (!$item->officer) {
+                return false; // Remove items with no officer
+            }
+            
+            $officer = $item->officer;
+            
+            // Exclude officers who are indicted/interdicted, suspended, dismissed, or under investigation
+            if ($officer->interdicted || 
+                $officer->suspended || 
+                $officer->ongoing_investigation || 
+                $officer->dismissed ||
+                $officer->is_deceased) {
+                return false;
+            }
+            
+            return true;
+        });
+        
         // Get all items with their officers
-        $items = $list->items->map(function($item) {
+        $items = $filteredItems->map(function($item) {
             $officer = $item->officer;
             
             // Get unit from current active roster (as OIC/2IC or from assignment)
@@ -423,6 +444,7 @@ class PrintController extends Controller
             
             return [
                 'serial_number' => $item->serial_number,
+                'service_number' => $officer->service_number ?? 'N/A',
                 'rank' => $item->current_rank ?? ($officer->substantive_rank ?? 'N/A'),
                 'initials' => $officer->initials ?? '',
                 'name' => $officer->surname ?? '',

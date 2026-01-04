@@ -75,6 +75,29 @@ class RetirementController extends Controller
     {
         $list = RetirementList::with(['items.officer', 'generatedBy'])
             ->findOrFail($id);
+        
+        // Filter out officers who are now ineligible (indicted/interdicted, suspended, dismissed, or under investigation)
+        // This ensures that even if a list was created before status changes, ineligible officers won't appear
+        // Per specification: Officers with these statuses must NOT appear on retirement list until case is fully resolved
+        $list->items = $list->items->filter(function($item) {
+            if (!$item->officer) {
+                return false; // Remove items with no officer
+            }
+            
+            $officer = $item->officer;
+            
+            // Exclude officers who are indicted/interdicted, suspended, dismissed, or under investigation
+            if ($officer->interdicted || 
+                $officer->suspended || 
+                $officer->ongoing_investigation || 
+                $officer->dismissed ||
+                $officer->is_deceased) {
+                return false;
+            }
+            
+            return true;
+        })->values(); // Re-index the collection
+        
         return view('dashboards.hrd.retirement-list-show', compact('list'));
     }
 

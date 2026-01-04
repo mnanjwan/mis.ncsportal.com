@@ -61,6 +61,7 @@
                                 <thead>
                                     <tr class="border-b border-border">
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">S/N</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Officer</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Date of Birth</th>
@@ -71,7 +72,14 @@
                                     @foreach($list->items as $item)
                                         <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $item->serial_number ?? $loop->iteration }}
+                                                {{ $loop->iteration }}
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground font-mono">
+                                                @if($item->officer)
+                                                    {{ $item->officer->service_number ?? 'N/A' }}
+                                                @else
+                                                    N/A
+                                                @endif
                                             </td>
                                             <td class="py-3 px-4">
                                                 <span class="text-sm font-medium text-foreground">
@@ -116,6 +124,9 @@
                                                 @else
                                                     {{ $item->initials ?? '' }} {{ $item->name ?? 'N/A' }}
                                                 @endif
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground font-mono">
+                                                SVC: {{ $item->officer->service_number ?? 'N/A' }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
                                                 {{ $item->rank ?? ($item->officer->substantive_rank ?? 'N/A') }}

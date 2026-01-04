@@ -169,6 +169,28 @@ class PromotionController extends Controller
     {
         $list = PromotionEligibilityList::with(['items.officer', 'generatedBy'])
             ->findOrFail($id);
+        
+        // Filter out officers who are now ineligible (indicted/interdicted, suspended, dismissed, or under investigation)
+        // This ensures that even if a list was created before status changes, ineligible officers won't appear
+        $list->items = $list->items->filter(function($item) {
+            if (!$item->officer) {
+                return false; // Remove items with no officer
+            }
+            
+            $officer = $item->officer;
+            
+            // Exclude officers who are indicted/interdicted, suspended, dismissed, or under investigation
+            if ($officer->interdicted || 
+                $officer->suspended || 
+                $officer->ongoing_investigation || 
+                $officer->dismissed ||
+                $officer->is_deceased) {
+                return false;
+            }
+            
+            return true;
+        })->values(); // Re-index the collection
+        
         return view('dashboards.hrd.promotion-eligibility-list-show', compact('list'));
     }
 
@@ -206,8 +228,29 @@ class PromotionController extends Controller
         $list = PromotionEligibilityList::with(['items.officer', 'generatedBy'])
             ->findOrFail($id);
         
+        // Filter out officers who are now ineligible (indicted/interdicted, suspended, dismissed, or under investigation)
+        // This ensures that even if a list was created before status changes, ineligible officers won't appear
+        $filteredItems = $list->items->filter(function($item) {
+            if (!$item->officer) {
+                return false; // Remove items with no officer
+            }
+            
+            $officer = $item->officer;
+            
+            // Exclude officers who are indicted/interdicted, suspended, dismissed, or under investigation
+            if ($officer->interdicted || 
+                $officer->suspended || 
+                $officer->ongoing_investigation || 
+                $officer->dismissed ||
+                $officer->is_deceased) {
+                return false;
+            }
+            
+            return true;
+        });
+        
         // Get all items with their officers (same logic as print)
-        $items = $list->items->map(function($item) {
+        $items = $filteredItems->map(function($item) {
             $officer = $item->officer;
             
             // Get unit from current active roster (as OIC/2IC or from assignment)
@@ -252,6 +295,7 @@ class PromotionController extends Controller
             
             return [
                 'serial_number' => $item->serial_number,
+                'service_number' => $officer->service_number ?? 'N/A',
                 'rank' => $item->current_rank ?? ($officer->substantive_rank ?? 'N/A'),
                 'initials' => $officer->initials ?? '',
                 'name' => $officer->surname ?? '',
@@ -295,6 +339,7 @@ class PromotionController extends Controller
             // Write CSV headers
             fputcsv($file, [
                 'S/N',
+                'Service Number',
                 'Rank',
                 'Initial',
                 'Name',
@@ -308,6 +353,7 @@ class PromotionController extends Controller
             foreach ($items as $item) {
                 fputcsv($file, [
                     $item['serial_number'],
+                    $item['service_number'] ?? 'N/A',
                     $item['rank'],
                     $item['initials'],
                     $item['name'],
