@@ -102,7 +102,7 @@
 
                 <!-- Single Entry Form -->
                 <div id="single-tab" class="tab-content">
-                    <form action="{{ route('establishment.onboarding.initiate-create') }}" method="POST" class="space-y-4">
+                    <form action="{{ route('establishment.onboarding.initiate-create') }}" method="POST" class="space-y-4" id="initiate-create-form">
                         @csrf
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -263,30 +263,61 @@
                             </div>
 
                             <div class="space-y-2">
+                                <label for="zone_id" class="block text-sm font-medium text-foreground">
+                                    Zone <span class="text-danger">*</span>
+                                </label>
+                                @php
+                                    $headquartersZone = \App\Models\Zone::where(function($query) {
+                                        $query->where('name', 'LIKE', '%HEADQUARTERS%')
+                                              ->orWhere('name', 'LIKE', '%HEADQUARTER%')
+                                              ->orWhere('code', 'LIKE', '%HQ%');
+                                    })->where('is_active', true)->first();
+                                    $tradocCommand = \App\Models\Command::where(function($query) {
+                                        $query->where('name', 'LIKE', '%TRADOC%')
+                                              ->orWhere('name', 'LIKE', '%TRAINING%')
+                                              ->orWhere('code', 'LIKE', '%TRADOC%')
+                                              ->orWhere('code', 'LIKE', '%TRAINING%');
+                                    })->where('is_active', true)->first();
+                                    $defaultZoneId = old('zone_id', $headquartersZone ? $headquartersZone->id : '');
+                                    $defaultCommandId = old('command_id', $tradocCommand ? $tradocCommand->id : '');
+                                    $zoneDisplayName = $headquartersZone ? $headquartersZone->name : 'HEADQUARTERS';
+                                    $commandDisplayName = $tradocCommand ? $tradocCommand->name : 'TRADOC';
+                                @endphp
+                                <input type="text" 
+                                       id="zone_id_display"
+                                       value="{{ $zoneDisplayName }}"
+                                       class="kt-input"
+                                       readonly>
+                                <input type="hidden" 
+                                       name="zone_id" 
+                                       id="zone_id"
+                                       value="{{ $defaultZoneId }}"
+                                       required>
+                                @error('zone_id')
+                                    <p class="text-sm text-danger">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-2">
                                 <label for="command_id" class="block text-sm font-medium text-foreground">
                                     Command/Present Station <span class="text-danger">*</span>
                                 </label>
-                                <select name="command_id" 
+                                <input type="text" 
+                                       id="command_id_display"
+                                       value="{{ $commandDisplayName }}"
+                                       class="kt-input"
+                                       readonly>
+                                <input type="hidden" 
+                                       name="command_id" 
                                        id="command_id"
-                                       class="kt-input @error('command_id') kt-input-error @enderror"
+                                       value="{{ $defaultCommandId }}"
                                        required>
-                                    <option value="">Select Command...</option>
-                                    @php
-                                        $commands = \App\Models\Command::orderBy('name')->get();
-                                    @endphp
-                                    @foreach($commands as $command)
-                                        <option value="{{ $command->id }}" {{ old('command_id') == $command->id ? 'selected' : '' }}>
-                                            {{ $command->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
                                 @error('command_id')
                                     <p class="text-sm text-danger">{{ $message }}</p>
                                 @enderror
                             </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4">
                             <div class="space-y-2">
                                 <label for="unit" class="block text-sm font-medium text-foreground">
                                     Unit
@@ -1198,7 +1229,86 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
             document.addEventListener('DOMContentLoaded', function() {
                 showTab('single');
                 setupRankGradeLevelMapping();
+                setupDateValidation();
             });
+            
+            // Date validation for initiate create form
+            function setupDateValidation() {
+                const form = document.getElementById('initiate-create-form');
+                if (!form) return;
+                
+                const dofaInput = document.getElementById('date_of_first_appointment');
+                const dopaInput = document.getElementById('date_of_present_appointment');
+                const doptsInput = document.getElementById('date_posted_to_station');
+                
+                // Function to validate dates
+                function validateDates() {
+                    let isValid = true;
+                    
+                    // Clear previous errors
+                    [dofaInput, dopaInput, doptsInput].forEach(input => {
+                        if (input) {
+                            input.classList.remove('kt-input-error');
+                            const errorMsg = input.parentElement.querySelector('.date-error-message');
+                            if (errorMsg) {
+                                errorMsg.remove();
+                            }
+                        }
+                    });
+                    
+                    if (!dofaInput || !dopaInput || !doptsInput) return true;
+                    
+                    const dofa = dofaInput.value;
+                    const dopa = dopaInput.value;
+                    const dopts = doptsInput.value;
+                    
+                    if (dofa && dopa && new Date(dofa) > new Date(dopa)) {
+                        showDateError(dopaInput, 'Date of Present Appointment must be after Date of First Appointment.');
+                        isValid = false;
+                    }
+                    
+                    if (dopa && dopts && new Date(dopa) > new Date(dopts)) {
+                        showDateError(doptsInput, 'Date Posted to Station must be after Date of Present Appointment.');
+                        isValid = false;
+                    }
+                    
+                    return isValid;
+                }
+                
+                // Function to show error message
+                function showDateError(input, message) {
+                    input.classList.add('kt-input-error');
+                    const errorDiv = document.createElement('p');
+                    errorDiv.className = 'text-sm text-danger date-error-message mt-1';
+                    errorDiv.textContent = message;
+                    input.parentElement.appendChild(errorDiv);
+                }
+                
+                // Validate on input change
+                [dofaInput, dopaInput, doptsInput].forEach(input => {
+                    if (input) {
+                        input.addEventListener('change', validateDates);
+                        input.addEventListener('blur', validateDates);
+                    }
+                });
+                
+                // Prevent form submission if validation fails
+                form.addEventListener('submit', function(e) {
+                    if (!validateDates()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Scroll to first error
+                        const firstError = form.querySelector('.kt-input-error');
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstError.focus();
+                        }
+                        
+                        return false;
+                    }
+                });
+            }
 
             // Single assign modal
             function showAssignAppointmentModal(officerId, recruitName) {

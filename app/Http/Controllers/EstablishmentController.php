@@ -1500,9 +1500,23 @@ class EstablishmentController extends Controller
             'date_of_first_appointment' => 'required|date',
             'date_of_present_appointment' => 'required|date',
             'date_posted_to_station' => 'required|date',
+            'zone_id' => 'required|exists:zones,id',
             'command_id' => 'required|exists:commands,id',
             'unit' => 'nullable|string|max:255',
         ]);
+        
+        // Validate date logic
+        $dofa = $validated['date_of_first_appointment'];
+        $dopa = $validated['date_of_present_appointment'];
+        $dopts = $validated['date_posted_to_station'];
+        
+        if (new \DateTime($dofa) > new \DateTime($dopa)) {
+            return back()->withErrors(['date_of_present_appointment' => 'Date of Present Appointment must be after Date of First Appointment.'])->withInput();
+        }
+        
+        if (new \DateTime($dopa) > new \DateTime($dopts)) {
+            return back()->withErrors(['date_posted_to_station' => 'Date Posted to Station must be after Date of Present Appointment.'])->withInput();
+        }
 
         try {
             DB::beginTransaction();
@@ -1537,6 +1551,7 @@ class EstablishmentController extends Controller
                 'date_of_first_appointment' => $validated['date_of_first_appointment'],
                 'date_of_present_appointment' => $validated['date_of_present_appointment'],
                 'date_posted_to_station' => $validated['date_posted_to_station'],
+                'zone_id' => $validated['zone_id'],
                 'command_id' => $validated['command_id'],
                 'unit' => $validated['unit'] ?? null,
                 'sex' => 'M', // Default, will be updated during onboarding
