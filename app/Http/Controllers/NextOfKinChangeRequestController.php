@@ -274,7 +274,7 @@ class NextOfKinChangeRequestController extends Controller
     {
         $requests = NextOfKinChangeRequest::with(['officer.presentStation', 'nextOfKin', 'verifier'])
             ->where('status', 'PENDING')
-            ->orderBy('created_at', 'asc')
+            ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         $pendingCount = NextOfKinChangeRequest::where('status', 'PENDING')->count();
