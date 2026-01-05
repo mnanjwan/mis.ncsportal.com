@@ -298,11 +298,16 @@ class NextOfKinChangeRequestController extends Controller
         $request = NextOfKinChangeRequest::with(['officer.presentStation', 'nextOfKin', 'verifier'])->findOrFail($id);
 
         // Check authorization
-        if ($user->hasRole('Officer')) {
-            if ($request->officer_id !== $user->officer->id) {
+        // Welfare role can view any request
+        if ($user->hasRole('Welfare')) {
+            // Allow access
+        } elseif ($user->hasRole('Officer')) {
+            // Officers can only view their own requests
+            if (!$user->officer || $request->officer_id !== $user->officer->id) {
                 abort(403, 'Unauthorized access.');
             }
-        } elseif (!$user->hasRole('Welfare')) {
+        } else {
+            // User doesn't have required roles
             abort(403, 'Unauthorized access.');
         }
 

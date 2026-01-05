@@ -613,7 +613,6 @@ Route::middleware('auth')->group(function () {
     Route::prefix('welfare')->name('welfare.')->middleware('role:Welfare')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'welfare'])->name('dashboard');
         Route::get('/next-of-kin-requests', [NextOfKinChangeRequestController::class, 'pending'])->name('next-of-kin.pending');
-        Route::get('/next-of-kin-requests/{id}', [NextOfKinChangeRequestController::class, 'show'])->name('next-of-kin.show');
         Route::post('/next-of-kin-requests/{id}/approve', [NextOfKinChangeRequestController::class, 'approve'])->name('next-of-kin.approve');
         Route::post('/next-of-kin-requests/{id}/reject', [NextOfKinChangeRequestController::class, 'reject'])->name('next-of-kin.reject');
         Route::get('/deceased-officers', [DeceasedOfficerController::class, 'index'])->name('deceased-officers');
@@ -622,6 +621,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/deceased-officers/{id}/report', [DeceasedOfficerController::class, 'generateReport'])->name('deceased-officers.report');
         Route::get('/deceased-officers/{id}/export', [DeceasedOfficerController::class, 'export'])->name('deceased-officers.export');
         Route::post('/deceased-officers/{id}/mark-benefits-processed', [DeceasedOfficerController::class, 'markBenefitsProcessed'])->name('deceased-officers.mark-benefits-processed');
+    });
+
+    // Next of Kin Change Request Show - accessible by both Welfare and Officers (controller handles authorization)
+    Route::middleware('role:Welfare|Officer')->group(function () {
+        Route::get('/welfare/next-of-kin-requests/{id}', [NextOfKinChangeRequestController::class, 'show'])->name('welfare.next-of-kin.show');
     });
 
     // Investigation Unit Routes
