@@ -118,6 +118,38 @@ class OfficerController extends Controller
         return view('dashboards.hrd.officers-list', compact('officers', 'ranks', 'commands'));
     }
 
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+        
+        $officers = \App\Models\Officer::where('is_active', true)
+            ->where(function($q) use ($query) {
+                $q->where('service_number', 'like', "%{$query}%")
+                  ->orWhere('initials', 'like', "%{$query}%")
+                  ->orWhere('surname', 'like', "%{$query}%")
+                  ->orWhere('substantive_rank', 'like', "%{$query}%");
+            })
+            ->with('presentStation')
+            ->limit(20)
+            ->get()
+            ->map(function($officer) {
+                return [
+                    'id' => $officer->id,
+                    'service_number' => $officer->service_number,
+                    'initials' => $officer->initials,
+                    'surname' => $officer->surname,
+                    'substantive_rank' => $officer->substantive_rank,
+                    'present_station_name' => $officer->presentStation->name ?? 'N/A',
+                ];
+            });
+        
+        return response()->json($officers);
+    }
+
     // Document an officer (Staff Officer only)
     public function document($id)
     {

@@ -59,12 +59,45 @@
         </div>
     </div>
 
+    <!-- Summary Card -->
+    @php
+        $totalItems = $request->items->count();
+        $publishedItems = $request->items->whereNotNull('matched_officer_id')->count();
+        $draftItems = isset($itemsInDraft) ? $itemsInDraft->count() : 0;
+        $pendingItems = $totalItems - $publishedItems - $draftItems;
+    @endphp
+    <div class="kt-card">
+        <div class="kt-card-content p-5">
+            <h3 class="text-lg font-semibold mb-4">Request Summary</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 rounded-lg bg-warning/10 border border-warning/20">
+                    <div class="text-sm text-secondary-foreground mb-1">Pending Matching</div>
+                    <div class="text-2xl font-semibold text-warning">{{ $pendingItems }}</div>
+                </div>
+                <div class="p-4 rounded-lg bg-info/10 border border-info/20">
+                    <div class="text-sm text-secondary-foreground mb-1">In Draft</div>
+                    <div class="text-2xl font-semibold text-info">{{ $draftItems }}</div>
+                </div>
+                <div class="p-4 rounded-lg bg-success/10 border border-success/20">
+                    <div class="text-sm text-secondary-foreground mb-1">Published</div>
+                    <div class="text-2xl font-semibold text-success">{{ $publishedItems }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Request Items -->
     <div class="kt-card">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Manning Requirements</h3>
         </div>
         <div class="kt-card-content">
+            <div class="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
+                <p class="text-sm text-info">
+                    <i class="ki-filled ki-information"></i> 
+                    <strong>Note:</strong> When you find matches, officers will be added to a draft deployment. Review and adjust the draft before publishing to finalize the deployment.
+                </p>
+            </div>
             @if($request->items && $request->items->count() > 0)
                 <!-- Desktop Table View -->
                 <div class="hidden lg:block">
@@ -91,19 +124,26 @@
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">{{ $item->qualification_requirement ?? 'Any' }}</td>
                                         <td class="py-3 px-4">
                                             @if($item->matched_officer_id)
-                                                <span class="kt-badge kt-badge-success kt-badge-sm">Matched</span>
+                                                <span class="kt-badge kt-badge-success kt-badge-sm">Published</span>
+                                            @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
+                                                <span class="kt-badge kt-badge-info kt-badge-sm">In Draft</span>
                                             @else
                                                 <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
                                             @endif
                                         </td>
                                         <td class="py-3 px-4 text-right">
-                                            @if(!$item->matched_officer_id)
+                                            @if($item->matched_officer_id)
+                                                <span class="text-xs text-secondary-foreground">Published</span>
+                                            @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
+                                                <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                                                   class="kt-btn kt-btn-sm kt-btn-info">
+                                                    <i class="ki-filled ki-file-add"></i> View in Draft
+                                                </a>
+                                            @else
                                                 <a href="{{ route('hrd.manning-requests.match', ['id' => $request->id, 'item_id' => $item->id]) }}" 
                                                    class="kt-btn kt-btn-sm kt-btn-primary">
                                                     <i class="ki-filled ki-search"></i> Find Matches
                                                 </a>
-                                            @else
-                                                <span class="text-xs text-secondary-foreground">Already Matched</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -121,7 +161,9 @@
                                 <div class="flex items-center justify-between mb-3">
                                     <span class="text-sm font-semibold text-foreground">{{ $item->rank }}</span>
                                     @if($item->matched_officer_id)
-                                        <span class="kt-badge kt-badge-success kt-badge-sm">Matched</span>
+                                        <span class="kt-badge kt-badge-success kt-badge-sm">Published</span>
+                                    @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
+                                        <span class="kt-badge kt-badge-info kt-badge-sm">In Draft</span>
                                     @else
                                         <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
                                     @endif
@@ -131,7 +173,14 @@
                                     <div>Sex: <span class="font-semibold">{{ $item->sex_requirement }}</span></div>
                                     <div class="col-span-2">Qualification: <span class="font-semibold">{{ $item->qualification_requirement ?? 'Any' }}</span></div>
                                 </div>
-                                @if(!$item->matched_officer_id)
+                                @if($item->matched_officer_id)
+                                    <span class="text-xs text-secondary-foreground">Published</span>
+                                @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
+                                    <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                                       class="kt-btn kt-btn-sm kt-btn-info w-full">
+                                        <i class="ki-filled ki-file-add"></i> View in Draft
+                                    </a>
+                                @else
                                     <a href="{{ route('hrd.manning-requests.match', ['id' => $request->id, 'item_id' => $item->id]) }}" 
                                        class="kt-btn kt-btn-sm kt-btn-primary w-full">
                                         <i class="ki-filled ki-search"></i> Find Matches

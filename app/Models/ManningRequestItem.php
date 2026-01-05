@@ -28,5 +28,10 @@ class ManningRequestItem extends Model
     {
         return $this->belongsTo(Officer::class, 'matched_officer_id');
     }
+
+    public function deploymentAssignments()
+    {
+        return $this->hasMany(ManningDeploymentAssignment::class);
+    }
 }
 

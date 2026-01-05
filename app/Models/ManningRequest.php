@@ -54,5 +54,10 @@ class ManningRequest extends Model
     {
         return $this->hasMany(MovementOrder::class);
     }
+
+    public function deploymentAssignments()
+    {
+        return $this->hasMany(ManningDeploymentAssignment::class);
+    }
 }
 

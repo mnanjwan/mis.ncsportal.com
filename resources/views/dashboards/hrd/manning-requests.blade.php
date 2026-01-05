@@ -34,6 +34,22 @@
         </div>
     @endif
 
+    <!-- Header Actions -->
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h2 class="text-2xl font-semibold text-mono">Manning Requests</h2>
+            <p class="text-sm text-secondary-foreground mt-1">Manage approved manning requests and officer matching</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                <i class="ki-filled ki-file-add"></i> Draft Deployment
+            </a>
+            <a href="{{ route('hrd.manning-deployments.published') }}" class="kt-btn kt-btn-sm kt-btn-secondary">
+                <i class="ki-filled ki-check"></i> Published Deployments
+            </a>
+        </div>
+    </div>
+
     <!-- Manning Requests Card -->
     <div class="kt-card">
         <div class="kt-card-header">
@@ -65,13 +81,24 @@
                                         Requested By
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'created_at', 'sort_order' => request('sort_by') === 'created_at' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Date Requested
+                                            @if(request('sort_by') === 'created_at' || !request('sort_by'))
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' || !request('sort_order') ? 'up' : 'down' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
                                         Items
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'approved_at', 'sort_order' => request('sort_by') === 'approved_at' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Approved Date
-                                            @if(request('sort_by') === 'approved_at' || !request('sort_by'))
+                                            @if(request('sort_by') === 'approved_at')
                                                 <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
                                             @else
                                                 <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
@@ -95,6 +122,9 @@
                                         {{ $request->requestedBy->email ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                        {{ $request->created_at ? $request->created_at->format('d/m/Y') : 'N/A' }}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         {{ $request->items->count() }} requirement(s)
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
@@ -109,7 +139,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="py-12 text-center">
+                                    <td colspan="6" class="py-12 text-center">
                                         <i class="ki-filled ki-people text-4xl text-muted-foreground mb-4"></i>
                                         <p class="text-secondary-foreground mb-4">No approved manning requests found</p>
                                         <p class="text-xs text-secondary-foreground">
@@ -138,6 +168,9 @@
                                     </span>
                                     <span class="text-xs text-secondary-foreground">
                                         {{ $request->items->count() }} requirement(s)
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        Requested: {{ $request->created_at ? $request->created_at->format('d/m/Y') : 'N/A' }}
                                     </span>
                                     <span class="text-xs text-secondary-foreground">
                                         Approved: {{ $request->approved_at ? $request->approved_at->format('d/m/Y') : 'N/A' }}

@@ -244,6 +244,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-requests/{id}', [ManningRequestController::class, 'hrdShow'])->name('manning-requests.show');
         Route::get('/manning-requests/{id}/match', [ManningRequestController::class, 'hrdMatch'])->name('manning-requests.match');
         Route::post('/manning-requests/{id}/generate-order', [ManningRequestController::class, 'hrdGenerateOrder'])->name('manning-requests.generate-order');
+        Route::post('/manning-requests/{id}/add-to-draft', [ManningRequestController::class, 'hrdAddToDraft'])->name('manning-requests.add-to-draft');
+        
+        // Draft Deployment Management
+        Route::get('/manning-deployments/draft', [ManningRequestController::class, 'hrdDraftIndex'])->name('manning-deployments.draft');
+        Route::post('/manning-deployments/draft/add-officer', [ManningRequestController::class, 'hrdDraftAddOfficer'])->name('manning-deployments.draft.add-officer');
+        Route::delete('/manning-deployments/{deploymentId}/remove-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftRemoveOfficer'])->name('manning-deployments.draft.remove-officer');
+        Route::post('/manning-deployments/{deploymentId}/swap-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftSwapOfficer'])->name('manning-deployments.draft.swap-officer');
+        Route::post('/manning-deployments/{id}/publish', [ManningRequestController::class, 'hrdDraftPublish'])->name('manning-deployments.publish');
+        Route::get('/manning-deployments/{id}/print', [ManningRequestController::class, 'hrdDraftPrint'])->name('manning-deployments.print');
+        Route::get('/manning-deployments/published', [ManningRequestController::class, 'hrdPublishedIndex'])->name('manning-deployments.published');
         Route::get('/leave-types/create', [LeaveTypeController::class, 'create'])->name('leave-types.create');
         Route::post('/leave-types', [LeaveTypeController::class, 'store'])->name('leave-types.store');
         Route::get('/leave-types/{id}/edit', [LeaveTypeController::class, 'edit'])->name('leave-types.edit');

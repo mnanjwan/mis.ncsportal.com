@@ -7,11 +7,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\ManningRequest;
 use App\Models\ManningRequestItem;
+use App\Models\ManningDeployment;
+use App\Models\ManningDeploymentAssignment;
 use App\Models\Officer;
 use App\Models\MovementOrder;
 use App\Models\OfficerPosting;
+use App\Models\Command;
 use App\Services\NotificationService;
 use App\Services\PostingWorkflowService;
+use App\Services\RankComparisonService;
 
 class ManningRequestController extends Controller
 {
@@ -512,8 +516,8 @@ class ManningRequestController extends Controller
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items'])
             ->where('status', 'APPROVED');
 
-        // Sorting
-        $sortBy = $request->get('sort_by', 'approved_at');
+        // Sorting - Default to latest requests first (created_at desc)
+        $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         
         $sortableColumns = [
@@ -526,7 +530,7 @@ class ManningRequestController extends Controller
             'created_at' => 'created_at',
         ];
 
-        $column = $sortableColumns[$sortBy] ?? 'approved_at';
+        $column = $sortableColumns[$sortBy] ?? 'created_at';
         $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
 
         if (is_callable($column)) {
@@ -545,7 +549,16 @@ class ManningRequestController extends Controller
         $request = ManningRequest::with(['command', 'requestedBy', 'approvedBy', 'items'])
             ->findOrFail($id);
         
-        return view('dashboards.hrd.manning-request-show', compact('request'));
+        // Check which items have officers in draft deployments
+        $itemIds = $request->items->pluck('id');
+        $itemsInDraft = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
+            ->whereHas('deployment', function($q) {
+                $q->where('status', 'DRAFT');
+            })
+            ->pluck('manning_request_item_id')
+            ->unique();
+        
+        return view('dashboards.hrd.manning-request-show', compact('request', 'itemsInDraft'));
     }
 
     public function hrdMatch(Request $request, $id)
@@ -556,34 +569,142 @@ class ManningRequestController extends Controller
         $item = ManningRequestItem::findOrFail($itemId);
         
         // Build query for matching officers
+        // IMPORTANT: This is GLOBAL matching - searches ALL commands EXCEPT the requesting command
+        // The requesting command only states their needs; HRD matches from other commands
+        // Officers from the requesting command are EXCLUDED from results
         $query = Officer::where('is_active', true)
             ->where('is_deceased', false)
-            ->where('interdicted', false)  // Fixed: was 'is_interdicted'
-            ->where('suspended', false)    // Fixed: was 'is_suspended'
-            ->where('dismissed', false)    // Added: exclude dismissed officers
+            ->where('interdicted', false)
+            ->where('suspended', false)
+            ->where('dismissed', false)
             ->whereNotNull('substantive_rank');
         
-        // Match rank - EXACT MATCH ONLY (no similar or partial matches)
+        // Search ALL commands EXCEPT the requesting command
+        // Officers from the requesting command will be excluded below
+        
+        // Match rank - handle both abbreviation and full name formats
+        // Manning requests store abbreviations (e.g., "SC", "ASC II"), but officers table
+        // may have full names (e.g., "Superintendent of Customs (SC) GL11" or "Superintendent")
+        // CRITICAL: "ASC II" must NOT match "Superintendent" - they are different ranks!
         if (!empty($item->rank)) {
-            // Use exact match only - match the exact rank as requested
-            $query->where('substantive_rank', $item->rank);
+            $requestedRank = trim($item->rank);
+            
+            // Use the same rank mapping as RankComparisonService for consistency
+            $rankMappingToAbbr = [
+                'Comptroller General of Customs (CGC) GL18' => 'CGC',
+                'Comptroller General' => 'CGC',
+                'Deputy Comptroller General of Customs (DCG) GL17' => 'DCG',
+                'Deputy Comptroller General' => 'DCG',
+                'Assistant Comptroller General (ACG) of Customs GL 16' => 'ACG',
+                'Assistant Comptroller General' => 'ACG',
+                'Comptroller of Customs (CC) GL15' => 'CC',
+                'Comptroller' => 'CC',
+                'Deputy Comptroller of Customs (DC) GL14' => 'DC',
+                'Deputy Comptroller' => 'DC',
+                'Assistant Comptroller of Customs (AC) GL13' => 'AC',
+                'Assistant Comptroller' => 'AC',
+                'Chief Superintendent of Customs (CSC) GL12' => 'CSC',
+                'Chief Superintendent' => 'CSC',
+                'Superintendent of Customs (SC) GL11' => 'SC',
+                'Superintendent' => 'SC',
+                'Deputy Superintendent of Customs (DSC) GL10' => 'DSC',
+                'Deputy Superintendent' => 'DSC',
+                'Assistant Superintendent of Customs Grade I (ASC I) GL 09' => 'ASC I',
+                'Assistant Superintendent Grade I' => 'ASC I',
+                'Assistant Superintendent of Customs Grade II (ASC II) GL 08' => 'ASC II',
+                'Assistant Superintendent Grade II' => 'ASC II',
+                'Assistant Superintendent' => 'ASC I', // Default to ASC I if ambiguous
+                'Inspector of Customs (IC) GL07' => 'IC',
+                'Inspector' => 'IC',
+                'Assistant Inspector of Customs (AIC) GL06' => 'AIC',
+                'Assistant Inspector' => 'AIC',
+                'Customs Assistant I (CA I) GL05' => 'CA I',
+                'Customs Assistant I' => 'CA I',
+                'Customs Assistant II (CA II) GL04' => 'CA II',
+                'Customs Assistant II' => 'CA II',
+                'Customs Assistant III (CA III) GL03' => 'CA III',
+                'Customs Assistant III' => 'CA III',
+                'Customs Assistant' => 'CA I', // Default to CA I if ambiguous
+            ];
+            
+            // Build list of exact rank strings to match
+            // Start with the requested rank itself
+            $ranksToMatch = [strtolower(trim($requestedRank))];
+            
+            // If requested rank is an abbreviation, find all full name variations
+            // If requested rank is a full name, find the abbreviation
+            $foundAbbr = null;
+            foreach ($rankMappingToAbbr as $fullName => $abbr) {
+                $fullNameLower = strtolower(trim($fullName));
+                $abbrLower = strtolower(trim($abbr));
+                $requestedLower = strtolower(trim($requestedRank));
+                
+                // If requested matches abbreviation, add all full name variations
+                if ($requestedLower === $abbrLower) {
+                    $foundAbbr = $abbr;
+                    // Find all full names that map to this abbreviation
+                    foreach ($rankMappingToAbbr as $fn => $a) {
+                        if (strtolower(trim($a)) === $abbrLower) {
+                            $ranksToMatch[] = strtolower(trim($fn));
+                        }
+                    }
+                    break;
+                }
+                
+                // If requested matches a full name, add the abbreviation
+                if ($requestedLower === $fullNameLower) {
+                    $foundAbbr = $abbr;
+                    $ranksToMatch[] = $abbrLower;
+                    // Also add other full name variations for this abbreviation
+                    foreach ($rankMappingToAbbr as $fn => $a) {
+                        if (strtolower(trim($a)) === strtolower(trim($abbr))) {
+                            $ranksToMatch[] = strtolower(trim($fn));
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            // Remove duplicates
+            $ranksToMatch = array_unique($ranksToMatch);
+            
+            // Match using EXACT matches only (case-insensitive, trimmed)
+            // This prevents "ASC II" from matching "Superintendent"
+            $query->where(function($q) use ($ranksToMatch, $requestedRank) {
+                $requestedRankLower = strtolower(trim($requestedRank));
+                
+                // 1. Exact match for each rank variation
+                foreach ($ranksToMatch as $rankToMatch) {
+                    $q->orWhereRaw('LOWER(TRIM(substantive_rank)) = ?', [$rankToMatch]);
+                }
+                
+                // 2. Match abbreviation in parentheses (e.g., "Superintendent of Customs (SC) GL11")
+                // Only if requested rank is short (likely an abbreviation)
+                if (strlen($requestedRank) <= 10) {
+                    $q->orWhereRaw('LOWER(substantive_rank) LIKE ?', ['%(' . $requestedRankLower . ')%']);
+                }
+            });
         }
         
-        // Ensure officer has a current command
-        $query->whereNotNull('present_station'); // Fixed: use whereNotNull instead of whereHas
+        // Ensure officer has a current command (but don't restrict which command)
+        // This allows officers from ANY command to be matched
+        $query->whereNotNull('present_station');
+        
+        // EXCLUDE officers from the requesting command
+        // The requesting command is asking for officers, so we should not match officers from their own command
+        if ($manningRequest->command_id) {
+            $query->where('present_station', '!=', $manningRequest->command_id);
+        }
         
         // Filter by sex requirement
         if ($item->sex_requirement !== 'ANY') {
             $query->where('sex', $item->sex_requirement);
         }
         
-        // Filter by qualification if specified
-        if (!empty($item->qualification_requirement)) {
-            $query->where(function($q) use ($item) {
-                $q->where('entry_qualification', 'LIKE', '%' . $item->qualification_requirement . '%')
-                  ->orWhere('additional_qualification', 'LIKE', '%' . $item->qualification_requirement . '%');
-            });
-        }
+        // IMPORTANT: Global matching from all OTHER commands (excluding requesting command)
+        // The requesting command only states their needs; HRD matches from other commands
+        // Qualification is shown but NOT used as a filter - HRD can see all officers with the rank
+        // and decide which ones to select based on all criteria
         
         // Exclude officers already matched to this request
         $alreadyMatched = ManningRequestItem::where('manning_request_id', $id)
@@ -593,14 +714,79 @@ class ManningRequestController extends Controller
         if ($alreadyMatched->isNotEmpty()) {
             $query->whereNotIn('id', $alreadyMatched);
         }
+
+        // Exclude officers already in draft deployments (global check - across all commands)
+        $officersInDraft = ManningDeploymentAssignment::whereHas('deployment', function($q) {
+                $q->where('status', 'DRAFT');
+            })
+            ->pluck('officer_id');
         
-        // Get matched officers (limit to quantity needed * 2 for selection, or at least 10)
-        $limit = max($item->quantity_needed * 2, 10);
-        $matchedOfficers = $query->with('presentStation')
+        if ($officersInDraft->isNotEmpty()) {
+            $query->whereNotIn('id', $officersInDraft);
+        }
+        
+        // Get matched officers - search ALL commands EXCEPT requesting command
+        // Increase limit to show more results from across all other commands
+        // Results are from all OTHER commands - global matching excluding requesting command
+        $limit = max($item->quantity_needed * 5, 50); // Increased limit to show more officers from all commands
+        
+        // Get total count before limiting (for display)
+        $totalCount = $query->count();
+        
+        $matchedOfficers = $query->with(['presentStation.zone'])
+            ->orderBy('present_station') // Group by command for easier review
             ->take($limit)
             ->get();
         
-        return view('dashboards.hrd.manning-request-matches', compact('manningRequest', 'item', 'matchedOfficers'));
+        // Get all unique commands that have matching officers (for debugging)
+        $allMatchingCommandIds = $matchedOfficers->pluck('present_station')
+            ->filter()
+            ->unique()
+            ->values();
+        
+        // Mark which officers match the qualification requirement (for display purposes only)
+        $qualificationRequirement = $item->qualification_requirement ?? null;
+        if ($qualificationRequirement) {
+            $qualification = strtolower(trim($qualificationRequirement));
+            $matchedOfficers = $matchedOfficers->map(function($officer) use ($qualification) {
+                $entryMatch = $officer->entry_qualification && 
+                    stripos(strtolower($officer->entry_qualification), $qualification) !== false;
+                $additionalMatch = $officer->additional_qualification && 
+                    stripos(strtolower($officer->additional_qualification), $qualification) !== false;
+                $officer->qualification_matches = $entryMatch || $additionalMatch;
+                return $officer;
+            });
+        }
+        
+        // Log for debugging - verify global matching
+        $requestingCommandId = $manningRequest->command_id;
+        $requestingCommandName = $manningRequest->command->name ?? 'N/A';
+        $uniqueCommandsInResults = $matchedOfficers->pluck('presentStation')->unique('id')->map(function($cmd) {
+            return $cmd ? ['id' => $cmd->id, 'name' => $cmd->name] : null;
+        })->filter()->values();
+        
+        // Get sample ranks from matched officers to verify rank matching worked
+        $sampleRanks = $matchedOfficers->take(5)->pluck('substantive_rank')->toArray();
+        
+        Log::info('HRD Manning Match - Global Search (ALL COMMANDS)', [
+            'manning_request_id' => $id,
+            'requesting_command_id' => $requestingCommandId,
+            'requesting_command_name' => $requestingCommandName,
+            'item_id' => $itemId,
+            'requested_rank' => $item->rank,
+            'rank_matching_note' => 'Using flexible rank matching (abbreviation and full name formats)',
+            'sex_requirement' => $item->sex_requirement,
+            'qualification_preference' => $item->qualification_requirement,
+            'total_matching_officers_in_all_commands' => $totalCount,
+            'returned_count' => $matchedOfficers->count(),
+            'unique_commands_in_results' => $uniqueCommandsInResults->count(),
+            'commands_represented' => $uniqueCommandsInResults->toArray(),
+            'all_matching_command_ids' => $allMatchingCommandIds->toArray(),
+            'sample_ranks_found' => $sampleRanks,
+            'note' => 'Searching ALL commands EXCEPT requesting command. Officers from requesting command are excluded. Rank matching handles both abbreviations and full names.',
+        ]);
+        
+        return view('dashboards.hrd.manning-request-matches', compact('manningRequest', 'item', 'matchedOfficers', 'totalCount', 'qualificationRequirement'));
     }
 
     public function hrdGenerateOrder(Request $request, $id)
@@ -748,6 +934,421 @@ class ManningRequestController extends Controller
                 ->withInput()
                 ->with('error', 'Failed to generate movement order: ' . $e->getMessage());
         }
+    }
+
+    // HRD Draft Deployment Methods
+    public function hrdAddToDraft(Request $request, $id)
+    {
+        $manningRequest = ManningRequest::with('items')->findOrFail($id);
+        
+        $validated = $request->validate([
+            'selected_officers' => 'required|array|min:1',
+            'selected_officers.*' => 'exists:officers,id',
+            'item_id' => 'required|exists:manning_request_items,id',
+        ]);
+        
+        try {
+            DB::beginTransaction();
+            
+            $item = ManningRequestItem::findOrFail($validated['item_id']);
+            $selectedOfficers = Officer::whereIn('id', $validated['selected_officers'])->get();
+            $destinationCommand = $manningRequest->command;
+            
+            // Get or create active draft deployment
+            $deployment = ManningDeployment::draft()
+                ->where('created_by', auth()->id())
+                ->latest()
+                ->first();
+            
+            if (!$deployment) {
+                // Generate deployment number
+                $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
+                $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
+                    ->orderBy('deployment_number', 'desc')
+                    ->first();
+                
+                $newNumber = $lastDeployment ? ((int)substr($lastDeployment->deployment_number, -3)) + 1 : 1;
+                $deploymentNumber = $datePrefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                
+                $deployment = ManningDeployment::create([
+                    'deployment_number' => $deploymentNumber,
+                    'status' => 'DRAFT',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+            
+            // Add officers to draft
+            foreach ($selectedOfficers as $officer) {
+                $fromCommand = $officer->presentStation;
+                
+                // Check if officer is already in this deployment
+                $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
+                    ->where('officer_id', $officer->id)
+                    ->first();
+                
+                if (!$existing) {
+                    ManningDeploymentAssignment::create([
+                        'manning_deployment_id' => $deployment->id,
+                        'manning_request_id' => $manningRequest->id,
+                        'manning_request_item_id' => $item->id,
+                        'officer_id' => $officer->id,
+                        'from_command_id' => $fromCommand?->id,
+                        'to_command_id' => $destinationCommand->id,
+                        'rank' => $officer->substantive_rank,
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('hrd.manning-deployments.draft')
+                ->with('success', count($selectedOfficers) . ' officer(s) added to draft deployment.');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to add officers to draft: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request_id' => $id,
+            ]);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to add officers to draft: ' . $e->getMessage());
+        }
+    }
+
+    public function hrdDraftIndex()
+    {
+        $deployments = ManningDeployment::draft()
+            ->with(['createdBy', 'assignments.officer', 'assignments.toCommand', 'assignments.fromCommand'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Get active draft (most recent)
+        $activeDraft = $deployments->first();
+        
+        // Group assignments by command for display
+        $assignmentsByCommand = [];
+        if ($activeDraft) {
+            $assignmentsByCommand = $activeDraft->getOfficersByCommand();
+        }
+        
+        // Get manning levels summary
+        $manningLevels = $activeDraft ? $activeDraft->getManningLevels() : [];
+        
+        return view('dashboards.hrd.manning-deployment-draft', compact('activeDraft', 'assignmentsByCommand', 'manningLevels'));
+    }
+
+    public function hrdDraftAddOfficer(Request $request)
+    {
+        $validated = $request->validate([
+            'deployment_id' => 'required|exists:manning_deployments,id',
+            'officer_id' => 'required|exists:officers,id',
+            'to_command_id' => 'required|exists:commands,id',
+            'manning_request_id' => 'nullable|exists:manning_requests,id',
+            'manning_request_item_id' => 'nullable|exists:manning_request_items,id',
+        ]);
+        
+        try {
+            $deployment = ManningDeployment::findOrFail($validated['deployment_id']);
+            
+            if ($deployment->status !== 'DRAFT') {
+                return redirect()->back()
+                    ->with('error', 'Can only add officers to draft deployments.');
+            }
+            
+            $officer = Officer::where('is_active', true)
+                ->where('is_deceased', false)
+                ->where('interdicted', false)
+                ->where('suspended', false)
+                ->where('dismissed', false)
+                ->findOrFail($validated['officer_id']);
+            
+            $toCommand = Command::findOrFail($validated['to_command_id']);
+            $fromCommand = $officer->presentStation;
+            
+            // Check if officer is already in this deployment
+            $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
+                ->where('officer_id', $officer->id)
+                ->first();
+            
+            if ($existing) {
+                return redirect()->back()
+                    ->with('error', 'Officer is already in this deployment.');
+            }
+            
+            // Check if officer is already in any draft deployment
+            $inOtherDraft = ManningDeploymentAssignment::whereHas('deployment', function($q) use ($deployment) {
+                    $q->where('status', 'DRAFT')
+                      ->where('id', '!=', $deployment->id);
+                })
+                ->where('officer_id', $officer->id)
+                ->exists();
+            
+            if ($inOtherDraft) {
+                return redirect()->back()
+                    ->with('error', 'Officer is already assigned to another draft deployment.');
+            }
+            
+            ManningDeploymentAssignment::create([
+                'manning_deployment_id' => $deployment->id,
+                'manning_request_id' => $validated['manning_request_id'] ?? null,
+                'manning_request_item_id' => $validated['manning_request_item_id'] ?? null,
+                'officer_id' => $officer->id,
+                'from_command_id' => $fromCommand?->id,
+                'to_command_id' => $toCommand->id,
+                'rank' => $officer->substantive_rank,
+            ]);
+            
+            return redirect()->back()
+                ->with('success', 'Officer added to draft deployment.');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to add officer to draft: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to add officer: ' . $e->getMessage());
+        }
+    }
+
+    public function hrdDraftRemoveOfficer($deploymentId, $assignmentId)
+    {
+        try {
+            $deployment = ManningDeployment::findOrFail($deploymentId);
+            
+            if ($deployment->status !== 'DRAFT') {
+                return redirect()->back()
+                    ->with('error', 'Can only remove officers from draft deployments.');
+            }
+            
+            $assignment = ManningDeploymentAssignment::where('id', $assignmentId)
+                ->where('manning_deployment_id', $deployment->id)
+                ->firstOrFail();
+            
+            $assignment->delete();
+            
+            return redirect()->back()
+                ->with('success', 'Officer removed from draft deployment.');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to remove officer from draft: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to remove officer: ' . $e->getMessage());
+        }
+    }
+
+    public function hrdDraftSwapOfficer(Request $request, $deploymentId, $assignmentId)
+    {
+        $validated = $request->validate([
+            'new_officer_id' => 'required|exists:officers,id',
+        ]);
+        
+        try {
+            $deployment = ManningDeployment::findOrFail($deploymentId);
+            
+            if ($deployment->status !== 'DRAFT') {
+                return redirect()->back()
+                    ->with('error', 'Can only swap officers in draft deployments.');
+            }
+            
+            $assignment = ManningDeploymentAssignment::where('id', $assignmentId)
+                ->where('manning_deployment_id', $deployment->id)
+                ->firstOrFail();
+            
+            $newOfficer = Officer::findOrFail($validated['new_officer_id']);
+            
+            // Check if new officer is already in this deployment
+            $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
+                ->where('officer_id', $newOfficer->id)
+                ->where('id', '!=', $assignmentId)
+                ->first();
+            
+            if ($existing) {
+                return redirect()->back()
+                    ->with('error', 'New officer is already in this deployment.');
+            }
+            
+            $assignment->update([
+                'officer_id' => $newOfficer->id,
+                'from_command_id' => $newOfficer->presentStation?->id,
+                'rank' => $newOfficer->substantive_rank,
+            ]);
+            
+            return redirect()->back()
+                ->with('success', 'Officer swapped successfully.');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to swap officer: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to swap officer: ' . $e->getMessage());
+        }
+    }
+
+    public function hrdDraftPublish($id)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $deployment = ManningDeployment::with('assignments.officer', 'assignments.toCommand', 'assignments.fromCommand')
+                ->findOrFail($id);
+            
+            if ($deployment->status !== 'DRAFT') {
+                return redirect()->back()
+                    ->with('error', 'Can only publish draft deployments.');
+            }
+            
+            // Generate unique movement order number
+            $datePrefix = 'MO-' . date('Y') . '-' . date('md') . '-';
+            $lastOrder = MovementOrder::where('order_number', 'LIKE', $datePrefix . '%')
+                ->orderBy('order_number', 'desc')
+                ->first();
+            
+            $newNumber = $lastOrder ? ((int)substr($lastOrder->order_number, -3)) + 1 : 1;
+            $orderNumber = $datePrefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+            
+            // Ensure uniqueness
+            $counter = 0;
+            while (MovementOrder::where('order_number', $orderNumber)->exists() && $counter < 100) {
+                $newNumber++;
+                $orderNumber = $datePrefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                $counter++;
+            }
+            
+            $movementOrder = MovementOrder::create([
+                'order_number' => $orderNumber,
+                'manning_request_id' => null, // Deployment may span multiple requests
+                'criteria_months_at_station' => null,
+                'status' => 'DRAFT',
+                'created_by' => auth()->id(),
+            ]);
+            
+            // Post all officers and create movement order entries
+            foreach ($deployment->assignments as $assignment) {
+                $officer = $assignment->officer;
+                $fromCommand = $assignment->fromCommand;
+                $toCommand = $assignment->toCommand;
+                
+                // Mark previous posting as not current
+                OfficerPosting::where('officer_id', $officer->id)
+                    ->where('is_current', true)
+                    ->update(['is_current' => false]);
+                
+                // Create new posting record
+                OfficerPosting::create([
+                    'officer_id' => $officer->id,
+                    'command_id' => $toCommand->id,
+                    'movement_order_id' => $movementOrder->id,
+                    'posting_date' => now(),
+                    'is_current' => true,
+                    'documented_by' => null,
+                    'documented_at' => null,
+                ]);
+                
+                // Update officer's present_station
+                $officer->update([
+                    'present_station' => $toCommand->id,
+                    'date_posted_to_station' => now(),
+                ]);
+                
+                // Update manning request items if linked
+                if ($assignment->manning_request_item_id) {
+                    $item = ManningRequestItem::find($assignment->manning_request_item_id);
+                    if ($item && !$item->matched_officer_id) {
+                        $item->update(['matched_officer_id' => $officer->id]);
+                    }
+                }
+                
+                // Notify officer about posting
+                try {
+                    $notificationService = app(NotificationService::class);
+                    $notificationService->notifyOfficerPosted($officer, $fromCommand, $toCommand, now());
+                } catch (\Exception $e) {
+                    Log::warning("Failed to send posting notification: " . $e->getMessage());
+                }
+            }
+            
+            // Mark deployment as published
+            $deployment->update([
+                'status' => 'PUBLISHED',
+                'published_by' => auth()->id(),
+                'published_at' => now(),
+            ]);
+            
+            // Check and update manning request statuses
+            $requestIds = $deployment->assignments()
+                ->whereNotNull('manning_request_id')
+                ->distinct()
+                ->pluck('manning_request_id');
+            
+            foreach ($requestIds as $requestId) {
+                $manningRequest = ManningRequest::find($requestId);
+                if ($manningRequest) {
+                    $unmatchedItems = ManningRequestItem::where('manning_request_id', $requestId)
+                        ->whereNull('matched_officer_id')
+                        ->count();
+                    
+                    if ($unmatchedItems === 0) {
+                        $manningRequest->update([
+                            'status' => 'FULFILLED',
+                            'fulfilled_at' => now(),
+                        ]);
+                        
+                        $notificationService = app(NotificationService::class);
+                        $notificationService->notifyManningRequestFulfilled($manningRequest);
+                    }
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('hrd.manning-deployments.published')
+                ->with('success', "Deployment {$deployment->deployment_number} published successfully! Movement Order {$orderNumber} created.");
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to publish deployment: ' . $e->getMessage(), [
+                'exception' => $e,
+                'deployment_id' => $id,
+            ]);
+            return redirect()->back()
+                ->with('error', 'Failed to publish deployment: ' . $e->getMessage());
+        }
+    }
+
+    public function hrdDraftPrint($id)
+    {
+        $deployment = ManningDeployment::with([
+            'assignments.officer',
+            'assignments.toCommand',
+            'assignments.fromCommand'
+        ])->findOrFail($id);
+        
+        // Get all assignments sorted by rank
+        $assignments = $deployment->assignments()
+            ->with(['officer', 'toCommand', 'fromCommand'])
+            ->get()
+            ->sortBy(function($assignment) {
+                // Sort by rank (you may need to adjust this based on your rank hierarchy)
+                $rankOrder = [
+                    'CGC' => 1, 'DCG' => 2, 'ACG' => 3, 'CC' => 4, 'DC' => 5,
+                    'AC' => 6, 'CSC' => 7, 'SC' => 8, 'DSC' => 9,
+                    'ASC I' => 10, 'ASC II' => 11, 'IC' => 12, 'AIC' => 13,
+                    'CA I' => 14, 'CA II' => 15, 'CA III' => 16,
+                ];
+                $rank = $assignment->officer->substantive_rank ?? '';
+                return $rankOrder[$rank] ?? 999;
+            })
+            ->values();
+        
+        return view('dashboards.hrd.manning-deployment-print', compact('deployment', 'assignments'));
+    }
+
+    public function hrdPublishedIndex()
+    {
+        $deployments = ManningDeployment::published()
+            ->with(['createdBy', 'publishedBy', 'assignments.officer', 'assignments.toCommand'])
+            ->orderBy('published_at', 'desc')
+            ->paginate(20);
+        
+        return view('dashboards.hrd.manning-deployments-published', compact('deployments'));
     }
 
     // Area Controller Methods

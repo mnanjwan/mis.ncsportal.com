@@ -15,10 +15,13 @@ use App\Models\StaffOrder;
 use App\Models\LeaveApplication;
 use App\Models\PassApplication;
 use App\Models\ManningRequest;
+use App\Models\ManningDeployment;
+use App\Models\APERForm;
 use App\Models\DutyRoster;
 use App\Models\OfficerPosting;
 use App\Models\AccountChangeRequest;
 use App\Models\NextOfKinChangeRequest;
+use App\Models\MovementOrder;
 use App\Models\DeceasedOfficer;
 use App\Models\Query;
 
@@ -111,13 +114,100 @@ class DashboardController extends Controller
             'PROCESSED' => Emolument::where('status', 'PROCESSED')->count(),
         ];
 
+        // ===== QUICK ACTION ITEMS =====
+        
+        // 1. Approved Manning Requests (waiting for officer matching)
+        $approvedManningRequests = ManningRequest::where('status', 'APPROVED')
+            ->with(['command', 'requestedBy', 'items'])
+            ->orderBy('approved_at', 'desc')
+            ->take(5)
+            ->get();
+        $approvedManningRequestsCount = ManningRequest::where('status', 'APPROVED')->count();
+
+        // 2. Draft Deployments (need review and publication)
+        $draftDeployments = ManningDeployment::where('status', 'DRAFT')
+            ->with(['assignments.officer', 'assignments.toCommand'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $draftDeploymentsCount = ManningDeployment::where('status', 'DRAFT')->count();
+
+        // 3. APER Forms pending HRD grading
+        $pendingAperForms = APERForm::where('status', 'HRD_GRADING')
+            ->with(['officer', 'reportingOfficer', 'countersigningOfficer'])
+            ->orderBy('updated_at', 'desc')
+            ->take(5)
+            ->get();
+        $pendingAperFormsCount = APERForm::where('status', 'HRD_GRADING')->count();
+
+        // 4. Queries pending HRD review
+        $pendingQueries = Query::where('status', 'PENDING_REVIEW')
+            ->with(['officer', 'issuedBy'])
+            ->orderBy('responded_at', 'desc')
+            ->take(5)
+            ->get();
+        $pendingQueriesCount = Query::where('status', 'PENDING_REVIEW')->count();
+
+        // 5. Officer Onboarding - Pending verification
+        $pendingOnboarding = Officer::where('onboarding_status', 'PENDING')
+            ->orWhere('verification_status', 'PENDING')
+            ->with('presentStation')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $pendingOnboardingCount = Officer::where(function($q) {
+            $q->where('onboarding_status', 'PENDING')
+              ->orWhere('verification_status', 'PENDING');
+        })->count();
+
+        // 6. Movement Orders - Draft status (need processing)
+        $draftMovementOrders = MovementOrder::where('status', 'DRAFT')
+            ->with(['manningRequest.command'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $draftMovementOrdersCount = MovementOrder::where('status', 'DRAFT')->count();
+
+        // 7. Account Change Requests pending HRD approval
+        $pendingAccountChanges = AccountChangeRequest::where('status', 'PENDING')
+            ->with(['officer'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $pendingAccountChangesCount = AccountChangeRequest::where('status', 'PENDING')->count();
+
+        // 8. Next of Kin Change Requests pending HRD approval
+        $pendingNokChanges = NextOfKinChangeRequest::where('status', 'PENDING')
+            ->with(['officer'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $pendingNokChangesCount = NextOfKinChangeRequest::where('status', 'PENDING')->count();
+
         return view('dashboards.hrd.dashboard', compact(
             'servingOfficers',
             'pendingEmoluments',
             'activeTimeline',
             'staffOrdersCount',
             'recentOfficers',
-            'emolumentStatus'
+            'emolumentStatus',
+            // Quick action items
+            'approvedManningRequests',
+            'approvedManningRequestsCount',
+            'draftDeployments',
+            'draftDeploymentsCount',
+            'pendingAperForms',
+            'pendingAperFormsCount',
+            'pendingQueries',
+            'pendingQueriesCount',
+            'pendingOnboarding',
+            'pendingOnboardingCount',
+            'draftMovementOrders',
+            'draftMovementOrdersCount',
+            'pendingAccountChanges',
+            'pendingAccountChangesCount',
+            'pendingNokChanges',
+            'pendingNokChangesCount'
         ));
     }
 

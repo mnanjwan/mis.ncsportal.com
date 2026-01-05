@@ -25,11 +25,18 @@
     <!-- Requirement Details -->
     <div class="kt-card">
         <div class="kt-card-content p-5 lg:p-7.5">
+            <div class="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <p class="text-sm text-primary font-medium">
+                    <i class="ki-filled ki-information"></i> 
+                    <strong>Global Matching:</strong> Officers are searched from ALL commands EXCEPT the requesting command ({{ $manningRequest->command->name ?? 'N/A' }}). Officers from the requesting command are excluded from results. The requesting command only states their needs - HRD matches from other commands across the commission.
+                </p>
+            </div>
             <h3 class="text-lg font-semibold mb-4">Matching Criteria</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                     <span class="text-secondary-foreground">Rank:</span>
                     <span class="font-semibold text-mono ml-2">{{ $item->rank }}</span>
+                    <span class="text-xs text-secondary-foreground ml-2">(Exact match required)</span>
                 </div>
                 <div>
                     <span class="text-secondary-foreground">Quantity Needed:</span>
@@ -40,8 +47,15 @@
                     <span class="font-semibold text-mono ml-2">{{ $item->sex_requirement }}</span>
                 </div>
                 <div>
-                    <span class="text-secondary-foreground">Qualification:</span>
+                    <span class="text-secondary-foreground">Qualification Preference:</span>
                     <span class="font-semibold text-mono ml-2">{{ $item->qualification_requirement ?? 'Any' }}</span>
+                    @if($item->qualification_requirement)
+                        <span class="text-xs text-secondary-foreground ml-2">(shown but not filtered - all officers with rank are displayed)</span>
+                    @endif
+                </div>
+                <div class="col-span-2">
+                    <span class="text-secondary-foreground">Search Scope:</span>
+                    <span class="font-semibold text-mono ml-2">All Commands (Excluding Requesting Command)</span>
                 </div>
             </div>
         </div>
@@ -50,16 +64,21 @@
     <!-- Matched Officers -->
     <div class="kt-card">
         <div class="kt-card-header">
-            <h3 class="kt-card-title">Matched Officers ({{ $matchedOfficers->count() }} found)</h3>
+            <h3 class="kt-card-title">
+                Matched Officers 
+                <span class="text-sm font-normal text-secondary-foreground">
+                    ({{ $matchedOfficers->count() }} shown of {{ $totalCount ?? $matchedOfficers->count() }} total from all commands)
+                </span>
+            </h3>
         </div>
         <div class="kt-card-content">
             @if($matchedOfficers->count() > 0)
-                <form action="{{ route('hrd.manning-requests.generate-order', $manningRequest->id) }}" method="POST" id="matchForm">
+                <form action="{{ route('hrd.manning-requests.add-to-draft', $manningRequest->id) }}" method="POST" id="matchForm">
                     @csrf
                     <input type="hidden" name="item_id" value="{{ $item->id }}">
                     
                     <p class="text-sm text-secondary-foreground mb-4">
-                        Select {{ $item->quantity_needed }} officer(s) to generate movement order. You can select up to {{ $item->quantity_needed }} officers.
+                        Select {{ $item->quantity_needed }} officer(s) to add to draft deployment. Officers will be added to the draft where you can review, adjust, and publish when ready.
                     </p>
 
                     <!-- Desktop Table View -->
@@ -75,7 +94,11 @@
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service No</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Current Command</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Zone</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Sex</th>
+                                        @if(isset($qualificationRequirement) && $qualificationRequirement)
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Qualification Match</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -103,8 +126,29 @@
                                                 {{ $officer->presentStation->name ?? 'N/A' }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                                {{ $officer->presentStation->zone->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $officer->sex ?? 'N/A' }}
                                             </td>
+                                            @if(isset($qualificationRequirement) && $qualificationRequirement)
+                                            <td class="py-3 px-4 text-sm">
+                                                @if(isset($officer->qualification_matches) && $officer->qualification_matches)
+                                                    <span class="kt-badge kt-badge-success kt-badge-sm">Matches</span>
+                                                @else
+                                                    <span class="text-secondary-foreground">—</span>
+                                                @endif
+                                            </td>
+                                            @endif
+                                            @if(isset($qualificationRequirement) && $qualificationRequirement)
+                                            <td class="py-3 px-4 text-sm">
+                                                @if(isset($officer->qualification_matches) && $officer->qualification_matches)
+                                                    <span class="kt-badge kt-badge-success kt-badge-sm">Matches</span>
+                                                @else
+                                                    <span class="text-secondary-foreground">—</span>
+                                                @endif
+                                            </td>
+                                            @endif
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -131,6 +175,7 @@
                                                 <div>SVC: <span class="font-mono">{{ $officer->service_number ?? 'N/A' }}</span></div>
                                                 <div>Rank: <span class="font-semibold">{{ $officer->substantive_rank ?? 'N/A' }}</span></div>
                                                 <div>Command: <span class="font-semibold">{{ $officer->presentStation->name ?? 'N/A' }}</span></div>
+                                                <div>Zone: <span class="font-semibold">{{ $officer->presentStation->zone->name ?? 'N/A' }}</span></div>
                                                 <div>Sex: <span class="font-semibold">{{ $officer->sex ?? 'N/A' }}</span></div>
                                             </div>
                                         </div>
@@ -145,8 +190,8 @@
                         <a href="{{ route('hrd.manning-requests.show', $manningRequest->id) }}" class="kt-btn kt-btn-ghost">
                             Cancel
                         </a>
-                        <button type="button" class="kt-btn kt-btn-primary" id="generateBtn" disabled data-kt-modal-toggle="#generate-order-confirm-modal">
-                            <i class="ki-filled ki-file-up"></i> Generate Movement Order
+                        <button type="button" class="kt-btn kt-btn-primary" id="generateBtn" disabled data-kt-modal-toggle="#add-to-draft-confirm-modal">
+                            <i class="ki-filled ki-file-add"></i> Add to Draft
                         </button>
                     </div>
                 </form>
@@ -284,15 +329,15 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 @endif
 
-<!-- Generate Order Confirmation Modal -->
-<div class="kt-modal" data-kt-modal="true" id="generate-order-confirm-modal">
+<!-- Add to Draft Confirmation Modal -->
+<div class="kt-modal" data-kt-modal="true" id="add-to-draft-confirm-modal">
     <div class="kt-modal-content max-w-[500px]">
         <div class="kt-modal-header py-4 px-5">
             <div class="flex items-center gap-3">
                 <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
-                    <i class="ki-filled ki-file-up text-primary text-xl"></i>
+                    <i class="ki-filled ki-file-add text-primary text-xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground">Confirm Generate Movement Order</h3>
+                <h3 class="text-lg font-semibold text-foreground">Add to Draft Deployment</h3>
             </div>
             <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
                 <i class="ki-filled ki-cross"></i>
@@ -300,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div class="kt-modal-body py-5 px-5">
             <p class="text-sm text-secondary-foreground mb-4">
-                Are you sure you want to generate a movement order with the selected officer(s)?
+                Are you sure you want to add the selected officer(s) to the draft deployment? You can review and adjust before publishing.
             </p>
             <div class="p-3 bg-muted/50 rounded-lg">
                 <p class="text-sm font-semibold mb-2 text-foreground">Selected Officers:</p>
@@ -313,9 +358,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
                 Cancel
             </button>
-            <button class="kt-btn kt-btn-primary" id="confirm-generate-btn">
-                <i class="ki-filled ki-file-up"></i>
-                <span>Generate Order</span>
+            <button class="kt-btn kt-btn-primary" id="confirm-add-btn">
+                <i class="ki-filled ki-file-add"></i>
+                <span>Add to Draft</span>
             </button>
         </div>
     </div>
@@ -325,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const generateBtn = document.getElementById('generateBtn');
-    const confirmBtn = document.getElementById('confirm-generate-btn');
+    const confirmBtn = document.getElementById('confirm-add-btn');
     const form = document.getElementById('matchForm');
     const selectedOfficersList = document.getElementById('selected-officers-list');
     
@@ -374,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (confirmBtn && form) {
         confirmBtn.addEventListener('click', function() {
             // Close modal
-            const modal = document.getElementById('generate-order-confirm-modal');
+            const modal = document.getElementById('add-to-draft-confirm-modal');
             if (modal) {
                 modal.classList.remove('show');
                 modal.setAttribute('aria-hidden', 'true');
@@ -382,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show loading state on button
             generateBtn.disabled = true;
-            generateBtn.innerHTML = '<i class="ki-filled ki-loading"></i> Generating...';
+            generateBtn.innerHTML = '<i class="ki-filled ki-loading"></i> Adding...';
             
             // Submit form
             form.submit();

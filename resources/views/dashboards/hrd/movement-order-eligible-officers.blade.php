@@ -54,13 +54,65 @@
             </div>
         </div>
 
+        <!-- Search and Filter Bar -->
+        <div class="kt-card">
+            <div class="kt-card-content p-5">
+                <div class="flex flex-col md:flex-row gap-4 items-end">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium mb-2">Search Officers</label>
+                        <input type="text" 
+                               id="officer-search-input" 
+                               class="kt-input w-full" 
+                               placeholder="Search by name, service number, rank, or current station..."
+                               autocomplete="off">
+                    </div>
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium mb-2">Filter by Rank</label>
+                        <select id="rank-filter" class="kt-input w-full">
+                            <option value="">All Ranks</option>
+                            @php
+                                $allRanks = $officers->pluck('substantive_rank')->filter()->unique()->sort()->values();
+                            @endphp
+                            @foreach($allRanks as $rank)
+                                <option value="{{ $rank }}">{{ $rank }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="w-full md:w-48">
+                        <label class="block text-sm font-medium mb-2">Filter by Current Station</label>
+                        <select id="station-filter" class="kt-input w-full">
+                            <option value="">All Stations</option>
+                            @php
+                                $allStations = $officers->pluck('presentStation.name')->filter()->unique()->sort()->values();
+                            @endphp
+                            @foreach($allStations as $station)
+                                <option value="{{ $station }}">{{ $station }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <button type="button" 
+                                onclick="clearFilters()" 
+                                class="kt-btn kt-btn-sm kt-btn-ghost">
+                            <i class="ki-filled ki-cross"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-sm text-secondary-foreground">
+                        <span id="visible-count">{{ $officers->count() }}</span> of {{ $officers->count() }} officer(s) visible
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <!-- Eligible Officers Card -->
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Eligible Officers</h3>
                 <div class="kt-card-toolbar">
                     <span class="text-sm text-secondary-foreground">
-                        {{ $officers->count() }} officer(s) found
+                        <span id="total-count">{{ $officers->count() }}</span> officer(s) found
                     </span>
                 </div>
             </div>
@@ -125,7 +177,11 @@
                                 </thead>
                                 <tbody>
                                     @foreach($officers as $index => $officer)
-                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors officer-row" 
+                                            data-officer-name="{{ strtolower(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}"
+                                            data-service-number="{{ strtolower($officer->service_number ?? '') }}"
+                                            data-rank="{{ strtolower($officer->substantive_rank ?? '') }}"
+                                            data-station="{{ strtolower($officer->presentStation->name ?? '') }}">
                                             <td class="py-3 px-4">
                                                 <input type="checkbox" 
                                                        name="officer_ids[]" 
@@ -190,8 +246,90 @@
 
     @push('scripts')
     <script>
+        // Dynamic Search and Filter Functionality
+        function filterOfficers() {
+            const searchInput = document.getElementById('officer-search-input');
+            const rankFilter = document.getElementById('rank-filter');
+            const stationFilter = document.getElementById('station-filter');
+            
+            const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+            const selectedRank = rankFilter?.value || '';
+            const selectedStation = stationFilter?.value || '';
+            
+            const rows = document.querySelectorAll('.officer-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const officerName = row.getAttribute('data-officer-name') || '';
+                const serviceNumber = row.getAttribute('data-service-number') || '';
+                const rank = row.getAttribute('data-rank') || '';
+                const station = row.getAttribute('data-station') || '';
+                
+                // Search filter
+                const matchesSearch = !searchTerm || 
+                    officerName.includes(searchTerm) ||
+                    serviceNumber.includes(searchTerm) ||
+                    rank.includes(searchTerm) ||
+                    station.includes(searchTerm);
+                
+                // Rank filter
+                const matchesRank = !selectedRank || rank === selectedRank.toLowerCase();
+                
+                // Station filter
+                const matchesStation = !selectedStation || station === selectedStation.toLowerCase();
+                
+                if (matchesSearch && matchesRank && matchesStation) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update visible count
+            const visibleCountEl = document.getElementById('visible-count');
+            if (visibleCountEl) {
+                visibleCountEl.textContent = visibleCount;
+            }
+            
+            // Update select all checkbox state after filtering
+            updateSelectAll();
+        }
+        
+        // Clear filters function
+        window.clearFilters = function() {
+            const searchInput = document.getElementById('officer-search-input');
+            const rankFilter = document.getElementById('rank-filter');
+            const stationFilter = document.getElementById('station-filter');
+            
+            if (searchInput) searchInput.value = '';
+            if (rankFilter) rankFilter.value = '';
+            if (stationFilter) stationFilter.value = '';
+            filterOfficers();
+        };
+        
         // Initialize: Ensure all command selects start disabled
         document.addEventListener('DOMContentLoaded', function() {
+            // Setup search and filter event listeners
+            const searchInput = document.getElementById('officer-search-input');
+            const rankFilter = document.getElementById('rank-filter');
+            const stationFilter = document.getElementById('station-filter');
+            
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(filterOfficers, 300); // Debounce for 300ms
+                });
+            }
+            
+            if (rankFilter) {
+                rankFilter.addEventListener('change', filterOfficers);
+            }
+            
+            if (stationFilter) {
+                stationFilter.addEventListener('change', filterOfficers);
+            }
             document.querySelectorAll('.command-select').forEach(select => {
                 select.disabled = true;
             });
