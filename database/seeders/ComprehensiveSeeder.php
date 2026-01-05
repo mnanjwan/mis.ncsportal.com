@@ -102,7 +102,7 @@ class ComprehensiveSeeder extends Seeder
         $this->createChatRooms($commands);
         
         // 5. Create ~50 Officers
-        $ranks = ['ASC II', 'ASC I', 'DSC', 'SC', 'CSC', 'AC', 'DC', 'CC', 'ACG', 'DCG'];
+        $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
         $surnames = ['Adebayo', 'Okafor', 'Ibrahim', 'Okoro', 'Musa', 'Adeyemi', 'Bello', 'Chukwu', 'Yusuf', 'Obi', 'Ali', 'Adekunle', 'Mohammed', 'Nwankwo', 'Sani'];
         $states = ['Lagos', 'Abuja', 'Kano', 'Rivers', 'Ogun', 'Kaduna', 'Delta', 'Enugu', 'Plateau', 'Oyo'];
         $lgas = ['Ikeja', 'Mushin', 'Surulere', 'Victoria Island', 'Garki', 'Wuse', 'Kaduna North', 'Port Harcourt', 'Abeokuta', 'Ibadan'];
@@ -543,7 +543,7 @@ class ComprehensiveSeeder extends Seeder
 
     private function createManningRequests($commands, $staffOfficerUser, $areaControllerUser, $hrdUser, $officers = [])
     {
-        $ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC'];
+        $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
         $sexOptions = ['M', 'F', 'ANY'];
         $qualifications = ['B.Sc', 'M.Sc', 'LLB'];
         

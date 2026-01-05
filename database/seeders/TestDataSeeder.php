@@ -158,7 +158,7 @@ class TestDataSeeder extends Seeder
         ];
         
         $initials = ['RD', 'AB', 'CD', 'EF', 'GH', 'IJ', 'KL', 'MN', 'OP', 'QR', 'ST', 'UV', 'WX', 'YZ'];
-        $ranks = ['ASC II', 'ASC I', 'DSC', 'SC', 'CSC', 'AC', 'DC', 'CC', 'ACG', 'DCG'];
+        $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
         $banks = ['Zenith Bank', 'GTBank', 'First Bank', 'UBA', 'Access Bank', 'Fidelity Bank'];
         $pfas = ['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension', 'Leadway Pension'];
         

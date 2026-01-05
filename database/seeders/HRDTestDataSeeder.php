@@ -116,7 +116,7 @@ class HRDTestDataSeeder extends Seeder
     private function createOfficers()
     {
         $commands = Command::all();
-        $ranks = ['Assistant Superintendent', 'Deputy Superintendent', 'Superintendent', 'Chief Superintendent', 'Assistant Comptroller'];
+        $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
         
         // Create officers with various statuses for testing
         for ($i = 1; $i <= 50; $i++) {
@@ -254,8 +254,9 @@ class HRDTestDataSeeder extends Seeder
             }
                 
                 // Create items for each request
+                $availableRanks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
                 for ($j = 1; $j <= 3; $j++) {
-                    $rank = ['Assistant Superintendent', 'Deputy Superintendent', 'Superintendent'][rand(0, 2)];
+                    $rank = $availableRanks[array_rand($availableRanks)];
                     
                     if (!ManningRequestItem::where('manning_request_id', $request->id)
                         ->where('rank', $rank)
@@ -304,11 +305,22 @@ class HRDTestDataSeeder extends Seeder
     private function createPromotionCriteria($userId)
     {
         $ranks = [
-            'Assistant Superintendent' => 2,
-            'Deputy Superintendent' => 3,
-            'Superintendent' => 4,
-            'Chief Superintendent' => 5,
-            'Assistant Comptroller' => 6,
+            'CA III' => 2,
+            'CA II' => 2,
+            'CA I' => 2,
+            'AIC' => 2,
+            'IC' => 2,
+            'ASC II' => 2,
+            'ASC I' => 2,
+            'DSC' => 2,
+            'SC' => 2,
+            'CSC' => 2,
+            'AC' => 2,
+            'DC' => 2,
+            'CC' => 2,
+            'ACG' => 2,
+            'DCG' => 2,
+            'CGC' => 0, // Top rank, no promotion needed
         ];
         
         foreach ($ranks as $rank => $years) {
