@@ -219,11 +219,16 @@ class AccountChangeRequestController extends Controller
         $request = AccountChangeRequest::with(['officer.presentStation', 'verifier'])->findOrFail($id);
 
         // Check authorization
-        if ($user->hasRole('Officer')) {
-            if ($request->officer_id !== $user->officer->id) {
+        // Accounts role can view any request
+        if ($user->hasRole('Accounts')) {
+            // Allow access
+        } elseif ($user->hasRole('Officer')) {
+            // Officers can only view their own requests
+            if (!$user->officer || $request->officer_id !== $user->officer->id) {
                 abort(403, 'Unauthorized access.');
             }
-        } elseif (!$user->hasRole('Accounts')) {
+        } else {
+            // User doesn't have required roles
             abort(403, 'Unauthorized access.');
         }
 
