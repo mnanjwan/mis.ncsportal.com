@@ -419,19 +419,53 @@ class OfficerDeletionController extends Controller
                 DB::table('user_roles')->where('user_id', $officer->user->id)->delete();
             }
 
-            // 29. Emolument validations where this user is the validator
+            // 29. Emolument assessments and validations where this user is the assessor or validator
             // This must be done before deleting the user due to foreign key constraint
             if ($officer->user) {
-                \App\Models\EmolumentValidation::where('validator_id', $officer->user->id)->delete();
+                $userId = $officer->user->id;
+                
+                // Get assessment IDs where this user is the assessor
+                $assessmentIds = \App\Models\EmolumentAssessment::where('assessor_id', $userId)->pluck('id');
+                
+                // Delete validations for these assessments first
+                if ($assessmentIds->isNotEmpty()) {
+                    \App\Models\EmolumentValidation::whereIn('assessment_id', $assessmentIds)->delete();
+                }
+                
+                // Delete assessments where this user is the assessor
+                \App\Models\EmolumentAssessment::where('assessor_id', $userId)->delete();
+                
+                // Also delete validations where this user is the validator (for assessments they didn't create)
+                \App\Models\EmolumentValidation::where('validator_id', $userId)->delete();
             }
 
-            // 30. User account
+            // 30. APER forms where this user is referenced as reporting officer, countersigning officer, staff officer, or HRD grader
+            // Set these to NULL to preserve the forms but remove the user reference
+            if ($officer->user) {
+                $userId = $officer->user->id;
+                APERForm::where('reporting_officer_id', $userId)
+                    ->update(['reporting_officer_id' => null]);
+                APERForm::where('countersigning_officer_id', $userId)
+                    ->update(['countersigning_officer_id' => null]);
+                APERForm::where('staff_officer_id', $userId)
+                    ->update(['staff_officer_id' => null]);
+                APERForm::where('reporting_officer_user_id', $userId)
+                    ->update(['reporting_officer_user_id' => null]);
+                APERForm::where('countersigning_officer_user_id', $userId)
+                    ->update(['countersigning_officer_user_id' => null]);
+                APERForm::where('head_of_department_user_id', $userId)
+                    ->update(['head_of_department_user_id' => null]);
+                APERForm::where('hrd_graded_by', $userId)
+                    ->update(['hrd_graded_by' => null]);
+            }
+
+            // 31. User account
             if ($officer->user) {
                 $userId = $officer->user->id;
                 $officer->user->delete();
             }
 
-            // 31. Finally, delete the officer record
+            // 32. Finally, delete the officer record
             $officer->delete();
 
             // Create audit log
