@@ -487,6 +487,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/internal-staff-orders/{id}/approve', [\App\Http\Controllers\DcAdminInternalStaffOrderController::class, 'approve'])->name('internal-staff-orders.approve');
         Route::post('/internal-staff-orders/{id}/reject', [\App\Http\Controllers\DcAdminInternalStaffOrderController::class, 'reject'])->name('internal-staff-orders.reject');
 
+        // Manning Request Routes
+        Route::get('/manning-level', [ManningRequestController::class, 'dcAdminIndex'])->name('manning-level');
+        Route::get('/manning-level/{id}', [ManningRequestController::class, 'dcAdminShow'])->name('manning-level.show');
+        Route::post('/manning-level/{id}/approve', [ManningRequestController::class, 'dcAdminApprove'])->name('manning-level.approve');
+        Route::post('/manning-level/{id}/reject', [ManningRequestController::class, 'dcAdminReject'])->name('manning-level.reject');
+
         // Query Management Routes
         Route::prefix('queries')->name('queries.')->group(function () {
             Route::get('/', [\App\Http\Controllers\DcAdminQueryController::class, 'index'])->name('index');

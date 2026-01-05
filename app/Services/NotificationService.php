@@ -481,13 +481,31 @@ class NotificationService
         $requestedBy = $manningRequest->requestedBy;
         $requestedByName = $requestedBy ? ($requestedBy->name ?? $requestedBy->email) : 'Staff Officer';
 
+        $commandId = $command->id;
+
         // Get Area Controllers (they can approve any manning request)
         $areaControllers = User::whereHas('roles', function ($q) {
             $q->where('name', 'Area Controller')
                 ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
-        if ($areaControllers->isEmpty()) {
+        // Get HRD users (they need to be aware of submitted requests)
+        $hrdUsers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'HRD')
+                ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        // Get DC Admins for the command (they handle command-level approvals)
+        $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'DC Admin')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        // Combine all users to notify
+        $usersToNotify = $areaControllers->merge($hrdUsers)->merge($dcAdmins);
+
+        if ($usersToNotify->isEmpty()) {
             return [];
         }
 
@@ -495,7 +513,7 @@ class NotificationService
         $totalQuantity = $manningRequest->items->sum('quantity_needed');
 
         return $this->notifyMany(
-            $areaControllers,
+            $usersToNotify,
             'manning_request_submitted',
             'New Manning Request Submitted',
             "A manning request for {$commandName} has been submitted by {$requestedByName}. It includes {$itemCount} position(s) requiring {$totalQuantity} officer(s) total. Please review and approve.",

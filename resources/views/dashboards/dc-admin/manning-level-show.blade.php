@@ -4,9 +4,9 @@
 @section('page-title', 'Manning Request Details')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('area-controller.dashboard') }}">Area Controller</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">DC Admin</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('area-controller.manning-level') }}">Manning Requests</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.manning-level') }}">Manning Requests</a>
     <span>/</span>
     <span class="text-primary">Review</span>
 @endsection
@@ -14,7 +14,7 @@
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
     <div class="flex items-center justify-between">
-        <a href="{{ route('area-controller.manning-level') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+        <a href="{{ route('dc-admin.manning-level') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
             <i class="ki-filled ki-arrow-left"></i> Back
         </a>
     </div>
@@ -97,7 +97,7 @@
         <div class="kt-card-header">
             <h3 class="kt-card-title">Approve Manning Request</h3>
         </div>
-        <form action="{{ route('area-controller.manning-level.approve', $request->id) }}" method="POST" class="kt-card-content">
+        <form action="{{ route('dc-admin.manning-level.approve', $request->id) }}" method="POST" class="kt-card-content">
             @csrf
             <div class="flex flex-col gap-4">
                 <div>
@@ -118,7 +118,7 @@
         <div class="kt-card-header">
             <h3 class="kt-card-title">Reject Manning Request</h3>
         </div>
-        <form action="{{ route('area-controller.manning-level.reject', $request->id) }}" method="POST" class="kt-card-content">
+        <form action="{{ route('dc-admin.manning-level.reject', $request->id) }}" method="POST" class="kt-card-content">
             @csrf
             <div class="flex flex-col gap-4">
                 <div>

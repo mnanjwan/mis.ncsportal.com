@@ -28,7 +28,11 @@ class ManningRequestController extends Controller
             'areaControllerIndex',
             'areaControllerShow',
             'areaControllerApprove',
-            'areaControllerReject'
+            'areaControllerReject',
+            'dcAdminIndex',
+            'dcAdminShow',
+            'dcAdminApprove',
+            'dcAdminReject'
         ]);
     }
 
@@ -857,6 +861,173 @@ class ManningRequestController extends Controller
             $notificationService->notifyManningRequestRejected($manningRequest, $request->rejection_reason);
             
             return redirect()->route('area-controller.manning-level')
+                ->with('success', 'Manning request rejected.');
+        } catch (\Exception $e) {
+            Log::error('Failed to reject manning request: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to reject request: ' . $e->getMessage());
+        }
+    }
+
+    // DC Admin Methods
+    public function dcAdminIndex(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Get DC Admin's command
+        $dcAdminRole = $user->roles()
+            ->where('name', 'DC Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $dcAdminRole?->pivot->command_id ?? null;
+        
+        // Get submitted manning requests (status = SUBMITTED) for DC Admin's command
+        $query = ManningRequest::with(['command.zone', 'requestedBy', 'items'])
+            ->where('status', 'SUBMITTED');
+        
+        // Filter by command if DC Admin is assigned to a command
+        if ($commandId) {
+            $query->where('command_id', $commandId);
+        }
+        
+        // Order by submitted_at if available, otherwise by created_at
+        $query->orderByRaw('COALESCE(submitted_at, created_at) DESC');
+        
+        $requests = $query->paginate(20)->withQueryString();
+        
+        return view('dashboards.dc-admin.manning-level', compact('requests', 'commandId'));
+    }
+    
+    public function dcAdminShow($id)
+    {
+        $user = auth()->user();
+        
+        // Get DC Admin's command
+        $dcAdminRole = $user->roles()
+            ->where('name', 'DC Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $dcAdminRole?->pivot->command_id ?? null;
+        
+        $request = ManningRequest::with(['command.zone', 'requestedBy', 'items'])->findOrFail($id);
+        
+        // Only show SUBMITTED requests
+        if ($request->status !== 'SUBMITTED') {
+            abort(403, 'This request is not pending approval');
+        }
+        
+        // Check command access if DC Admin is assigned to a command
+        if ($commandId && $request->command_id != $commandId) {
+            abort(403, 'You can only approve requests for your assigned command');
+        }
+        
+        return view('dashboards.dc-admin.manning-level-show', compact('request'));
+    }
+    
+    public function dcAdminApprove(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        // Check if user is DC Admin
+        if (!$user->hasRole('DC Admin')) {
+            abort(403, 'Only DC Admin can approve manning requests');
+        }
+        
+        // Get DC Admin's command
+        $dcAdminRole = $user->roles()
+            ->where('name', 'DC Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $dcAdminRole?->pivot->command_id ?? null;
+        
+        $manningRequest = ManningRequest::findOrFail($id);
+        
+        // Check command access if DC Admin is assigned to a command
+        if ($commandId && $manningRequest->command_id != $commandId) {
+            abort(403, 'You can only approve requests for your assigned command');
+        }
+        
+        // Only allow approving SUBMITTED requests
+        if ($manningRequest->status !== 'SUBMITTED') {
+            return redirect()->back()
+                ->with('error', 'Only SUBMITTED requests can be approved.');
+        }
+        
+        try {
+            // Get DC Admin's officer record for approved_by
+            $officer = $user->officer;
+            
+            $manningRequest->status = 'APPROVED';
+            $manningRequest->approved_at = now();
+            if ($officer) {
+                $manningRequest->approved_by = $officer->id;
+            }
+            $manningRequest->save();
+            
+            // Refresh to load relationships
+            $manningRequest->refresh();
+            
+            // Notify Staff Officer and HRD about approval
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyManningRequestApproved($manningRequest);
+            $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            
+            return redirect()->route('dc-admin.manning-level')
+                ->with('success', 'Manning request approved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to approve manning request: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to approve request: ' . $e->getMessage());
+        }
+    }
+    
+    public function dcAdminReject(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        // Check if user is DC Admin
+        if (!$user->hasRole('DC Admin')) {
+            abort(403, 'Only DC Admin can reject manning requests');
+        }
+        
+        // Get DC Admin's command
+        $dcAdminRole = $user->roles()
+            ->where('name', 'DC Admin')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $dcAdminRole?->pivot->command_id ?? null;
+        
+        $manningRequest = ManningRequest::findOrFail($id);
+        
+        // Check command access if DC Admin is assigned to a command
+        if ($commandId && $manningRequest->command_id != $commandId) {
+            abort(403, 'You can only reject requests for your assigned command');
+        }
+        
+        // Only allow rejecting SUBMITTED requests
+        if ($manningRequest->status !== 'SUBMITTED') {
+            return redirect()->back()
+                ->with('error', 'Only SUBMITTED requests can be rejected.');
+        }
+        
+        $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+        
+        try {
+            $manningRequest->status = 'REJECTED';
+            $manningRequest->rejection_reason = $request->rejection_reason;
+            $manningRequest->save();
+            
+            // Notify Staff Officer about rejection
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyManningRequestRejected($manningRequest, $request->rejection_reason);
+            
+            return redirect()->route('dc-admin.manning-level')
                 ->with('success', 'Manning request rejected.');
         } catch (\Exception $e) {
             Log::error('Failed to reject manning request: ' . $e->getMessage());
