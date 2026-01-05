@@ -97,6 +97,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/account-change', [AccountChangeRequestController::class, 'index'])->name('account-change.index');
         Route::get('/account-change/create', [AccountChangeRequestController::class, 'create'])->name('account-change.create');
         Route::post('/account-change', [AccountChangeRequestController::class, 'store'])->name('account-change.store');
+        Route::get('/account-change/{id}', [AccountChangeRequestController::class, 'show'])->name('account-change.show');
         Route::get('/leave-applications', [LeaveApplicationController::class, 'index'])->name('leave-applications');
         Route::get('/leave-applications/{id}', [LeaveApplicationController::class, 'show'])->name('leave-applications.show');
         Route::get('/pass-applications', [PassApplicationController::class, 'index'])->name('pass-applications');
@@ -516,9 +517,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/deceased-officers/{id}', [DeceasedOfficerController::class, 'show'])->name('deceased-officers.show');
         Route::get('/interdicted-officers', [DashboardController::class, 'interdictedOfficers'])->name('interdicted-officers');
         Route::get('/account-change-requests', [AccountChangeRequestController::class, 'pending'])->name('account-change.pending');
-        Route::get('/account-change-requests/{id}', [AccountChangeRequestController::class, 'show'])->name('account-change.show');
         Route::post('/account-change-requests/{id}/approve', [AccountChangeRequestController::class, 'approve'])->name('account-change.approve');
         Route::post('/account-change-requests/{id}/reject', [AccountChangeRequestController::class, 'reject'])->name('account-change.reject');
+    });
+
+    // Account Change Request Show - accessible by both Accounts and Officers (controller handles authorization)
+    Route::middleware('role:Accounts|Officer')->group(function () {
+        Route::get('/accounts/account-change-requests/{id}', [AccountChangeRequestController::class, 'show'])->name('accounts.account-change.show');
     });
 
     // Board Routes
