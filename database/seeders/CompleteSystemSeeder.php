@@ -110,7 +110,7 @@ class CompleteSystemSeeder extends Seeder
 
         $this->command->info("\n" . str_repeat("=", 62));
         $this->command->info("✅ Complete System Seeding Finished Successfully!");
-        $this->command->info("   Created: All roles + " . count($officers) . " officers (most in APAPA)");
+        $this->command->info("   Created: All roles + " . count($officers) . " officers (distributed across 5 commands)");
         $this->command->info("   All app functions are active!");
         $this->command->info(str_repeat("=", 62));
     }
@@ -303,10 +303,24 @@ class CompleteSystemSeeder extends Seeder
             return [];
         }
         
+        // Use standard rank abbreviations matching manning request form
         $ranks = [
-            'CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC',
-            'CSC', 'SC', 'DSC', 'ASC I', 'ASC II',
-            'IC', 'AIC', 'CA I', 'CA II', 'CA III',
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
         ];
 
         $surnames = ['Adebayo', 'Okafor', 'Ibrahim', 'Okoro', 'Musa', 'Adeyemi', 'Bello', 'Chukwu', 'Yusuf', 'Obi', 
@@ -327,7 +341,18 @@ class CompleteSystemSeeder extends Seeder
         $usedServiceNumbers = [];
         $rankCounts = [];
 
-        // Create 80 officers in APAPA command
+        // Get 5 commands to distribute officers across (including APAPA)
+        $targetCommands = $commands->where('is_active', true)
+            ->take(5)
+            ->values();
+        
+        if ($targetCommands->isEmpty()) {
+            $this->command->error('❌ No active commands found! Cannot create officers.');
+            return [];
+        }
+
+        // Create 5 officers per rank, distributed across 5 commands
+        $commandIndex = 0;
         foreach ($ranks as $rank) {
             $rankCounts[$rank] = 0;
             
@@ -338,7 +363,9 @@ class CompleteSystemSeeder extends Seeder
                 } while (in_array($serviceNumber, $usedServiceNumbers) || Officer::where('service_number', $fullServiceNumber)->exists());
                 $usedServiceNumbers[] = $serviceNumber;
 
-                $command = $apapaCommand; // All in APAPA
+                // Distribute across 5 commands (round-robin)
+                $command = $targetCommands[$commandIndex % $targetCommands->count()];
+                $commandIndex++;
                 $sex = $sexes[array_rand($sexes)];
                 $surname = $surnames[array_rand($surnames)];
                 $firstName = $firstNames[array_rand($firstNames)];
@@ -417,91 +444,17 @@ class CompleteSystemSeeder extends Seeder
             }
         }
 
-        // Create 1-2 officers in other commands
-        $otherCommands = $commands->where('code', '!=', 'APAPA')->take(5)->all();
-        $otherCommandArray = array_values($otherCommands);
+        $this->command->info("   ✓ Created " . count($officers) . " officers (distributed across 5 commands)");
         
-        foreach (array_slice($ranks, 0, 5) as $index => $rank) {
-            if (isset($otherCommandArray[$index % count($otherCommandArray)])) {
-                $command = $otherCommandArray[$index % count($otherCommandArray)];
-                
-                do {
-                    $serviceNumber = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
-                    $fullServiceNumber = 'NCS' . $serviceNumber;
-                } while (in_array($serviceNumber, $usedServiceNumbers) || Officer::where('service_number', $fullServiceNumber)->exists());
-                $usedServiceNumbers[] = $serviceNumber;
-
-                $sex = $sexes[array_rand($sexes)];
-                $surname = $surnames[array_rand($surnames)];
-                $initials = strtoupper($letters[array_rand($letters)] . '.' . $letters[array_rand($letters)]);
-
-                $dateOfBirth = Carbon::now()->subYears(rand(25, 50))->subDays(rand(0, 365));
-                $dateOfFirstAppointment = Carbon::now()->subYears(rand(3, 10));
-                $dateOfPresentAppointment = Carbon::now()->subYears(rand(0, 5));
-
-                $user = User::firstOrCreate(
-                    ['email' => "officer{$serviceNumber}@ncs.gov.ng"],
-                    [
-                        'password' => Hash::make('password123'),
-                        'is_active' => true,
-                        'email_verified_at' => now(),
-                        'created_by' => $hrdUser->id ?? null,
-                    ]
-                );
-
-                // Attach role if not already attached
-                if (!$user->hasRole('OFFICER')) {
-                    $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
-                }
-
-                $officer = Officer::create([
-                    'user_id' => $user->id,
-                    'service_number' => $serviceNumber,
-                    'initials' => $initials,
-                    'surname' => $surname,
-                    'sex' => $sex,
-                    'date_of_birth' => $dateOfBirth,
-                    'date_of_first_appointment' => $dateOfFirstAppointment,
-                    'date_of_present_appointment' => $dateOfPresentAppointment,
-                    'substantive_rank' => $rank,
-                    'salary_grade_level' => $this->getSalaryGradeForRank($rank),
-                    'state_of_origin' => $states[array_rand($states)],
-                    'lga' => $lgas[array_rand($lgas)],
-                    'geopolitical_zone' => 'South-West',
-                    'marital_status' => rand(0, 1) ? 'Married' : 'Single',
-                    'entry_qualification' => ['B.Sc', 'B.A', 'B.Eng', 'HND'][array_rand(['B.Sc', 'B.A', 'B.Eng', 'HND'])],
-                    'discipline' => $disciplines[array_rand($disciplines)],
-                    'residential_address' => $command->location . ' State',
-                    'permanent_home_address' => $command->location . ' Permanent Address',
-                    'present_station' => $command->id,
-                    'date_posted_to_station' => Carbon::now()->subMonths(rand(1, 12)),
-                    'phone_number' => '080' . rand(10000000, 99999999),
-                    'email' => $user->email,
-                    'bank_name' => $banks[array_rand($banks)],
-                    'bank_account_number' => str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT),
-                    'sort_code' => str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT),
-                    'pfa_name' => $pfas[array_rand($pfas)],
-                    'rsa_number' => 'PEN' . str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT),
-                    'unit' => 'Unit ' . rand(1, 10),
-                    'interdicted' => false,
-                    'suspended' => false,
-                    'dismissed' => false,
-                    'quartered' => false,
-                    'is_deceased' => false,
-                    'is_active' => true,
-                    'profile_picture_url' => 'officers/default.png',
-                    'onboarding_status' => 'completed',
-                    'onboarding_completed_at' => now()->subDays(rand(1, 30)),
-                    'verification_status' => 'verified',
-                    'verified_at' => now()->subDays(rand(1, 30)),
-                    'created_by' => $hrdUser->id ?? null,
-                ]);
-
-                $officers[] = $officer;
-            }
+        // Show distribution by command
+        $distribution = collect($officers)->groupBy('present_station')->map(function($group, $commandId) {
+            $command = Command::find($commandId);
+            return ['command' => $command->name ?? 'Unknown', 'count' => $group->count()];
+        });
+        
+        foreach ($distribution as $dist) {
+            $this->command->info("      - {$dist['command']}: {$dist['count']} officers");
         }
-
-        $this->command->info("   ✓ Created " . count($officers) . " officers (most in APAPA)");
         return $officers;
     }
 

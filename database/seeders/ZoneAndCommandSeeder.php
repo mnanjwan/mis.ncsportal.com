@@ -277,7 +277,25 @@ class ZoneAndCommandSeeder extends Seeder
         // Grade levels for distribution
         $gradeLevels = ['GL05', 'GL06', 'GL07', 'GL08'];
         $sexOptions = ['M', 'F'];
-        $ranks = ['Assistant Superintendent', 'Deputy Superintendent', 'Superintendent', 'Chief Superintendent'];
+        // Use standard rank abbreviations matching manning request form
+        $ranks = [
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
+            'DC',
+            'AC',
+            'CSC',
+            'SC',
+            'DSC',
+            'ASC I',
+            'ASC II',
+            'IC',
+            'AIC',
+            'CA I',
+            'CA II',
+            'CA III',
+        ];
         
         // Counter for service numbers
         $serviceNumberCounter = 50001;

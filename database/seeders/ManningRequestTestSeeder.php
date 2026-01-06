@@ -54,7 +54,8 @@ class ManningRequestTestSeeder extends Seeder
             );
         }
 
-        // Define all ranks
+        // Use standard rank abbreviations matching manning request form
+        // These must match exactly what's in ManningRequestController@create
         $ranks = [
             'CGC',
             'DCG',
