@@ -145,7 +145,7 @@
         <div class="kt-card">
             <div class="kt-card-content p-5">
                 <button type="button" 
-                        onclick="openAddOfficerModal()" 
+                        data-kt-modal-toggle="#add-officer-modal" 
                         class="kt-btn kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Add Officer to Draft
                 </button>
@@ -201,18 +201,15 @@
                                                 <div class="flex items-center justify-end gap-2">
                                                     <button type="button" 
                                                             class="kt-btn kt-btn-sm kt-btn-secondary"
-                                                            onclick="openSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }})">
+                                                            data-kt-modal-toggle="#swap-officer-modal-{{ $assignment->id }}"
+                                                            onclick="prepareSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }})">
                                                         <i class="ki-filled ki-arrows-circle"></i> Swap
                                                     </button>
-                                                    <form action="{{ route('hrd.manning-deployments.draft.remove-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}" 
-                                                          method="POST" 
-                                                          onsubmit="return confirm('Remove this officer from the deployment?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-danger">
-                                                            <i class="ki-filled ki-trash"></i> Remove
-                                                        </button>
-                                                    </form>
+                                                    <button type="button" 
+                                                            class="kt-btn kt-btn-sm kt-btn-danger"
+                                                            data-kt-modal-toggle="#remove-officer-modal-{{ $assignment->id }}">
+                                                        <i class="ki-filled ki-trash"></i> Remove
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -245,111 +242,230 @@
     @endif
 </div>
 
-<!-- Swap Officer Modal -->
-<div class="kt-modal" data-kt-modal="true" id="swap-officer-modal">
-    <div class="kt-modal-content max-w-[600px]">
+<!-- Swap Officer Modals (one per assignment) -->
+@if($activeDraft)
+    @foreach($activeDraft->assignments as $assignment)
+        <div class="kt-modal" data-kt-modal="true" id="swap-officer-modal-{{ $assignment->id }}">
+            <div class="kt-modal-content max-w-[600px]">
+                <div class="kt-modal-header py-4 px-5">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                            <i class="ki-filled ki-arrows-circle text-primary text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-foreground">Swap Officer</h3>
+                    </div>
+                    <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                        <i class="ki-filled ki-cross"></i>
+                    </button>
+                </div>
+                <div class="kt-modal-body py-5 px-5">
+                    <form id="swap-form-{{ $assignment->id }}" method="POST" action="{{ route('hrd.manning-deployments.draft.swap-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}">
+                        @csrf
+                        <p class="text-sm text-secondary-foreground mb-4">
+                            Select a new officer to replace <span class="font-semibold">{{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}</span>:
+                        </p>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">Search Officer</label>
+                            <input type="text" 
+                                   id="officer-search-{{ $assignment->id }}" 
+                                   class="kt-input w-full" 
+                                   placeholder="Search by name, service number, or rank..."
+                                   autocomplete="off">
+                            <div id="officer-search-results-{{ $assignment->id }}" class="mt-2 max-h-60 overflow-y-auto border border-input rounded-lg hidden"></div>
+                        </div>
+                        <input type="hidden" id="new-officer-id-{{ $assignment->id }}" name="new_officer_id" required>
+                    </form>
+                </div>
+                <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                    <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                    <button type="button" class="kt-btn kt-btn-primary" id="confirm-swap-btn-{{ $assignment->id }}" disabled onclick="submitSwapForm({{ $assignment->id }})">
+                        <i class="ki-filled ki-arrows-circle"></i> Swap Officer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remove Officer Confirmation Modal -->
+        <div class="kt-modal" data-kt-modal="true" id="remove-officer-modal-{{ $assignment->id }}">
+            <div class="kt-modal-content max-w-[500px]">
+                <div class="kt-modal-header py-4 px-5">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-center size-10 rounded-full bg-danger/10">
+                            <i class="ki-filled ki-trash text-danger text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-foreground">Remove Officer</h3>
+                    </div>
+                    <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                        <i class="ki-filled ki-cross"></i>
+                    </button>
+                </div>
+                <div class="kt-modal-body py-5 px-5">
+                    <form id="remove-form-{{ $assignment->id }}" method="POST" action="{{ route('hrd.manning-deployments.draft.remove-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}">
+                        @csrf
+                        @method('DELETE')
+                        <p class="text-sm text-secondary-foreground mb-4">
+                            Are you sure you want to remove <span class="font-semibold">{{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}</span> ({{ $assignment->officer->service_number ?? 'N/A' }}) from this deployment?
+                        </p>
+                        <div class="p-3 bg-muted/50 rounded-lg">
+                            <div class="text-sm text-secondary-foreground">
+                                <div><strong>Rank:</strong> {{ $assignment->officer->substantive_rank ?? 'N/A' }}</div>
+                                <div><strong>From:</strong> {{ $assignment->fromCommand->name ?? 'N/A' }}</div>
+                                <div><strong>To:</strong> {{ $assignment->toCommand->name ?? 'N/A' }}</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                    <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                    <button type="button" class="kt-btn kt-btn-danger" onclick="submitRemoveForm({{ $assignment->id }})">
+                        <i class="ki-filled ki-trash"></i> Remove Officer
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endforeach
+@endif
+
+<!-- Add Officer Modal -->
+<div class="kt-modal" data-kt-modal="true" id="add-officer-modal">
+    <div class="kt-modal-content max-w-[700px]">
         <div class="kt-modal-header py-4 px-5">
-            <h3 class="text-lg font-semibold text-foreground">Swap Officer</h3>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                    <i class="ki-filled ki-plus text-primary text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Add Officer to Draft</h3>
+            </div>
             <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
                 <i class="ki-filled ki-cross"></i>
             </button>
         </div>
         <div class="kt-modal-body py-5 px-5">
-            <form id="swap-form" method="POST">
+            <form id="add-officer-form" method="POST" action="{{ route('hrd.manning-deployments.draft.add-officer') }}">
                 @csrf
-                <input type="hidden" id="swap-assignment-id" name="assignment_id">
+                <input type="hidden" name="deployment_id" value="{{ $activeDraft->id ?? '' }}">
                 <p class="text-sm text-secondary-foreground mb-4">
-                    Select a new officer to replace <span id="current-officer-name" class="font-semibold"></span>:
+                    Search for an officer and select their destination command to add them to the draft deployment.
                 </p>
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">Search Officer</label>
                     <input type="text" 
-                           id="officer-search" 
+                           id="add-officer-search" 
                            class="kt-input w-full" 
                            placeholder="Search by name, service number, or rank..."
                            autocomplete="off">
-                    <div id="officer-search-results" class="mt-2 max-h-60 overflow-y-auto border border-input rounded-lg hidden"></div>
+                    <div id="add-officer-search-results" class="mt-2 max-h-60 overflow-y-auto border border-input rounded-lg hidden"></div>
                 </div>
-                <input type="hidden" id="new-officer-id" name="new_officer_id" required>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Destination Command</label>
+                    <select name="to_command_id" id="to-command-select" class="kt-input w-full" required>
+                        <option value="">Select command...</option>
+                        @foreach(\App\Models\Command::where('is_active', true)->orderBy('name')->get() as $cmd)
+                            <option value="{{ $cmd->id }}">{{ $cmd->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <input type="hidden" id="add-officer-id" name="officer_id" required>
             </form>
         </div>
         <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
             <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
-            <button type="button" class="kt-btn kt-btn-primary" id="confirm-swap-btn" disabled>
-                <i class="ki-filled ki-arrows-circle"></i> Swap Officer
+            <button type="button" class="kt-btn kt-btn-primary" id="confirm-add-btn" disabled onclick="submitAddOfficer()">
+                <i class="ki-filled ki-plus"></i> Add Officer
             </button>
         </div>
     </div>
 </div>
 
 <script>
-function openSwapModal(assignmentId, officerName, currentOfficerId) {
-    document.getElementById('swap-assignment-id').value = assignmentId;
-    document.getElementById('current-officer-name').textContent = officerName;
-    document.getElementById('new-officer-id').value = '';
-    document.getElementById('confirm-swap-btn').disabled = true;
-    document.getElementById('officer-search').value = '';
-    document.getElementById('officer-search-results').classList.add('hidden');
+// Prepare swap modal when opened
+function prepareSwapModal(assignmentId, officerName, currentOfficerId) {
+    const searchInput = document.getElementById(`officer-search-${assignmentId}`);
+    const resultsDiv = document.getElementById(`officer-search-results-${assignmentId}`);
+    const newOfficerIdInput = document.getElementById(`new-officer-id-${assignmentId}`);
+    const confirmBtn = document.getElementById(`confirm-swap-btn-${assignmentId}`);
     
-    const form = document.getElementById('swap-form');
-    const deploymentId = {{ $activeDraft->id ?? 0 }};
-    form.action = `/hrd/manning-deployments/${deploymentId}/swap-officer/${assignmentId}`;
-    
-    // Show modal
-    document.getElementById('swap-officer-modal').classList.add('show');
+    // Reset form
+    if (searchInput) searchInput.value = '';
+    if (newOfficerIdInput) newOfficerIdInput.value = '';
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (resultsDiv) resultsDiv.classList.add('hidden');
 }
 
-// Officer search functionality
-let searchTimeout;
-document.getElementById('officer-search')?.addEventListener('input', function(e) {
-    clearTimeout(searchTimeout);
-    const query = e.target.value.trim();
-    const resultsDiv = document.getElementById('officer-search-results');
-    
-    if (query.length < 2) {
-        resultsDiv.classList.add('hidden');
-        return;
-    }
-    
-    searchTimeout = setTimeout(() => {
-        fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(data => {
-                resultsDiv.innerHTML = '';
-                if (data.length === 0) {
-                    resultsDiv.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
-                } else {
-                    data.forEach(officer => {
-                        const div = document.createElement('div');
-                        div.className = 'p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0';
-                        div.innerHTML = `
-                            <div class="font-semibold">${officer.initials} ${officer.surname}</div>
-                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
-                        `;
-                        div.addEventListener('click', () => {
-                            document.getElementById('new-officer-id').value = officer.id;
-                            document.getElementById('officer-search').value = `${officer.initials} ${officer.surname} (${officer.service_number})`;
-                            resultsDiv.classList.add('hidden');
-                            document.getElementById('confirm-swap-btn').disabled = false;
-                        });
-                        resultsDiv.appendChild(div);
-                    });
-                }
-                resultsDiv.classList.remove('hidden');
-            })
-            .catch(error => {
-                console.error('Search error:', error);
-            });
-    }, 300);
-});
-
-// Confirm swap
-document.getElementById('confirm-swap-btn')?.addEventListener('click', function() {
-    const form = document.getElementById('swap-form');
-    if (document.getElementById('new-officer-id').value) {
+// Submit swap form
+function submitSwapForm(assignmentId) {
+    const form = document.getElementById(`swap-form-${assignmentId}`);
+    const newOfficerId = document.getElementById(`new-officer-id-${assignmentId}`)?.value;
+    if (form && newOfficerId) {
         form.submit();
     }
-});
+}
+
+// Submit remove form
+function submitRemoveForm(assignmentId) {
+    const form = document.getElementById(`remove-form-${assignmentId}`);
+    if (form) {
+        form.submit();
+    }
+}
+
+// Setup officer search for swap modals
+@if($activeDraft)
+    @foreach($activeDraft->assignments as $assignment)
+        (function() {
+            const assignmentId = {{ $assignment->id }};
+            const searchInput = document.getElementById(`officer-search-${assignmentId}`);
+            const resultsDiv = document.getElementById(`officer-search-results-${assignmentId}`);
+            let searchTimeout;
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+                    const query = e.target.value.trim();
+                    
+                    if (query.length < 2) {
+                        if (resultsDiv) resultsDiv.classList.add('hidden');
+                        return;
+                    }
+                    
+                    searchTimeout = setTimeout(() => {
+                        fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!resultsDiv) return;
+                                resultsDiv.innerHTML = '';
+                                if (data.length === 0) {
+                                    resultsDiv.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
+                                } else {
+                                    data.forEach(officer => {
+                                        const div = document.createElement('div');
+                                        div.className = 'p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0';
+                                        div.innerHTML = `
+                                            <div class="font-semibold">${officer.initials} ${officer.surname}</div>
+                                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
+                                        `;
+                                        div.addEventListener('click', () => {
+                                            const newOfficerIdInput = document.getElementById(`new-officer-id-${assignmentId}`);
+                                            const confirmBtn = document.getElementById(`confirm-swap-btn-${assignmentId}`);
+                                            if (newOfficerIdInput) newOfficerIdInput.value = officer.id;
+                                            if (searchInput) searchInput.value = `${officer.initials} ${officer.surname} (${officer.service_number})`;
+                                            resultsDiv.classList.add('hidden');
+                                            if (confirmBtn) confirmBtn.disabled = false;
+                                        });
+                                        resultsDiv.appendChild(div);
+                                    });
+                                }
+                                resultsDiv.classList.remove('hidden');
+                            })
+                            .catch(error => {
+                                console.error('Search error:', error);
+                            });
+                    }, 300);
+                });
+            }
+        })();
+    @endforeach
+@endif
 
 // Dynamic Search and Filter Functionality
 document.addEventListener('DOMContentLoaded', function() {
@@ -456,76 +572,29 @@ document.addEventListener('DOMContentLoaded', function() {
         filterOfficers();
     };
     
-    // Add Officer Modal function
-    window.openAddOfficerModal = function() {
-        // Create a modal for adding officers
-        const modal = document.createElement('div');
-        modal.className = 'kt-modal show';
-        modal.id = 'add-officer-modal';
-        modal.innerHTML = `
-            <div class="kt-modal-content max-w-[700px]">
-                <div class="kt-modal-header py-4 px-5">
-                    <h3 class="text-lg font-semibold text-foreground">Add Officer to Draft</h3>
-                    <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" onclick="closeAddOfficerModal()">
-                        <i class="ki-filled ki-cross"></i>
-                    </button>
-                </div>
-                <div class="kt-modal-body py-5 px-5">
-                    <form id="add-officer-form" method="POST" action="{{ route('hrd.manning-deployments.draft.add-officer') }}">
-                        @csrf
-                        <input type="hidden" name="deployment_id" value="{{ $activeDraft->id ?? '' }}">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2">Search Officer</label>
-                            <input type="text" 
-                                   id="add-officer-search" 
-                                   class="kt-input w-full" 
-                                   placeholder="Search by name, service number, or rank..."
-                                   autocomplete="off">
-                            <div id="add-officer-search-results" class="mt-2 max-h-60 overflow-y-auto border border-input rounded-lg hidden"></div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2">Destination Command</label>
-                            <select name="to_command_id" id="to-command-select" class="kt-input w-full" required>
-                                <option value="">Select command...</option>
-                                @foreach(\App\Models\Command::where('is_active', true)->orderBy('name')->get() as $cmd)
-                                    <option value="{{ $cmd->id }}">{{ $cmd->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <input type="hidden" id="add-officer-id" name="officer_id" required>
-                    </form>
-                </div>
-                <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
-                    <button class="kt-btn kt-btn-secondary" onclick="closeAddOfficerModal()">Cancel</button>
-                    <button type="button" class="kt-btn kt-btn-primary" id="confirm-add-btn" disabled onclick="submitAddOfficer()">
-                        <i class="ki-filled ki-plus"></i> Add Officer
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        // Setup search functionality
-        let addSearchTimeout;
-        const addSearchInput = document.getElementById('add-officer-search');
-        const addSearchResults = document.getElementById('add-officer-search-results');
-        
-        addSearchInput.addEventListener('input', function(e) {
-            clearTimeout(addSearchTimeout);
+    // Add Officer Modal - Setup search functionality
+    const addOfficerSearchInput = document.getElementById('add-officer-search');
+    const addOfficerSearchResults = document.getElementById('add-officer-search-results');
+    let addOfficerSearchTimeout;
+    
+    if (addOfficerSearchInput) {
+        addOfficerSearchInput.addEventListener('input', function(e) {
+            clearTimeout(addOfficerSearchTimeout);
             const query = e.target.value.trim();
             
             if (query.length < 2) {
-                addSearchResults.classList.add('hidden');
+                if (addOfficerSearchResults) addOfficerSearchResults.classList.add('hidden');
                 return;
             }
             
-            addSearchTimeout = setTimeout(() => {
+            addOfficerSearchTimeout = setTimeout(() => {
                 fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(data => {
-                        addSearchResults.innerHTML = '';
+                        if (!addOfficerSearchResults) return;
+                        addOfficerSearchResults.innerHTML = '';
                         if (data.length === 0) {
-                            addSearchResults.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
+                            addOfficerSearchResults.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
                         } else {
                             data.forEach(officer => {
                                 const div = document.createElement('div');
@@ -535,33 +604,46 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
                                 `;
                                 div.addEventListener('click', () => {
-                                    document.getElementById('add-officer-id').value = officer.id;
-                                    addSearchInput.value = `${officer.initials} ${officer.surname} (${officer.service_number})`;
-                                    addSearchResults.classList.add('hidden');
-                                    document.getElementById('confirm-add-btn').disabled = false;
+                                    const addOfficerIdInput = document.getElementById('add-officer-id');
+                                    const confirmAddBtn = document.getElementById('confirm-add-btn');
+                                    if (addOfficerIdInput) addOfficerIdInput.value = officer.id;
+                                    if (addOfficerSearchInput) addOfficerSearchInput.value = `${officer.initials} ${officer.surname} (${officer.service_number})`;
+                                    if (addOfficerSearchResults) addOfficerSearchResults.classList.add('hidden');
+                                    if (confirmAddBtn) confirmAddBtn.disabled = false;
                                 });
-                                addSearchResults.appendChild(div);
+                                addOfficerSearchResults.appendChild(div);
                             });
                         }
-                        addSearchResults.classList.remove('hidden');
+                        addOfficerSearchResults.classList.remove('hidden');
                     })
                     .catch(error => {
                         console.error('Search error:', error);
                     });
             }, 300);
         });
-    };
+    }
     
-    window.closeAddOfficerModal = function() {
-        const modal = document.getElementById('add-officer-modal');
-        if (modal) {
-            modal.remove();
-        }
-    };
+    // Reset add officer modal when closed
+    const addOfficerModal = document.getElementById('add-officer-modal');
+    if (addOfficerModal) {
+        addOfficerModal.addEventListener('hidden', function() {
+            if (addOfficerSearchInput) addOfficerSearchInput.value = '';
+            const addOfficerIdInput = document.getElementById('add-officer-id');
+            const confirmAddBtn = document.getElementById('confirm-add-btn');
+            const toCommandSelect = document.getElementById('to-command-select');
+            if (addOfficerIdInput) addOfficerIdInput.value = '';
+            if (confirmAddBtn) confirmAddBtn.disabled = true;
+            if (toCommandSelect) toCommandSelect.value = '';
+            if (addOfficerSearchResults) addOfficerSearchResults.classList.add('hidden');
+        });
+    }
     
+    // Submit add officer form
     window.submitAddOfficer = function() {
         const form = document.getElementById('add-officer-form');
-        if (form && document.getElementById('add-officer-id').value && document.getElementById('to-command-select').value) {
+        const officerId = document.getElementById('add-officer-id')?.value;
+        const commandId = document.getElementById('to-command-select')?.value;
+        if (form && officerId && commandId) {
             form.submit();
         }
     };

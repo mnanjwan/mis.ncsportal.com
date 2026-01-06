@@ -38,36 +38,40 @@ class NotificationService
         ]);
 
         // Send email notification if enabled
+        // Use queued jobs for all email sending to avoid blocking requests
+        // This is especially important for manning requests which may send many emails
         if ($sendEmail && $user->email) {
             try {
-                // Try to send synchronously first (works in all environments if mail is configured)
-                // This ensures emails are sent immediately without requiring queue worker
-                Mail::to($user->email)->send(new NotificationMail($user, $notification));
-                Log::info('Notification email sent synchronously', [
+                // Queue email job for asynchronous processing
+                // This prevents blocking the request and allows better error handling
+                SendNotificationEmailJob::dispatch($user, $notification);
+                Log::info('Notification email job dispatched', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                     'notification_id' => $notification->id,
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to send notification email synchronously, attempting to queue', [
+                Log::error('Failed to dispatch notification email job', [
                     'user_id' => $user->id,
                     'notification_id' => $notification->id,
                     'error' => $e->getMessage(),
                 ]);
-
-                // Fallback: Try to queue if synchronous sending fails
-                // This helps if there are temporary SMTP issues
+                
+                // Fallback: Try synchronous sending if queue fails (for development/testing)
+                // In production, queue should always be available
                 try {
-                    SendNotificationEmailJob::dispatch($user, $notification);
-                    Log::info('Notification email queued as fallback', [
+                    Mail::to($user->email)->send(new NotificationMail($user, $notification));
+                    Log::info('Notification email sent synchronously as fallback', [
                         'user_id' => $user->id,
+                        'email' => $user->email,
                         'notification_id' => $notification->id,
                     ]);
-                } catch (\Exception $queueException) {
-                    Log::error('Failed to queue notification email', [
+                } catch (\Exception $syncException) {
+                    Log::error('Failed to send notification email (both queue and sync failed)', [
                         'user_id' => $user->id,
                         'notification_id' => $notification->id,
-                        'error' => $queueException->getMessage(),
+                        'queue_error' => $e->getMessage(),
+                        'sync_error' => $syncException->getMessage(),
                     ]);
                 }
             }

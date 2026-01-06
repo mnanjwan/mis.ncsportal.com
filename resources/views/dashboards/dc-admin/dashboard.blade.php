@@ -62,10 +62,68 @@
                 </div>
             </div>
         </div>
+        
+        <div class="kt-card">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Pending Manning Requests</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $pendingManningRequests ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+                        <i class="ki-filled ki-people text-2xl text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Recent Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-7.5">
+        <!-- Recent Manning Requests -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Recent Manning Requests</h3>
+            </div>
+            <div class="kt-card-content">
+                @if(isset($recentManningRequests) && $recentManningRequests->count() > 0)
+                    <div class="flex flex-col gap-3">
+                        @foreach($recentManningRequests as $request)
+                            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-semibold text-foreground">
+                                        {{ $request->command->name ?? 'N/A' }} - {{ $request->command->zone->name ?? 'N/A' }}
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        Requested by: {{ $request->requestedBy->email ?? 'N/A' }}
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        Submitted: {{ $request->submitted_at ? $request->submitted_at->format('M d, Y') : ($request->created_at ? $request->created_at->format('M d, Y') : 'N/A') }}
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        Items: {{ $request->items->count() }} item(s)
+                                    </span>
+                                </div>
+                                <a href="{{ route('dc-admin.manning-level.show', $request->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                                    <i class="ki-filled ki-eye"></i> Review
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="mt-4">
+                        <a href="{{ route('dc-admin.manning-level') }}" class="kt-btn kt-btn-outline w-full">
+                            View All Manning Requests
+                        </a>
+                    </div>
+                @else
+                    <div class="text-center py-8">
+                        <i class="ki-filled ki-people text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground">No pending manning requests</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+        
         <!-- Recent Duty Rosters -->
         <div class="kt-card">
             <div class="kt-card-header">
@@ -164,6 +222,9 @@
                 </a>
                 <a href="{{ route('dc-admin.internal-staff-orders') }}" class="kt-btn kt-btn-primary">
                     <i class="ki-filled ki-document"></i> Internal Staff Orders
+                </a>
+                <a href="{{ route('dc-admin.manning-level') }}" class="kt-btn kt-btn-primary">
+                    <i class="ki-filled ki-people"></i> Manning Requests
                 </a>
             </div>
         </div>

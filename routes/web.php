@@ -165,6 +165,7 @@ Route::middleware('auth')->group(function () {
         });
         
         Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
+        Route::get('/officers/search', [OfficerController::class, 'search'])->name('officers.search');
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
         Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');

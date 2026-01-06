@@ -871,11 +871,30 @@ class DashboardController extends Controller
         }
         $recentInternalStaffOrders = $recentInternalStaffOrdersQuery->get();
 
+        // Get pending manning requests count
+        $pendingManningRequestsQuery = ManningRequest::where('status', 'SUBMITTED');
+        if ($commandId) {
+            $pendingManningRequestsQuery->where('command_id', $commandId);
+        }
+        $pendingManningRequests = $pendingManningRequestsQuery->count();
+
+        // Get recent pending manning requests
+        $recentManningRequestsQuery = ManningRequest::with(['command.zone', 'requestedBy'])
+            ->where('status', 'SUBMITTED')
+            ->orderByRaw('COALESCE(submitted_at, created_at) DESC')
+            ->limit(5);
+        if ($commandId) {
+            $recentManningRequestsQuery->where('command_id', $commandId);
+        }
+        $recentManningRequests = $recentManningRequestsQuery->get();
+
         return view('dashboards.dc-admin.dashboard', compact(
             'pendingRosters', 
             'recentRosters',
             'pendingInternalStaffOrders',
-            'recentInternalStaffOrders'
+            'recentInternalStaffOrders',
+            'pendingManningRequests',
+            'recentManningRequests'
         ));
     }
 
