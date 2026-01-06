@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('manning_deployments', function (Blueprint $table) {
-            $table->id();
-            $table->string('deployment_number')->unique();
-            $table->enum('status', ['DRAFT', 'PUBLISHED'])->default('DRAFT');
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('published_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('published_at')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('manning_deployments')) {
+            Schema::create('manning_deployments', function (Blueprint $table) {
+                $table->id();
+                $table->string('deployment_number')->unique();
+                $table->enum('status', ['DRAFT', 'PUBLISHED'])->default('DRAFT');
+                $table->foreignId('created_by')->constrained('users');
+                $table->foreignId('published_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->timestamp('published_at')->nullable();
+                $table->text('notes')->nullable();
+                $table->timestamps();
 
-            $table->index('status');
-            $table->index('deployment_number');
-        });
+                $table->index('status');
+                $table->index('deployment_number');
+            });
+        }
     }
 
     /**
