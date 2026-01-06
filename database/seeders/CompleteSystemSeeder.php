@@ -110,7 +110,7 @@ class CompleteSystemSeeder extends Seeder
 
         $this->command->info("\n" . str_repeat("=", 62));
         $this->command->info("✅ Complete System Seeding Finished Successfully!");
-        $this->command->info("   Created: All roles + " . count($officers) . " officers (distributed across 5 commands)");
+        $this->command->info("   Created: All roles + " . count($officers) . " officers (5 per rank per command across 5 commands)");
         $this->command->info("   All app functions are active!");
         $this->command->info(str_repeat("=", 62));
     }
@@ -341,7 +341,7 @@ class CompleteSystemSeeder extends Seeder
         $usedServiceNumbers = [];
         $rankCounts = [];
 
-        // Get 5 commands to distribute officers across (including APAPA)
+        // Get 5 commands to create officers in
         $targetCommands = $commands->where('is_active', true)
             ->take(5)
             ->values();
@@ -351,21 +351,20 @@ class CompleteSystemSeeder extends Seeder
             return [];
         }
 
-        // Create 5 officers per rank, distributed across 5 commands
-        $commandIndex = 0;
-        foreach ($ranks as $rank) {
-            $rankCounts[$rank] = 0;
+        // Create 5 officers per rank per command (16 ranks × 5 commands × 5 officers = 400 total)
+        foreach ($targetCommands as $commandIndex => $command) {
+            $this->command->info("   Processing command " . ($commandIndex + 1) . "/{$targetCommands->count()}: {$command->name}");
             
-            for ($i = 0; $i < 5; $i++) {
-                do {
-                    $serviceNumber = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
-                    $fullServiceNumber = 'NCS' . $serviceNumber;
-                } while (in_array($serviceNumber, $usedServiceNumbers) || Officer::where('service_number', $fullServiceNumber)->exists());
-                $usedServiceNumbers[] = $serviceNumber;
-
-                // Distribute across 5 commands (round-robin)
-                $command = $targetCommands[$commandIndex % $targetCommands->count()];
-                $commandIndex++;
+            foreach ($ranks as $rank) {
+                $rankCounts[$rank] = ($rankCounts[$rank] ?? 0);
+                
+                // Create 5 officers of this rank in this command
+                for ($i = 1; $i <= 5; $i++) {
+                    do {
+                        $serviceNumber = str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
+                        $fullServiceNumber = 'NCS' . $serviceNumber;
+                    } while (in_array($serviceNumber, $usedServiceNumbers) || Officer::where('service_number', $fullServiceNumber)->exists());
+                    $usedServiceNumbers[] = $serviceNumber;
                 $sex = $sexes[array_rand($sexes)];
                 $surname = $surnames[array_rand($surnames)];
                 $firstName = $firstNames[array_rand($firstNames)];
@@ -439,21 +438,27 @@ class CompleteSystemSeeder extends Seeder
                     'created_by' => $hrdUser->id ?? null,
                 ]);
 
-                $officers[] = $officer;
-                $rankCounts[$rank]++;
+                    $officers[] = $officer;
+                    $rankCounts[$rank]++;
+                }
             }
         }
 
-        $this->command->info("   ✓ Created " . count($officers) . " officers (distributed across 5 commands)");
+        $this->command->info("   ✓ Created " . count($officers) . " officers (5 per rank per command)");
         
-        // Show distribution by command
+        // Show distribution by command and rank
         $distribution = collect($officers)->groupBy('present_station')->map(function($group, $commandId) {
             $command = Command::find($commandId);
-            return ['command' => $command->name ?? 'Unknown', 'count' => $group->count()];
+            $rankDistribution = $group->groupBy('substantive_rank')->map->count();
+            return [
+                'command' => $command->name ?? 'Unknown', 
+                'count' => $group->count(),
+                'ranks' => $rankDistribution
+            ];
         });
         
         foreach ($distribution as $dist) {
-            $this->command->info("      - {$dist['command']}: {$dist['count']} officers");
+            $this->command->info("      - {$dist['command']}: {$dist['count']} officers (" . $dist['ranks']->count() . " ranks, 5 per rank)");
         }
         return $officers;
     }
