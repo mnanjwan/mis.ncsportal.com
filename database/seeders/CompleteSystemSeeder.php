@@ -130,6 +130,8 @@ class CompleteSystemSeeder extends Seeder
         DB::table('emolument_timelines')->delete();
         DB::table('leave_approvals')->delete();
         DB::table('leave_applications')->delete();
+        DB::table('manning_deployment_assignments')->delete();
+        DB::table('manning_deployments')->delete();
         DB::table('manning_request_items')->delete();
         DB::table('manning_requests')->update(['approved_by' => null]);
         DB::table('movement_orders')->delete();
