@@ -1267,6 +1267,58 @@ class NotificationService
     /**
      * Notify officer about posting/transfer
      */
+    /**
+     * Notify command about officer release (Release Letter)
+     * This is sent BEFORE documentation - the command is notified that officer is being released
+     * Authorized by Area Comptroller or DC Admin through Staff Officer
+     */
+    public function notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $movementOrder): array
+    {
+        $notifications = [];
+        
+        if (!$fromCommand) {
+            return $notifications;
+        }
+
+        // Get Staff Officers, Area Controllers, and DC Admins for the FROM command
+        // These are the authorized personnel who receive release letters
+        $authorizedUsers = User::whereHas('roles', function($q) use ($fromCommand) {
+                $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
+                  ->where('role_user.command_id', $fromCommand->id)
+                  ->where('role_user.is_active', true);
+            })
+            ->get();
+
+        $officerName = ($officer->initials ?? '') . ' ' . ($officer->surname ?? '');
+        $officerServiceNumber = $officer->service_number ?? 'N/A';
+        $officerRank = $officer->substantive_rank ?? 'N/A';
+        $toCommandName = $toCommand ? $toCommand->name : 'New Command';
+        $orderNumber = $movementOrder ? $movementOrder->order_number : 'N/A';
+        $orderDate = $movementOrder && $movementOrder->created_at 
+            ? $movementOrder->created_at->format('d M Y') 
+            : now()->format('d M Y');
+
+        foreach ($authorizedUsers as $user) {
+            $message = "RELEASE LETTER: Officer {$officerServiceNumber} {$officerRank} {$officerName} has been officially released from {$fromCommand->name} for posting to {$toCommandName}. Movement Order: {$orderNumber} dated {$orderDate}. The officer is to report accordingly.";
+            
+            $notification = $this->notify(
+                $user,
+                'officer_release',
+                'Officer Release Letter',
+                $message,
+                'officer',
+                $officer->id,
+                true
+            );
+            
+            if ($notification) {
+                $notifications[] = $notification;
+            }
+        }
+
+        return $notifications;
+    }
+
     public function notifyOfficerPosted($officer, $fromCommand, $toCommand, $postingDate = null): ?Notification
     {
         if (!$officer || !$officer->user) {

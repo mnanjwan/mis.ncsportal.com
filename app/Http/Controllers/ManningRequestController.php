@@ -516,6 +516,25 @@ class ManningRequestController extends Controller
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items'])
             ->where('status', 'APPROVED');
 
+        // EXCLUDE requests that have items already in draft deployments
+        // Once items are in draft, they leave the dashboard until draft is published
+        $itemIdsInDraft = ManningDeploymentAssignment::whereHas('deployment', function($q) {
+                $q->where('status', 'DRAFT');
+            })
+            ->whereNotNull('manning_request_item_id')
+            ->pluck('manning_request_item_id')
+            ->unique();
+        
+        if ($itemIdsInDraft->isNotEmpty()) {
+            // Get request IDs that have items in draft
+            $requestIdsInDraft = ManningRequestItem::whereIn('id', $itemIdsInDraft)
+                ->pluck('manning_request_id')
+                ->unique();
+            
+            // Exclude those requests from the dashboard
+            $query->whereNotIn('id', $requestIdsInDraft);
+        }
+
         // Sorting - Default to latest requests first (created_at desc)
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
@@ -786,7 +805,85 @@ class ManningRequestController extends Controller
             'note' => 'Searching ALL commands EXCEPT requesting command. Officers from requesting command are excluded. Rank matching handles both abbreviations and full names.',
         ]);
         
-        return view('dashboards.hrd.manning-request-matches', compact('manningRequest', 'item', 'matchedOfficers', 'totalCount', 'qualificationRequirement'));
+        // AUTO-MATCH: Automatically add matched officers to draft deployment
+        // This is an automated system - officers are automatically matched and added to draft
+        try {
+            DB::beginTransaction();
+            
+            // Get or create shared active draft deployment (not per-user)
+            $deployment = ManningDeployment::draft()
+                ->latest()
+                ->first();
+            
+            if (!$deployment) {
+                // Generate deployment number
+                $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
+                $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
+                    ->orderBy('deployment_number', 'desc')
+                    ->first();
+                
+                $newNumber = $lastDeployment ? ((int)substr($lastDeployment->deployment_number, -3)) + 1 : 1;
+                $deploymentNumber = $datePrefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                
+                $deployment = ManningDeployment::create([
+                    'deployment_number' => $deploymentNumber,
+                    'status' => 'DRAFT',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+            
+            $destinationCommand = $manningRequest->command;
+            $quantityNeeded = $item->quantity_needed;
+            $officersAdded = 0;
+            
+            // Automatically select and add officers to draft
+            // Take the first N officers that match (where N = quantity_needed)
+            $selectedOfficers = $matchedOfficers->take($quantityNeeded);
+            
+            foreach ($selectedOfficers as $officer) {
+                $fromCommand = $officer->presentStation;
+                
+                // Check if officer is already in this deployment
+                $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
+                    ->where('officer_id', $officer->id)
+                    ->first();
+                
+                if (!$existing) {
+                    ManningDeploymentAssignment::create([
+                        'manning_deployment_id' => $deployment->id,
+                        'manning_request_id' => $manningRequest->id,
+                        'manning_request_item_id' => $item->id,
+                        'officer_id' => $officer->id,
+                        'from_command_id' => $fromCommand?->id,
+                        'to_command_id' => $destinationCommand->id,
+                        'rank' => $officer->substantive_rank,
+                    ]);
+                    $officersAdded++;
+                }
+            }
+            
+            DB::commit();
+            
+            if ($officersAdded > 0) {
+                return redirect()->route('hrd.manning-requests.show', $id)
+                    ->with('success', "{$officersAdded} officer(s) automatically matched and added to draft deployment.");
+            } else {
+                return redirect()->route('hrd.manning-requests.show', $id)
+                    ->with('info', 'No new officers added. All matching officers may already be in the draft.');
+            }
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to auto-match and add to draft: ' . $e->getMessage(), [
+                'exception' => $e,
+                'manning_request_id' => $id,
+                'item_id' => $itemId,
+            ]);
+            
+            // If auto-add fails, show the manual selection view as fallback
+            return view('dashboards.hrd.manning-request-matches', compact('manningRequest', 'item', 'matchedOfficers', 'totalCount', 'qualificationRequirement'))
+                ->with('error', 'Auto-matching failed. Please select officers manually.');
+        }
     }
 
     public function hrdGenerateOrder(Request $request, $id)
@@ -954,9 +1051,9 @@ class ManningRequestController extends Controller
             $selectedOfficers = Officer::whereIn('id', $validated['selected_officers'])->get();
             $destinationCommand = $manningRequest->command;
             
-            // Get or create active draft deployment
+            // Get or create shared active draft deployment (not per-user)
+            // All HRD officers work with the same shared draft
             $deployment = ManningDeployment::draft()
-                ->where('created_by', auth()->id())
                 ->latest()
                 ->first();
             
@@ -1018,12 +1115,13 @@ class ManningRequestController extends Controller
 
     public function hrdDraftIndex()
     {
+        // Get shared active draft (not per-user - all HRD officers see the same draft)
         $deployments = ManningDeployment::draft()
             ->with(['createdBy', 'assignments.officer', 'assignments.toCommand', 'assignments.fromCommand'])
             ->orderBy('created_at', 'desc')
             ->get();
         
-        // Get active draft (most recent)
+        // Get active draft (most recent) - shared across all HRD officers
         $activeDraft = $deployments->first();
         
         // Group assignments by command for display
@@ -1220,7 +1318,27 @@ class ManningRequestController extends Controller
                 'created_by' => auth()->id(),
             ]);
             
-            // Post all officers and create movement order entries
+            // STEP 1: Send release letters to FROM commands BEFORE posting
+            // Release letters notify the command that officer is being released
+            // This must happen BEFORE documentation/posting
+            $notificationService = app(NotificationService::class);
+            foreach ($deployment->assignments as $assignment) {
+                $officer = $assignment->officer;
+                $fromCommand = $assignment->fromCommand;
+                $toCommand = $assignment->toCommand;
+                
+                if ($fromCommand) {
+                    // Notify FROM command about officer release
+                    // This is authorized by Area Comptroller or DC Admin through Staff Officer
+                    try {
+                        $notificationService->notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $movementOrder);
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to send release letter notification: " . $e->getMessage());
+                    }
+                }
+            }
+            
+            // STEP 2: Post all officers and create movement order entries
             foreach ($deployment->assignments as $assignment) {
                 $officer = $assignment->officer;
                 $fromCommand = $assignment->fromCommand;
@@ -1231,15 +1349,15 @@ class ManningRequestController extends Controller
                     ->where('is_current', true)
                     ->update(['is_current' => false]);
                 
-                // Create new posting record
+                // Create new posting record (not yet documented - documentation happens after release letter)
                 OfficerPosting::create([
                     'officer_id' => $officer->id,
                     'command_id' => $toCommand->id,
                     'movement_order_id' => $movementOrder->id,
                     'posting_date' => now(),
                     'is_current' => true,
-                    'documented_by' => null,
-                    'documented_at' => null,
+                    'documented_by' => null, // Will be set when Staff Officer documents after release letter
+                    'documented_at' => null, // Documentation happens after release letter is processed
                 ]);
                 
                 // Update officer's present_station
@@ -1256,9 +1374,8 @@ class ManningRequestController extends Controller
                     }
                 }
                 
-                // Notify officer about posting
+                // Notify officer about posting (after release letter)
                 try {
-                    $notificationService = app(NotificationService::class);
                     $notificationService->notifyOfficerPosted($officer, $fromCommand, $toCommand, now());
                 } catch (\Exception $e) {
                     Log::warning("Failed to send posting notification: " . $e->getMessage());

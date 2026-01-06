@@ -1137,13 +1137,14 @@ class PrintController extends Controller
                 }
             }
 
+            // Combine initials and surname for full name
+            $fullName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+            
             $items->push([
                 'serial_number' => 0, // Will be reassigned after sorting
-                'service_number' => $officer->service_number ?? 'N/A',
                 'rank' => $officer->substantive_rank ?? 'N/A',
-                'initials' => $officer->initials ?? '',
-                'name' => $officer->surname ?? '',
-                'present_posting' => $fromCommand ? $fromCommand->name : 'N/A',
+                'name' => $fullName ?: 'N/A',
+                'previous_posting' => $fromCommand ? $fromCommand->name : 'N/A',
                 'new_posting' => $toCommand ? $toCommand->name : 'N/A',
             ]);
         }

@@ -115,11 +115,9 @@
             border: 1px solid #000;
             padding: 6px;
         }
-        .sn-col { width: 5%; }
-        .svc-col { width: 10%; }
-        .rank-col { width: 10%; }
-        .initials-col { width: 8%; }
-        .name-col { width: 20%; }
+        .sn-col { width: 8%; }
+        .rank-col { width: 20%; }
+        .name-col { width: 25%; }
         .present-col { width: 23%; }
         .new-col { width: 24%; }
         .footer {
@@ -194,12 +192,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th class="sn-col">S/N</th>
-                        <th class="svc-col">SRV NO</th>
+                        <th class="sn-col">SNo</th>
                         <th class="rank-col">RANK</th>
-                        <th class="initials-col">INITIALS</th>
-                        <th class="name-col">SURNAME</th>
-                        <th class="present-col">CURRENT POSTING</th>
+                        <th class="name-col">NAME</th>
+                        <th class="present-col">PREVIOUS POSTING</th>
                         <th class="new-col">NEW POSTING</th>
                     </tr>
                 </thead>
@@ -207,11 +203,9 @@
                     @foreach($group['items'] as $item)
                     <tr>
                         <td>{{ $item['serial_number'] }}</td>
-                        <td>{{ $item['service_number'] }}</td>
                         <td>{{ strtoupper($item['rank']) }}</td>
-                        <td>{{ strtoupper($item['initials']) }}</td>
                         <td>{{ strtoupper($item['name']) }}</td>
-                        <td>{{ strtoupper($item['present_posting']) }}</td>
+                        <td>{{ strtoupper($item['previous_posting']) }}</td>
                         <td>{{ strtoupper($item['new_posting']) }}</td>
                     </tr>
                     @endforeach
