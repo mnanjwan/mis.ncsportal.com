@@ -575,58 +575,214 @@
             </div>
         </div>
 
-        <!-- Queries Section -->
-        <div class="kt-card overflow-hidden">
+        <!-- History Sections with Accordions -->
+        <div class="kt-card">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Disciplinary Record (Accepted Queries)</h3>
+                <h3 class="kt-card-title">History</h3>
             </div>
-            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
-                @if(isset($acceptedQueries) && $acceptedQueries->count() > 0)
-                    <!-- Table with horizontal scroll wrapper -->
-                    <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
-                        <table class="kt-table" style="min-width: 900px; width: 100%;">
-                            <thead>
-                                <tr class="border-b border-border">
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Date Issued</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Issued By</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Reason</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Response</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Date Reviewed</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($acceptedQueries as $query)
-                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50">
-                                        <td class="py-3 px-4">
-                                            {{ $query->issued_at ? $query->issued_at->format('d/m/Y') : 'N/A' }}
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            {{ $query->issuedBy->name ?? $query->issuedBy->email ?? 'N/A' }}
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <div class="max-w-xs truncate" title="{{ $query->reason }}">
-                                                {{ Str::limit($query->reason, 50) }}
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <div class="max-w-xs truncate" title="{{ $query->response }}">
-                                                {{ Str::limit($query->response, 50) }}
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            {{ $query->reviewed_at ? $query->reviewed_at->format('d/m/Y') : 'N/A' }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+            <div class="kt-card-content">
+                <div class="flex flex-col gap-4">
+                    <!-- History of Postings Accordion -->
+                    <div class="accordion-item border border-border rounded-lg overflow-hidden">
+                        <button class="accordion-header w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors" onclick="toggleAccordion('postings-accordion')">
+                            <span class="font-semibold text-foreground">History of Postings</span>
+                            <i class="ki-filled ki-down accordion-icon text-primary transition-transform" id="postings-accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content hidden" id="postings-accordion-content">
+                            <div class="p-4 border-t border-border">
+                                @if(isset($postingsHistory) && $postingsHistory->count() > 0)
+                                    <div class="overflow-x-auto">
+                                        <table class="kt-table w-full">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Start Date</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">End Date</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Command/Station</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($postingsHistory as $index => $posting)
+                                                    @php
+                                                        // Calculate end date: previous (newer) posting's start date
+                                                        // Since postings are ordered DESC (newest first), the end date
+                                                        // of a posting is the start date of the posting before it in the array
+                                                        $endDate = null;
+                                                        if ($index > 0 && !$posting->is_current) {
+                                                            // The previous index (index - 1) is the newer posting
+                                                            // This posting ended when the newer one started
+                                                            $endDate = $postingsHistory[$index - 1]->posting_date;
+                                                        }
+                                                    @endphp
+                                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50">
+                                                        <td class="py-3 px-4">
+                                                            {{ $posting->posting_date ? $posting->posting_date->format('d/m/Y') : 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            @if($endDate)
+                                                                {{ $endDate->format('d/m/Y') }}
+                                                            @elseif($posting->is_current)
+                                                                <span class="text-secondary-foreground italic">Current</span>
+                                                            @else
+                                                                <span class="text-secondary-foreground">N/A</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $posting->command->name ?? 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            @if($posting->is_current)
+                                                                <span class="kt-badge kt-badge-success kt-badge-sm">Current</span>
+                                                            @else
+                                                                <span class="kt-badge kt-badge-secondary kt-badge-sm">Past</span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-8 text-secondary-foreground">
+                                        <i class="ki-filled ki-information-2 text-4xl mb-3"></i>
+                                        <p>No posting history available.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                @else
-                    <div class="text-center py-8 text-secondary-foreground">
-                        <i class="ki-filled ki-information-2 text-4xl mb-3"></i>
-                        <p>No accepted queries in disciplinary record.</p>
+
+                    <!-- History of Queries Accordion -->
+                    <div class="accordion-item border border-border rounded-lg overflow-hidden">
+                        <button class="accordion-header w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors" onclick="toggleAccordion('queries-accordion')">
+                            <span class="font-semibold text-foreground">History of Queries</span>
+                            <i class="ki-filled ki-down accordion-icon text-primary transition-transform" id="queries-accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content hidden" id="queries-accordion-content">
+                            <div class="p-4 border-t border-border">
+                                @if(isset($queriesHistory) && $queriesHistory->count() > 0)
+                                    <div class="overflow-x-auto">
+                                        <table class="kt-table w-full" style="min-width: 1100px;">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Date Issued</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Issued By</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Reason</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Response</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Response Date</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Date Reviewed</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($queriesHistory as $query)
+                                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50">
+                                                        <td class="py-3 px-4">
+                                                            {{ $query->issued_at ? $query->issued_at->format('d/m/Y') : 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $query->issuedBy->name ?? $query->issuedBy->email ?? 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            <div class="max-w-xs truncate" title="{{ $query->reason }}">
+                                                                {{ Str::limit($query->reason, 50) }}
+                                                            </div>
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            @php
+                                                                $statusBadge = match($query->status) {
+                                                                    'ACCEPTED' => 'success',
+                                                                    'REJECTED' => 'danger',
+                                                                    'PENDING_RESPONSE' => 'warning',
+                                                                    'PENDING_REVIEW' => 'info',
+                                                                    default => 'secondary'
+                                                                };
+                                                            @endphp
+                                                            <span class="kt-badge kt-badge-{{ $statusBadge }} kt-badge-sm">
+                                                                {{ str_replace('_', ' ', $query->status) }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            <div class="max-w-xs truncate" title="{{ $query->response }}">
+                                                                {{ $query->response ? Str::limit($query->response, 50) : 'N/A' }}
+                                                            </div>
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $query->responded_at ? $query->responded_at->format('d/m/Y') : 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $query->reviewed_at ? $query->reviewed_at->format('d/m/Y') : 'N/A' }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-8 text-secondary-foreground">
+                                        <i class="ki-filled ki-information-2 text-4xl mb-3"></i>
+                                        <p>No query history available.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                @endif
+
+                    <!-- History of Promotions Accordion -->
+                    <div class="accordion-item border border-border rounded-lg overflow-hidden">
+                        <button class="accordion-header w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors" onclick="toggleAccordion('promotions-accordion')">
+                            <span class="font-semibold text-foreground">History of Promotions</span>
+                            <i class="ki-filled ki-down accordion-icon text-primary transition-transform" id="promotions-accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content hidden" id="promotions-accordion-content">
+                            <div class="p-4 border-t border-border">
+                                @if(isset($promotionsHistory) && $promotionsHistory->count() > 0)
+                                    <div class="overflow-x-auto">
+                                        <table class="kt-table w-full">
+                                            <thead>
+                                                <tr class="border-b border-border">
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Promotion Date</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">From Rank</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">To Rank</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Board Approved</th>
+                                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Board Meeting Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($promotionsHistory as $promotion)
+                                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50">
+                                                        <td class="py-3 px-4">
+                                                            {{ $promotion->promotion_date ? $promotion->promotion_date->format('d/m/Y') : 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $promotion->from_rank ?? 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $promotion->to_rank ?? 'N/A' }}
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            <span class="kt-badge kt-badge-{{ $promotion->approved_by_board ? 'success' : 'secondary' }} kt-badge-sm">
+                                                                {{ $promotion->approved_by_board ? 'Yes' : 'No' }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="py-3 px-4">
+                                                            {{ $promotion->board_meeting_date ? $promotion->board_meeting_date->format('d/m/Y') : 'N/A' }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-8 text-secondary-foreground">
+                                        <i class="ki-filled ki-information-2 text-4xl mb-3"></i>
+                                        <p>No promotion history available.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -735,6 +891,24 @@
                 }
             } else {
                 modal.classList.add('hidden');
+            }
+        }
+
+        // Accordion functionality
+        function toggleAccordion(accordionId) {
+            const content = document.getElementById(accordionId + '-content');
+            const icon = document.getElementById(accordionId + '-icon');
+            
+            if (content.classList.contains('hidden')) {
+                // Open accordion
+                content.classList.remove('hidden');
+                icon.classList.remove('ki-down');
+                icon.classList.add('ki-up');
+            } else {
+                // Close accordion
+                content.classList.add('hidden');
+                icon.classList.remove('ki-up');
+                icon.classList.add('ki-down');
             }
         }
     </script>

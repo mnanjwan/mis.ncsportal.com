@@ -27,6 +27,7 @@ class ManningRequestController extends Controller
             'show', 
             'hrdIndex', 
             'hrdShow', 
+            'hrdPrint',
             'hrdMatch', 
             'hrdMatchAll',
             'hrdViewDraft', 
@@ -523,8 +524,17 @@ class ManningRequestController extends Controller
     // HRD Methods
     public function hrdIndex(Request $request)
     {
+        // Determine which statuses to include based on the tab
+        $tab = $request->get('tab', 'pending');
+        $statuses = ['APPROVED'];
+        
+        // For published tab, also include FULFILLED status
+        if ($tab === 'published') {
+            $statuses = ['APPROVED', 'FULFILLED'];
+        }
+        
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items'])
-            ->where('status', 'APPROVED');
+            ->whereIn('status', $statuses);
 
         // Get all item IDs that are in draft deployments
         $itemIdsInDraft = ManningDeploymentAssignment::whereHas('deployment', function($q) {
@@ -542,17 +552,19 @@ class ManningRequestController extends Controller
                 ->unique();
         }
         
-        // Get request IDs that are fully published (all items have matched_officer_id)
+        // Get request IDs that are fully published (all items have matched_officer_id set)
         // A request is published when all its items have matched_officer_id set
+        // Include both APPROVED and FULFILLED statuses (FULFILLED means it was published)
         $requestIdsPublished = DB::table('manning_request_items')
-            ->select('manning_request_id')
-            ->groupBy('manning_request_id')
-            ->havingRaw('COUNT(*) = SUM(CASE WHEN matched_officer_id IS NOT NULL THEN 1 ELSE 0 END)')
+            ->join('manning_requests', 'manning_request_items.manning_request_id', '=', 'manning_requests.id')
+            ->whereIn('manning_requests.status', ['APPROVED', 'FULFILLED'])
+            ->select('manning_request_items.manning_request_id')
+            ->groupBy('manning_request_items.manning_request_id')
+            ->havingRaw('COUNT(*) = SUM(CASE WHEN manning_request_items.matched_officer_id IS NOT NULL THEN 1 ELSE 0 END)')
             ->havingRaw('COUNT(*) > 0')
             ->pluck('manning_request_id');
         
-        // Filter by tab if provided
-        $tab = $request->get('tab', 'pending');
+        // Filter by tab if provided (tab was already determined above for status filtering)
         if ($tab === 'in_draft') {
             // Show only requests with items in draft
             if ($requestIdsInDraft->isNotEmpty()) {
@@ -641,6 +653,97 @@ class ManningRequestController extends Controller
             ->unique();
         
         return view('dashboards.hrd.manning-request-show', compact('request', 'itemsInDraft'));
+    }
+
+    public function hrdPrint($id)
+    {
+        $request = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items.matchedOfficer'])
+            ->findOrFail($id);
+        
+        // Get all officers that were posted for this manning request
+        // First try to get from published deployment assignments
+        $assignments = ManningDeploymentAssignment::where('manning_request_id', $id)
+            ->whereHas('deployment', function($q) {
+                $q->where('status', 'PUBLISHED');
+            })
+            ->with(['officer', 'fromCommand', 'toCommand'])
+            ->get();
+        
+        // If no assignments found, get from items with matched_officer_id
+        $postedOfficers = [];
+        $serialNumber = 1;
+        
+        if ($assignments->count() > 0) {
+            // Use assignments if available
+            foreach ($assignments as $assignment) {
+                if ($assignment->officer) {
+                    $officer = $assignment->officer;
+                    $postedOfficers[] = [
+                        'serial_number' => $serialNumber++,
+                        'service_number' => $officer->service_number ?? 'N/A',
+                        'rank' => $officer->substantive_rank ?? 'N/A',
+                        'initials' => $officer->initials ?? '',
+                        'surname' => $officer->surname ?? '',
+                        'current_posting' => $assignment->fromCommand->name ?? 'N/A',
+                        'new_posting' => $assignment->toCommand->name ?? 'N/A',
+                    ];
+                }
+            }
+        } else {
+            // Fallback: Get from items with matched_officer_id and their posting history
+            foreach ($request->items as $item) {
+                if ($item->matchedOfficer) {
+                    $officer = $item->matchedOfficer;
+                    // Get the officer's posting history to find where they were posted from
+                    $previousPosting = OfficerPosting::where('officer_id', $officer->id)
+                        ->where('is_current', false)
+                        ->with('command')
+                        ->orderBy('posting_date', 'desc')
+                        ->first();
+                    
+                    // Current posting = where they came from (previous posting)
+                    // New posting = where they went to (request's command, which is their current posting)
+                    $currentPosting = $previousPosting && $previousPosting->command 
+                        ? $previousPosting->command->name 
+                        : 'N/A';
+                    $newPosting = $request->command->name ?? 'N/A';
+                    
+                    $postedOfficers[] = [
+                        'serial_number' => $serialNumber++,
+                        'service_number' => $officer->service_number ?? 'N/A',
+                        'rank' => $officer->substantive_rank ?? 'N/A',
+                        'initials' => $officer->initials ?? '',
+                        'surname' => $officer->surname ?? '',
+                        'current_posting' => $currentPosting,
+                        'new_posting' => $newPosting,
+                    ];
+                }
+            }
+        }
+        
+        // Sort by rank (highest to lowest) to match movement order format
+        $rankOrder = [
+            'CGC' => 1, 'DCG' => 2, 'ACG' => 3, 'CC' => 4, 'DC' => 5,
+            'AC' => 6, 'CSC' => 7, 'SC' => 8, 'DSC' => 9,
+            'ASC I' => 10, 'ASC II' => 11, 'IC' => 12, 'AIC' => 13,
+            'CA I' => 14, 'CA II' => 15, 'CA III' => 16,
+        ];
+        
+        usort($postedOfficers, function($a, $b) use ($rankOrder) {
+            $rankA = $rankOrder[strtoupper($a['rank'])] ?? 999;
+            $rankB = $rankOrder[strtoupper($b['rank'])] ?? 999;
+            if ($rankA === $rankB) {
+                return strcmp($a['surname'], $b['surname']);
+            }
+            return $rankA <=> $rankB;
+        });
+        
+        // Re-number after sorting
+        foreach ($postedOfficers as $index => &$officer) {
+            $officer['serial_number'] = $index + 1;
+        }
+        
+        return view('dashboards.hrd.manning-request-print', compact('request', 'postedOfficers'));
     }
 
     public function hrdMatch(Request $request, $id)
@@ -1626,7 +1729,7 @@ class ManningRequestController extends Controller
         }
     }
 
-    public function hrdDraftPublish($id)
+    public function hrdDraftPublish($id, Request $request)
     {
         try {
             DB::beginTransaction();
@@ -1637,6 +1740,19 @@ class ManningRequestController extends Controller
             if ($deployment->status !== 'DRAFT') {
                 return redirect()->back()
                     ->with('error', 'Can only publish draft deployments.');
+            }
+            
+            // Filter assignments by manning request if provided
+            $manningRequestId = $request->get('manning_request_id');
+            $assignmentsToPublish = $deployment->assignments;
+            
+            if ($manningRequestId) {
+                $assignmentsToPublish = $assignmentsToPublish->where('manning_request_id', $manningRequestId);
+                
+                if ($assignmentsToPublish->isEmpty()) {
+                    return redirect()->back()
+                        ->with('error', 'No assignments found for the specified manning request.');
+                }
             }
             
             // Generate unique movement order number
@@ -1658,7 +1774,7 @@ class ManningRequestController extends Controller
             
             $movementOrder = MovementOrder::create([
                 'order_number' => $orderNumber,
-                'manning_request_id' => null, // Deployment may span multiple requests
+                'manning_request_id' => $manningRequestId, // Link to specific request if filtering
                 'criteria_months_at_station' => null,
                 'status' => 'DRAFT',
                 'created_by' => auth()->id(),
@@ -1668,7 +1784,7 @@ class ManningRequestController extends Controller
             // Release letters notify the command that officer is being released
             // This must happen BEFORE documentation/posting
             $notificationService = app(NotificationService::class);
-            foreach ($deployment->assignments as $assignment) {
+            foreach ($assignmentsToPublish as $assignment) {
                 $officer = $assignment->officer;
                 $fromCommand = $assignment->fromCommand;
                 $toCommand = $assignment->toCommand;
@@ -1685,7 +1801,7 @@ class ManningRequestController extends Controller
             }
             
             // STEP 2: Post all officers and create movement order entries
-            foreach ($deployment->assignments as $assignment) {
+            foreach ($assignmentsToPublish as $assignment) {
                 $officer = $assignment->officer;
                 $fromCommand = $assignment->fromCommand;
                 $toCommand = $assignment->toCommand;
@@ -1728,18 +1844,28 @@ class ManningRequestController extends Controller
                 }
             }
             
-            // Mark deployment as published
+            // Check if deployment has any remaining assignments before removing published ones
+            $totalAssignments = $deployment->assignments()->count();
+            $assignmentsToPublishCount = $assignmentsToPublish->count();
+            
+            // Remove published assignments from draft deployment
+            $assignmentIds = $assignmentsToPublish->pluck('id');
+            ManningDeploymentAssignment::whereIn('id', $assignmentIds)->delete();
+            
+            // Only mark deployment as published if all assignments were published
+            if ($totalAssignments == $assignmentsToPublishCount) {
             $deployment->update([
                 'status' => 'PUBLISHED',
                 'published_by' => auth()->id(),
                 'published_at' => now(),
             ]);
+            }
             
             // Check and update manning request statuses
-            $requestIds = $deployment->assignments()
+            $requestIds = $assignmentsToPublish
                 ->whereNotNull('manning_request_id')
-                ->distinct()
-                ->pluck('manning_request_id');
+                ->pluck('manning_request_id')
+                ->unique();
             
             foreach ($requestIds as $requestId) {
                 $manningRequest = ManningRequest::find($requestId);
@@ -1762,8 +1888,24 @@ class ManningRequestController extends Controller
             
             DB::commit();
             
+            // Build success message
+            $successMessage = "Movement Order {$orderNumber} created successfully! ";
+            if ($manningRequestId) {
+                $manningRequest = ManningRequest::find($manningRequestId);
+                $successMessage .= "Published {$assignmentsToPublishCount} officer(s) from Manning Request #{$manningRequestId}";
+                if ($totalAssignments == $assignmentsToPublishCount) {
+                    $successMessage .= ". Deployment {$deployment->deployment_number} is now fully published.";
+                } else {
+                    $remainingCount = $totalAssignments - $assignmentsToPublishCount;
+                    $successMessage .= ". {$remainingCount} officer(s) remain in draft.";
+                }
+            } else {
+                $successMessage .= "Deployment {$deployment->deployment_number} published successfully!";
+            }
+            
+            // Always redirect to Published Deployments page after publishing
             return redirect()->route('hrd.manning-deployments.published')
-                ->with('success', "Deployment {$deployment->deployment_number} published successfully! Movement Order {$orderNumber} created.");
+                ->with('success', $successMessage);
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1776,7 +1918,7 @@ class ManningRequestController extends Controller
         }
     }
 
-    public function hrdDraftPrint($id)
+    public function hrdDraftPrint($id, Request $request)
     {
         $deployment = ManningDeployment::with([
             'assignments.officer',
@@ -1784,10 +1926,23 @@ class ManningRequestController extends Controller
             'assignments.fromCommand'
         ])->findOrFail($id);
         
+        // Get assignments query
+        $assignmentsQuery = $deployment->assignments()
+            ->with(['officer', 'toCommand', 'fromCommand', 'manningRequestItem']);
+        
+        // Filter by manning request if provided
+        $manningRequestId = $request->get('manning_request_id');
+        $manningRequest = null;
+        if ($manningRequestId) {
+            $manningRequest = ManningRequest::with('command')->find($manningRequestId);
+            if ($manningRequest) {
+                // Filter assignments that belong to this manning request
+                $assignmentsQuery->where('manning_request_id', $manningRequestId);
+            }
+        }
+        
         // Get all assignments sorted by rank
-        $assignments = $deployment->assignments()
-            ->with(['officer', 'toCommand', 'fromCommand'])
-            ->get()
+        $assignments = $assignmentsQuery->get()
             ->sortBy(function($assignment) {
                 // Sort by rank (you may need to adjust this based on your rank hierarchy)
                 $rankOrder = [
@@ -1801,7 +1956,7 @@ class ManningRequestController extends Controller
             })
             ->values();
         
-        return view('dashboards.hrd.manning-deployment-print', compact('deployment', 'assignments'));
+        return view('dashboards.hrd.manning-deployment-print', compact('deployment', 'assignments', 'manningRequest'));
     }
 
     public function hrdPublishedIndex()

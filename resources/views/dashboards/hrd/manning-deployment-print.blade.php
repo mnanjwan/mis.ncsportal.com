@@ -72,9 +72,15 @@
 
     <div class="header">
         <h1>MANNING DEPLOYMENT LIST</h1>
+        @if(isset($manningRequest))
+            <p><strong>Manning Request:</strong> #{{ $manningRequest->id }} - {{ $manningRequest->command->name ?? 'N/A' }}</p>
+        @endif
         <p><strong>Deployment Number:</strong> {{ $deployment->deployment_number }}</p>
         <p><strong>Date:</strong> {{ $deployment->published_at ? $deployment->published_at->format('d/m/Y') : $deployment->created_at->format('d/m/Y') }}</p>
         <p><strong>Status:</strong> {{ $deployment->status }}</p>
+        @if(isset($manningRequest))
+            <p><strong>Note:</strong> This print shows only officers from Manning Request #{{ $manningRequest->id }}</p>
+        @endif
     </div>
 
     @php

@@ -39,7 +39,7 @@
             </a>
             @endif
             @if($activeDraft)
-                <a href="{{ route('hrd.manning-deployments.print', $activeDraft->id) }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
+                <a href="{{ route('hrd.manning-deployments.print', $activeDraft->id) }}{{ isset($manningRequest) ? '?manning_request_id=' . $manningRequest->id : '' }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
                     <i class="ki-filled ki-printer"></i> Print Preview
                 </a>
             @endif
@@ -113,9 +113,12 @@
                             @endif
                         </div>
                     </div>
-                    <form action="{{ route('hrd.manning-deployments.publish', $activeDraft->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to publish this deployment? This will create movement orders and post officers to their new commands.');">
+                    <form id="publish-deployment-form" action="{{ route('hrd.manning-deployments.publish', $activeDraft->id) }}" method="POST">
                         @csrf
-                        <button type="submit" class="kt-btn kt-btn-primary">
+                        @if(isset($manningRequest))
+                            <input type="hidden" name="manning_request_id" value="{{ $manningRequest->id }}">
+                        @endif
+                        <button type="button" class="kt-btn kt-btn-primary" data-kt-modal-toggle="#publish-deployment-modal">
                             <i class="ki-filled ki-check"></i> Publish Deployment
                         </button>
                     </form>
@@ -410,6 +413,51 @@
     @endforeach
 @endif
 
+<!-- Publish Deployment Confirmation Modal -->
+@if($activeDraft)
+    <div class="kt-modal" data-kt-modal="true" id="publish-deployment-modal">
+        <div class="kt-modal-content max-w-[500px]">
+            <div class="kt-modal-header py-4 px-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                        <i class="ki-filled ki-check text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-foreground">Publish Deployment</h3>
+                </div>
+                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                    <i class="ki-filled ki-cross"></i>
+                </button>
+            </div>
+            <div class="kt-modal-body py-5 px-5">
+                <p class="text-sm text-secondary-foreground mb-4">
+                    Are you sure you want to publish this deployment? This will create movement orders and post officers to their new commands.
+                </p>
+                <div class="p-3 bg-muted/50 rounded-lg">
+                    <div class="text-sm text-secondary-foreground">
+                        <div><strong>Deployment:</strong> {{ $activeDraft->deployment_number }}</div>
+                        @if(isset($manningRequest))
+                            @php
+                                $filteredCount = $assignmentsByCommand->sum(fn($group) => $group->count());
+                            @endphp
+                            <div><strong>Officers to Publish:</strong> {{ $filteredCount }} (from Request #{{ $manningRequest->id }})</div>
+                            <div><strong>Total in Draft:</strong> {{ $activeDraft->assignments->count() }}</div>
+                            <div><strong>Manning Request:</strong> #{{ $manningRequest->id }} - {{ $manningRequest->command->name ?? 'N/A' }}</div>
+                        @else
+                            <div><strong>Total Officers:</strong> {{ $activeDraft->assignments->count() }}</div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                <button type="button" class="kt-btn kt-btn-primary" onclick="submitPublishForm()">
+                    <i class="ki-filled ki-check"></i> Publish Deployment
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
 <!-- Add Officer Modal -->
 <div class="kt-modal" data-kt-modal="true" id="add-officer-modal">
     <div class="kt-modal-content max-w-[700px]">
@@ -493,6 +541,14 @@ function submitSwapForm(assignmentId) {
 // Submit remove form
 function submitRemoveForm(assignmentId) {
     const form = document.getElementById(`remove-form-${assignmentId}`);
+    if (form) {
+        form.submit();
+    }
+}
+
+// Submit publish form
+function submitPublishForm() {
+    const form = document.getElementById('publish-deployment-form');
     if (form) {
         form.submit();
     }

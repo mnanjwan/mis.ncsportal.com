@@ -18,6 +18,9 @@
         <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
             <i class="ki-filled ki-arrow-left"></i> Back to Manning Requests
         </a>
+        <a href="{{ route('hrd.manning-requests.print', $request->id) }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
+            <i class="ki-filled ki-printer"></i> Print
+        </a>
     </div>
 
     <!-- Request Header -->

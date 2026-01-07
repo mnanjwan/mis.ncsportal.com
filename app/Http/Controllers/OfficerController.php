@@ -353,7 +353,22 @@ class OfficerController extends Controller
             ->orderBy('reviewed_at', 'desc')
             ->get();
 
-        return view('dashboards.hrd.officer-show', compact('officer', 'acceptedQueries'));
+        // Load history data
+        $postingsHistory = $officer->postings()
+            ->with('command')
+            ->orderBy('posting_date', 'desc')
+            ->get();
+
+        $queriesHistory = $officer->queries()
+            ->with('issuedBy')
+            ->orderBy('issued_at', 'desc')
+            ->get();
+
+        $promotionsHistory = $officer->promotions()
+            ->orderBy('promotion_date', 'desc')
+            ->get();
+
+        return view('dashboards.hrd.officer-show', compact('officer', 'acceptedQueries', 'postingsHistory', 'queriesHistory', 'promotionsHistory'));
     }
 
     public function edit($id)
