@@ -56,9 +56,25 @@
             <h3 class="kt-card-title">Approved Manning Requests</h3>
         </div>
         <div class="kt-card-content">
-            <p class="text-sm text-secondary-foreground mb-4">
-                View approved manning requests and trigger matching to find suitable officers for posting.
-            </p>
+            <div class="flex items-center justify-between mb-4">
+                <p class="text-sm text-secondary-foreground">
+                    View approved manning requests and trigger matching to find suitable officers for posting.
+                </p>
+                <div class="flex items-center gap-2">
+                    <a href="{{ request()->fullUrlWithQuery(['draft_status' => null]) }}" 
+                       class="kt-btn kt-btn-sm {{ !request('draft_status') ? 'kt-btn-primary' : 'kt-btn-ghost' }}">
+                        All Requests
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['draft_status' => 'in_draft']) }}" 
+                       class="kt-btn kt-btn-sm {{ request('draft_status') === 'in_draft' ? 'kt-btn-primary' : 'kt-btn-ghost' }}">
+                        In Draft
+                    </a>
+                    <a href="{{ request()->fullUrlWithQuery(['draft_status' => 'not_in_draft']) }}" 
+                       class="kt-btn kt-btn-sm {{ request('draft_status') === 'not_in_draft' ? 'kt-btn-primary' : 'kt-btn-ghost' }}">
+                        Not in Draft
+                    </a>
+                </div>
+            </div>
 
             <!-- Desktop Table View -->
             <div class="hidden lg:block">
@@ -114,9 +130,16 @@
                             @forelse($requests as $request)
                                 <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                                     <td class="py-3 px-4">
-                                        <span class="text-sm font-medium text-foreground">
-                                            {{ $request->command->name ?? 'N/A' }}
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-medium text-foreground">
+                                                {{ $request->command->name ?? 'N/A' }}
+                                            </span>
+                                            @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
+                                                <span class="kt-badge kt-badge-info kt-badge-sm" title="Has items in draft deployment">
+                                                    <i class="ki-filled ki-file-add"></i> In Draft
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         {{ $request->requestedBy->email ?? 'N/A' }}
@@ -163,9 +186,16 @@
                                     <i class="ki-filled ki-people text-info text-xl"></i>
                                 </div>
                                 <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-semibold text-foreground">
-                                        {{ $request->command->name ?? 'N/A' }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-semibold text-foreground">
+                                            {{ $request->command->name ?? 'N/A' }}
+                                        </span>
+                                        @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
+                                            <span class="kt-badge kt-badge-info kt-badge-sm" title="Has items in draft deployment">
+                                                <i class="ki-filled ki-file-add"></i> In Draft
+                                            </span>
+                                        @endif
+                                    </div>
                                     <span class="text-xs text-secondary-foreground">
                                         {{ $request->items->count() }} requirement(s)
                                     </span>

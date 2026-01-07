@@ -526,8 +526,7 @@ class ManningRequestController extends Controller
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items'])
             ->where('status', 'APPROVED');
 
-        // EXCLUDE requests that have items already in draft deployments
-        // Once items are in draft, they leave the dashboard until draft is published
+        // Get all item IDs that are in draft deployments
         $itemIdsInDraft = ManningDeploymentAssignment::whereHas('deployment', function($q) {
                 $q->where('status', 'DRAFT');
             })
@@ -535,15 +534,31 @@ class ManningRequestController extends Controller
             ->pluck('manning_request_item_id')
             ->unique();
         
+        // Get request IDs that have items in draft
+        $requestIdsInDraft = collect();
         if ($itemIdsInDraft->isNotEmpty()) {
-            // Get request IDs that have items in draft
             $requestIdsInDraft = ManningRequestItem::whereIn('id', $itemIdsInDraft)
                 ->pluck('manning_request_id')
                 ->unique();
-            
-            // Exclude those requests from the dashboard
-            $query->whereNotIn('id', $requestIdsInDraft);
         }
+        
+        // Filter by draft status if provided
+        $filterDraft = $request->get('draft_status');
+        if ($filterDraft === 'in_draft') {
+            // Show only requests with items in draft
+            if ($requestIdsInDraft->isNotEmpty()) {
+                $query->whereIn('id', $requestIdsInDraft);
+            } else {
+                // No requests in draft, return empty result
+                $query->whereRaw('1 = 0');
+            }
+        } elseif ($filterDraft === 'not_in_draft') {
+            // Show only requests without items in draft
+            if ($requestIdsInDraft->isNotEmpty()) {
+                $query->whereNotIn('id', $requestIdsInDraft);
+            }
+        }
+        // If no filter, show all approved requests
 
         // Sorting - Default to latest requests first (created_at desc)
         $sortBy = $request->get('sort_by', 'created_at');
@@ -570,7 +585,13 @@ class ManningRequestController extends Controller
 
         $requests = $query->select('manning_requests.*')->paginate(20)->withQueryString();
         
-        return view('dashboards.hrd.manning-requests', compact('requests'));
+        // Mark which requests have items in draft for display
+        $requests->getCollection()->transform(function($manningRequest) use ($requestIdsInDraft) {
+            $manningRequest->has_items_in_draft = $requestIdsInDraft->contains($manningRequest->id);
+            return $manningRequest;
+        });
+        
+        return view('dashboards.hrd.manning-requests', compact('requests', 'requestIdsInDraft'));
     }
 
     public function hrdShow($id)
