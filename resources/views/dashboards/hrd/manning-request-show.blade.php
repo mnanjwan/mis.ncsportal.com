@@ -105,12 +105,11 @@
             @endphp
             @if($pendingItemsCount > 0)
                 <div class="mb-4 flex items-center justify-end">
-                    <form action="{{ route('hrd.manning-requests.match-all', $request->id) }}" method="POST" onsubmit="return confirm('This will match all pending ranks at once. Continue?');">
-                        @csrf
-                        <button type="submit" class="kt-btn kt-btn-primary">
-                            <i class="ki-filled ki-search"></i> Find Matches for All Ranks ({{ $pendingItemsCount }})
-                        </button>
-                    </form>
+                    <button type="button" 
+                            data-kt-modal-toggle="#match-all-ranks-modal" 
+                            class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-search"></i> Find Matches for All Ranks ({{ $pendingItemsCount }})
+                    </button>
                 </div>
             @endif
             @if($request->items && $request->items->count() > 0)
@@ -208,5 +207,44 @@
         </div>
     </div>
 </div>
+
+<!-- Match All Ranks Confirmation Modal -->
+@if($pendingItemsCount > 0)
+<div class="kt-modal" data-kt-modal="true" id="match-all-ranks-modal">
+    <div class="kt-modal-content max-w-[500px]">
+        <div class="kt-modal-header py-4 px-5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                    <i class="ki-filled ki-search text-primary text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground">Find Matches for All Ranks</h3>
+            </div>
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+        <div class="kt-modal-body py-5 px-5">
+            <form id="match-all-ranks-form" method="POST" action="{{ route('hrd.manning-requests.match-all', $request->id) }}">
+                @csrf
+                <p class="text-sm text-secondary-foreground mb-4">
+                    This will automatically match and add officers for all <strong>{{ $pendingItemsCount }}</strong> pending rank(s) to the draft deployment at once.
+                </p>
+                <div class="p-3 bg-info/10 border border-info/20 rounded-lg">
+                    <p class="text-xs text-info">
+                        <i class="ki-filled ki-information"></i> 
+                        <strong>Note:</strong> Officers will be automatically matched and added to the draft. You can review and adjust the draft before publishing.
+                    </p>
+                </div>
+            </form>
+        </div>
+        <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+            <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+            <button type="button" class="kt-btn kt-btn-primary" onclick="document.getElementById('match-all-ranks-form').submit();">
+                <i class="ki-filled ki-search"></i> Find Matches for All Ranks
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
