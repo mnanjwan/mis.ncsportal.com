@@ -244,6 +244,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-requests', [ManningRequestController::class, 'hrdIndex'])->name('manning-requests');
         Route::get('/manning-requests/{id}', [ManningRequestController::class, 'hrdShow'])->name('manning-requests.show');
         Route::get('/manning-requests/{id}/match', [ManningRequestController::class, 'hrdMatch'])->name('manning-requests.match');
+        Route::post('/manning-requests/{id}/match-all', [ManningRequestController::class, 'hrdMatchAll'])->name('manning-requests.match-all');
         Route::post('/manning-requests/{id}/generate-order', [ManningRequestController::class, 'hrdGenerateOrder'])->name('manning-requests.generate-order');
         Route::post('/manning-requests/{id}/add-to-draft', [ManningRequestController::class, 'hrdAddToDraft'])->name('manning-requests.add-to-draft');
         

@@ -176,43 +176,70 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($assignments as $assignment)
-                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors officer-row" 
-                                            data-officer-name="{{ strtolower(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}"
-                                            data-service-number="{{ strtolower($assignment->officer->service_number ?? '') }}"
-                                            data-rank="{{ strtolower($assignment->officer->substantive_rank ?? '') }}"
-                                            data-command-id="{{ $commandId }}"
-                                            data-from-command="{{ strtolower($assignment->fromCommand->name ?? '') }}">
-                                            <td class="py-3 px-4">
-                                                <span class="text-sm font-medium text-foreground">
-                                                    {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
-                                                </span>
-                                            </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground font-mono">
-                                                {{ $assignment->officer->service_number ?? 'N/A' }}
-                                            </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $assignment->officer->substantive_rank ?? 'N/A' }}
-                                            </td>
-                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $assignment->fromCommand->name ?? 'N/A' }}
-                                            </td>
-                                            <td class="py-3 px-4 text-right">
-                                                <div class="flex items-center justify-end gap-2">
-                                                    <button type="button" 
-                                                            class="kt-btn kt-btn-sm kt-btn-secondary"
-                                                            data-kt-modal-toggle="#swap-officer-modal-{{ $assignment->id }}"
-                                                            onclick="prepareSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }})">
-                                                        <i class="ki-filled ki-arrows-circle"></i> Swap
-                                                    </button>
-                                                    <button type="button" 
-                                                            class="kt-btn kt-btn-sm kt-btn-danger"
-                                                            data-kt-modal-toggle="#remove-officer-modal-{{ $assignment->id }}">
-                                                        <i class="ki-filled ki-trash"></i> Remove
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                    @php
+                                        // Group assignments by rank
+                                        $assignmentsByRank = $assignments->groupBy(function($assignment) {
+                                            return $assignment->officer->substantive_rank ?? 'Unknown';
+                                        });
+                                    @endphp
+                                    @foreach($assignmentsByRank as $rank => $rankAssignments)
+                                        @if($loop->first)
+                                            {{-- First rank header --}}
+                                            <tr>
+                                                <td colspan="5" class="py-2 px-4 bg-primary/5 border-b border-primary/20">
+                                                    <span class="text-xs font-semibold text-primary">{{ $rank }}</span>
+                                                </td>
+                                            </tr>
+                                        @else
+                                            {{-- Rank separator for subsequent ranks --}}
+                                            <tr class="border-t-2 border-primary/30">
+                                                <td colspan="5" class="py-2 px-4 bg-primary/5">
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="flex-1 border-t border-primary/20"></div>
+                                                        <span class="text-xs font-semibold text-primary px-2">{{ $rank }}</span>
+                                                        <div class="flex-1 border-t border-primary/20"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                        @foreach($rankAssignments as $assignment)
+                                            <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors officer-row" 
+                                                data-officer-name="{{ strtolower(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}"
+                                                data-service-number="{{ strtolower($assignment->officer->service_number ?? '') }}"
+                                                data-rank="{{ strtolower($assignment->officer->substantive_rank ?? '') }}"
+                                                data-command-id="{{ $commandId }}"
+                                                data-from-command="{{ strtolower($assignment->fromCommand->name ?? '') }}">
+                                                <td class="py-3 px-4">
+                                                    <span class="text-sm font-medium text-foreground">
+                                                        {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
+                                                    </span>
+                                                </td>
+                                                <td class="py-3 px-4 text-sm text-secondary-foreground font-mono">
+                                                    {{ $assignment->officer->service_number ?? 'N/A' }}
+                                                </td>
+                                                <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                                    {{ $assignment->officer->substantive_rank ?? 'N/A' }}
+                                                </td>
+                                                <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                                    {{ $assignment->fromCommand->name ?? 'N/A' }}
+                                                </td>
+                                                <td class="py-3 px-4 text-right">
+                                                    <div class="flex items-center justify-end gap-2">
+                                                        <button type="button" 
+                                                                class="kt-btn kt-btn-sm kt-btn-secondary"
+                                                                data-kt-modal-toggle="#swap-officer-modal-{{ $assignment->id }}"
+                                                                onclick="prepareSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }})">
+                                                            <i class="ki-filled ki-arrows-circle"></i> Swap
+                                                        </button>
+                                                        <button type="button" 
+                                                                class="kt-btn kt-btn-sm kt-btn-danger"
+                                                                data-kt-modal-toggle="#remove-officer-modal-{{ $assignment->id }}">
+                                                            <i class="ki-filled ki-trash"></i> Remove
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
                                     @endforeach
                                 </tbody>
                             </table>

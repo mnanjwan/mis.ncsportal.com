@@ -28,6 +28,7 @@ class ManningRequestController extends Controller
             'hrdIndex', 
             'hrdShow', 
             'hrdMatch', 
+            'hrdMatchAll', 
             'hrdGenerateOrder',
             'hrdDraftIndex',
             'hrdDraftAddOfficer',

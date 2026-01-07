@@ -98,6 +98,21 @@
                     <strong>Note:</strong> When you find matches, officers will be added to a draft deployment. Review and adjust the draft before publishing to finalize the deployment.
                 </p>
             </div>
+            @php
+                $pendingItemsCount = $request->items->whereNull('matched_officer_id')
+                    ->whereNotIn('id', $itemsInDraft ?? [])
+                    ->count();
+            @endphp
+            @if($pendingItemsCount > 0)
+                <div class="mb-4 flex items-center justify-end">
+                    <form action="{{ route('hrd.manning-requests.match-all', $request->id) }}" method="POST" onsubmit="return confirm('This will match all pending ranks at once. Continue?');">
+                        @csrf
+                        <button type="submit" class="kt-btn kt-btn-primary">
+                            <i class="ki-filled ki-search"></i> Find Matches for All Ranks ({{ $pendingItemsCount }})
+                        </button>
+                    </form>
+                </div>
+            @endif
             @if($request->items && $request->items->count() > 0)
                 <!-- Desktop Table View -->
                 <div class="hidden lg:block">
