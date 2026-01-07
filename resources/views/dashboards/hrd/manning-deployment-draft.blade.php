@@ -6,7 +6,15 @@
 @section('breadcrumbs')
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
     <span>/</span>
+    @if(isset($manningRequest))
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.manning-requests') }}">Manning Requests</a>
+        <span>/</span>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.manning-requests.show', $manningRequest->id) }}">Request #{{ $manningRequest->id }}</a>
+        <span>/</span>
+        <span class="text-primary">Draft Deployment</span>
+    @else
     <span class="text-primary">Draft Deployment</span>
+    @endif
 @endsection
 
 @section('content')
@@ -18,9 +26,18 @@
             <p class="text-sm text-secondary-foreground mt-1">Review and adjust officer assignments before publishing</p>
         </div>
         <div class="flex items-center gap-3">
+            @if(isset($manningRequest))
+                <a href="{{ route('hrd.manning-requests.show', $manningRequest->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                    <i class="ki-filled ki-arrow-left"></i> Back to Request Details
+                </a>
+                <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-secondary">
+                    <i class="ki-filled ki-file-add"></i> View All Draft
+                </a>
+            @else
             <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Requests
             </a>
+            @endif
             @if($activeDraft)
                 <a href="{{ route('hrd.manning-deployments.print', $activeDraft->id) }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
                     <i class="ki-filled ki-printer"></i> Print Preview
@@ -48,6 +65,39 @@
     @endif
 
     @if($activeDraft)
+        @if(isset($manningRequest))
+            <!-- Manning Request Info -->
+            <div class="kt-card">
+                <div class="kt-card-content p-5">
+                    <div class="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
+                        <p class="text-sm text-info font-medium">
+                            <i class="ki-filled ki-information"></i> 
+                            <strong>Filtered View:</strong> Showing draft deployment items for Manning Request #{{ $manningRequest->id }} ({{ $manningRequest->command->name ?? 'N/A' }}). 
+                            <a href="{{ route('hrd.manning-deployments.draft') }}" class="underline">View all draft items</a>.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-secondary-foreground">Request ID:</span>
+                            <span class="font-semibold text-mono ml-2">#{{ $manningRequest->id }}</span>
+                        </div>
+                        <div>
+                            <span class="text-secondary-foreground">Command:</span>
+                            <span class="font-semibold text-mono ml-2">{{ $manningRequest->command->name ?? 'N/A' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-secondary-foreground">Items in Draft:</span>
+                            <span class="font-semibold text-mono ml-2">{{ $assignmentsByCommand->sum(fn($group) => $group->count()) }} officer(s)</span>
+                        </div>
+                        <div>
+                            <span class="text-secondary-foreground">Total in Draft:</span>
+                            <span class="font-semibold text-mono ml-2">{{ $activeDraft->assignments->count() }} officer(s)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+        
         <!-- Draft Info -->
         <div class="kt-card">
             <div class="kt-card-content p-5 lg:p-7.5">
@@ -58,6 +108,9 @@
                             <span>Status: <span class="kt-badge kt-badge-warning kt-badge-sm">DRAFT</span></span>
                             <span>Created: {{ $activeDraft->created_at->format('d/m/Y H:i') }}</span>
                             <span>Total Officers: {{ $activeDraft->assignments->count() }}</span>
+                            @if(isset($manningRequest))
+                                <span>Showing: {{ $assignmentsByCommand->sum(fn($group) => $group->count()) }} from Request #{{ $manningRequest->id }}</span>
+                            @endif
                         </div>
                     </div>
                     <form action="{{ route('hrd.manning-deployments.publish', $activeDraft->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to publish this deployment? This will create movement orders and post officers to their new commands.');">
@@ -123,7 +176,11 @@
                         <select id="rank-filter" class="kt-input w-full">
                             <option value="">All Ranks</option>
                             @php
-                                $allRanks = $activeDraft->assignments->pluck('officer.substantive_rank')->filter()->unique()->sort()->values();
+                                // Use filtered assignments if viewing specific manning request, otherwise all assignments
+                                $assignmentsForRankFilter = isset($manningRequest) 
+                                    ? collect($assignmentsByCommand)->flatten() 
+                                    : $activeDraft->assignments;
+                                $allRanks = $assignmentsForRankFilter->pluck('officer.substantive_rank')->filter()->unique()->sort()->values();
                             @endphp
                             @foreach($allRanks as $rank)
                                 <option value="{{ $rank }}">{{ $rank }}</option>
@@ -203,42 +260,42 @@
                                             </tr>
                                         @endif
                                         @foreach($rankAssignments as $assignment)
-                                            <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors officer-row" 
-                                                data-officer-name="{{ strtolower(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}"
-                                                data-service-number="{{ strtolower($assignment->officer->service_number ?? '') }}"
-                                                data-rank="{{ strtolower($assignment->officer->substantive_rank ?? '') }}"
-                                                data-command-id="{{ $commandId }}"
-                                                data-from-command="{{ strtolower($assignment->fromCommand->name ?? '') }}">
-                                                <td class="py-3 px-4">
-                                                    <span class="text-sm font-medium text-foreground">
-                                                        {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-3 px-4 text-sm text-secondary-foreground font-mono">
-                                                    {{ $assignment->officer->service_number ?? 'N/A' }}
-                                                </td>
-                                                <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                    {{ $assignment->officer->substantive_rank ?? 'N/A' }}
-                                                </td>
-                                                <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                    {{ $assignment->fromCommand->name ?? 'N/A' }}
-                                                </td>
-                                                <td class="py-3 px-4 text-right">
-                                                    <div class="flex items-center justify-end gap-2">
-                                                        <button type="button" 
-                                                                class="kt-btn kt-btn-sm kt-btn-secondary"
+                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors officer-row" 
+                                            data-officer-name="{{ strtolower(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}"
+                                            data-service-number="{{ strtolower($assignment->officer->service_number ?? '') }}"
+                                            data-rank="{{ strtolower($assignment->officer->substantive_rank ?? '') }}"
+                                            data-command-id="{{ $commandId }}"
+                                            data-from-command="{{ strtolower($assignment->fromCommand->name ?? '') }}">
+                                            <td class="py-3 px-4">
+                                                <span class="text-sm font-medium text-foreground">
+                                                    {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground font-mono">
+                                                {{ $assignment->officer->service_number ?? 'N/A' }}
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                                {{ $assignment->officer->substantive_rank ?? 'N/A' }}
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                                {{ $assignment->fromCommand->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="py-3 px-4 text-right">
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <button type="button" 
+                                                            class="kt-btn kt-btn-sm kt-btn-secondary"
                                                                 data-kt-modal-toggle="#swap-officer-modal-{{ $assignment->id }}"
                                                                 onclick="prepareSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }})">
-                                                            <i class="ki-filled ki-arrows-circle"></i> Swap
-                                                        </button>
+                                                        <i class="ki-filled ki-arrows-circle"></i> Swap
+                                                    </button>
                                                         <button type="button" 
                                                                 class="kt-btn kt-btn-sm kt-btn-danger"
                                                                 data-kt-modal-toggle="#remove-officer-modal-{{ $assignment->id }}">
                                                             <i class="ki-filled ki-trash"></i> Remove
                                                         </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                                </div>
+                                            </td>
+                                        </tr>
                                         @endforeach
                                     @endforeach
                                 </tbody>
@@ -273,7 +330,7 @@
 @if($activeDraft)
     @foreach($activeDraft->assignments as $assignment)
         <div class="kt-modal" data-kt-modal="true" id="swap-officer-modal-{{ $assignment->id }}">
-            <div class="kt-modal-content max-w-[600px]">
+    <div class="kt-modal-content max-w-[600px]">
                 <div class="kt-modal-header py-4 px-5">
                     <div class="flex items-center gap-3">
                         <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
@@ -443,52 +500,52 @@ function submitRemoveForm(assignmentId) {
             const assignmentId = {{ $assignment->id }};
             const searchInput = document.getElementById(`officer-search-${assignmentId}`);
             const resultsDiv = document.getElementById(`officer-search-results-${assignmentId}`);
-            let searchTimeout;
+let searchTimeout;
             
             if (searchInput) {
                 searchInput.addEventListener('input', function(e) {
-                    clearTimeout(searchTimeout);
-                    const query = e.target.value.trim();
-                    
-                    if (query.length < 2) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
                         if (resultsDiv) resultsDiv.classList.add('hidden');
-                        return;
-                    }
-                    
-                    searchTimeout = setTimeout(() => {
-                        fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
-                            .then(response => response.json())
-                            .then(data => {
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
                                 if (!resultsDiv) return;
-                                resultsDiv.innerHTML = '';
-                                if (data.length === 0) {
-                                    resultsDiv.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
-                                } else {
-                                    data.forEach(officer => {
-                                        const div = document.createElement('div');
-                                        div.className = 'p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0';
-                                        div.innerHTML = `
-                                            <div class="font-semibold">${officer.initials} ${officer.surname}</div>
-                                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
-                                        `;
-                                        div.addEventListener('click', () => {
+                resultsDiv.innerHTML = '';
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
+                } else {
+                    data.forEach(officer => {
+                        const div = document.createElement('div');
+                        div.className = 'p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0';
+                        div.innerHTML = `
+                            <div class="font-semibold">${officer.initials} ${officer.surname}</div>
+                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
+                        `;
+                        div.addEventListener('click', () => {
                                             const newOfficerIdInput = document.getElementById(`new-officer-id-${assignmentId}`);
                                             const confirmBtn = document.getElementById(`confirm-swap-btn-${assignmentId}`);
                                             if (newOfficerIdInput) newOfficerIdInput.value = officer.id;
                                             if (searchInput) searchInput.value = `${officer.initials} ${officer.surname} (${officer.service_number})`;
-                                            resultsDiv.classList.add('hidden');
+                            resultsDiv.classList.add('hidden');
                                             if (confirmBtn) confirmBtn.disabled = false;
-                                        });
-                                        resultsDiv.appendChild(div);
-                                    });
-                                }
-                                resultsDiv.classList.remove('hidden');
-                            })
-                            .catch(error => {
-                                console.error('Search error:', error);
-                            });
-                    }, 300);
-                });
+                        });
+                        resultsDiv.appendChild(div);
+                    });
+                }
+                resultsDiv.classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+            });
+    }, 300);
+});
             }
         })();
     @endforeach

@@ -1158,25 +1158,46 @@ class ManningRequestController extends Controller
             ->latest()
             ->first();
         
-        // Get all items from this request that are in draft deployments
+        if (!$activeDraft) {
+            return redirect()->route('hrd.manning-requests.show', $id)
+                ->with('error', 'No active draft deployment found.');
+        }
+        
+        // Get all item IDs from this manning request
         $itemIds = $manningRequest->items->pluck('id');
-        $assignments = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
-            ->whereHas('deployment', function($q) {
-                $q->where('status', 'DRAFT');
-            })
-            ->with([
-                'officer.presentStation.zone',
-                'fromCommand',
-                'toCommand',
-                'manningRequestItem',
-                'deployment'
-            ])
+        
+        // Get assignments from this manning request only
+        $filteredAssignments = $activeDraft->assignments()
+            ->whereIn('manning_request_id', [$manningRequest->id])
+            ->with(['officer.presentStation.zone', 'fromCommand', 'toCommand', 'manningRequestItem'])
             ->get();
         
-        // Group assignments by item/rank
-        $assignmentsByItem = $assignments->groupBy('manning_request_item_id');
+        // Group filtered assignments by command (same structure as main draft page)
+        $assignmentsByCommand = $filteredAssignments->groupBy('to_command_id');
         
-        return view('dashboards.hrd.manning-request-draft', compact('manningRequest', 'assignments', 'assignmentsByItem', 'activeDraft'));
+        // Get manning levels summary for filtered assignments only
+        $manningLevels = [];
+        foreach ($filteredAssignments as $assignment) {
+            $commandId = $assignment->to_command_id;
+            $commandName = $assignment->toCommand->name ?? 'Unknown';
+            if (!isset($manningLevels[$commandId])) {
+                $manningLevels[$commandId] = [
+                    'command_id' => $commandId,
+                    'command_name' => $commandName,
+                    'officers' => [],
+                    'by_rank' => [],
+                ];
+            }
+            $manningLevels[$commandId]['officers'][] = $assignment->officer;
+            $rank = $assignment->officer->substantive_rank ?? 'Unknown';
+            if (!isset($manningLevels[$commandId]['by_rank'][$rank])) {
+                $manningLevels[$commandId]['by_rank'][$rank] = 0;
+            }
+            $manningLevels[$commandId]['by_rank'][$rank]++;
+        }
+        
+        // Use the same view as draft deployment but with filtered data
+        return view('dashboards.hrd.manning-deployment-draft', compact('activeDraft', 'assignmentsByCommand', 'manningLevels', 'manningRequest'));
     }
 
     public function hrdGenerateOrder(Request $request, $id)
