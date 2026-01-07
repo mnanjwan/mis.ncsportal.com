@@ -246,3 +246,38 @@ body i.text-secondary-foreground {
     border-color: rgba(220, 53, 69, 0.2) !important;
 }
 
+/* Ensure all icons are visible */
+i[class*="ki-"],
+[class*="ki-"] i,
+.ki-filled,
+.ki-outline,
+.ki-duotone {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure icons in buttons are visible */
+.kt-btn i,
+.kt-btn [class*="ki-"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure icons in modals are visible */
+.kt-modal i,
+.kt-modal [class*="ki-"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure icons in cards are visible */
+.kt-card i,
+.kt-card [class*="ki-"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
