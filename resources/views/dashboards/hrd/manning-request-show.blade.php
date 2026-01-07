@@ -102,16 +102,23 @@
                 $pendingItemsCount = $request->items->whereNull('matched_officer_id')
                     ->whereNotIn('id', $itemsInDraft ?? [])
                     ->count();
+                $draftItemsCount = isset($itemsInDraft) ? $itemsInDraft->count() : 0;
             @endphp
-            @if($pendingItemsCount > 0)
-                <div class="mb-4 flex items-center justify-end">
+            <div class="mb-4 flex items-center justify-end gap-3">
+                @if($pendingItemsCount > 0)
                     <button type="button" 
                             data-kt-modal-toggle="#match-all-ranks-modal" 
                             class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-search"></i> Find Matches for All Ranks ({{ $pendingItemsCount }})
                     </button>
-                </div>
-            @endif
+                @endif
+                @if($draftItemsCount > 0)
+                    <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
+                       class="kt-btn kt-btn-info">
+                        <i class="ki-filled ki-file-add"></i> View in Draft ({{ $draftItemsCount }})
+                    </a>
+                @endif
+            </div>
             @if($request->items && $request->items->count() > 0)
                 <!-- Desktop Table View -->
                 <div class="hidden lg:block">
@@ -124,7 +131,6 @@
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Sex</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Qualification</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Status</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -143,18 +149,6 @@
                                                 <span class="kt-badge kt-badge-info kt-badge-sm">In Draft</span>
                                             @else
                                                 <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
-                                            @endif
-                                        </td>
-                                        <td class="py-3 px-4 text-right">
-                                            @if($item->matched_officer_id)
-                                                <span class="text-xs text-secondary-foreground">Published</span>
-                                            @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
-                                                <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
-                                                   class="kt-btn kt-btn-sm kt-btn-info">
-                                                    <i class="ki-filled ki-file-add"></i> View in Draft
-                                                </a>
-                                            @else
-                                                <span class="text-xs text-secondary-foreground">Pending</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -179,21 +173,11 @@
                                         <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
                                     @endif
                                 </div>
-                                <div class="grid grid-cols-2 gap-2 text-xs text-secondary-foreground mb-3">
+                                <div class="grid grid-cols-2 gap-2 text-xs text-secondary-foreground">
                                     <div>Quantity: <span class="font-semibold">{{ $item->quantity_needed }}</span></div>
                                     <div>Sex: <span class="font-semibold">{{ $item->sex_requirement }}</span></div>
                                     <div class="col-span-2">Qualification: <span class="font-semibold">{{ $item->qualification_requirement ?? 'Any' }}</span></div>
                                 </div>
-                                @if($item->matched_officer_id)
-                                    <span class="text-xs text-secondary-foreground">Published</span>
-                                @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
-                                    <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
-                                       class="kt-btn kt-btn-sm kt-btn-info w-full">
-                                        <i class="ki-filled ki-file-add"></i> View in Draft
-                                    </a>
-                                @else
-                                    <span class="text-xs text-secondary-foreground">Pending - Use 'Find Matches for All Ranks' button above</span>
-                                @endif
                             </div>
                         @endforeach
                     </div>
