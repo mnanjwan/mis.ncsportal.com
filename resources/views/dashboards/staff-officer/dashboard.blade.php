@@ -332,7 +332,7 @@
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
-                    The following officers have been posted to <strong>{{ $command->name }}</strong> and need to be documented.
+                    The following officers have pending postings into <strong>{{ $command->name }}</strong>. They can only be documented <strong>after</strong> they are released by their old command.
                 </p>
                 <!-- Table with horizontal scroll wrapper -->
                 <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
@@ -352,30 +352,99 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($newlyPostedOfficers as $officer)
+                            @foreach($newlyPostedOfficers as $posting)
+                                @php($officer = $posting->officer)
                                 <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                                     <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="text-sm font-medium text-foreground">
-                                            {{ $officer->initials }} {{ $officer->surname }}
+                                            {{ $officer->initials ?? '' }} {{ $officer->surname ?? '' }}
                                         </span>
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span
-                                            class="text-sm font-mono text-secondary-foreground">{{ $officer->service_number }}</span>
+                                            class="text-sm font-mono text-secondary-foreground">{{ $officer->service_number ?? 'N/A' }}</span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                        {{ $officer->substantive_rank }}
+                                        {{ $officer->substantive_rank ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                        {{ $officer->date_posted_to_station ? $officer->date_posted_to_station->format('M d, Y') : 'N/A' }}
+                                        {{ $posting->posting_date ? \Carbon\Carbon::parse($posting->posting_date)->format('M d, Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
-                                        <form action="{{ route('staff-officer.officers.document', $officer->id) }}" method="POST"
-                                            class="inline">
+                                        @if($posting->released_at)
+                                            <form action="{{ route('staff-officer.officers.document', $officer->id) }}" method="POST"
+                                                class="inline">
+                                                @csrf
+                                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary"
+                                                    onclick="return confirm('Document this officer? This confirms their arrival at the command.')">
+                                                    <i class="ki-filled ki-file-check"></i> Document
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="kt-badge kt-badge-warning kt-badge-sm">Awaiting Release</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Officers Pending Release (Outgoing) -->
+    @if($command && isset($pendingReleasePostings) && $pendingReleasePostings->count() > 0)
+        <div class="kt-card overflow-hidden mt-5">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Officers Pending Release</h3>
+                <div class="kt-card-toolbar">
+                    <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $pendingReleasePostings->count() }} Pending</span>
+                </div>
+            </div>
+            <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
+                <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
+                    The following officers are currently in <strong>{{ $command->name }}</strong> and have pending postings out. Release them before the destination command can document.
+                </p>
+                <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
+                    <table class="kt-table" style="min-width: 950px; width: 100%;">
+                        <thead>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Officer Name</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Service Number</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Rank</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Destination</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Posting Date</th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($pendingReleasePostings as $posting)
+                                @php($officer = $posting->officer)
+                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
+                                        <span class="text-sm font-medium text-foreground">
+                                            {{ $officer->initials ?? '' }} {{ $officer->surname ?? '' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
+                                        <span class="text-sm font-mono text-secondary-foreground">{{ $officer->service_number ?? 'N/A' }}</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        {{ $officer->substantive_rank ?? 'N/A' }}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        {{ $posting->command->name ?? 'N/A' }}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        {{ $posting->posting_date ? \Carbon\Carbon::parse($posting->posting_date)->format('M d, Y') : 'N/A' }}
+                                    </td>
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
+                                        <form action="{{ route('staff-officer.officers.release', $officer->id) }}" method="POST" class="inline">
                                             @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary"
-                                                onclick="return confirm('Document this officer? This confirms their arrival at the command.')">
-                                                <i class="ki-filled ki-file-check"></i> Document
+                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-warning"
+                                                onclick="return confirm('Release this officer from your command?')">
+                                                <i class="ki-filled ki-exit-right"></i> Release
                                             </button>
                                         </form>
                                     </td>

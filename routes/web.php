@@ -242,6 +242,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/leave-types', [LeaveTypeController::class, 'index'])->name('leave-types');
 
         Route::get('/manning-requests', [ManningRequestController::class, 'hrdIndex'])->name('manning-requests');
+        Route::get('/manning-requests/print-selected', [ManningRequestController::class, 'hrdPrintSelected'])->name('manning-requests.print-selected');
         Route::get('/manning-requests/{id}', [ManningRequestController::class, 'hrdShow'])->name('manning-requests.show');
         Route::get('/manning-requests/{id}/print', [ManningRequestController::class, 'hrdPrint'])->name('manning-requests.print');
         Route::get('/manning-requests/{id}/match', [ManningRequestController::class, 'hrdMatch'])->name('manning-requests.match');
@@ -252,7 +253,6 @@ Route::middleware('auth')->group(function () {
         
         // Draft Deployment Management
         Route::get('/manning-deployments/draft', [ManningRequestController::class, 'hrdDraftIndex'])->name('manning-deployments.draft');
-        Route::post('/manning-deployments/draft/add-officer', [ManningRequestController::class, 'hrdDraftAddOfficer'])->name('manning-deployments.draft.add-officer');
         Route::delete('/manning-deployments/{deploymentId}/remove-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftRemoveOfficer'])->name('manning-deployments.draft.remove-officer');
         Route::post('/manning-deployments/{deploymentId}/swap-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftSwapOfficer'])->name('manning-deployments.draft.swap-officer');
         Route::post('/manning-deployments/{id}/publish', [ManningRequestController::class, 'hrdDraftPublish'])->name('manning-deployments.publish');
@@ -381,6 +381,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers', [OfficerController::class, 'index'])->name('officers');
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::post('/officers/{id}/document', [OfficerController::class, 'document'])->name('officers.document');
+        Route::post('/officers/{id}/release', [OfficerController::class, 'release'])->name('officers.release');
 
         // APER Forms - Reporting Officer
         Route::get('/aper-forms/search', [APERFormController::class, 'searchOfficers'])->name('aper-forms.search');

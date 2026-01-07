@@ -41,6 +41,9 @@
             <p class="text-sm text-secondary-foreground mt-1">Manage approved manning requests and officer matching</p>
         </div>
         <div class="flex items-center gap-3">
+            <button id="print-selected-btn" class="kt-btn kt-btn-sm kt-btn-secondary hidden" onclick="printSelected()">
+                <i class="ki-filled ki-printer"></i> Print Selected
+            </button>
             <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-primary">
                 <i class="ki-filled ki-file-add"></i> Draft Deployment
             </a>
@@ -87,6 +90,9 @@
                         <table class="kt-table w-full">
                             <thead>
                                 <tr class="border-b border-border">
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground w-12">
+                                        <input type="checkbox" id="select-all" onchange="toggleAll(this)">
+                                    </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'command', 'sort_order' => request('sort_by') === 'command' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
@@ -135,6 +141,9 @@
                             @forelse($requests as $request)
                                 <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                                     <td class="py-3 px-4">
+                                        <input type="checkbox" class="request-checkbox" value="{{ $request->id }}" onchange="updatePrintButton()">
+                                    </td>
+                                    <td class="py-3 px-4">
                                         <div class="flex items-center gap-2">
                                             <span class="text-sm font-medium text-foreground">
                                                 {{ $request->command->name ?? 'N/A' }}
@@ -180,7 +189,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-12 text-center">
+                                    <td colspan="7" class="py-12 text-center">
                                         <i class="ki-filled ki-people text-4xl text-muted-foreground mb-4"></i>
                                         <p class="text-secondary-foreground mb-4">
                                             @if(request('tab') === 'in_draft')
@@ -214,6 +223,7 @@
                     @forelse($requests as $request)
                         <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input hover:bg-muted transition-colors">
                             <div class="flex items-center gap-4">
+                                <input type="checkbox" class="request-checkbox" value="{{ $request->id }}" onchange="updatePrintButton()">
                                 <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
                                     <i class="ki-filled ki-people text-info text-xl"></i>
                                 </div>
@@ -292,5 +302,37 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.request-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updatePrintButton();
+}
+
+function updatePrintButton() {
+    const checkboxes = document.querySelectorAll('.request-checkbox:checked');
+    const printBtn = document.getElementById('print-selected-btn');
+    if (checkboxes.length > 0) {
+        printBtn.classList.remove('hidden');
+    } else {
+        printBtn.classList.add('hidden');
+    }
+}
+
+function printSelected() {
+    const checkboxes = document.querySelectorAll('.request-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert('Please select at least one manning request to print.');
+        return;
+    }
+    
+    // Open print page in new window
+    const url = '{{ route("hrd.manning-requests.print-selected") }}?ids=' + selectedIds.join(',');
+    window.open(url, '_blank');
+}
+</script>
 @endsection
 

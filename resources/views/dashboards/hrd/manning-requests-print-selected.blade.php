@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manning Deployment List - Print</title>
+    <title>Manning Requests - Selected</title>
     <style>
         @page {
             size: A4;
@@ -73,15 +73,15 @@
             font-weight: bold;
             margin: 5px 0;
         }
-        .deployment-info {
+        .order-info {
             margin: 15px 0;
             font-size: 11pt;
         }
-        .deployment-number {
+        .order-number {
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .deployment-date {
+        .order-date {
             margin-top: 5px;
         }
         .command-section {
@@ -165,6 +165,9 @@
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px;">
             Print Document
         </button>
+        <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 5px; margin-left: 10px;">
+            Close
+        </button>
     </div>
 
     <div class="restricted-header" style="text-align: center; font-weight: bold; font-size: 11pt; padding: 5px 0; background: white; z-index: 1000; display: none; position: fixed; top: 0; left: 0; right: 0;">RESTRICTED</div>
@@ -176,66 +179,19 @@
             <div class="main-header">
                 <h1>NIGERIA CUSTOMS SERVICE</h1>
             </div>
-            <div class="deployment-info">
-                <div class="deployment-number">MANNING DEPLOYMENT LIST</div>
-                <div class="deployment-number">Deployment No: {{ $deployment->deployment_number ?? 'N/A' }}</div>
-                <div class="deployment-date">
-                    <strong>Date:</strong> {{ $deployment->published_at ? $deployment->published_at->format('d M Y') : ($deployment->created_at ? $deployment->created_at->format('d M Y') : now()->format('d M Y')) }}
+            <div class="order-info">
+                <div class="order-number">MOVEMENT ORDER</div>
+                <div class="order-date">
+                    <strong>Date:</strong> {{ now()->format('d M Y') }}
                 </div>
-                @if(isset($manningRequest))
-                    <div class="deployment-date" style="margin-top: 10px;">
-                        <strong>Manning Request:</strong> #{{ $manningRequest->id }} - {{ $manningRequest->command->name ?? 'N/A' }}
-                    </div>
-                @endif
             </div>
         </div>
 
-        @php
-            // Group assignments by command and sort by rank
-            $rankOrder = [
-                'CGC' => 1, 'DCG' => 2, 'ACG' => 3, 'CC' => 4, 'DC' => 5,
-                'AC' => 6, 'CSC' => 7, 'SC' => 8, 'DSC' => 9,
-                'ASC I' => 10, 'ASC II' => 11, 'IC' => 12, 'AIC' => 13,
-                'CA I' => 14, 'CA II' => 15, 'CA III' => 16,
-            ];
-            
-            $assignmentsByCommand = $assignments->groupBy('to_command_id');
-            $commandGroups = [];
-            $serialNumber = 1;
-            
-            foreach ($assignmentsByCommand as $commandId => $commandAssignments) {
-                $command = $commandAssignments->first()->toCommand;
-                
-                // Sort assignments by rank
-                $sortedAssignments = $commandAssignments->sortBy(function($assignment) use ($rankOrder) {
-                    $rank = $assignment->officer->substantive_rank ?? '';
-                    return $rankOrder[$rank] ?? 999;
-                });
-                
-                $items = [];
-                foreach ($sortedAssignments as $assignment) {
-                    $officer = $assignment->officer;
-                    $items[] = [
-                        'serial_number' => $serialNumber++,
-                        'rank' => $officer->substantive_rank ?? 'N/A',
-                        'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
-                        'service_number' => $officer->service_number ?? 'N/A',
-                        'previous_posting' => $assignment->fromCommand->name ?? 'N/A',
-                        'new_posting' => $assignment->toCommand->name ?? 'N/A',
-                    ];
-                }
-                
-                $commandGroups[] = [
-                    'command_name' => $command->name ?? 'Unknown',
-                    'items' => $items,
-                ];
-            }
-        @endphp
-
-        @foreach($commandGroups as $index => $group)
+        @foreach($commandsData as $index => $commandData)
         <div class="command-section">
-            <div class="command-title">{{ strtoupper($group['command_name']) }}</div>
+            <div class="command-title">{{ strtoupper($commandData['command']->name ?? 'N/A') }}</div>
             
+            @if(count($commandData['officers']) > 0)
             <table>
                 <thead>
                     <tr>
@@ -247,19 +203,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($group['items'] as $item)
+                    @foreach($commandData['officers'] as $officer)
                     <tr>
-                        <td>{{ $item['serial_number'] }}</td>
-                        <td>{{ strtoupper($item['rank']) }}</td>
-                        <td>{{ strtoupper($item['name']) }}</td>
-                        <td>{{ strtoupper($item['previous_posting']) }}</td>
-                        <td>{{ strtoupper($item['new_posting']) }}</td>
+                        <td>{{ $officer['serial_number'] }}</td>
+                        <td>{{ strtoupper($officer['rank']) }}</td>
+                        <td>{{ strtoupper($officer['initials'] . ' ' . $officer['surname']) }}</td>
+                        <td>{{ strtoupper($officer['current_posting']) }}</td>
+                        <td>{{ strtoupper($officer['new_posting']) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
+            @else
+            <div style="text-align: center; margin: 40px 0; font-size: 11pt;">
+                No officers have been posted for the selected requests yet.
+            </div>
+            @endif
 
-            @if($index === count($commandGroups) - 1)
+            @if($index === count($commandsData) - 1)
             <div class="footer">
                 <div class="signature-line">
                     <div style="margin-bottom: 40px;">

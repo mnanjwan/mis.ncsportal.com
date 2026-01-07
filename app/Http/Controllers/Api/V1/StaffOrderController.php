@@ -88,27 +88,15 @@ class StaffOrderController extends BaseController
             'created_by' => $request->user()->id,
         ]);
 
-        // Create posting record
+        // Create posting record (pending until Staff Officer documents arrival)
         OfficerPosting::create([
             'officer_id' => $request->officer_id,
             'command_id' => $request->to_command_id,
             'staff_order_id' => $staffOrder->id,
             'posting_date' => $request->effective_date,
-            'is_current' => true,
-        ]);
-
-        // Update officer's current posting
-        if ($fromCommandId) {
-            OfficerPosting::where('officer_id', $request->officer_id)
-                ->where('command_id', $fromCommandId)
-                ->where('is_current', true)
-                ->update(['is_current' => false]);
-        }
-
-        // Update officer's present station
-        $officer->update([
-            'present_station' => $request->to_command_id,
-            'date_posted_to_station' => $request->effective_date,
+            'is_current' => false,
+            'documented_by' => null,
+            'documented_at' => null,
         ]);
 
         return $this->successResponse([

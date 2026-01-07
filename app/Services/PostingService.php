@@ -35,27 +35,15 @@ class PostingService
             'created_by' => $createdBy,
         ]);
 
-        // Create posting record
+        // Create posting record (pending until Staff Officer documents arrival)
         OfficerPosting::create([
             'officer_id' => $officerId,
             'command_id' => $toCommandId,
             'staff_order_id' => $staffOrder->id,
             'posting_date' => $effectiveDate,
-            'is_current' => true,
-        ]);
-
-        // Update previous posting
-        if ($fromCommandId) {
-            OfficerPosting::where('officer_id', $officerId)
-                ->where('command_id', $fromCommandId)
-                ->where('is_current', true)
-                ->update(['is_current' => false]);
-        }
-
-        // Update officer's present station
-        $officer->update([
-            'present_station' => $toCommandId,
-            'date_posted_to_station' => $effectiveDate,
+            'is_current' => false,
+            'documented_by' => null,
+            'documented_at' => null,
         ]);
 
         return $staffOrder;
@@ -86,12 +74,6 @@ class PostingService
             'order_type' => 'MOVEMENT_ORDER',
             'reason' => $reason,
             'created_by' => $createdBy,
-        ]);
-
-        // Update officer's present station
-        $officer->update([
-            'present_station' => $toCommandId,
-            'date_posted_to_station' => $effectiveDate,
         ]);
 
         return $movementOrder;

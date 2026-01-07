@@ -30,18 +30,10 @@
                 <a href="{{ route('hrd.manning-requests.show', $manningRequest->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                     <i class="ki-filled ki-arrow-left"></i> Back to Request Details
                 </a>
-                <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-secondary">
-                    <i class="ki-filled ki-file-add"></i> View All Draft
-                </a>
             @else
             <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Requests
             </a>
-            @endif
-            @if($activeDraft)
-                <a href="{{ route('hrd.manning-deployments.print', $activeDraft->id) }}{{ isset($manningRequest) ? '?manning_request_id=' . $manningRequest->id : '' }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
-                    <i class="ki-filled ki-printer"></i> Print Preview
-                </a>
             @endif
         </div>
     </div>
@@ -72,8 +64,7 @@
                     <div class="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
                         <p class="text-sm text-info font-medium">
                             <i class="ki-filled ki-information"></i> 
-                            <strong>Filtered View:</strong> Showing draft deployment items for Manning Request #{{ $manningRequest->id }} ({{ $manningRequest->command->name ?? 'N/A' }}). 
-                            <a href="{{ route('hrd.manning-deployments.draft') }}" class="underline">View all draft items</a>.
+                            <strong>Filtered View:</strong> Showing draft deployment items for Manning Request #{{ $manningRequest->id }} ({{ $manningRequest->command->name ?? 'N/A' }}).
                         </p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -123,92 +114,6 @@
                         </button>
                     </form>
                 </div>
-            </div>
-        </div>
-
-        <!-- Manning Levels Summary -->
-        @if(count($manningLevels) > 0)
-        <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">Manning Levels by Command</h3>
-            </div>
-            <div class="kt-card-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach($manningLevels as $commandId => $level)
-                        <div class="p-4 rounded-lg bg-muted/50 border border-input">
-                            <h4 class="font-semibold mb-2">{{ $level['command_name'] }}</h4>
-                            <div class="text-sm text-secondary-foreground space-y-1">
-                                <div>Total Officers: <span class="font-semibold">{{ count($level['officers']) }}</span></div>
-                                @foreach($level['by_rank'] as $rank => $count)
-                                    <div>{{ $rank }}: <span class="font-semibold">{{ $count }}</span></div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-        @endif
-
-        <!-- Search and Filter Bar -->
-        <div class="kt-card">
-            <div class="kt-card-content p-5">
-                <div class="flex flex-col md:flex-row gap-4 items-end">
-                    <div class="flex-1">
-                        <label class="block text-sm font-medium mb-2">Search Officers</label>
-                        <input type="text" 
-                               id="officer-search-input" 
-                               class="kt-input w-full" 
-                               placeholder="Search by name, service number, rank, or command..."
-                               autocomplete="off">
-                    </div>
-                    <div class="w-full md:w-48">
-                        <label class="block text-sm font-medium mb-2">Filter by Command</label>
-                        <select id="command-filter" class="kt-input w-full">
-                            <option value="">All Commands</option>
-                            @foreach($assignmentsByCommand as $commandId => $assignments)
-                                @php
-                                    $command = $assignments->first()->toCommand;
-                                @endphp
-                                <option value="{{ $commandId }}">{{ $command->name ?? 'Unknown' }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="w-full md:w-48">
-                        <label class="block text-sm font-medium mb-2">Filter by Rank</label>
-                        <select id="rank-filter" class="kt-input w-full">
-                            <option value="">All Ranks</option>
-                            @php
-                                // Use filtered assignments if viewing specific manning request, otherwise all assignments
-                                $assignmentsForRankFilter = isset($manningRequest) 
-                                    ? collect($assignmentsByCommand)->flatten() 
-                                    : $activeDraft->assignments;
-                                $allRanks = $assignmentsForRankFilter->pluck('officer.substantive_rank')->filter()->unique()->sort()->values();
-                            @endphp
-                            @foreach($allRanks as $rank)
-                                <option value="{{ $rank }}">{{ $rank }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <button type="button" 
-                                onclick="clearFilters()" 
-                                class="kt-btn kt-btn-sm kt-btn-ghost">
-                            <i class="ki-filled ki-cross"></i> Clear
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Officer Button -->
-        <div class="kt-card">
-            <div class="kt-card-content p-5">
-                <button type="button" 
-                        data-kt-modal-toggle="#add-officer-modal" 
-                        class="kt-btn kt-btn-primary">
-                    <i class="ki-filled ki-plus"></i> Add Officer to Draft
-                </button>
             </div>
         </div>
 
@@ -458,57 +363,6 @@
     </div>
 @endif
 
-<!-- Add Officer Modal -->
-<div class="kt-modal" data-kt-modal="true" id="add-officer-modal">
-    <div class="kt-modal-content max-w-[700px]">
-        <div class="kt-modal-header py-4 px-5">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
-                    <i class="ki-filled ki-plus text-primary text-xl"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-foreground">Add Officer to Draft</h3>
-            </div>
-            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
-                <i class="ki-filled ki-cross"></i>
-            </button>
-        </div>
-        <div class="kt-modal-body py-5 px-5">
-            <form id="add-officer-form" method="POST" action="{{ route('hrd.manning-deployments.draft.add-officer') }}">
-                @csrf
-                <input type="hidden" name="deployment_id" value="{{ $activeDraft->id ?? '' }}">
-                <p class="text-sm text-secondary-foreground mb-4">
-                    Search for an officer and select their destination command to add them to the draft deployment.
-                </p>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Search Officer</label>
-                    <input type="text" 
-                           id="add-officer-search" 
-                           class="kt-input w-full" 
-                           placeholder="Search by name, service number, or rank..."
-                           autocomplete="off">
-                    <div id="add-officer-search-results" class="mt-2 max-h-60 overflow-y-auto border border-input rounded-lg hidden"></div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Destination Command</label>
-                    <select name="to_command_id" id="to-command-select" class="kt-input w-full" required>
-                        <option value="">Select command...</option>
-                        @foreach(\App\Models\Command::where('is_active', true)->orderBy('name')->get() as $cmd)
-                            <option value="{{ $cmd->id }}">{{ $cmd->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <input type="hidden" id="add-officer-id" name="officer_id" required>
-            </form>
-        </div>
-        <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
-            <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
-            <button type="button" class="kt-btn kt-btn-primary" id="confirm-add-btn" disabled onclick="submitAddOfficer()">
-                <i class="ki-filled ki-plus"></i> Add Officer
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
 // Prepare swap modal when opened
 function prepareSwapModal(assignmentId, officerName, currentOfficerId, officerRank) {
@@ -634,188 +488,6 @@ let searchTimeout;
         })();
     @endforeach
 @endif
-
-// Dynamic Search and Filter Functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('officer-search-input');
-    const commandFilter = document.getElementById('command-filter');
-    const rankFilter = document.getElementById('rank-filter');
-    
-    function filterOfficers() {
-        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
-        const selectedCommand = commandFilter?.value || '';
-        const selectedRank = rankFilter?.value || '';
-        
-        const rows = document.querySelectorAll('.officer-row');
-        const commandSections = document.querySelectorAll('.command-section');
-        let visibleCount = 0;
-        
-        rows.forEach(row => {
-            const officerName = row.getAttribute('data-officer-name') || '';
-            const serviceNumber = row.getAttribute('data-service-number') || '';
-            const rank = row.getAttribute('data-rank') || '';
-            const commandId = row.getAttribute('data-command-id') || '';
-            const fromCommand = row.getAttribute('data-from-command') || '';
-            
-            // Search filter
-            const matchesSearch = !searchTerm || 
-                officerName.includes(searchTerm) ||
-                serviceNumber.includes(searchTerm) ||
-                rank.includes(searchTerm) ||
-                fromCommand.includes(searchTerm);
-            
-            // Command filter
-            const matchesCommand = !selectedCommand || commandId === selectedCommand;
-            
-            // Rank filter
-            const matchesRank = !selectedRank || rank === selectedRank.toLowerCase();
-            
-            if (matchesSearch && matchesCommand && matchesRank) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Hide/show command sections based on visible rows
-        commandSections.forEach(section => {
-            const sectionCommandId = section.getAttribute('data-command-id');
-            const sectionRows = section.querySelectorAll('.officer-row');
-            const visibleRows = Array.from(sectionRows).filter(row => row.style.display !== 'none');
-            
-            if (visibleRows.length === 0 && selectedCommand && sectionCommandId !== selectedCommand) {
-                section.style.display = 'none';
-            } else {
-                section.style.display = '';
-            }
-        });
-        
-        // Show/hide "no results" message
-        const container = document.getElementById('assignments-container');
-        if (container && visibleCount === 0 && rows.length > 0) {
-            let noResultsMsg = container.querySelector('.no-results-message');
-            if (!noResultsMsg) {
-                noResultsMsg = document.createElement('div');
-                noResultsMsg.className = 'kt-card no-results-message';
-                noResultsMsg.innerHTML = `
-                    <div class="kt-card-content p-12 text-center">
-                        <i class="ki-filled ki-search text-4xl text-muted-foreground mb-4"></i>
-                        <p class="text-secondary-foreground">No officers match your search criteria.</p>
-                    </div>
-                `;
-                container.appendChild(noResultsMsg);
-            }
-            noResultsMsg.style.display = '';
-        } else {
-            const noResultsMsg = container?.querySelector('.no-results-message');
-            if (noResultsMsg) {
-                noResultsMsg.style.display = 'none';
-            }
-        }
-    }
-    
-    // Add event listeners
-    if (searchInput) {
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(filterOfficers, 300); // Debounce for 300ms
-        });
-    }
-    
-    if (commandFilter) {
-        commandFilter.addEventListener('change', filterOfficers);
-    }
-    
-    if (rankFilter) {
-        rankFilter.addEventListener('change', filterOfficers);
-    }
-    
-    // Clear filters function
-    window.clearFilters = function() {
-        if (searchInput) searchInput.value = '';
-        if (commandFilter) commandFilter.value = '';
-        if (rankFilter) rankFilter.value = '';
-        filterOfficers();
-    };
-    
-    // Add Officer Modal - Setup search functionality
-    const addOfficerSearchInput = document.getElementById('add-officer-search');
-    const addOfficerSearchResults = document.getElementById('add-officer-search-results');
-    let addOfficerSearchTimeout;
-    
-    if (addOfficerSearchInput) {
-        addOfficerSearchInput.addEventListener('input', function(e) {
-            clearTimeout(addOfficerSearchTimeout);
-            const query = e.target.value.trim();
-            
-            if (query.length < 2) {
-                if (addOfficerSearchResults) addOfficerSearchResults.classList.add('hidden');
-                return;
-            }
-            
-            addOfficerSearchTimeout = setTimeout(() => {
-                fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!addOfficerSearchResults) return;
-                        addOfficerSearchResults.innerHTML = '';
-                        if (data.length === 0) {
-                            addOfficerSearchResults.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
-                        } else {
-                            data.forEach(officer => {
-                                const div = document.createElement('div');
-                                div.className = 'p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0';
-                                div.innerHTML = `
-                                    <div class="font-semibold">${officer.initials} ${officer.surname}</div>
-                                    <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
-                                `;
-                                div.addEventListener('click', () => {
-                                    const addOfficerIdInput = document.getElementById('add-officer-id');
-                                    const confirmAddBtn = document.getElementById('confirm-add-btn');
-                                    if (addOfficerIdInput) addOfficerIdInput.value = officer.id;
-                                    if (addOfficerSearchInput) addOfficerSearchInput.value = `${officer.initials} ${officer.surname} (${officer.service_number})`;
-                                    if (addOfficerSearchResults) addOfficerSearchResults.classList.add('hidden');
-                                    if (confirmAddBtn) confirmAddBtn.disabled = false;
-                                });
-                                addOfficerSearchResults.appendChild(div);
-                            });
-                        }
-                        addOfficerSearchResults.classList.remove('hidden');
-                    })
-                    .catch(error => {
-                        console.error('Search error:', error);
-                    });
-            }, 300);
-        });
-    }
-    
-    // Reset add officer modal when closed
-    const addOfficerModal = document.getElementById('add-officer-modal');
-    if (addOfficerModal) {
-        addOfficerModal.addEventListener('hidden', function() {
-            if (addOfficerSearchInput) addOfficerSearchInput.value = '';
-            const addOfficerIdInput = document.getElementById('add-officer-id');
-            const confirmAddBtn = document.getElementById('confirm-add-btn');
-            const toCommandSelect = document.getElementById('to-command-select');
-            if (addOfficerIdInput) addOfficerIdInput.value = '';
-            if (confirmAddBtn) confirmAddBtn.disabled = true;
-            if (toCommandSelect) toCommandSelect.value = '';
-            if (addOfficerSearchResults) addOfficerSearchResults.classList.add('hidden');
-        });
-    }
-    
-    // Submit add officer form
-    window.submitAddOfficer = function() {
-        const form = document.getElementById('add-officer-form');
-        const officerId = document.getElementById('add-officer-id')?.value;
-        const commandId = document.getElementById('to-command-select')?.value;
-        if (form && officerId && commandId) {
-            form.submit();
-        }
-    };
-});
 </script>
 @endsection
 

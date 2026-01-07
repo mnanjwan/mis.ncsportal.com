@@ -28,36 +28,22 @@ class PostingWorkflowService
                 throw new \Exception('Officer or destination command not found');
             }
 
-            // Update officer's present_station (this automatically updates nominal roll since nominal roll is based on present_station)
+            // Create a PENDING posting (do not move officer to new command until documentation).
             if ($updateOfficer) {
-                // Mark previous posting as not current
-                OfficerPosting::where('officer_id', $officer->id)
-                    ->where('is_current', true)
-                    ->update(['is_current' => false]);
-                
-                // Create new posting record (not yet documented)
+                // Create new posting record (pending, not yet documented)
                 OfficerPosting::create([
                     'officer_id' => $officer->id,
                     'command_id' => $toCommand->id,
                     'staff_order_id' => $order->id,
                     'posting_date' => $order->effective_date ?? now(),
-                    'is_current' => true,
-                    'documented_at' => null, // Will be set when Staff Officer documents
-                ]);
-                
-                $officer->update([
-                    'present_station' => $toCommand->id,
-                    'date_posted_to_station' => $order->effective_date ?? now(),
+                    'is_current' => false, // becomes current when Staff Officer documents arrival
+                    'documented_by' => null,
+                    'documented_at' => null,
                 ]);
                 
                 // Log the posting
-                Log::info("Staff Order {$order->order_number}: Officer {$officer->id} ({$officer->service_number}) posted from " . 
+                Log::info("Staff Order {$order->order_number}: Pending posting created for Officer {$officer->id} ({$officer->service_number}) from " . 
                     ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}");
-                
-                // Nominal roll is automatically updated since it's based on present_station
-                // When present_station changes, officer automatically:
-                // - Leaves old command's nominal roll (officers are filtered by present_station)
-                // - Joins new command's nominal roll
                 
                 // Notify Staff Officer of new posting
                 $this->notifyStaffOfficer($toCommand, $officer, $order);
@@ -107,32 +93,16 @@ class PostingWorkflowService
 
                 $fromCommand = $officer->presentStation;
 
-                // Mark previous posting as not current
-                OfficerPosting::where('officer_id', $officer->id)
-                    ->where('id', '!=', $posting->id)
-                    ->where('is_current', true)
-                    ->update(['is_current' => false]);
-
-                // Update posting record
+                // Keep officer in old command until Staff Officer documents arrival.
+                // Ensure posting stays pending (is_current=false) until documentation.
                 $posting->update([
-                    'is_current' => true,
+                    'is_current' => false,
                     'posting_date' => $posting->posting_date ?? now(),
                 ]);
 
-                // Update officer's present_station (this automatically updates nominal roll)
-                $officer->update([
-                    'present_station' => $toCommand->id,
-                    'date_posted_to_station' => $posting->posting_date ?? now(),
-                ]);
-
                 // Log the posting
-                Log::info("Movement Order {$order->order_number}: Officer {$officer->id} ({$officer->service_number}) posted from " . 
+                Log::info("Movement Order {$order->order_number}: Pending posting ready for documentation for Officer {$officer->id} ({$officer->service_number}) from " . 
                     ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}");
-
-                // Nominal roll is automatically updated since it's based on present_station
-                // When present_station changes, officer automatically:
-                // - Leaves old command's nominal roll (officers are filtered by present_station)
-                // - Joins new command's nominal roll
 
                 // Notify Staff Officer of new posting
                 $this->notifyStaffOfficer($toCommand, $officer, $order);

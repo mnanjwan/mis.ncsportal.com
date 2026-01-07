@@ -18,6 +18,8 @@ class OfficerPosting extends Model
         'is_current',
         'documented_by',
         'documented_at',
+        'released_by',
+        'released_at',
     ];
 
     protected function casts(): array
@@ -25,6 +27,7 @@ class OfficerPosting extends Model
         return [
             'posting_date' => 'date',
             'documented_at' => 'datetime',
+            'released_at' => 'datetime',
             'is_current' => 'boolean',
         ];
     }
@@ -53,6 +56,11 @@ class OfficerPosting extends Model
     public function documentedBy()
     {
         return $this->belongsTo(User::class, 'documented_by');
+    }
+
+    public function releasedBy()
+    {
+        return $this->belongsTo(User::class, 'released_by');
     }
 }
 

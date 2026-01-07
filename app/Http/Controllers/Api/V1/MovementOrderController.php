@@ -99,12 +99,6 @@ class MovementOrderController extends BaseController
             'created_by' => $request->user()->id,
         ]);
 
-        // Update officer's present station
-        $officer->update([
-            'present_station' => $request->to_command_id,
-            'date_posted_to_station' => $request->effective_date,
-        ]);
-
         return $this->successResponse([
             'id' => $movementOrder->id,
             'order_number' => $movementOrder->order_number,

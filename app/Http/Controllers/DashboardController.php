@@ -380,6 +380,7 @@ class DashboardController extends Controller
 
         // Initialize default values
         $newlyPostedOfficers = collect();
+        $pendingReleasePostings = collect();
         $pendingLeaveCount = 0;
         $pendingPassCount = 0;
         $manningLevelCount = 0;
@@ -426,17 +427,25 @@ class DashboardController extends Controller
                 ->orderBy('updated_at', 'desc')
                 ->take(5)
                 ->get();
-            // Get newly posted officers (not yet documented)
-            // Officers with current posting that's not documented
-            $newlyPostedOfficers = Officer::where('present_station', $commandId)
-                ->where('is_active', true)
-                ->whereHas('postings', function ($q) {
-                    // Has a current posting that hasn't been documented
-                    $q->where('is_current', true)
-                        ->whereNull('documented_at');
+            // Get newly posted officers (pending postings INTO this command, not yet documented)
+            // Note: officer may still be in old command until documentation is completed.
+            $newlyPostedOfficers = \App\Models\OfficerPosting::where('command_id', $commandId)
+                ->where('is_current', false)
+                ->whereNull('documented_at')
+                ->with(['officer.presentStation', 'officer.user'])
+                ->orderBy('posting_date', 'desc')
+                ->take(10)
+                ->get();
+
+            // Get officers in this command that have a pending posting OUT (awaiting release)
+            $pendingReleasePostings = \App\Models\OfficerPosting::where('is_current', false)
+                ->whereNull('documented_at')
+                ->whereNull('released_at')
+                ->whereHas('officer', function ($q) use ($commandId) {
+                    $q->where('present_station', $commandId)->where('is_active', true);
                 })
-                ->with(['presentStation', 'user', 'currentPosting'])
-                ->orderBy('date_posted_to_station', 'desc')
+                ->with(['officer.presentStation', 'officer.user', 'command'])
+                ->orderBy('posting_date', 'desc')
                 ->take(10)
                 ->get();
 
@@ -500,6 +509,7 @@ class DashboardController extends Controller
         return view('dashboards.staff-officer.dashboard', compact(
             'command',
             'newlyPostedOfficers',
+            'pendingReleasePostings',
             'pendingLeaveCount',
             'pendingPassCount',
             'manningLevelCount',

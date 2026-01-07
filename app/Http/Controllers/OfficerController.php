@@ -213,28 +213,102 @@ class OfficerController extends Controller
 
         $officer = \App\Models\Officer::findOrFail($id);
 
-        // Verify officer is in Staff Officer's command
-        if ($officer->present_station != $commandId) {
-            return redirect()->back()->with('error', 'You can only document officers in your command.');
+        if (!$commandId) {
+            return redirect()->back()->with('error', 'You are not assigned to a command.');
         }
 
-        // Get current posting
+        // Find the pending (undocumented) posting INTO this Staff Officer's command.
+        // Officer may still be in the old command until documentation is completed.
         $posting = \App\Models\OfficerPosting::where('officer_id', $officer->id)
-            ->where('is_current', true)
+            ->where('command_id', $commandId)
+            ->where('is_current', false)
             ->whereNull('documented_at')
+            ->orderBy('posting_date', 'desc')
             ->first();
 
         if (!$posting) {
-            return redirect()->back()->with('error', 'Officer is already documented or has no pending posting.');
+            return redirect()->back()->with('error', 'No pending posting found for this officer in your command, or officer is already documented.');
         }
 
-        // Document the officer
-        $posting->update([
-            'documented_at' => now(),
-            'documented_by' => $user->id,
-        ]);
+        if (!$posting->released_at) {
+            return redirect()->back()->with('error', 'Officer has not been released by the old command yet.');
+        }
+
+        // Finalize posting on documentation
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Mark any current posting as not current
+            \App\Models\OfficerPosting::where('officer_id', $officer->id)
+                ->where('is_current', true)
+                ->update(['is_current' => false]);
+
+            // Mark this posting as current and documented
+            $posting->update([
+                'is_current' => true,
+                'documented_at' => now(),
+                'documented_by' => $user->id,
+            ]);
+
+            // Move officer to the new command
+            $officer->update([
+                'present_station' => $commandId,
+                'date_posted_to_station' => $posting->posting_date ?? now(),
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to document officer: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', "Officer {$officer->service_number} has been documented successfully.");
+    }
+
+    // Release an officer from current command (Staff Officer only)
+    public function release($id)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('Staff Officer')) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Get Staff Officer's command
+        $staffOfficerRole = $user->roles()
+            ->where('name', 'Staff Officer')
+            ->wherePivot('is_active', true)
+            ->first();
+
+        $commandId = $staffOfficerRole?->pivot->command_id ?? null;
+
+        if (!$commandId) {
+            return redirect()->back()->with('error', 'You are not assigned to a command.');
+        }
+
+        $officer = \App\Models\Officer::findOrFail($id);
+
+        // Only release officers currently in this Staff Officer's command
+        if ((int)$officer->present_station !== (int)$commandId) {
+            return redirect()->back()->with('error', 'You can only release officers currently in your command.');
+        }
+
+        $pendingPosting = \App\Models\OfficerPosting::where('officer_id', $officer->id)
+            ->where('is_current', false)
+            ->whereNull('documented_at')
+            ->whereNull('released_at')
+            ->orderBy('posting_date', 'desc')
+            ->first();
+
+        if (!$pendingPosting) {
+            return redirect()->back()->with('error', 'No pending posting found to release, or officer is already released/documented.');
+        }
+
+        $pendingPosting->update([
+            'released_at' => now(),
+            'released_by' => $user->id,
+        ]);
+
+        return redirect()->back()->with('success', "Officer {$officer->service_number} has been released successfully.");
     }
 
     // Zone Coordinator - View officers in their zone
@@ -356,6 +430,7 @@ class OfficerController extends Controller
         // Load history data
         $postingsHistory = $officer->postings()
             ->with('command')
+            ->whereNotNull('documented_at') // only show postings after Staff Officer documentation
             ->orderBy('posting_date', 'desc')
             ->get();
 
