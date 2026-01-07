@@ -155,10 +155,7 @@
                                                     <i class="ki-filled ki-file-add"></i> View in Draft
                                                 </a>
                                             @else
-                                                <a href="{{ route('hrd.manning-requests.match', ['id' => $request->id, 'item_id' => $item->id]) }}" 
-                                                   class="kt-btn kt-btn-sm kt-btn-primary">
-                                                    <i class="ki-filled ki-search"></i> Find Matches
-                                                </a>
+                                                <span class="text-xs text-secondary-foreground">Pending</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -196,10 +193,7 @@
                                         <i class="ki-filled ki-file-add"></i> View in Draft
                                     </a>
                                 @else
-                                    <a href="{{ route('hrd.manning-requests.match', ['id' => $request->id, 'item_id' => $item->id]) }}" 
-                                       class="kt-btn kt-btn-sm kt-btn-primary w-full">
-                                        <i class="ki-filled ki-search"></i> Find Matches
-                                    </a>
+                                    <span class="text-xs text-secondary-foreground">Pending - Use 'Find Matches for All Ranks' button above</span>
                                 @endif
                             </div>
                         @endforeach
