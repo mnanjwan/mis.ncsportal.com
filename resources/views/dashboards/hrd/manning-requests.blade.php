@@ -154,10 +154,18 @@
                                         {{ $request->approved_at ? $request->approved_at->format('d/m/Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 text-right">
-                                        <a href="{{ route('hrd.manning-requests.show', $request->id) }}" 
-                                           class="kt-btn kt-btn-sm kt-btn-ghost">
-                                            View Details
-                                        </a>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a href="{{ route('hrd.manning-requests.show', $request->id) }}" 
+                                               class="kt-btn kt-btn-sm kt-btn-ghost">
+                                                View Details
+                                            </a>
+                                            @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
+                                                <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
+                                                   class="kt-btn kt-btn-sm kt-btn-info">
+                                                    <i class="ki-filled ki-file-add"></i> View Draft
+                                                </a>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -207,11 +215,17 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
                                 <a href="{{ route('hrd.manning-requests.show', $request->id) }}" 
                                    class="kt-btn kt-btn-sm kt-btn-ghost">
-                                    View
+                                    View Details
                                 </a>
+                                @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
+                                    <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
+                                       class="kt-btn kt-btn-sm kt-btn-info">
+                                        <i class="ki-filled ki-file-add"></i> View Draft
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     @empty
