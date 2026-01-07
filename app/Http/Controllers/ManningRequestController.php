@@ -1132,6 +1132,11 @@ class ManningRequestController extends Controller
     {
         $manningRequest = ManningRequest::with(['command', 'items'])->findOrFail($id);
         
+        // Get active draft deployment
+        $activeDraft = ManningDeployment::draft()
+            ->latest()
+            ->first();
+        
         // Get all items from this request that are in draft deployments
         $itemIds = $manningRequest->items->pluck('id');
         $assignments = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
@@ -1142,14 +1147,15 @@ class ManningRequestController extends Controller
                 'officer.presentStation.zone',
                 'fromCommand',
                 'toCommand',
-                'manningRequestItem'
+                'manningRequestItem',
+                'deployment'
             ])
             ->get();
         
         // Group assignments by item/rank
         $assignmentsByItem = $assignments->groupBy('manning_request_item_id');
         
-        return view('dashboards.hrd.manning-request-draft', compact('manningRequest', 'assignments', 'assignmentsByItem'));
+        return view('dashboards.hrd.manning-request-draft', compact('manningRequest', 'assignments', 'assignmentsByItem', 'activeDraft'));
     }
 
     public function hrdGenerateOrder(Request $request, $id)
