@@ -121,20 +121,64 @@ class OfficerController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('q', '');
+        $rank = $request->get('rank', ''); // Optional rank filter
         
-        if (strlen($query) < 2) {
+        // Allow search if we have at least a query (2+ chars) or a rank filter
+        if (strlen($query) < 2 && empty($rank)) {
             return response()->json([]);
         }
         
-        $officers = \App\Models\Officer::where('is_active', true)
-            ->where(function($q) use ($query) {
+        $officersQuery = \App\Models\Officer::where('is_active', true);
+        
+        // If rank is provided, filter by rank first
+        if (!empty($rank)) {
+            // Use the same rank matching logic as in ManningRequestController
+            $rankMapping = [
+                'CGC' => ['CGC', 'Comptroller-General'],
+                'DCG' => ['DCG', 'Deputy Comptroller-General'],
+                'AC' => ['AC', 'Assistant Comptroller'],
+                'CSC' => ['CSC', 'Chief Superintendent'],
+                'SC' => ['SC', 'Superintendent'],
+                'DSC' => ['DSC', 'Deputy Superintendent'],
+                'ASC' => ['ASC', 'Assistant Superintendent'],
+            ];
+            
+            $rankUpper = strtoupper(trim($rank));
+            $rankVariations = $rankMapping[$rankUpper] ?? [$rankUpper];
+            
+            $officersQuery->where(function($q) use ($rankVariations, $rankUpper) {
+                foreach ($rankVariations as $variation) {
+                    $q->orWhereRaw('LOWER(TRIM(substantive_rank)) = ?', [strtolower(trim($variation))]);
+                }
+                // Also check for partial matches (e.g., "Superintendent" matching "SC" if SC is in the rank)
+                $q->orWhereRaw('LOWER(substantive_rank) LIKE ?', ['%' . strtolower($rankUpper) . '%']);
+            });
+        }
+        
+        // Apply search query if provided (even if just 1 character when rank is also provided)
+        if (strlen($query) >= 1) {
+            $officersQuery->where(function($q) use ($query) {
                 $q->where('service_number', 'like', "%{$query}%")
                   ->orWhere('initials', 'like', "%{$query}%")
                   ->orWhere('surname', 'like', "%{$query}%")
                   ->orWhere('substantive_rank', 'like', "%{$query}%");
+            });
+        }
+        
+        // Exclude officers already in the draft deployment
+        // Get all officer IDs currently in draft deployments
+        $officersInDraft = \App\Models\ManningDeploymentAssignment::whereHas('deployment', function($q) {
+                $q->where('status', 'DRAFT');
             })
-            ->with('presentStation')
-            ->limit(20)
+            ->pluck('officer_id')
+            ->unique();
+        
+        if ($officersInDraft->isNotEmpty()) {
+            $officersQuery->whereNotIn('id', $officersInDraft);
+        }
+        
+        $officers = $officersQuery->with('presentStation')
+            ->limit(50) // Increased limit since we're filtering by rank
             ->get()
             ->map(function($officer) {
                 return [

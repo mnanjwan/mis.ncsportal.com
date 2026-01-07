@@ -542,9 +542,18 @@ class ManningRequestController extends Controller
                 ->unique();
         }
         
-        // Filter by draft status if provided
-        $filterDraft = $request->get('draft_status');
-        if ($filterDraft === 'in_draft') {
+        // Get request IDs that are fully published (all items have matched_officer_id)
+        // A request is published when all its items have matched_officer_id set
+        $requestIdsPublished = DB::table('manning_request_items')
+            ->select('manning_request_id')
+            ->groupBy('manning_request_id')
+            ->havingRaw('COUNT(*) = SUM(CASE WHEN matched_officer_id IS NOT NULL THEN 1 ELSE 0 END)')
+            ->havingRaw('COUNT(*) > 0')
+            ->pluck('manning_request_id');
+        
+        // Filter by tab if provided
+        $tab = $request->get('tab', 'pending');
+        if ($tab === 'in_draft') {
             // Show only requests with items in draft
             if ($requestIdsInDraft->isNotEmpty()) {
                 $query->whereIn('id', $requestIdsInDraft);
@@ -552,13 +561,21 @@ class ManningRequestController extends Controller
                 // No requests in draft, return empty result
                 $query->whereRaw('1 = 0');
             }
-        } elseif ($filterDraft === 'not_in_draft') {
-            // Show only requests without items in draft
-            if ($requestIdsInDraft->isNotEmpty()) {
-                $query->whereNotIn('id', $requestIdsInDraft);
+        } elseif ($tab === 'published') {
+            // Show only fully published requests
+            if ($requestIdsPublished->isNotEmpty()) {
+                $query->whereIn('id', $requestIdsPublished);
+            } else {
+                // No published requests, return empty result
+                $query->whereRaw('1 = 0');
+            }
+        } else {
+            // Default: pending (not in draft and not published)
+            $excludeIds = $requestIdsInDraft->merge($requestIdsPublished)->unique();
+            if ($excludeIds->isNotEmpty()) {
+                $query->whereNotIn('id', $excludeIds);
             }
         }
-        // If no filter, show all approved requests
 
         // Sorting - Default to latest requests first (created_at desc)
         $sortBy = $request->get('sort_by', 'created_at');
@@ -585,13 +602,28 @@ class ManningRequestController extends Controller
 
         $requests = $query->select('manning_requests.*')->paginate(20)->withQueryString();
         
-        // Mark which requests have items in draft for display
-        $requests->getCollection()->transform(function($manningRequest) use ($requestIdsInDraft) {
+        // Mark which requests have items in draft and which are published for display
+        $requests->getCollection()->transform(function($manningRequest) use ($requestIdsInDraft, $requestIdsPublished) {
             $manningRequest->has_items_in_draft = $requestIdsInDraft->contains($manningRequest->id);
+            $manningRequest->is_published = $requestIdsPublished->contains($manningRequest->id);
             return $manningRequest;
         });
         
-        return view('dashboards.hrd.manning-requests', compact('requests', 'requestIdsInDraft'));
+        // Calculate counts for each tab
+        $allApprovedRequestIds = ManningRequest::where('status', 'APPROVED')->pluck('id');
+        $pendingCount = 0;
+        $inDraftCount = $requestIdsInDraft->count();
+        $publishedCount = $requestIdsPublished->count();
+        
+        // Calculate pending count (not in draft and not published)
+        $excludeIds = $requestIdsInDraft->merge($requestIdsPublished)->unique();
+        if ($excludeIds->isNotEmpty()) {
+            $pendingCount = $allApprovedRequestIds->diff($excludeIds)->count();
+        } else {
+            $pendingCount = $allApprovedRequestIds->count();
+        }
+        
+        return view('dashboards.hrd.manning-requests', compact('requests', 'requestIdsInDraft', 'requestIdsPublished', 'pendingCount', 'inDraftCount', 'publishedCount'));
     }
 
     public function hrdShow($id)

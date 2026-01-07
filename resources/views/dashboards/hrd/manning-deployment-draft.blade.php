@@ -285,7 +285,7 @@
                                                     <button type="button" 
                                                             class="kt-btn kt-btn-sm kt-btn-secondary"
                                                                 data-kt-modal-toggle="#swap-officer-modal-{{ $assignment->id }}"
-                                                                onclick="prepareSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }})">
+                                                                onclick="prepareSwapModal({{ $assignment->id }}, '{{ addslashes(($assignment->officer->initials ?? '') . ' ' . ($assignment->officer->surname ?? '')) }}', {{ $assignment->officer->id }}, '{{ addslashes($assignment->officer->substantive_rank ?? '') }}')">
                                                         <i class="ki-filled ki-arrows-circle"></i> Swap
                                                     </button>
                                                         <button type="button" 
@@ -349,11 +349,11 @@
                             Select a new officer to replace <span class="font-semibold">{{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}</span>:
                         </p>
                         <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2">Search Officer</label>
+                            <label class="block text-sm font-medium mb-2">Search Officer (Same Rank: {{ $assignment->officer->substantive_rank ?? 'N/A' }})</label>
                             <input type="text" 
                                    id="officer-search-{{ $assignment->id }}" 
                                    class="kt-input w-full" 
-                                   placeholder="Search by name, service number, or rank..."
+                                   placeholder="Search by name or service number (filtered to {{ $assignment->officer->substantive_rank ?? 'same rank' }} only)..."
                                    autocomplete="off">
                             <div id="officer-search-results-{{ $assignment->id }}" class="mt-2 max-h-60 overflow-y-auto border border-input rounded-lg hidden"></div>
                         </div>
@@ -463,11 +463,16 @@
 
 <script>
 // Prepare swap modal when opened
-function prepareSwapModal(assignmentId, officerName, currentOfficerId) {
+function prepareSwapModal(assignmentId, officerName, currentOfficerId, officerRank) {
     const searchInput = document.getElementById(`officer-search-${assignmentId}`);
     const resultsDiv = document.getElementById(`officer-search-results-${assignmentId}`);
     const newOfficerIdInput = document.getElementById(`new-officer-id-${assignmentId}`);
     const confirmBtn = document.getElementById(`confirm-swap-btn-${assignmentId}`);
+    
+    // Store the rank for this modal
+    if (searchInput) {
+        searchInput.dataset.officerRank = officerRank || '';
+    }
     
     // Reset form
     if (searchInput) searchInput.value = '';
@@ -500,26 +505,49 @@ function submitRemoveForm(assignmentId) {
             const assignmentId = {{ $assignment->id }};
             const searchInput = document.getElementById(`officer-search-${assignmentId}`);
             const resultsDiv = document.getElementById(`officer-search-results-${assignmentId}`);
+            const officerRank = '{{ addslashes($assignment->officer->substantive_rank ?? '') }}';
 let searchTimeout;
             
             if (searchInput) {
+                // Store the rank in the input's dataset
+                searchInput.dataset.officerRank = officerRank;
+                
                 searchInput.addEventListener('input', function(e) {
     clearTimeout(searchTimeout);
     const query = e.target.value.trim();
+                    const rank = searchInput.dataset.officerRank || '';
     
-    if (query.length < 2) {
+                    // If no query and no rank, hide results
+                    if (query.length < 1 && !rank) {
                         if (resultsDiv) resultsDiv.classList.add('hidden');
         return;
     }
+                    
+                    // If we have a rank but no query yet, wait a bit before showing all officers of that rank
+                    // This prevents showing too many results immediately
+                    const delay = (query.length < 2 && rank) ? 500 : 300;
     
     searchTimeout = setTimeout(() => {
-        fetch(`{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`)
+                        // Build search URL with rank filter
+                        let searchUrl = `{{ route('hrd.officers.search') }}?`;
+                        if (query.length >= 1) {
+                            searchUrl += `q=${encodeURIComponent(query)}`;
+                        }
+                        if (rank) {
+                            if (query.length >= 1) searchUrl += '&';
+                            searchUrl += `rank=${encodeURIComponent(rank)}`;
+                        }
+                        
+                        fetch(searchUrl)
             .then(response => response.json())
             .then(data => {
                                 if (!resultsDiv) return;
                 resultsDiv.innerHTML = '';
                 if (data.length === 0) {
-                    resultsDiv.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">No officers found</div>';
+                                    const message = rank 
+                                        ? `No officers found with rank ${rank}${query ? ' matching "' + query + '"' : ''}`
+                                        : 'No officers found';
+                                    resultsDiv.innerHTML = '<div class="p-4 text-sm text-secondary-foreground">' + message + '</div>';
                 } else {
                     data.forEach(officer => {
                         const div = document.createElement('div');
@@ -544,8 +572,8 @@ let searchTimeout;
             .catch(error => {
                 console.error('Search error:', error);
             });
-    }, 300);
-});
+                    }, delay);
+                });
             }
         })();
     @endforeach

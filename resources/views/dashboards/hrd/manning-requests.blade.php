@@ -56,24 +56,29 @@
             <h3 class="kt-card-title">Approved Manning Requests</h3>
         </div>
         <div class="kt-card-content">
-            <div class="flex items-center justify-between mb-4">
-                <p class="text-sm text-secondary-foreground">
-                    View approved manning requests and trigger matching to find suitable officers for posting.
-                </p>
-                <div class="flex items-center gap-2">
-                    <a href="{{ request()->fullUrlWithQuery(['draft_status' => null]) }}" 
-                       class="kt-btn kt-btn-sm {{ !request('draft_status') ? 'kt-btn-primary' : 'kt-btn-ghost' }}">
-                        All Requests
-                    </a>
-                    <a href="{{ request()->fullUrlWithQuery(['draft_status' => 'in_draft']) }}" 
-                       class="kt-btn kt-btn-sm {{ request('draft_status') === 'in_draft' ? 'kt-btn-primary' : 'kt-btn-ghost' }}">
-                        In Draft
-                    </a>
-                    <a href="{{ request()->fullUrlWithQuery(['draft_status' => 'not_in_draft']) }}" 
-                       class="kt-btn kt-btn-sm {{ request('draft_status') === 'not_in_draft' ? 'kt-btn-primary' : 'kt-btn-ghost' }}">
-                        Not in Draft
-                    </a>
-                </div>
+            <!-- Tabs -->
+            <div class="flex border-b border-border mb-5">
+                <a href="{{ request()->fullUrlWithQuery(['tab' => 'pending']) }}" 
+                   class="px-4 py-2 text-sm font-medium border-b-2 {{ request('tab', 'pending') === 'pending' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground hover:text-primary' }} flex items-center gap-2">
+                    Pending
+                    <span class="kt-badge kt-badge-sm {{ request('tab', 'pending') === 'pending' ? 'kt-badge-primary' : 'kt-badge-ghost' }}">
+                        {{ $pendingCount ?? 0 }}
+                    </span>
+                </a>
+                <a href="{{ request()->fullUrlWithQuery(['tab' => 'in_draft']) }}" 
+                   class="px-4 py-2 text-sm font-medium border-b-2 {{ request('tab') === 'in_draft' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground hover:text-primary' }} flex items-center gap-2">
+                    In Draft
+                    <span class="kt-badge kt-badge-sm {{ request('tab') === 'in_draft' ? 'kt-badge-info' : 'kt-badge-ghost' }}">
+                        {{ $inDraftCount ?? 0 }}
+                    </span>
+                </a>
+                <a href="{{ request()->fullUrlWithQuery(['tab' => 'published']) }}" 
+                   class="px-4 py-2 text-sm font-medium border-b-2 {{ request('tab') === 'published' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground hover:text-primary' }} flex items-center gap-2">
+                    Published
+                    <span class="kt-badge kt-badge-sm {{ request('tab') === 'published' ? 'kt-badge-success' : 'kt-badge-ghost' }}">
+                        {{ $publishedCount ?? 0 }}
+                    </span>
+                </a>
             </div>
 
             <!-- Desktop Table View -->
@@ -139,6 +144,11 @@
                                                     <i class="ki-filled ki-file-add"></i> In Draft
                                                 </span>
                                             @endif
+                                            @if(isset($request->is_published) && $request->is_published)
+                                                <span class="kt-badge kt-badge-success kt-badge-sm" title="All items have been published">
+                                                    <i class="ki-filled ki-check"></i> Published
+                                                </span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
@@ -172,9 +182,23 @@
                                 <tr>
                                     <td colspan="6" class="py-12 text-center">
                                         <i class="ki-filled ki-people text-4xl text-muted-foreground mb-4"></i>
-                                        <p class="text-secondary-foreground mb-4">No approved manning requests found</p>
+                                        <p class="text-secondary-foreground mb-4">
+                                            @if(request('tab') === 'in_draft')
+                                                No manning requests with items in draft found
+                                            @elseif(request('tab') === 'published')
+                                                No published manning requests found
+                                            @else
+                                                No pending manning requests found
+                                            @endif
+                                        </p>
                                         <p class="text-xs text-secondary-foreground">
-                                            Approved requests from Area Controllers will appear here.
+                                            @if(request('tab') === 'in_draft')
+                                                Requests with items in draft deployment will appear here.
+                                            @elseif(request('tab') === 'published')
+                                                Fully published requests will appear here.
+                                            @else
+                                                Approved requests from Area Controllers will appear here.
+                                            @endif
                                         </p>
                                     </td>
                                 </tr>
@@ -201,6 +225,11 @@
                                         @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
                                             <span class="kt-badge kt-badge-info kt-badge-sm" title="Has items in draft deployment">
                                                 <i class="ki-filled ki-file-add"></i> In Draft
+                                            </span>
+                                        @endif
+                                        @if(isset($request->is_published) && $request->is_published)
+                                            <span class="kt-badge kt-badge-success kt-badge-sm" title="All items have been published">
+                                                <i class="ki-filled ki-check"></i> Published
                                             </span>
                                         @endif
                                     </div>
@@ -231,9 +260,23 @@
                     @empty
                         <div class="text-center py-12">
                             <i class="ki-filled ki-people text-4xl text-muted-foreground mb-4"></i>
-                            <p class="text-secondary-foreground mb-4">No approved manning requests found</p>
+                            <p class="text-secondary-foreground mb-4">
+                                @if(request('tab') === 'in_draft')
+                                    No manning requests with items in draft found
+                                @elseif(request('tab') === 'published')
+                                    No published manning requests found
+                                @else
+                                    No pending manning requests found
+                                @endif
+                            </p>
                             <p class="text-xs text-secondary-foreground">
-                                Approved requests from Area Controllers will appear here.
+                                @if(request('tab') === 'in_draft')
+                                    Requests with items in draft deployment will appear here.
+                                @elseif(request('tab') === 'published')
+                                    Fully published requests will appear here.
+                                @else
+                                    Approved requests from Area Controllers will appear here.
+                                @endif
                             </p>
                         </div>
                     @endforelse
