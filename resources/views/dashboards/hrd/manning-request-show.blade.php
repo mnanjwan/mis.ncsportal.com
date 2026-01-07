@@ -149,7 +149,7 @@
                                             @if($item->matched_officer_id)
                                                 <span class="text-xs text-secondary-foreground">Published</span>
                                             @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
-                                                <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                                                <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
                                                    class="kt-btn kt-btn-sm kt-btn-info">
                                                     <i class="ki-filled ki-file-add"></i> View in Draft
                                                 </a>
@@ -187,7 +187,7 @@
                                 @if($item->matched_officer_id)
                                     <span class="text-xs text-secondary-foreground">Published</span>
                                 @elseif(isset($itemsInDraft) && $itemsInDraft->contains($item->id))
-                                    <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                                    <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
                                        class="kt-btn kt-btn-sm kt-btn-info w-full">
                                         <i class="ki-filled ki-file-add"></i> View in Draft
                                     </a>

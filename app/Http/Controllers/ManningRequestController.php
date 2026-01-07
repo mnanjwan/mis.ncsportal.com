@@ -28,7 +28,8 @@ class ManningRequestController extends Controller
             'hrdIndex', 
             'hrdShow', 
             'hrdMatch', 
-            'hrdMatchAll', 
+            'hrdMatchAll',
+            'hrdViewDraft', 
             'hrdGenerateOrder',
             'hrdDraftIndex',
             'hrdDraftAddOfficer',
@@ -1125,6 +1126,30 @@ class ManningRequestController extends Controller
             return redirect()->route('hrd.manning-requests.show', $id)
                 ->with('error', 'Failed to match all ranks. Please try again.');
         }
+    }
+
+    public function hrdViewDraft($id)
+    {
+        $manningRequest = ManningRequest::with(['command', 'items'])->findOrFail($id);
+        
+        // Get all items from this request that are in draft deployments
+        $itemIds = $manningRequest->items->pluck('id');
+        $assignments = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
+            ->whereHas('deployment', function($q) {
+                $q->where('status', 'DRAFT');
+            })
+            ->with([
+                'officer.presentStation.zone',
+                'fromCommand',
+                'toCommand',
+                'manningRequestItem'
+            ])
+            ->get();
+        
+        // Group assignments by item/rank
+        $assignmentsByItem = $assignments->groupBy('manning_request_item_id');
+        
+        return view('dashboards.hrd.manning-request-draft', compact('manningRequest', 'assignments', 'assignmentsByItem'));
     }
 
     public function hrdGenerateOrder(Request $request, $id)
