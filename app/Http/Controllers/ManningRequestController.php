@@ -895,6 +895,238 @@ class ManningRequestController extends Controller
         }
     }
 
+    public function hrdMatchAll(Request $request, $id)
+    {
+        $manningRequest = ManningRequest::with('items')->findOrFail($id);
+        
+        // Get all pending items (not published, not in draft)
+        $itemIds = $manningRequest->items->pluck('id');
+        $itemsInDraft = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
+            ->whereHas('deployment', function($q) {
+                $q->where('status', 'DRAFT');
+            })
+            ->pluck('manning_request_item_id')
+            ->unique();
+        
+        $publishedItemIds = $manningRequest->items->whereNotNull('matched_officer_id')->pluck('id');
+        $pendingItems = $manningRequest->items->whereNotIn('id', $itemsInDraft)->whereNotIn('id', $publishedItemIds);
+        
+        if ($pendingItems->isEmpty()) {
+            return redirect()->route('hrd.manning-requests.show', $id)
+                ->with('info', 'All ranks have already been matched or are in draft.');
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Get or create shared active draft deployment
+            $deployment = ManningDeployment::draft()
+                ->latest()
+                ->first();
+            
+            if (!$deployment) {
+                $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
+                $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
+                    ->orderBy('deployment_number', 'desc')
+                    ->first();
+                
+                $newNumber = $lastDeployment ? ((int)substr($lastDeployment->deployment_number, -3)) + 1 : 1;
+                $deploymentNumber = $datePrefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                
+                $deployment = ManningDeployment::create([
+                    'deployment_number' => $deploymentNumber,
+                    'status' => 'DRAFT',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+            
+            $destinationCommand = $manningRequest->command;
+            $totalOfficersAdded = 0;
+            $ranksMatched = [];
+            
+            // Match each pending item
+            foreach ($pendingItems as $item) {
+                // Build query for matching officers (same logic as hrdMatch)
+                $query = Officer::where('is_active', true)
+                    ->where('is_deceased', false)
+                    ->where('interdicted', false)
+                    ->where('suspended', false)
+                    ->where('dismissed', false)
+                    ->whereNotNull('substantive_rank')
+                    ->whereNotNull('present_station');
+                
+                // Exclude officers from requesting command
+                if ($manningRequest->command_id) {
+                    $query->where('present_station', '!=', $manningRequest->command_id);
+                }
+                
+                // Match rank using the same logic as hrdMatch
+                if (!empty($item->rank)) {
+                    $requestedRank = trim($item->rank);
+                    
+                    $rankMappingToAbbr = [
+                        'Comptroller General of Customs (CGC) GL18' => 'CGC',
+                        'Comptroller General' => 'CGC',
+                        'Deputy Comptroller General of Customs (DCG) GL17' => 'DCG',
+                        'Deputy Comptroller General' => 'DCG',
+                        'Assistant Comptroller General (ACG) of Customs GL 16' => 'ACG',
+                        'Assistant Comptroller General' => 'ACG',
+                        'Comptroller of Customs (CC) GL15' => 'CC',
+                        'Comptroller' => 'CC',
+                        'Deputy Comptroller of Customs (DC) GL14' => 'DC',
+                        'Deputy Comptroller' => 'DC',
+                        'Assistant Comptroller of Customs (AC) GL13' => 'AC',
+                        'Assistant Comptroller' => 'AC',
+                        'Chief Superintendent of Customs (CSC) GL12' => 'CSC',
+                        'Chief Superintendent' => 'CSC',
+                        'Superintendent of Customs (SC) GL11' => 'SC',
+                        'Superintendent' => 'SC',
+                        'Deputy Superintendent of Customs (DSC) GL10' => 'DSC',
+                        'Deputy Superintendent' => 'DSC',
+                        'Assistant Superintendent of Customs Grade I (ASC I) GL 09' => 'ASC I',
+                        'Assistant Superintendent Grade I' => 'ASC I',
+                        'Assistant Superintendent of Customs Grade II (ASC II) GL 08' => 'ASC II',
+                        'Assistant Superintendent Grade II' => 'ASC II',
+                        'Assistant Superintendent' => 'ASC I',
+                        'Inspector of Customs (IC) GL07' => 'IC',
+                        'Inspector' => 'IC',
+                        'Assistant Inspector of Customs (AIC) GL06' => 'AIC',
+                        'Assistant Inspector' => 'AIC',
+                        'Customs Assistant I (CA I) GL05' => 'CA I',
+                        'Customs Assistant I' => 'CA I',
+                        'Customs Assistant II (CA II) GL04' => 'CA II',
+                        'Customs Assistant II' => 'CA II',
+                        'Customs Assistant III (CA III) GL03' => 'CA III',
+                        'Customs Assistant III' => 'CA III',
+                        'Customs Assistant' => 'CA I',
+                    ];
+                    
+                    $ranksToMatch = [strtolower(trim($requestedRank))];
+                    
+                    $foundAbbr = null;
+                    foreach ($rankMappingToAbbr as $fullName => $abbr) {
+                        $fullNameLower = strtolower(trim($fullName));
+                        $abbrLower = strtolower(trim($abbr));
+                        $requestedLower = strtolower(trim($requestedRank));
+                        
+                        if ($requestedLower === $abbrLower) {
+                            $foundAbbr = $abbr;
+                            foreach ($rankMappingToAbbr as $fn => $a) {
+                                if (strtolower(trim($a)) === $abbrLower) {
+                                    $ranksToMatch[] = strtolower(trim($fn));
+                                }
+                            }
+                            break;
+                        }
+                        
+                        if ($requestedLower === $fullNameLower) {
+                            $foundAbbr = $abbr;
+                            $ranksToMatch[] = $abbrLower;
+                            foreach ($rankMappingToAbbr as $fn => $a) {
+                                if (strtolower(trim($a)) === strtolower(trim($abbr))) {
+                                    $ranksToMatch[] = strtolower(trim($fn));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    
+                    $ranksToMatch = array_unique($ranksToMatch);
+                    
+                    $query->where(function($q) use ($ranksToMatch, $requestedRank) {
+                        $requestedRankLower = strtolower(trim($requestedRank));
+                        
+                        foreach ($ranksToMatch as $rankToMatch) {
+                            $q->orWhereRaw('LOWER(TRIM(substantive_rank)) = ?', [$rankToMatch]);
+                        }
+                        
+                        if (strlen($requestedRank) <= 10) {
+                            $q->orWhereRaw('LOWER(substantive_rank) LIKE ?', ['%(' . $requestedRankLower . ')%']);
+                        }
+                    });
+                }
+                
+                // Filter by sex requirement
+                if ($item->sex_requirement !== 'ANY') {
+                    $query->where('sex', $item->sex_requirement);
+                }
+                
+                // Exclude already matched officers
+                $alreadyMatched = ManningRequestItem::where('manning_request_id', $id)
+                    ->whereNotNull('matched_officer_id')
+                    ->pluck('matched_officer_id');
+                
+                if ($alreadyMatched->isNotEmpty()) {
+                    $query->whereNotIn('id', $alreadyMatched);
+                }
+                
+                // Exclude officers already in draft
+                $officersInDraft = ManningDeploymentAssignment::whereHas('deployment', function($q) {
+                        $q->where('status', 'DRAFT');
+                    })
+                    ->pluck('officer_id');
+                
+                if ($officersInDraft->isNotEmpty()) {
+                    $query->whereNotIn('id', $officersInDraft);
+                }
+                
+                // Get matched officers
+                $limit = max($item->quantity_needed * 5, 50);
+                $matchedOfficers = $query->with(['presentStation'])
+                    ->orderBy('present_station')
+                    ->take($limit)
+                    ->get();
+                
+                // Add officers to draft
+                $quantityNeeded = $item->quantity_needed;
+                $selectedOfficers = $matchedOfficers->take($quantityNeeded);
+                $officersAddedForRank = 0;
+                
+                foreach ($selectedOfficers as $officer) {
+                    $fromCommand = $officer->presentStation;
+                    
+                    $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
+                        ->where('officer_id', $officer->id)
+                        ->first();
+                    
+                    if (!$existing) {
+                        ManningDeploymentAssignment::create([
+                            'manning_deployment_id' => $deployment->id,
+                            'manning_request_id' => $manningRequest->id,
+                            'manning_request_item_id' => $item->id,
+                            'officer_id' => $officer->id,
+                            'from_command_id' => $fromCommand?->id,
+                            'to_command_id' => $destinationCommand->id,
+                            'rank' => $officer->substantive_rank,
+                        ]);
+                        $officersAddedForRank++;
+                        $totalOfficersAdded++;
+                    }
+                }
+                
+                if ($officersAddedForRank > 0) {
+                    $ranksMatched[] = $item->rank . ' (' . $officersAddedForRank . ' officer' . ($officersAddedForRank > 1 ? 's' : '') . ')';
+                }
+            }
+            
+            DB::commit();
+            
+            $message = "Successfully matched {$totalOfficersAdded} officer(s) for " . count($ranksMatched) . " rank(s): " . implode(', ', $ranksMatched);
+            return redirect()->route('hrd.manning-requests.show', $id)
+                ->with('success', $message);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to match all ranks: ' . $e->getMessage(), [
+                'exception' => $e,
+                'manning_request_id' => $id,
+            ]);
+            
+            return redirect()->route('hrd.manning-requests.show', $id)
+                ->with('error', 'Failed to match all ranks. Please try again.');
+        }
+    }
+
     public function hrdGenerateOrder(Request $request, $id)
     {
         \Log::info('Generate order called', ['request_id' => $id, 'input' => $request->all()]);
