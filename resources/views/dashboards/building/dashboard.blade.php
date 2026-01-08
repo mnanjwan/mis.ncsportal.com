@@ -6,63 +6,82 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="kt-card">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="kt-card-content flex flex-col gap-2 p-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Total Quarters</span>
-                            <span class="text-2xl font-semibold text-mono" id="total-quarters">Loading...</span>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-xs font-normal text-secondary-foreground">Total Quarters</span>
+                            <span class="text-xl font-semibold text-mono" id="total-quarters">Loading...</span>
                         </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
-                            <i class="ki-filled ki-home-2 text-2xl text-primary"></i>
+                        <div class="flex items-center justify-center size-10 rounded-full bg-primary/10">
+                            <i class="ki-filled ki-home-2 text-lg text-primary"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="kt-card">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="kt-card-content flex flex-col gap-2 p-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Occupied</span>
-                            <span class="text-2xl font-semibold text-mono" id="occupied-quarters">Loading...</span>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-xs font-normal text-secondary-foreground">Occupied</span>
+                            <span class="text-xl font-semibold text-mono" id="occupied-quarters">Loading...</span>
                         </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
-                            <i class="ki-filled ki-check text-2xl text-success"></i>
+                        <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
+                            <i class="ki-filled ki-check text-lg text-success"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="kt-card">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="kt-card-content flex flex-col gap-2 p-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Available</span>
-                            <span class="text-2xl font-semibold text-mono" id="available-quarters">Loading...</span>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-xs font-normal text-secondary-foreground">Available</span>
+                            <span class="text-xl font-semibold text-mono" id="available-quarters">Loading...</span>
                         </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
-                            <i class="ki-filled ki-home text-2xl text-info"></i>
+                        <div class="flex items-center justify-center size-10 rounded-full bg-info/10">
+                            <i class="ki-filled ki-home text-lg text-info"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="kt-card">
-                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="kt-card-content flex flex-col gap-2 p-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Rejected</span>
-                            <span class="text-2xl font-semibold text-mono" id="rejected-count">Loading...</span>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-xs font-normal text-secondary-foreground">Pending Requests</span>
+                            <span class="text-xl font-semibold text-mono" id="pending-requests-count">Loading...</span>
                         </div>
-                        <div class="flex items-center justify-center size-12 rounded-full bg-danger/10">
-                            <i class="ki-filled ki-cross-circle text-2xl text-danger"></i>
+                        <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
+                            <i class="ki-filled ki-file-up text-lg text-warning"></i>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-2">
-                        <a href="{{ route('building.rejected-allocations') }}" class="kt-btn kt-btn-danger kt-btn-sm justify-center">
-                            <i class="ki-filled ki-eye"></i> View All
+                    <div class="flex flex-col gap-1.5 mt-1">
+                        <a href="{{ route('building.requests') }}" class="kt-btn kt-btn-warning kt-btn-xs justify-center">
+                            <i class="ki-filled ki-eye"></i> View
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-2 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-xs font-normal text-secondary-foreground">Rejected</span>
+                            <span class="text-xl font-semibold text-mono" id="rejected-count">Loading...</span>
+                        </div>
+                        <div class="flex items-center justify-center size-10 rounded-full bg-danger/10">
+                            <i class="ki-filled ki-cross-circle text-lg text-danger"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5 mt-1">
+                        <a href="{{ route('building.rejected-allocations') }}" class="kt-btn kt-btn-danger kt-btn-xs justify-center">
+                            <i class="ki-filled ki-eye"></i> View
                         </a>
                     </div>
                 </div>
@@ -304,6 +323,26 @@
                         }
                     }
 
+                    // Load pending quarter requests count
+                    const pendingRequestsRes = await fetch('/api/v1/quarters/requests?status=PENDING&per_page=1', {
+                        headers: { 
+                            'Authorization': 'Bearer ' + token, 
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (pendingRequestsRes.ok) {
+                        const pendingRequestsData = await pendingRequestsRes.json();
+                        if (pendingRequestsData.success && pendingRequestsData.meta) {
+                            document.getElementById('pending-requests-count').textContent = pendingRequestsData.meta.total || 0;
+                        } else {
+                            document.getElementById('pending-requests-count').textContent = '0';
+                        }
+                    } else {
+                        document.getElementById('pending-requests-count').textContent = '0';
+                    }
+
                     // Load rejected allocations count
                     const rejectedRes = await fetch('/api/v1/quarters/rejected-allocations', {
                         headers: { 
@@ -328,6 +367,7 @@
                     document.getElementById('total-quarters').textContent = 'Error';
                     document.getElementById('occupied-quarters').textContent = 'Error';
                     document.getElementById('available-quarters').textContent = 'Error';
+                    document.getElementById('pending-requests-count').textContent = 'Error';
                     document.getElementById('rejected-count').textContent = 'Error';
                     showError('Failed to load dashboard data. Please refresh the page.');
                 }

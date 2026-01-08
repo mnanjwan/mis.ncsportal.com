@@ -27,9 +27,9 @@ class QuarterController extends BaseController
                 ->where('name', 'Building Unit')
                 ->wherePivot('is_active', true)
                 ->first();
-            
+
             $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-            
+
             if (!$commandId) {
                 return $this->errorResponse(
                     'Building Unit user must be assigned to a command',
@@ -50,7 +50,7 @@ class QuarterController extends BaseController
         // Sorting
         $sort = $request->get('sort', 'quarter_number');
         $order = $request->get('order', 'asc');
-        
+
         // Map sort column names
         $sortColumnMap = [
             'quarter_number' => 'quarter_number',
@@ -58,20 +58,22 @@ class QuarterController extends BaseController
             'status' => 'is_occupied',
             'occupied_by' => 'is_occupied', // Secondary sort by quarter_number
         ];
-        
+
         $sortColumn = $sortColumnMap[$sort] ?? 'quarter_number';
         $query->orderBy($sortColumn, $order);
-        
+
         if ($sort === 'occupied_by') {
             // Secondary sort by quarter_number for occupied_by
             $query->orderBy('quarter_number', $order);
         }
 
-        $quarters = $query->with(['officerQuarters' => function ($q) {
-            $q->where('is_current', true)
-              ->where('status', 'ACCEPTED')
-              ->with('officer:id,service_number,initials,surname');
-        }])->get();
+        $quarters = $query->with([
+            'officerQuarters' => function ($q) {
+                $q->where('is_current', true)
+                    ->where('status', 'ACCEPTED')
+                    ->with('officer:id,service_number,initials,surname');
+            }
+        ])->get();
 
         // Transform response to include officer info
         $quarters = $quarters->map(function ($quarter) {
@@ -101,7 +103,7 @@ class QuarterController extends BaseController
     public function statistics(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can view statistics',
@@ -116,9 +118,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -127,18 +129,18 @@ class QuarterController extends BaseController
                 'NO_COMMAND_ASSIGNED'
             );
         }
-        
+
         $query = Quarter::where('is_active', true)
             ->where('command_id', $commandId);
 
         $totalQuarters = $query->count();
         // Only count quarters with ACCEPTED allocations as occupied
-        $occupiedQuarters = OfficerQuarter::whereHas('quarter', function($q) use ($commandId) {
+        $occupiedQuarters = OfficerQuarter::whereHas('quarter', function ($q) use ($commandId) {
             $q->where('command_id', $commandId)->where('is_active', true);
         })
-        ->where('is_current', true)
-        ->where('status', 'ACCEPTED')
-        ->count();
+            ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
+            ->count();
         $availableQuarters = $totalQuarters - $occupiedQuarters;
 
         return $this->successResponse([
@@ -154,7 +156,7 @@ class QuarterController extends BaseController
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can create quarters',
@@ -169,9 +171,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -224,7 +226,7 @@ class QuarterController extends BaseController
     public function allocate(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can allocate quarters',
@@ -239,9 +241,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -258,7 +260,7 @@ class QuarterController extends BaseController
         ]);
 
         $quarter = Quarter::findOrFail($request->quarter_id);
-        
+
         // Ensure quarter belongs to Building Unit's command
         if ($quarter->command_id != $commandId) {
             return $this->errorResponse(
@@ -270,7 +272,7 @@ class QuarterController extends BaseController
         }
 
         $officer = Officer::findOrFail($request->officer_id);
-        
+
         // Ensure officer belongs to Building Unit's command
         if ($officer->present_station != $commandId) {
             return $this->errorResponse(
@@ -297,15 +299,10 @@ class QuarterController extends BaseController
         }
 
         // Deallocate previous accepted quarter if any
-        OfficerQuarter::where('officer_id', $request->officer_id)
-            ->where('is_current', true)
-            ->where('status', 'ACCEPTED')
-            ->update(['is_current' => false]);
-
         // Wrap allocation in a transaction to ensure consistency
         $allocationDate = $request->allocation_date ?? now();
         $allocation = null;
-        
+
         DB::transaction(function () use ($request, $user, $quarter, $officer, $allocationDate, &$allocation) {
             // Cancel any pending allocations for this officer
             OfficerQuarter::where('officer_id', $request->officer_id)
@@ -358,7 +355,7 @@ class QuarterController extends BaseController
     public function deallocate(Request $request, $id): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can deallocate quarters',
@@ -373,9 +370,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -528,7 +525,7 @@ class QuarterController extends BaseController
     public function requests(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can view quarter requests',
@@ -543,9 +540,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -561,9 +558,9 @@ class QuarterController extends BaseController
             'rejectedBy:id,name',
             'approvedBy:id,name',
         ])
-        ->whereHas('officer', function ($q) use ($commandId) {
-            $q->where('present_station', $commandId);
-        });
+            ->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            });
 
         // Filter by status if provided
         if ($request->has('status')) {
@@ -575,39 +572,50 @@ class QuarterController extends BaseController
             $searchTerm = $request->search;
             $query->whereHas('officer', function ($q) use ($searchTerm, $commandId) {
                 $q->where('present_station', $commandId)
-                  ->where(function ($subQ) use ($searchTerm) {
-                      $subQ->where('service_number', 'like', "%{$searchTerm}%")
-                           ->orWhere('initials', 'like', "%{$searchTerm}%")
-                           ->orWhere('surname', 'like', "%{$searchTerm}%");
-                  });
+                    ->where(function ($subQ) use ($searchTerm) {
+                        $subQ->where('service_number', 'like', "%{$searchTerm}%")
+                            ->orWhere('initials', 'like', "%{$searchTerm}%")
+                            ->orWhere('surname', 'like', "%{$searchTerm}%");
+                    });
             });
         }
 
-        // Sorting
+        // Sorting - handle differently based on whether we need joins
         $sort = $request->get('sort', 'created_at');
         $order = $request->get('order', 'desc');
-        
-        // Map sort column names
-        $sortColumnMap = [
-            'created_at' => 'quarter_requests.created_at',
-            'surname' => 'officers.surname',
-            'service_number' => 'officers.service_number',
-            'preferred_quarter_type' => 'quarter_requests.preferred_quarter_type',
-            'status' => 'quarter_requests.status',
-        ];
-        
-        $sortColumn = $sortColumnMap[$sort] ?? 'quarter_requests.created_at';
-        
-        // For surname, we need to join officers table if not already joined
+
+        // Get the table name from the model to ensure correct reference
+        $tableName = (new QuarterRequest())->getTable();
+
+        // For sorting by officer fields, we need to join the officers table
+        // Note: We don't add filtering in the join because whereHas already handles it
         if ($sort === 'surname' || $sort === 'service_number') {
-            $query->join('officers', 'quarter_requests.officer_id', '=', 'officers.id');
+            // Simple join for sorting - whereHas already filters by command_id
+            $query->join('officers', "{$tableName}.officer_id", '=', 'officers.id');
+
+            // Use officers table columns for sorting
+            $sortColumn = $sort === 'surname' ? 'officers.surname' : 'officers.service_number';
+        } else {
+            // For sorting by quarter_requests columns, use the model's table name
+            $sortColumnMap = [
+                'created_at' => "{$tableName}.created_at",
+                'preferred_quarter_type' => "{$tableName}.preferred_quarter_type",
+                'status' => "{$tableName}.status",
+            ];
+            $sortColumn = $sortColumnMap[$sort] ?? "{$tableName}.created_at";
         }
-        
+
         $query->orderBy($sortColumn, $order);
 
         // Pagination
         $perPage = $request->get('per_page', 20);
-        $requests = $query->select('quarter_requests.*')->paginate($perPage);
+
+        // When joining, use distinct to avoid duplicates from potential multiple matches
+        if ($sort === 'surname' || $sort === 'service_number') {
+            $requests = $query->select("{$tableName}.*")->distinct()->paginate($perPage);
+        } else {
+            $requests = $query->select("{$tableName}.*")->paginate($perPage);
+        }
 
         return $this->paginatedResponse(
             $requests->items(),
@@ -634,7 +642,7 @@ class QuarterController extends BaseController
     public function approveRequest(Request $request, $id): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can approve quarter requests',
@@ -649,9 +657,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -724,12 +732,6 @@ class QuarterController extends BaseController
                 'quarter_id' => $request->quarter_id,
             ]);
 
-            // Deallocate previous accepted quarter if any
-            OfficerQuarter::where('officer_id', $quarterRequest->officer_id)
-                ->where('is_current', true)
-                ->where('status', 'ACCEPTED')
-                ->update(['is_current' => false]);
-
             // Cancel any pending allocations for this officer
             OfficerQuarter::where('officer_id', $quarterRequest->officer_id)
                 ->where('status', 'PENDING')
@@ -768,7 +770,7 @@ class QuarterController extends BaseController
     public function rejectRequest(Request $request, $id): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can reject quarter requests',
@@ -783,9 +785,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -916,6 +918,24 @@ class QuarterController extends BaseController
             // Update officer's quartered status
             $officer->update(['quartered' => true]);
 
+            // Find and deactivate old accepted allocation if any
+            $oldAllocation = OfficerQuarter::where('officer_id', $officer->id)
+                ->where('id', '!=', $allocation->id)
+                ->where('is_current', true)
+                ->where('status', 'ACCEPTED')
+                ->first();
+
+            if ($oldAllocation) {
+                // Free the old quarter
+                $oldAllocation->quarter->update(['is_occupied' => false]);
+
+                // Mark old allocation as no longer current
+                $oldAllocation->update([
+                    'is_current' => false,
+                    'deallocation_date' => now(),
+                ]);
+            }
+
             // Reject any other pending allocations for this officer
             OfficerQuarter::where('officer_id', $officer->id)
                 ->where('id', '!=', $allocation->id)
@@ -1032,7 +1052,7 @@ class QuarterController extends BaseController
     public function rejectedAllocations(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can view rejected allocations',
@@ -1047,9 +1067,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -1079,9 +1099,9 @@ class QuarterController extends BaseController
                 // Exclude if there's ANY newer allocation (PENDING, ACCEPTED, or even REJECTED) for this officer
                 // This ensures we only show the most recent rejected allocation if it's the latest action
                 $q->select(DB::raw(1))
-                  ->from('officer_quarters as newer_allocations')
-                  ->whereColumn('newer_allocations.officer_id', 'officer_quarters.officer_id')
-                  ->whereColumn('newer_allocations.created_at', '>', 'officer_quarters.created_at');
+                    ->from('officer_quarters as newer_allocations')
+                    ->whereColumn('newer_allocations.officer_id', 'officer_quarters.officer_id')
+                    ->whereColumn('newer_allocations.created_at', '>', 'officer_quarters.created_at');
             });
 
         // Filter by date range if provided
@@ -1103,7 +1123,7 @@ class QuarterController extends BaseController
     public function pendingAllocations(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can view pending allocations',
@@ -1118,9 +1138,9 @@ class QuarterController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
