@@ -15,27 +15,32 @@ class OfficerController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         $query = Officer::query();
 
         // Role-based access control
-        if ($user->hasRole('Officer')) {
-            // Officers can only see themselves
-            $query->where('id', $user->officer?->id);
+        // Priority order: Most restrictive/specific roles should be checked relative to administrative roles.
+        // The 'Officer' role is usually held by everyone, so it should be checked LAST to avoid restricting admins to self-only view.
+
+        if ($user->hasRole(['HRD', 'Area Controller', 'DC Admin', 'Admin', 'Zone Coordinator', 'Establishment', 'CGC'])) {
+            // High-level roles normally see all officers, but can filter by command if requested
+            if ($request->has('command_id')) {
+                $query->where('present_station', $request->command_id);
+            }
         } elseif ($user->hasRole('Staff Officer')) {
             // Staff Officer sees officers in their command
             if ($user->officer?->present_station) {
                 $query->where('present_station', $user->officer->present_station);
             }
         } elseif ($user->hasRole('Building Unit')) {
-            // Building Unit MUST see only officers in their command (command-based access)
+            // Building Unit sees only officers in their command
             $buildingUnitRole = $user->roles()
                 ->where('name', 'Building Unit')
                 ->wherePivot('is_active', true)
                 ->first();
-            
+
             $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-            
+
             if (!$commandId) {
                 // Return empty result if no command assigned
                 return $this->paginatedResponse(
@@ -56,14 +61,16 @@ class OfficerController extends BaseController
                     ]
                 );
             }
-            // Ensure command_id is cast to integer for proper comparison
             $query->where('present_station', (int) $commandId);
-            
-            // Building Unit cannot override their command filter - ignore any command_id parameter
-            // Their assigned command is already enforced above
+        } elseif ($user->hasRole('Officer')) {
+            // Basic Officer role ONLY (fallback if no higher roles above matched)
+            // Officers can only see themselves
+            $query->where('id', $user->officer?->id);
         } else {
-            // Apply command_id filter only for non-Building Unit roles
-            if ($request->has('command_id')) {
+            // Fallback for any other roles that might need a default - show nothing unless specified
+            if (!$request->has('command_id')) {
+                $query->where('id', 0); // No results by default
+            } else {
                 $query->where('present_station', $request->command_id);
             }
         }
@@ -94,8 +101,8 @@ class OfficerController extends BaseController
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('service_number', 'like', "%{$search}%")
-                      ->orWhere('initials', 'like', "%{$search}%")
-                      ->orWhere('surname', 'like', "%{$search}%");
+                        ->orWhere('initials', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%");
                 });
             }
         }
@@ -112,14 +119,14 @@ class OfficerController extends BaseController
         // Transform officers to include quarter information
         $transformedOfficers = $officers->map(function ($officer) {
             $officerData = $officer->toArray();
-            
+
             // Check for pending allocations
             $pendingAllocation = \App\Models\OfficerQuarter::where('officer_id', $officer->id)
                 ->where('status', 'PENDING')
                 ->where('is_current', true)
                 ->with('quarter:id,quarter_number,quarter_type')
                 ->first();
-            
+
             if ($pendingAllocation && $pendingAllocation->quarter) {
                 // Officer has a pending allocation
                 $quarter = $pendingAllocation->quarter;
@@ -131,7 +138,7 @@ class OfficerController extends BaseController
             } else {
                 $officerData['has_pending_allocation'] = false;
             }
-            
+
             // Add current quarter information if officer is quartered and has an accepted allocation
             if ($officer->quartered && $officer->currentQuarter && $officer->currentQuarter->status === 'ACCEPTED') {
                 $quarter = $officer->currentQuarter->quarter;
@@ -142,7 +149,7 @@ class OfficerController extends BaseController
                     $officerData['current_quarter_display'] = $quarter->quarter_number . ($quarter->quarter_type ? ' - ' . $quarter->quarter_type : '');
                 }
             }
-            
+
             return $officerData;
         });
 
@@ -256,7 +263,7 @@ class OfficerController extends BaseController
     public function updateQuarteredStatus(Request $request, $id): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can update quartered status',
@@ -277,9 +284,9 @@ class OfficerController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -320,7 +327,7 @@ class OfficerController extends BaseController
     public function bulkUpdateQuarteredStatus(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->hasRole('Building Unit')) {
             return $this->errorResponse(
                 'Only Building Unit can bulk update quartered status',
@@ -341,9 +348,9 @@ class OfficerController extends BaseController
             ->where('name', 'Building Unit')
             ->wherePivot('is_active', true)
             ->first();
-        
+
         $commandId = $buildingUnitRole?->pivot->command_id ?? null;
-        
+
         if (!$commandId) {
             return $this->errorResponse(
                 'Building Unit user must be assigned to a command',
@@ -352,7 +359,7 @@ class OfficerController extends BaseController
                 'NO_COMMAND_ASSIGNED'
             );
         }
-        
+
         // Verify all officers are in Building Unit's command
         $officers = Officer::whereIn('id', $request->officer_ids)
             ->where('present_station', $commandId)
