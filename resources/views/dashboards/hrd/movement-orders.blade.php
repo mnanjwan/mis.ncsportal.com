@@ -122,7 +122,7 @@
                                                    class="kt-btn kt-btn-sm kt-btn-ghost">
                                                     View
                                                 </a>
-                                                @if($order->status !== 'CANCELLED')
+                                                @if($order->status !== 'CANCELLED' && $order->status !== 'PUBLISHED')
                                                     <a href="{{ route('hrd.movement-orders.edit', $order->id) }}" 
                                                        class="kt-btn kt-btn-sm kt-btn-secondary">
                                                         Edit

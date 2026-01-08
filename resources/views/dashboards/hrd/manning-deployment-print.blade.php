@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manning Deployment List - Print</title>
+    <title>Movement Order - Print</title>
     <style>
         @page {
             size: A4;
@@ -87,6 +87,7 @@
         .command-section {
             page-break-before: always;
             margin-bottom: 30px;
+            page-break-inside: avoid;
         }
         .command-section:first-child {
             page-break-before: auto;
@@ -96,13 +97,26 @@
             font-weight: bold;
             text-align: center;
             margin: 20px 0 15px 0;
+            padding-top: 10px;
             text-transform: uppercase;
+            page-break-after: avoid;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
             font-size: 10pt;
+            page-break-inside: auto;
+        }
+        thead {
+            display: table-header-group;
+        }
+        tbody {
+            display: table-row-group;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
         th {
             background-color: #f0f0f0;
@@ -138,12 +152,19 @@
         }
         @media print {
             @page {
-                margin-top: 20mm;
-                margin-bottom: 20mm;
+                margin-top: 25mm;
+                margin-bottom: 25mm;
+                margin-left: 15mm;
+                margin-right: 15mm;
             }
             body {
-                padding-top: 15mm;
-                padding-bottom: 15mm;
+                padding-top: 10mm;
+                padding-bottom: 10mm;
+                padding-left: 5mm;
+                padding-right: 5mm;
+            }
+            .document-container {
+                padding: 10mm;
             }
             .no-print {
                 display: none;
@@ -154,6 +175,14 @@
             }
             .restricted:not(.restricted-header):not(.restricted-footer) {
                 display: none;
+            }
+            .command-section {
+                margin-top: 20px;
+                padding-top: 10px;
+            }
+            table {
+                margin-top: 15px;
+                margin-bottom: 15px;
             }
         }
     </style>
@@ -177,8 +206,7 @@
                 <h1>NIGERIA CUSTOMS SERVICE</h1>
             </div>
             <div class="deployment-info">
-                <div class="deployment-number">MANNING DEPLOYMENT LIST</div>
-                <div class="deployment-number">Deployment No: {{ $deployment->deployment_number ?? 'N/A' }}</div>
+                <div class="deployment-number">MOVEMENT ORDER</div>
                 <div class="deployment-date">
                     <strong>Date:</strong> {{ $deployment->published_at ? $deployment->published_at->format('d M Y') : ($deployment->created_at ? $deployment->created_at->format('d M Y') : now()->format('d M Y')) }}
                 </div>

@@ -116,7 +116,7 @@
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Officer Postings</h3>
                     <div class="kt-card-toolbar">
-                        @if($order->status !== 'CANCELLED')
+                        @if($order->status !== 'CANCELLED' && $order->status !== 'PUBLISHED')
                             <a href="{{ route('hrd.movement-orders.eligible-officers', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
                                 <i class="ki-filled ki-plus"></i> Add Officers
                             </a>

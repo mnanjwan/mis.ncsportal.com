@@ -28,31 +28,42 @@ class PostingWorkflowService
                 throw new \Exception('Officer or destination command not found');
             }
 
-            // Create a PENDING posting (do not move officer to new command until documentation).
+            // Create a PENDING posting (awaiting release letter and acceptance)
             if ($updateOfficer) {
-                // Create new posting record (pending, not yet documented)
+                // Create new posting record (pending - awaiting release letter and acceptance)
                 OfficerPosting::create([
                     'officer_id' => $officer->id,
                     'command_id' => $toCommand->id,
                     'staff_order_id' => $order->id,
                     'posting_date' => $order->effective_date ?? now(),
-                    'is_current' => false, // becomes current when Staff Officer documents arrival
-                    'documented_by' => null,
-                    'documented_at' => null,
+                    'is_current' => false, // becomes current only after acceptance
+                    'documented_by' => null, // Will be set when new command accepts
+                    'documented_at' => null, // Set when new command accepts
+                    'release_letter_printed' => false, // Will be set when old command prints release letter
+                    'release_letter_printed_at' => null,
+                    'release_letter_printed_by' => null,
+                    'accepted_by_new_command' => false, // Will be set when new command accepts
+                    'accepted_at' => null,
+                    'accepted_by' => null,
                 ]);
                 
                 // Log the posting
                 Log::info("Staff Order {$order->order_number}: Pending posting created for Officer {$officer->id} ({$officer->service_number}) from " . 
-                    ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}");
+                    ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}. Awaiting release letter and acceptance.");
                 
-                // Notify Staff Officer of new posting
-                $this->notifyStaffOfficer($toCommand, $officer, $order);
+                // Notify FROM command Staff Officers about pending release letter
+                $notificationService = app(\App\Services\NotificationService::class);
+                try {
+                    $notificationService->notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $order);
+                } catch (\Exception $e) {
+                    Log::warning("Failed to send release letter notification: " . $e->getMessage());
+                }
                 
-                // Notify officer of their posting
-                $this->notifyOfficer($officer, $order);
+                // DO NOT notify officer yet - notification happens when release letter is printed
+                // DO NOT notify Staff Officer of new command yet - they will see pending arrivals after release letter is printed
                 
-                // Transfer chat room (when chat system is available)
-                $this->transferChatRoom($officer, $fromCommand, $toCommand);
+                // Transfer chat room (when chat system is available) - will happen after acceptance
+                // $this->transferChatRoom($officer, $fromCommand, $toCommand);
             }
 
             DB::commit();
@@ -93,25 +104,28 @@ class PostingWorkflowService
 
                 $fromCommand = $officer->presentStation;
 
-                // Keep officer in old command until Staff Officer documents arrival.
-                // Ensure posting stays pending (is_current=false) until documentation.
-                $posting->update([
-                    'is_current' => false,
-                    'posting_date' => $posting->posting_date ?? now(),
-                ]);
+                // Keep officer in old command until release letter is printed AND new command accepts.
+                // Ensure posting stays pending (is_current=false) until acceptance.
+                // Note: This method is called when movement order is published, but postings should already be created
+                // with the new workflow fields. This is a legacy method that may not be used anymore.
+                
+                // Ensure new workflow fields are set if not already
+                if (!$posting->release_letter_printed && !$posting->accepted_by_new_command) {
+                    $posting->update([
+                        'is_current' => false,
+                        'posting_date' => $posting->posting_date ?? now(),
+                        'release_letter_printed' => false,
+                        'accepted_by_new_command' => false,
+                    ]);
+                }
 
                 // Log the posting
-                Log::info("Movement Order {$order->order_number}: Pending posting ready for documentation for Officer {$officer->id} ({$officer->service_number}) from " . 
-                    ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}");
+                Log::info("Movement Order {$order->order_number}: Posting for Officer {$officer->id} ({$officer->service_number}) from " . 
+                    ($fromCommand ? $fromCommand->name : 'Unknown') . " to {$toCommand->name}. Awaiting release letter and acceptance.");
 
-                // Notify Staff Officer of new posting
-                $this->notifyStaffOfficer($toCommand, $officer, $order);
-
-                // Notify officer of their posting
-                $this->notifyOfficer($officer, $order);
-
-                // Transfer chat room
-                $this->transferChatRoom($officer, $fromCommand, $toCommand);
+                // DO NOT notify Staff Officer or officer yet - notifications happen at appropriate stages
+                // Staff Officer will see pending arrivals after release letter is printed
+                // Officer will be notified when release letter is printed
             }
 
             DB::commit();

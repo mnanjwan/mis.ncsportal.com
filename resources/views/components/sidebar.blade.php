@@ -195,6 +195,7 @@
                     'submenu' => [
                         ['title' => 'Staff Orders', 'href' => route('hrd.staff-orders')],
                         ['title' => 'Movement Orders', 'href' => route('hrd.movement-orders')],
+                        ['title' => 'Command Duration', 'href' => route('hrd.command-duration.index')],
                     ]
                 ],
                 [

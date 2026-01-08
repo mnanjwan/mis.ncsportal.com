@@ -1768,6 +1768,46 @@ class ManningRequestController extends Controller
         }
     }
 
+    public function hrdDraftUpdateDestination($deploymentId, $assignmentId, Request $request)
+    {
+        $request->validate([
+            'to_command_id' => 'required|exists:commands,id',
+        ]);
+
+        try {
+            $deployment = ManningDeployment::findOrFail($deploymentId);
+            
+            if ($deployment->status !== 'DRAFT') {
+                return redirect()->back()
+                    ->with('error', 'Can only update destination command in draft deployments.');
+            }
+            
+            $assignment = ManningDeploymentAssignment::where('id', $assignmentId)
+                ->where('manning_deployment_id', $deployment->id)
+                ->firstOrFail();
+            
+            $assignment->update([
+                'to_command_id' => $request->to_command_id,
+            ]);
+            
+            // Return JSON response for AJAX requests
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Destination command updated successfully.',
+                ]);
+            }
+            
+            return redirect()->back()
+                ->with('success', 'Destination command updated successfully.');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to update destination command: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to update destination command: ' . $e->getMessage());
+        }
+    }
+
     public function hrdDraftPublish($id, Request $request)
     {
         try {
@@ -1792,6 +1832,17 @@ class ManningRequestController extends Controller
                     return redirect()->back()
                         ->with('error', 'No assignments found for the specified manning request.');
                 }
+            }
+            
+            // Validate all assignments have destination commands
+            $assignmentsWithoutDestination = $assignmentsToPublish->filter(function($assignment) {
+                return empty($assignment->to_command_id);
+            });
+            
+            if ($assignmentsWithoutDestination->isNotEmpty()) {
+                $count = $assignmentsWithoutDestination->count();
+                return redirect()->back()
+                    ->with('error', "Cannot publish deployment. {$count} officer(s) do not have a destination command selected. Please select destination commands for all officers before publishing.");
             }
             
             // Generate unique movement order number
@@ -1819,9 +1870,8 @@ class ManningRequestController extends Controller
                 'created_by' => auth()->id(),
             ]);
             
-            // STEP 1: Send release letters to FROM commands BEFORE posting
-            // Release letters notify the command that officer is being released
-            // This must happen BEFORE documentation/posting
+            // STEP 1: Notify FROM commands about pending release letters
+            // This notifies Staff Officers in the old command that they need to print release letters
             $notificationService = app(NotificationService::class);
             foreach ($assignmentsToPublish as $assignment) {
                 $officer = $assignment->officer;
@@ -1829,8 +1879,7 @@ class ManningRequestController extends Controller
                 $toCommand = $assignment->toCommand;
                 
                 if ($fromCommand) {
-                    // Notify FROM command about officer release
-                    // This is authorized by Area Comptroller or DC Admin through Staff Officer
+                    // Notify FROM command Staff Officers about pending release letter
                     try {
                         $notificationService->notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $movementOrder);
                     } catch (\Exception $e) {
@@ -1839,21 +1888,28 @@ class ManningRequestController extends Controller
                 }
             }
             
-            // STEP 2: Post all officers and create movement order entries
+            // STEP 2: Create posting records (pending - awaiting release letter and acceptance)
+            // DO NOT notify officers yet - they will be notified when release letter is printed
             foreach ($assignmentsToPublish as $assignment) {
                 $officer = $assignment->officer;
                 $fromCommand = $assignment->fromCommand;
                 $toCommand = $assignment->toCommand;
                 
-                // Create new posting record (pending - documentation happens after release letter)
+                // Create new posting record (pending - awaiting release letter and acceptance)
                 OfficerPosting::create([
                     'officer_id' => $officer->id,
                     'command_id' => $toCommand->id,
                     'movement_order_id' => $movementOrder->id,
                     'posting_date' => now(),
-                    'is_current' => false, // becomes current when Staff Officer documents arrival
-                    'documented_by' => null, // Will be set when Staff Officer documents after release letter
-                    'documented_at' => null, // Documentation happens after release letter is processed
+                    'is_current' => false, // becomes current only after acceptance
+                    'documented_by' => null, // Will be set when new command accepts
+                    'documented_at' => null, // Set when new command accepts
+                    'release_letter_printed' => false, // Will be set when old command prints release letter
+                    'release_letter_printed_at' => null,
+                    'release_letter_printed_by' => null,
+                    'accepted_by_new_command' => false, // Will be set when new command accepts
+                    'accepted_at' => null,
+                    'accepted_by' => null,
                 ]);
                 
                 // Update manning request items if linked
@@ -1864,12 +1920,7 @@ class ManningRequestController extends Controller
                     }
                 }
                 
-                // Notify officer about posting (after release letter)
-                try {
-                    $notificationService->notifyOfficerPosted($officer, $fromCommand, $toCommand, now());
-                } catch (\Exception $e) {
-                    Log::warning("Failed to send posting notification: " . $e->getMessage());
-                }
+                // DO NOT notify officer yet - notification happens when release letter is printed
             }
             
             // Check if deployment has any remaining assignments before removing published ones

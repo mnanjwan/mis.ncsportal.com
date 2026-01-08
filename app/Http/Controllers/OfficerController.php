@@ -428,9 +428,23 @@ class OfficerController extends Controller
             ->get();
 
         // Load history data
+        // Only show completed transfers in history
+        // New workflow: both release_letter_printed AND accepted_by_new_command must be true
+        // Legacy workflow: documented_at must not be null (for postings before new workflow)
         $postingsHistory = $officer->postings()
             ->with('command')
-            ->whereNotNull('documented_at') // only show postings after Staff Officer documentation
+            ->where(function($q) {
+                // New workflow: completed transfers
+                $q->where(function($subQ) {
+                    $subQ->where('release_letter_printed', true)
+                         ->where('accepted_by_new_command', true);
+                })
+                // Legacy workflow: documented postings (before new workflow fields existed)
+                ->orWhere(function($subQ) {
+                    $subQ->whereNull('release_letter_printed')
+                         ->whereNotNull('documented_at');
+                });
+            })
             ->orderBy('posting_date', 'desc')
             ->get();
 

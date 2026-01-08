@@ -167,8 +167,10 @@
         @media print {
             @page {
                 size: A4;
-                margin-top: 20mm;
-                margin-bottom: 20mm;
+                margin-top: 25mm;
+                margin-bottom: 25mm;
+                margin-left: 15mm;
+                margin-right: 15mm;
             }
             * {
                 margin: 0;
@@ -176,8 +178,10 @@
             }
             body {
                 margin: 0;
-                padding-top: 15mm;
-                padding-bottom: 15mm;
+                padding-top: 10mm;
+                padding-bottom: 10mm;
+                padding-left: 5mm;
+                padding-right: 5mm;
                 background: #fff;
                 font-size: 10pt !important;
                 line-height: 1.4 !important;

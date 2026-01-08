@@ -408,6 +408,48 @@ function submitPublishForm() {
     }
 }
 
+function updateDestinationCommand(selectElement, assignmentId) {
+    const form = selectElement.closest('form');
+    const formData = new FormData(form);
+    const originalValue = selectElement.dataset.originalValue || selectElement.value;
+    
+    // Show loading state
+    selectElement.disabled = true;
+    const originalText = selectElement.options[selectElement.selectedIndex].text;
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || formData.get('_token')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json().catch(() => ({ success: true }));
+        }
+        throw new Error('Update failed');
+    })
+    .then(data => {
+        selectElement.disabled = false;
+        // Update original value for future reference
+        selectElement.dataset.originalValue = selectElement.value;
+        // Show success message (you can customize this)
+        if (data.success !== false) {
+            // Optionally show a toast notification here
+            console.log('Destination command updated successfully');
+        }
+    })
+    .catch(error => {
+        selectElement.disabled = false;
+        // Revert to original value on error
+        selectElement.value = originalValue;
+        alert('Failed to update destination command. Please try again.');
+        console.error('Error:', error);
+    });
+}
+
 // Setup officer search for swap modals
 @if($activeDraft)
     @foreach($activeDraft->assignments as $assignment)

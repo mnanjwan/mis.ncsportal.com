@@ -1344,6 +1344,55 @@ class NotificationService
     }
 
     /**
+     * Notify officer about transfer (after release letter is printed)
+     * This is sent when the old command prints the release letter
+     */
+    public function notifyOfficerTransfer($officer, $fromCommand, $toCommand, $order = null): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $fromCommandName = $fromCommand ? $fromCommand->name : 'Current Command';
+        $toCommandName = $toCommand ? $toCommand->name : 'New Command';
+        $orderNumber = $order ? $order->order_number : 'N/A';
+        $orderType = $order instanceof \App\Models\MovementOrder ? 'Movement Order' : 'Staff Order';
+
+        return $this->notify(
+            $officer->user,
+            'officer_transfer',
+            'Transfer Notification',
+            "You have been released from {$fromCommandName} and are to report to {$toCommandName}. {$orderType}: {$orderNumber}. Please report to your new command for acceptance.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
+     * Notify officer about acceptance into new command
+     * This is sent when the new command accepts the officer
+     */
+    public function notifyOfficerAccepted($officer, $fromCommand, $toCommand, $posting): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $fromCommandName = $fromCommand ? $fromCommand->name : 'Previous Command';
+        $toCommandName = $toCommand ? $toCommand->name : 'New Command';
+        $postingDate = $posting->posting_date ? $posting->posting_date->format('d/m/Y') : now()->format('d/m/Y');
+
+        return $this->notify(
+            $officer->user,
+            'officer_accepted',
+            'Transfer Complete',
+            "You have been accepted into {$toCommandName}. Your transfer from {$fromCommandName} is now complete. Posting date: {$postingDate}. You are now officially posted to {$toCommandName}.",
+            'officer',
+            $officer->id
+        );
+    }
+
+    /**
      * Notify officer about rank/promotion change
      */
     public function notifyRankChanged($officer, string $oldRank, string $newRank): ?Notification

@@ -20,6 +20,12 @@ class OfficerPosting extends Model
         'documented_at',
         'released_by',
         'released_at',
+        'release_letter_printed',
+        'release_letter_printed_at',
+        'release_letter_printed_by',
+        'accepted_by_new_command',
+        'accepted_at',
+        'accepted_by',
     ];
 
     protected function casts(): array
@@ -29,6 +35,10 @@ class OfficerPosting extends Model
             'documented_at' => 'datetime',
             'released_at' => 'datetime',
             'is_current' => 'boolean',
+            'release_letter_printed' => 'boolean',
+            'release_letter_printed_at' => 'datetime',
+            'accepted_by_new_command' => 'boolean',
+            'accepted_at' => 'datetime',
         ];
     }
 
@@ -61,6 +71,42 @@ class OfficerPosting extends Model
     public function releasedBy()
     {
         return $this->belongsTo(User::class, 'released_by');
+    }
+
+    public function releaseLetterPrintedBy()
+    {
+        return $this->belongsTo(User::class, 'release_letter_printed_by');
+    }
+
+    public function acceptedBy()
+    {
+        return $this->belongsTo(User::class, 'accepted_by');
+    }
+
+    /**
+     * Check if transfer is complete (both release letter printed and accepted)
+     */
+    public function isTransferComplete(): bool
+    {
+        return $this->release_letter_printed && $this->accepted_by_new_command;
+    }
+
+    /**
+     * Get the from command (officer's current command before this posting)
+     */
+    public function getFromCommandAttribute()
+    {
+        if (!$this->officer) {
+            return null;
+        }
+        
+        // Get the previous current posting
+        $previousPosting = OfficerPosting::where('officer_id', $this->officer_id)
+            ->where('id', '!=', $this->id)
+            ->where('is_current', true)
+            ->first();
+            
+        return $previousPosting ? $previousPosting->command : null;
     }
 }
 

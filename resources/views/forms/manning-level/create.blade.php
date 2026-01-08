@@ -155,7 +155,9 @@ const qualifications = @json($qualifications ?? []);
 
 // Item template
 function createItemTemplate(index) {
-    const ranksHtml = ranks.map(rank => `<option value="${rank}">${rank}</option>`).join('');
+    // Reverse ranks array to show latest rank on top (LIFO - Last In First Out)
+    const reversedRanks = [...ranks].reverse();
+    const ranksHtml = reversedRanks.map(rank => `<option value="${rank}">${rank}</option>`).join('');
     const qualsHtml = qualifications.map(qual => `<option value="${qual}">${qual}</option>`).join('');
     
     return `

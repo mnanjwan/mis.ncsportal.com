@@ -247,6 +247,19 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-requests/{id}/print', [ManningRequestController::class, 'hrdPrint'])->name('manning-requests.print');
         Route::get('/manning-requests/{id}/match', [ManningRequestController::class, 'hrdMatch'])->name('manning-requests.match');
         Route::post('/manning-requests/{id}/match-all', [ManningRequestController::class, 'hrdMatchAll'])->name('manning-requests.match-all');
+
+        // Command Duration Routes
+        Route::prefix('command-duration')->name('command-duration.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\CommandDurationController::class, 'index'])->name('index');
+            Route::match(['get', 'post'], '/search', [\App\Http\Controllers\CommandDurationController::class, 'search'])->name('search');
+            Route::post('/add-to-draft', [\App\Http\Controllers\CommandDurationController::class, 'addToDraft'])->name('add-to-draft');
+            Route::get('/print', [\App\Http\Controllers\CommandDurationController::class, 'print'])->name('print');
+            Route::get('/draft', [\App\Http\Controllers\CommandDurationController::class, 'draftIndex'])->name('draft');
+            Route::put('/draft/{deploymentId}/update-destination/{assignmentId}', [\App\Http\Controllers\CommandDurationController::class, 'updateDestination'])->name('draft.update-destination');
+            Route::post('/draft/{deploymentId}/swap-officer/{assignmentId}', [\App\Http\Controllers\CommandDurationController::class, 'swapOfficer'])->name('draft.swap-officer');
+            Route::delete('/draft/{deploymentId}/remove-officer/{assignmentId}', [\App\Http\Controllers\CommandDurationController::class, 'removeOfficer'])->name('draft.remove-officer');
+            Route::post('/draft/{id}/publish', [\App\Http\Controllers\CommandDurationController::class, 'publish'])->name('publish');
+        });
         Route::get('/manning-requests/{id}/draft', [ManningRequestController::class, 'hrdViewDraft'])->name('manning-requests.draft');
         Route::post('/manning-requests/{id}/generate-order', [ManningRequestController::class, 'hrdGenerateOrder'])->name('manning-requests.generate-order');
         Route::post('/manning-requests/{id}/add-to-draft', [ManningRequestController::class, 'hrdAddToDraft'])->name('manning-requests.add-to-draft');
@@ -255,6 +268,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-deployments/draft', [ManningRequestController::class, 'hrdDraftIndex'])->name('manning-deployments.draft');
         Route::delete('/manning-deployments/{deploymentId}/remove-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftRemoveOfficer'])->name('manning-deployments.draft.remove-officer');
         Route::post('/manning-deployments/{deploymentId}/swap-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftSwapOfficer'])->name('manning-deployments.draft.swap-officer');
+        Route::put('/manning-deployments/{deploymentId}/update-destination/{assignmentId}', [ManningRequestController::class, 'hrdDraftUpdateDestination'])->name('manning-deployments.draft.update-destination');
         Route::post('/manning-deployments/{id}/publish', [ManningRequestController::class, 'hrdDraftPublish'])->name('manning-deployments.publish');
         Route::get('/manning-deployments/{id}/print', [ManningRequestController::class, 'hrdDraftPrint'])->name('manning-deployments.print');
         Route::get('/manning-deployments/published', [ManningRequestController::class, 'hrdPublishedIndex'])->name('manning-deployments.published');
@@ -361,6 +375,15 @@ Route::middleware('auth')->group(function () {
         Route::put('/roster/{id}', [DutyRosterController::class, 'update'])->name('roster.update');
         Route::post('/roster/{id}/submit', [DutyRosterController::class, 'submit'])->name('roster.submit');
         Route::get('/roster/{id}', [DutyRosterController::class, 'show'])->name('roster.show');
+
+        // Posting Management (Release Letters & Acceptance)
+        Route::prefix('postings')->name('postings.')->group(function () {
+            Route::get('/pending-release-letters', [\App\Http\Controllers\StaffOfficer\PostingController::class, 'pendingReleaseLetters'])->name('pending-release-letters');
+            Route::get('/{postingId}/print-release-letter', [\App\Http\Controllers\StaffOfficer\PostingController::class, 'printReleaseLetter'])->name('print-release-letter');
+            Route::post('/{postingId}/mark-release-letter-printed', [\App\Http\Controllers\StaffOfficer\PostingController::class, 'markReleaseLetterPrinted'])->name('mark-release-letter-printed');
+            Route::get('/pending-arrivals', [\App\Http\Controllers\StaffOfficer\PostingController::class, 'pendingArrivals'])->name('pending-arrivals');
+            Route::post('/{postingId}/accept', [\App\Http\Controllers\StaffOfficer\PostingController::class, 'acceptOfficer'])->name('accept');
+        });
         Route::get('/roster/print/all', [PrintController::class, 'printAllRosters'])->name('roster.print-all');
         Route::get('/roster/{id}/print', [PrintController::class, 'printRoster'])->name('roster.print');
 

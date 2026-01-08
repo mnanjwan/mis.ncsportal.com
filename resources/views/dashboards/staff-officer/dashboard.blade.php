@@ -145,6 +145,38 @@
                         </div>
                     </div>
                 </a>
+
+                @if($command && isset($pendingReleasePostings) && $pendingReleasePostings->count() > 0)
+                <a href="{{ route('staff-officer.postings.pending-release-letters') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Pending Release Letters</span>
+                                <span class="text-2xl font-semibold text-mono text-warning">{{ $pendingReleasePostings->count() }}</span>
+                            </div>
+                            <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                                <i class="ki-filled ki-printer text-2xl text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                @endif
+
+                @if($command && $newlyPostedOfficers->count() > 0)
+                <a href="{{ route('staff-officer.postings.pending-arrivals') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-normal text-secondary-foreground">Pending Arrivals</span>
+                                <span class="text-2xl font-semibold text-mono text-info">{{ $newlyPostedOfficers->count() }}</span>
+                            </div>
+                            <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
+                                <i class="ki-filled ki-people text-2xl text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                @endif
             </div>
 
             @if(isset($recentAperActions) && $recentAperActions->count() > 0)
@@ -321,18 +353,21 @@
             </div>
         @endif
 
-    <!-- Newly Posted Officers Section -->
+    <!-- Newly Posted Officers Section (Pending Arrivals) -->
     @if($command && $newlyPostedOfficers->count() > 0)
         <div class="kt-card overflow-hidden">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Newly Posted Officers</h3>
+                <h3 class="kt-card-title">Pending Arrivals</h3>
                 <div class="kt-card-toolbar">
-                    <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $newlyPostedOfficers->count() }} New</span>
+                    <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $newlyPostedOfficers->count() }} Pending</span>
+                    <a href="{{ route('staff-officer.postings.pending-arrivals') }}" class="kt-btn kt-btn-sm kt-btn-primary ml-2">
+                        <i class="ki-filled ki-arrow-right"></i> View All
+                    </a>
                 </div>
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
-                    The following officers have pending postings into <strong>{{ $command->name }}</strong>. They can only be documented <strong>after</strong> they are released by their old command.
+                    The following officers have been released from their old commands and are awaiting acceptance into <strong>{{ $command->name }}</strong>. Accept them to complete the transfer.
                 </p>
                 <!-- Table with horizontal scroll wrapper -->
                 <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
@@ -397,14 +432,17 @@
     @if($command && isset($pendingReleasePostings) && $pendingReleasePostings->count() > 0)
         <div class="kt-card overflow-hidden mt-5">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Officers Pending Release</h3>
+                <h3 class="kt-card-title">Officers Pending Release Letters</h3>
                 <div class="kt-card-toolbar">
                     <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $pendingReleasePostings->count() }} Pending</span>
+                    <a href="{{ route('staff-officer.postings.pending-release-letters') }}" class="kt-btn kt-btn-sm kt-btn-primary ml-2">
+                        <i class="ki-filled ki-arrow-right"></i> View All
+                    </a>
                 </div>
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
-                    The following officers are currently in <strong>{{ $command->name }}</strong> and have pending postings out. Release them before the destination command can document.
+                    The following officers are currently in <strong>{{ $command->name }}</strong> and have pending postings out. Print their release letters to notify them of transfer.
                 </p>
                 <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
                     <table class="kt-table" style="min-width: 950px; width: 100%;">
@@ -440,13 +478,11 @@
                                         {{ $posting->posting_date ? \Carbon\Carbon::parse($posting->posting_date)->format('M d, Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
-                                        <form action="{{ route('staff-officer.officers.release', $officer->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-warning"
-                                                onclick="return confirm('Release this officer from your command?')">
-                                                <i class="ki-filled ki-exit-right"></i> Release
-                                            </button>
-                                        </form>
+                                        <a href="{{ route('staff-officer.postings.print-release-letter', $posting->id) }}" 
+                                           target="_blank"
+                                           class="kt-btn kt-btn-sm kt-btn-primary">
+                                            <i class="ki-filled ki-printer"></i> Print Release Letter
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach

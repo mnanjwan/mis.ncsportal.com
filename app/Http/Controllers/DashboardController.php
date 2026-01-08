@@ -125,15 +125,41 @@ class DashboardController extends Controller
             ->get();
         $approvedManningRequestsCount = ManningRequest::where('status', 'APPROVED')->count();
 
-        // 2. Draft Deployments (need review and publication)
-        $draftDeployments = ManningDeployment::where('status', 'DRAFT')
-            ->with(['assignments.officer', 'assignments.toCommand'])
+        // 2. Draft Deployments - Movement Orders (from Manning Requests)
+        $movementOrderDrafts = ManningDeployment::where('status', 'DRAFT')
+            ->whereHas('assignments', function($q) {
+                $q->whereNotNull('manning_request_id');
+            })
+            ->with(['assignments' => function($q) {
+                $q->whereNotNull('manning_request_id');
+            }, 'assignments.officer', 'assignments.toCommand'])
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        $draftDeploymentsCount = ManningDeployment::where('status', 'DRAFT')->count();
+        $movementOrderDraftsCount = ManningDeployment::where('status', 'DRAFT')
+            ->whereHas('assignments', function($q) {
+                $q->whereNotNull('manning_request_id');
+            })
+            ->count();
 
-        // 3. APER Forms pending HRD grading
+        // 3. Draft Deployments - Command Duration
+        $commandDurationDrafts = ManningDeployment::where('status', 'DRAFT')
+            ->whereHas('assignments', function($q) {
+                $q->whereNull('manning_request_id');
+            })
+            ->with(['assignments' => function($q) {
+                $q->whereNull('manning_request_id');
+            }, 'assignments.officer', 'assignments.toCommand'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $commandDurationDraftsCount = ManningDeployment::where('status', 'DRAFT')
+            ->whereHas('assignments', function($q) {
+                $q->whereNull('manning_request_id');
+            })
+            ->count();
+
+        // 4. APER Forms pending HRD grading
         $pendingAperForms = APERForm::where('status', 'HRD_GRADING')
             ->with(['officer', 'reportingOfficer', 'countersigningOfficer'])
             ->orderBy('updated_at', 'desc')
@@ -141,7 +167,7 @@ class DashboardController extends Controller
             ->get();
         $pendingAperFormsCount = APERForm::where('status', 'HRD_GRADING')->count();
 
-        // 4. Queries pending HRD review
+        // 5. Queries pending HRD review
         $pendingQueries = Query::where('status', 'PENDING_REVIEW')
             ->with(['officer', 'issuedBy'])
             ->orderBy('responded_at', 'desc')
@@ -195,8 +221,10 @@ class DashboardController extends Controller
             // Quick action items
             'approvedManningRequests',
             'approvedManningRequestsCount',
-            'draftDeployments',
-            'draftDeploymentsCount',
+            'movementOrderDrafts',
+            'movementOrderDraftsCount',
+            'commandDurationDrafts',
+            'commandDurationDraftsCount',
             'pendingAperForms',
             'pendingAperFormsCount',
             'pendingQueries',
@@ -428,24 +456,24 @@ class DashboardController extends Controller
                 ->orderBy('updated_at', 'desc')
                 ->take(5)
                 ->get();
-            // Get newly posted officers (pending postings INTO this command, not yet documented)
-            // Note: officer may still be in old command until documentation is completed.
+            // Get newly posted officers (pending postings INTO this command, awaiting acceptance)
+            // Note: officer may still be in old command until acceptance is completed.
             $newlyPostedOfficers = \App\Models\OfficerPosting::where('command_id', $commandId)
                 ->where('is_current', false)
-                ->whereNull('documented_at')
-                ->with(['officer.presentStation', 'officer.user'])
-                ->orderBy('posting_date', 'desc')
+                ->where('release_letter_printed', true) // Release letter must be printed first
+                ->where('accepted_by_new_command', false) // Not yet accepted
+                ->with(['officer.presentStation', 'officer.user', 'movementOrder', 'staffOrder', 'releaseLetterPrintedBy'])
+                ->orderBy('release_letter_printed_at', 'desc')
                 ->take(10)
                 ->get();
 
-            // Get officers in this command that have a pending posting OUT (awaiting release)
+            // Get officers in this command that have a pending posting OUT (awaiting release letter)
             $pendingReleasePostings = \App\Models\OfficerPosting::where('is_current', false)
-                ->whereNull('documented_at')
-                ->whereNull('released_at')
+                ->where('release_letter_printed', false) // Not yet printed
                 ->whereHas('officer', function ($q) use ($commandId) {
                     $q->where('present_station', $commandId)->where('is_active', true);
                 })
-                ->with(['officer.presentStation', 'officer.user', 'command'])
+                ->with(['officer.presentStation', 'officer.user', 'command', 'movementOrder', 'staffOrder'])
                 ->orderBy('posting_date', 'desc')
                 ->take(10)
                 ->get();

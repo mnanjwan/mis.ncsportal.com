@@ -110,7 +110,25 @@
                     </div>
                 </a>
 
-                <!-- Draft Deployments -->
+                <!-- Command Duration -->
+                <a href="{{ route('hrd.command-duration.index') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+                                    <i class="ki-filled ki-time text-xl text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-sm">Command Duration</h4>
+                                    <p class="text-xs text-secondary-foreground">Search by Duration</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-secondary-foreground">Search officers by how long they've been in command</p>
+                    </div>
+                </a>
+
+                <!-- Movement Order Drafts (from Manning Requests) -->
                 <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-card hover:shadow-lg transition-shadow">
                     <div class="kt-card-content p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -119,25 +137,57 @@
                                     <i class="ki-filled ki-file-up text-xl text-warning"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-semibold text-sm">Draft Deployments</h4>
-                                    <p class="text-xs text-secondary-foreground">Pending Publication</p>
+                                    <h4 class="font-semibold text-sm">Movement Order Drafts</h4>
+                                    <p class="text-xs text-secondary-foreground">From Manning Requests</p>
                                 </div>
                             </div>
-                            <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $draftDeploymentsCount ?? 0 }}</span>
+                            <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $movementOrderDraftsCount ?? 0 }}</span>
                         </div>
-                        @if(($draftDeploymentsCount ?? 0) > 0)
+                        @if(($movementOrderDraftsCount ?? 0) > 0)
                             <div class="text-xs text-secondary-foreground space-y-1">
-                                @foreach($draftDeployments->take(3) as $deployment)
+                                @foreach($movementOrderDrafts->take(3) as $deployment)
                                     <div class="truncate">
-                                        {{ $deployment->deployment_number }} - {{ $deployment->assignments->count() }} officer(s)
+                                        {{ $deployment->deployment_number }} - {{ $deployment->assignments->whereNotNull('manning_request_id')->count() }} officer(s)
                                     </div>
                                 @endforeach
-                                @if($draftDeploymentsCount > 3)
-                                    <div class="text-primary font-medium">+{{ $draftDeploymentsCount - 3 }} more</div>
+                                @if($movementOrderDraftsCount > 3)
+                                    <div class="text-primary font-medium">+{{ $movementOrderDraftsCount - 3 }} more</div>
                                 @endif
                             </div>
                         @else
-                            <p class="text-xs text-secondary-foreground">No draft deployments</p>
+                            <p class="text-xs text-secondary-foreground">No movement order drafts</p>
+                        @endif
+                    </div>
+                </a>
+
+                <!-- Command Duration Drafts -->
+                <a href="{{ route('hrd.command-duration.draft') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
+                                    <i class="ki-filled ki-time text-xl text-info"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-sm">Command Duration Drafts</h4>
+                                    <p class="text-xs text-secondary-foreground">From Duration Search</p>
+                                </div>
+                            </div>
+                            <span class="kt-badge kt-badge-info kt-badge-sm">{{ $commandDurationDraftsCount ?? 0 }}</span>
+                        </div>
+                        @if(($commandDurationDraftsCount ?? 0) > 0)
+                            <div class="text-xs text-secondary-foreground space-y-1">
+                                @foreach($commandDurationDrafts->take(3) as $deployment)
+                                    <div class="truncate">
+                                        {{ $deployment->deployment_number }} - {{ $deployment->assignments->whereNull('manning_request_id')->count() }} officer(s)
+                                    </div>
+                                @endforeach
+                                @if($commandDurationDraftsCount > 3)
+                                    <div class="text-primary font-medium">+{{ $commandDurationDraftsCount - 3 }} more</div>
+                                @endif
+                            </div>
+                        @else
+                            <p class="text-xs text-secondary-foreground">No command duration drafts</p>
                         @endif
                     </div>
                 </a>
@@ -270,69 +320,6 @@
                     </div>
                 </a>
 
-                <!-- Account Change Requests -->
-                <a href="{{ route('hrd.officers') }}?account_changes=PENDING" class="kt-card hover:shadow-lg transition-shadow">
-                    <div class="kt-card-content p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="flex items-center justify-center size-12 rounded-full bg-purple-500/10">
-                                    <i class="ki-filled ki-wallet text-xl text-purple-500"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-semibold text-sm">Account Changes</h4>
-                                    <p class="text-xs text-secondary-foreground">Pending Approval</p>
-                                </div>
-                            </div>
-                            <span class="kt-badge kt-badge-sm" style="background-color: rgba(168, 85, 247, 0.1); color: rgb(168, 85, 247);">{{ $pendingAccountChangesCount ?? 0 }}</span>
-                        </div>
-                        @if(($pendingAccountChangesCount ?? 0) > 0)
-                            <div class="text-xs text-secondary-foreground space-y-1">
-                                @foreach($pendingAccountChanges->take(3) as $change)
-                                    <div class="truncate">
-                                        {{ $change->officer->initials ?? '' }} {{ $change->officer->surname ?? '' }}
-                                    </div>
-                                @endforeach
-                                @if($pendingAccountChangesCount > 3)
-                                    <div class="text-primary font-medium">+{{ $pendingAccountChangesCount - 3 }} more</div>
-                                @endif
-                            </div>
-                        @else
-                            <p class="text-xs text-secondary-foreground">No pending changes</p>
-                        @endif
-                    </div>
-                </a>
-
-                <!-- Next of Kin Change Requests -->
-                <a href="{{ route('hrd.officers') }}?nok_changes=PENDING" class="kt-card hover:shadow-lg transition-shadow">
-                    <div class="kt-card-content p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="flex items-center justify-center size-12 rounded-full bg-pink-500/10">
-                                    <i class="ki-filled ki-people text-xl text-pink-500"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-semibold text-sm">Next of Kin Changes</h4>
-                                    <p class="text-xs text-secondary-foreground">Pending Approval</p>
-                                </div>
-                            </div>
-                            <span class="kt-badge kt-badge-sm" style="background-color: rgba(236, 72, 153, 0.1); color: rgb(236, 72, 153);">{{ $pendingNokChangesCount ?? 0 }}</span>
-                        </div>
-                        @if(($pendingNokChangesCount ?? 0) > 0)
-                            <div class="text-xs text-secondary-foreground space-y-1">
-                                @foreach($pendingNokChanges->take(3) as $change)
-                                    <div class="truncate">
-                                        {{ $change->officer->initials ?? '' }} {{ $change->officer->surname ?? '' }}
-                                    </div>
-                                @endforeach
-                                @if($pendingNokChangesCount > 3)
-                                    <div class="text-primary font-medium">+{{ $pendingNokChangesCount - 3 }} more</div>
-                                @endif
-                            </div>
-                        @else
-                            <p class="text-xs text-secondary-foreground">No pending changes</p>
-                        @endif
-                </div>
-                </a>
             </div>
         </div>
     </div>

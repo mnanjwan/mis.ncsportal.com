@@ -164,7 +164,9 @@ const existingItems = @json($request->items ?? []);
 
 // Item template
 function createItemTemplate(index, itemData = null) {
-    const ranksHtml = ranks.map(rank => {
+    // Reverse ranks array to show latest rank on top (LIFO - Last In First Out)
+    const reversedRanks = [...ranks].reverse();
+    const ranksHtml = reversedRanks.map(rank => {
         const selected = itemData && itemData.rank === rank ? 'selected' : '';
         return `<option value="${rank}" ${selected}>${rank}</option>`;
     }).join('');

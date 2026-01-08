@@ -6,9 +6,31 @@
     <title>Manning Request - #{{ $request->id }}</title>
     <style>
         @media print {
-            body { margin: 0; }
+            @page {
+                margin-top: 25mm;
+                margin-bottom: 25mm;
+                margin-left: 15mm;
+                margin-right: 15mm;
+            }
+            body { 
+                margin: 0;
+                padding: 10mm 5mm;
+            }
             .no-print { display: none; }
-            @page { margin: 1cm; }
+            thead {
+                display: table-header-group;
+            }
+            tbody {
+                display: table-row-group;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            table {
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
         }
         body {
             font-family: Arial, sans-serif;
