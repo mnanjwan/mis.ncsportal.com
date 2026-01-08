@@ -211,12 +211,15 @@ function createItemTemplate(index) {
 // Add item
 function addItem() {
     const container = document.getElementById('items-container');
+    // Insert new item at the top - it will become Item #1, pushing all others down
     const itemHtml = createItemTemplate(itemCount);
-    container.insertAdjacentHTML('beforeend', itemHtml);
+    container.insertAdjacentHTML('afterbegin', itemHtml);
     itemCount++;
     
-    // Update remove buttons
-    updateRemoveButtons();
+    // Renumber all items: new item becomes #1, existing items get pushed down (#1->#2, #2->#3, etc.)
+    updateItemNumbers();
+    
+    // No scrolling - items will push down naturally
 }
 
 // Remove item
@@ -244,6 +247,37 @@ function updateItemNumbers() {
                 const newName = name.replace(/items\[\d+\]/, `items[${index}]`);
                 input.setAttribute('name', newName);
             }
+            // Update IDs that contain the index (e.g., qual-select-0 -> qual-select-1)
+            const id = input.getAttribute('id');
+            if (id && id.match(/-\d+$/)) {
+                const newId = id.replace(/-\d+$/, `-${index}`);
+                input.setAttribute('id', newId);
+            } else if (id && id.match(/\d+$/)) {
+                // Fallback for IDs without hyphen
+                const newId = id.replace(/\d+$/, index);
+                input.setAttribute('id', newId);
+            }
+        });
+        // Update button IDs and onclick handlers
+        item.querySelectorAll('button').forEach(button => {
+            const id = button.getAttribute('id');
+            if (id && id.match(/-\d+$/)) {
+                // IDs with hyphen pattern (e.g., qual-toggle-0 -> qual-toggle-1)
+                const newId = id.replace(/-\d+$/, `-${index}`);
+                button.setAttribute('id', newId);
+            } else if (id && id.match(/\d+$/)) {
+                // Fallback for IDs without hyphen
+                const newId = id.replace(/\d+$/, index);
+                button.setAttribute('id', newId);
+            }
+            const onclick = button.getAttribute('onclick');
+            if (onclick && onclick.includes('toggleCustomQual')) {
+                button.setAttribute('onclick', `toggleCustomQual(${index})`);
+            }
+            // Update remove button data-index
+            if (button.classList.contains('remove-item-btn')) {
+                button.setAttribute('data-index', index);
+            }
         });
         item.setAttribute('data-item-index', index);
     });
@@ -255,11 +289,37 @@ function updateItemNumbers() {
 function updateRemoveButtons() {
     const removeButtons = document.querySelectorAll('.remove-item-btn');
     removeButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+        // Remove existing listeners first
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        // Add new listener
+        newBtn.addEventListener('click', function() {
             const index = parseInt(this.getAttribute('data-index'));
             removeItem(index);
         });
     });
+}
+
+// Toggle custom qualification
+function toggleCustomQual(index) {
+    const select = document.getElementById(`qual-select-${index}`);
+    const custom = document.getElementById(`qual-custom-${index}`);
+    const toggle = document.getElementById(`qual-toggle-${index}`);
+    
+    if (select && custom && toggle) {
+        if (select.style.display === 'none') {
+            select.style.display = 'block';
+            custom.style.display = 'none';
+            custom.value = '';
+            toggle.innerHTML = '<i class="ki-filled ki-plus"></i> Custom';
+        } else {
+            select.style.display = 'none';
+            custom.style.display = 'block';
+            select.value = '';
+            toggle.innerHTML = '<i class="ki-filled ki-cross"></i> Use List';
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

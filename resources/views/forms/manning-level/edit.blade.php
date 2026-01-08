@@ -252,11 +252,14 @@ function toggleCustomQual(index) {
 function addItem(itemData = null) {
     const container = document.getElementById('items-container');
     const itemHtml = createItemTemplate(itemCount, itemData);
-    container.insertAdjacentHTML('beforeend', itemHtml);
+    container.insertAdjacentHTML('afterbegin', itemHtml);
     itemCount++;
     
-    // Update remove buttons
-    updateRemoveButtons();
+    // Update item numbers and remove buttons
+    updateItemNumbers();
+    
+    // Scroll to top to show newly added item
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Remove item
@@ -272,6 +275,7 @@ function removeItem(index) {
 function updateItemNumbers() {
     const items = document.querySelectorAll('[data-item-index]');
     items.forEach((item, index) => {
+        const indexAttr = item.getAttribute('data-item-index');
         const title = item.querySelector('.text-mono');
         if (title) {
             title.textContent = `Item #${index + 1}`;
@@ -282,6 +286,37 @@ function updateItemNumbers() {
             if (name) {
                 const newName = name.replace(/items\[\d+\]/, `items[${index}]`);
                 input.setAttribute('name', newName);
+            }
+            // Update IDs that contain the index (e.g., qual-select-0 -> qual-select-1)
+            const id = input.getAttribute('id');
+            if (id && id.match(/-\d+$/)) {
+                const newId = id.replace(/-\d+$/, `-${index}`);
+                input.setAttribute('id', newId);
+            } else if (id && id.match(/\d+$/)) {
+                // Fallback for IDs without hyphen
+                const newId = id.replace(/\d+$/, index);
+                input.setAttribute('id', newId);
+            }
+        });
+        // Update button IDs and onclick handlers
+        item.querySelectorAll('button').forEach(button => {
+            const id = button.getAttribute('id');
+            if (id && id.match(/-\d+$/)) {
+                // IDs with hyphen pattern (e.g., qual-toggle-0 -> qual-toggle-1)
+                const newId = id.replace(/-\d+$/, `-${index}`);
+                button.setAttribute('id', newId);
+            } else if (id && id.match(/\d+$/)) {
+                // Fallback for IDs without hyphen
+                const newId = id.replace(/\d+$/, index);
+                button.setAttribute('id', newId);
+            }
+            const onclick = button.getAttribute('onclick');
+            if (onclick && onclick.includes('toggleCustomQual')) {
+                button.setAttribute('onclick', `toggleCustomQual(${index})`);
+            }
+            // Update remove button data-index
+            if (button.classList.contains('remove-item-btn')) {
+                button.setAttribute('data-index', index);
             }
         });
         item.setAttribute('data-item-index', index);
