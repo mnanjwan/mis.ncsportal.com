@@ -1979,24 +1979,34 @@ class ManningRequestController extends Controller
                 'order_number' => $orderNumber,
                 'manning_request_id' => $manningRequestId, // Link to specific request if filtering
                 'criteria_months_at_station' => null,
-                'status' => 'DRAFT',
+                'status' => 'PUBLISHED', // Mark as published immediately
                 'created_by' => auth()->id(),
             ]);
 
-            // STEP 1: Notify FROM commands about pending release letters
-            // This notifies Staff Officers in the old command that they need to print release letters
+            // STEP 1: Notify Staff Officers
+            // - FROM commands: Notify about pending release letters
+            // - TO commands: Notify about pending arrivals
             $notificationService = app(NotificationService::class);
             foreach ($assignmentsToPublish as $assignment) {
                 $officer = $assignment->officer;
                 $fromCommand = $assignment->fromCommand;
                 $toCommand = $assignment->toCommand;
 
+                // Notify FROM command Staff Officers about pending release letter
                 if ($fromCommand) {
-                    // Notify FROM command Staff Officers about pending release letter
                     try {
                         $notificationService->notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $movementOrder);
                     } catch (\Exception $e) {
                         Log::warning("Failed to send release letter notification: " . $e->getMessage());
+                    }
+                }
+
+                // Notify TO command Staff Officers about pending arrival
+                if ($toCommand) {
+                    try {
+                        $notificationService->notifyStaffOfficerPendingArrival($officer, $fromCommand, $toCommand, $movementOrder);
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to send pending arrival notification: " . $e->getMessage());
                     }
                 }
             }
@@ -2083,7 +2093,10 @@ class ManningRequestController extends Controller
             DB::commit();
 
             // Build success message
-            $successMessage = "Movement Order {$orderNumber} created successfully! ";
+            $successMessage = "Movement Order {$orderNumber} published successfully! ";
+            $manningRequestCount = $assignmentsToPublish->whereNotNull('manning_request_id')->count();
+            $commandDurationCount = $assignmentsToPublish->whereNull('manning_request_id')->count();
+            
             if ($manningRequestId) {
                 $manningRequest = ManningRequest::find($manningRequestId);
                 $successMessage .= "Published {$assignmentsToPublishCount} officer(s) from Manning Request #{$manningRequestId}";
@@ -2094,8 +2107,26 @@ class ManningRequestController extends Controller
                     $successMessage .= ". {$remainingCount} officer(s) remain in draft.";
                 }
             } else {
-                $successMessage .= "Deployment {$deployment->deployment_number} published successfully!";
+                $parts = [];
+                if ($manningRequestCount > 0) {
+                    $parts[] = "{$manningRequestCount} from Manning Requests";
+                }
+                if ($commandDurationCount > 0) {
+                    $parts[] = "{$commandDurationCount} from Command Duration";
+                }
+                $successMessage .= "Published {$assignmentsToPublishCount} officer(s)";
+                if (!empty($parts)) {
+                    $successMessage .= " (" . implode(', ', $parts) . ")";
+                }
+                if ($totalAssignments == $assignmentsToPublishCount) {
+                    $successMessage .= ". Deployment {$deployment->deployment_number} is now fully published.";
+                } else {
+                    $remainingCount = $totalAssignments - $assignmentsToPublishCount;
+                    $successMessage .= ". {$remainingCount} officer(s) remain in draft.";
+                }
             }
+            
+            $successMessage .= " Staff Officers have been notified about pending release letters and arrivals.";
 
             // Always redirect to Published Deployments page after publishing
             return redirect()->route('hrd.manning-deployments.published')

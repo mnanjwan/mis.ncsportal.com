@@ -1369,6 +1369,57 @@ class NotificationService
     }
 
     /**
+     * Notify Staff Officers of TO command about pending officer arrival
+     * This is sent when a movement order is published and officers are posted to their command
+     */
+    public function notifyStaffOfficerPendingArrival($officer, $fromCommand, $toCommand, $movementOrder): array
+    {
+        $notifications = [];
+        
+        if (!$toCommand) {
+            return $notifications;
+        }
+
+        // Get Staff Officers, Area Controllers, and DC Admins for the TO command
+        // These are the authorized personnel who need to accept incoming officers
+        $authorizedUsers = User::whereHas('roles', function($q) use ($toCommand) {
+                $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
+                  ->where('role_user.command_id', $toCommand->id)
+                  ->where('role_user.is_active', true);
+            })
+            ->get();
+
+        $officerName = ($officer->initials ?? '') . ' ' . ($officer->surname ?? '');
+        $officerServiceNumber = $officer->service_number ?? 'N/A';
+        $officerRank = $officer->substantive_rank ?? 'N/A';
+        $fromCommandName = $fromCommand ? $fromCommand->name : 'Previous Command';
+        $orderNumber = $movementOrder ? $movementOrder->order_number : 'N/A';
+        $orderDate = $movementOrder && $movementOrder->created_at 
+            ? $movementOrder->created_at->format('d M Y') 
+            : now()->format('d M Y');
+
+        foreach ($authorizedUsers as $user) {
+            $message = "PENDING ARRIVAL: Officer {$officerServiceNumber} {$officerRank} {$officerName} from {$fromCommandName} is being posted to {$toCommand->name}. Movement Order: {$orderNumber} dated {$orderDate}. Please wait for the release letter to be printed by the previous command before accepting the officer.";
+            
+            $notification = $this->notify(
+                $user,
+                'officer_pending_arrival',
+                'Pending Officer Arrival',
+                $message,
+                'officer',
+                $officer->id,
+                true
+            );
+            
+            if ($notification) {
+                $notifications[] = $notification;
+            }
+        }
+
+        return $notifications;
+    }
+
+    /**
      * Notify officer about acceptance into new command
      * This is sent when the new command accepts the officer
      */
