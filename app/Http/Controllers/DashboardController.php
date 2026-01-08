@@ -125,39 +125,13 @@ class DashboardController extends Controller
             ->get();
         $approvedManningRequestsCount = ManningRequest::where('status', 'APPROVED')->count();
 
-        // 2. Draft Deployments - Movement Orders (from Manning Requests)
-        $movementOrderDrafts = ManningDeployment::where('status', 'DRAFT')
-            ->whereHas('assignments', function($q) {
-                $q->whereNotNull('manning_request_id');
-            })
-            ->with(['assignments' => function($q) {
-                $q->whereNotNull('manning_request_id');
-            }, 'assignments.officer', 'assignments.toCommand'])
+        // 2. Draft Deployments (combined - includes both Manning Requests and Command Duration)
+        $draftDeployments = ManningDeployment::where('status', 'DRAFT')
+            ->with(['assignments.officer', 'assignments.toCommand', 'assignments.fromCommand'])
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        $movementOrderDraftsCount = ManningDeployment::where('status', 'DRAFT')
-            ->whereHas('assignments', function($q) {
-                $q->whereNotNull('manning_request_id');
-            })
-            ->count();
-
-        // 3. Draft Deployments - Command Duration
-        $commandDurationDrafts = ManningDeployment::where('status', 'DRAFT')
-            ->whereHas('assignments', function($q) {
-                $q->whereNull('manning_request_id');
-            })
-            ->with(['assignments' => function($q) {
-                $q->whereNull('manning_request_id');
-            }, 'assignments.officer', 'assignments.toCommand'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
-        $commandDurationDraftsCount = ManningDeployment::where('status', 'DRAFT')
-            ->whereHas('assignments', function($q) {
-                $q->whereNull('manning_request_id');
-            })
-            ->count();
+        $draftDeploymentsCount = ManningDeployment::where('status', 'DRAFT')->count();
 
         // 4. APER Forms pending HRD grading
         $pendingAperForms = APERForm::where('status', 'HRD_GRADING')
@@ -221,10 +195,8 @@ class DashboardController extends Controller
             // Quick action items
             'approvedManningRequests',
             'approvedManningRequestsCount',
-            'movementOrderDrafts',
-            'movementOrderDraftsCount',
-            'commandDurationDrafts',
-            'commandDurationDraftsCount',
+            'draftDeployments',
+            'draftDeploymentsCount',
             'pendingAperForms',
             'pendingAperFormsCount',
             'pendingQueries',

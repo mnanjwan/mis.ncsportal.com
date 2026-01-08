@@ -128,7 +128,7 @@
                     </div>
                 </a>
 
-                <!-- Movement Order Drafts (from Manning Requests) -->
+                <!-- Draft Deployments (Combined - Manning Requests & Command Duration) -->
                 <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-card hover:shadow-lg transition-shadow">
                     <div class="kt-card-content p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -137,57 +137,25 @@
                                     <i class="ki-filled ki-file-up text-xl text-warning"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-semibold text-sm">Movement Order Drafts</h4>
-                                    <p class="text-xs text-secondary-foreground">From Manning Requests</p>
+                                    <h4 class="font-semibold text-sm">Draft Deployments</h4>
+                                    <p class="text-xs text-secondary-foreground">Manning Requests & Command Duration</p>
                                 </div>
                             </div>
-                            <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $movementOrderDraftsCount ?? 0 }}</span>
+                            <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $draftDeploymentsCount ?? 0 }}</span>
                         </div>
-                        @if(($movementOrderDraftsCount ?? 0) > 0)
+                        @if(($draftDeploymentsCount ?? 0) > 0)
                             <div class="text-xs text-secondary-foreground space-y-1">
-                                @foreach($movementOrderDrafts->take(3) as $deployment)
+                                @foreach($draftDeployments->take(3) as $deployment)
                                     <div class="truncate">
-                                        {{ $deployment->deployment_number }} - {{ $deployment->assignments->whereNotNull('manning_request_id')->count() }} officer(s)
+                                        {{ $deployment->deployment_number }} - {{ $deployment->assignments->count() }} officer(s)
                                     </div>
                                 @endforeach
-                                @if($movementOrderDraftsCount > 3)
-                                    <div class="text-primary font-medium">+{{ $movementOrderDraftsCount - 3 }} more</div>
+                                @if($draftDeploymentsCount > 3)
+                                    <div class="text-primary font-medium">+{{ $draftDeploymentsCount - 3 }} more</div>
                                 @endif
                             </div>
                         @else
-                            <p class="text-xs text-secondary-foreground">No movement order drafts</p>
-                        @endif
-                    </div>
-                </a>
-
-                <!-- Command Duration Drafts -->
-                <a href="{{ route('hrd.command-duration.draft') }}" class="kt-card hover:shadow-lg transition-shadow">
-                    <div class="kt-card-content p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
-                                    <i class="ki-filled ki-time text-xl text-info"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-semibold text-sm">Command Duration Drafts</h4>
-                                    <p class="text-xs text-secondary-foreground">From Duration Search</p>
-                                </div>
-                            </div>
-                            <span class="kt-badge kt-badge-info kt-badge-sm">{{ $commandDurationDraftsCount ?? 0 }}</span>
-                        </div>
-                        @if(($commandDurationDraftsCount ?? 0) > 0)
-                            <div class="text-xs text-secondary-foreground space-y-1">
-                                @foreach($commandDurationDrafts->take(3) as $deployment)
-                                    <div class="truncate">
-                                        {{ $deployment->deployment_number }} - {{ $deployment->assignments->whereNull('manning_request_id')->count() }} officer(s)
-                                    </div>
-                                @endforeach
-                                @if($commandDurationDraftsCount > 3)
-                                    <div class="text-primary font-medium">+{{ $commandDurationDraftsCount - 3 }} more</div>
-                                @endif
-                            </div>
-                        @else
-                            <p class="text-xs text-secondary-foreground">No command duration drafts</p>
+                            <p class="text-xs text-secondary-foreground">No draft deployments</p>
                         @endif
                     </div>
                 </a>

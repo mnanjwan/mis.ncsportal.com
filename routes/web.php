@@ -254,11 +254,6 @@ Route::middleware('auth')->group(function () {
             Route::match(['get', 'post'], '/search', [\App\Http\Controllers\CommandDurationController::class, 'search'])->name('search');
             Route::post('/add-to-draft', [\App\Http\Controllers\CommandDurationController::class, 'addToDraft'])->name('add-to-draft');
             Route::get('/print', [\App\Http\Controllers\CommandDurationController::class, 'print'])->name('print');
-            Route::get('/draft', [\App\Http\Controllers\CommandDurationController::class, 'draftIndex'])->name('draft');
-            Route::put('/draft/{deploymentId}/update-destination/{assignmentId}', [\App\Http\Controllers\CommandDurationController::class, 'updateDestination'])->name('draft.update-destination');
-            Route::post('/draft/{deploymentId}/swap-officer/{assignmentId}', [\App\Http\Controllers\CommandDurationController::class, 'swapOfficer'])->name('draft.swap-officer');
-            Route::delete('/draft/{deploymentId}/remove-officer/{assignmentId}', [\App\Http\Controllers\CommandDurationController::class, 'removeOfficer'])->name('draft.remove-officer');
-            Route::post('/draft/{id}/publish', [\App\Http\Controllers\CommandDurationController::class, 'publish'])->name('publish');
         });
         Route::get('/manning-requests/{id}/draft', [ManningRequestController::class, 'hrdViewDraft'])->name('manning-requests.draft');
         Route::post('/manning-requests/{id}/generate-order', [ManningRequestController::class, 'hrdGenerateOrder'])->name('manning-requests.generate-order');
@@ -268,7 +263,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-deployments/draft', [ManningRequestController::class, 'hrdDraftIndex'])->name('manning-deployments.draft');
         Route::delete('/manning-deployments/{deploymentId}/remove-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftRemoveOfficer'])->name('manning-deployments.draft.remove-officer');
         Route::post('/manning-deployments/{deploymentId}/swap-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftSwapOfficer'])->name('manning-deployments.draft.swap-officer');
-        Route::put('/manning-deployments/{deploymentId}/update-destination/{assignmentId}', [ManningRequestController::class, 'hrdDraftUpdateDestination'])->name('manning-deployments.draft.update-destination');
+        Route::post('/manning-deployments/{deploymentId}/update-destination/{assignmentId}', [ManningRequestController::class, 'hrdDraftUpdateDestination'])->name('manning-deployments.draft.update-destination');
         Route::post('/manning-deployments/{id}/publish', [ManningRequestController::class, 'hrdDraftPublish'])->name('manning-deployments.publish');
         Route::get('/manning-deployments/{id}/print', [ManningRequestController::class, 'hrdDraftPrint'])->name('manning-deployments.print');
         Route::get('/manning-deployments/published', [ManningRequestController::class, 'hrdPublishedIndex'])->name('manning-deployments.published');

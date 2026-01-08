@@ -137,6 +137,7 @@
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service No</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Rank</th>
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">From Command</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">To Command</th>
                                         <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
                                     </tr>
                                 </thead>
@@ -151,14 +152,14 @@
                                         @if($loop->first)
                                             {{-- First rank header --}}
                                             <tr>
-                                                <td colspan="5" class="py-2 px-4 bg-primary/5 border-b border-primary/20">
+                                                <td colspan="6" class="py-2 px-4 bg-primary/5 border-b border-primary/20">
                                                     <span class="text-xs font-semibold text-primary">{{ $rank }}</span>
                                                 </td>
                                             </tr>
                                         @else
                                             {{-- Rank separator for subsequent ranks --}}
                                             <tr class="border-t-2 border-primary/30">
-                                                <td colspan="5" class="py-2 px-4 bg-primary/5">
+                                                <td colspan="6" class="py-2 px-4 bg-primary/5">
                                                     <div class="flex items-center gap-2">
                                                         <div class="flex-1 border-t border-primary/20"></div>
                                                         <span class="text-xs font-semibold text-primary px-2">{{ $rank }}</span>
@@ -188,6 +189,40 @@
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $assignment->fromCommand->name ?? 'N/A' }}
                                             </td>
+                                            <td class="py-3 px-4">
+                                                @if(is_null($assignment->manning_request_id))
+                                                    {{-- Command Duration assignment: Show searchable select --}}
+                                                    <div class="command-select-wrapper" data-assignment-id="{{ $assignment->id }}">
+                                                        <div class="relative" style="position: relative;">
+                                                            <input type="text" 
+                                                                   class="kt-input kt-input-sm command-search-input {{ $assignment->to_command_id == $assignment->from_command_id ? 'border-warning' : '' }}" 
+                                                                   placeholder="Type to search command..."
+                                                                   autocomplete="off"
+                                                                   data-assignment-id="{{ $assignment->id }}"
+                                                                   value="{{ $assignment->toCommand ? ($assignment->toCommand->name . ($assignment->toCommand->code ? ' (' . $assignment->toCommand->code . ')' : '')) : '' }}">
+                                                            <input type="hidden" 
+                                                                   class="command-hidden-input" 
+                                                                   name="to_command_id"
+                                                                   value="{{ $assignment->to_command_id ?? '' }}"
+                                                                   data-assignment-id="{{ $assignment->id }}">
+                                                            <div class="command-dropdown" 
+                                                                 style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; margin-top: 4px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-height: 240px; overflow-y: auto; display: none;" 
+                                                                 data-assignment-id="{{ $assignment->id }}"></div>
+                                                        </div>
+                                                        <br>
+                                                        @if($assignment->to_command_id == $assignment->from_command_id)
+                                                            <span class="kt-badge kt-badge-warning kt-badge-sm mt-1 inline-block" title="Please select destination command (currently same as from command)">
+                                                                <i class="ki-filled ki-information"></i> Select Destination
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    {{-- Manning Request assignment: Show destination directly --}}
+                                                    <span class="text-sm text-secondary-foreground">
+                                                        {{ $assignment->toCommand->name ?? 'N/A' }}
+                                                    </span>
+                                                @endif
+                                            </td>
                                             <td class="py-3 px-4 text-right">
                                                 <div class="flex items-center justify-end gap-2">
                                                     <button type="button" 
@@ -216,7 +251,7 @@
             <div class="kt-card">
                 <div class="kt-card-content p-12 text-center">
                     <i class="ki-filled ki-information text-4xl text-muted-foreground mb-4"></i>
-                    <p class="text-secondary-foreground">No officers in draft deployment yet. Add officers from manning requests.</p>
+                    <p class="text-secondary-foreground">No officers in draft deployment yet. Add officers from manning requests or Command Duration search.</p>
                 </div>
             </div>
         @endif
@@ -225,10 +260,15 @@
         <div class="kt-card">
             <div class="kt-card-content p-12 text-center">
                 <i class="ki-filled ki-information text-4xl text-muted-foreground mb-4"></i>
-                <p class="text-secondary-foreground mb-4">No active draft deployment. Add officers from manning requests to create one.</p>
-                <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-primary">
-                    <i class="ki-filled ki-arrow-right"></i> Go to Manning Requests
-                </a>
+                <p class="text-secondary-foreground mb-4">No active draft deployment. Add officers from manning requests or Command Duration search to create one.</p>
+                <div class="flex items-center gap-3 justify-center">
+                    <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-arrow-right"></i> Go to Manning Requests
+                    </a>
+                    <a href="{{ route('hrd.command-duration.index') }}" class="kt-btn kt-btn-secondary">
+                        <i class="ki-filled ki-search"></i> Command Duration Search
+                    </a>
+                </div>
             </div>
         </div>
     @endif
@@ -529,6 +569,209 @@ let searchTimeout;
             }
         })();
     @endforeach
+@endif
+
+@if(isset($commands))
+// Commands data for Command Duration assignments
+@php
+    $commandsData = $commands->map(function($command) {
+        return [
+            'id' => $command->id,
+            'name' => $command->name,
+            'code' => $command->code ?? ''
+        ];
+    })->values();
+@endphp
+const commandsCache = @json($commandsData);
+
+// Searchable Select Helper Function for Command Duration
+function createCommandSearchableSelect(searchInput, hiddenInput, dropdown, options, onSelect, displayFn) {
+    let selectedOption = null;
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        
+        const filtered = options.filter(opt => {
+            if (displayFn) {
+                return displayFn(opt).toLowerCase().includes(searchTerm);
+            }
+            const nameMatch = opt.name && opt.name.toLowerCase().includes(searchTerm);
+            const codeMatch = opt.code && opt.code.toLowerCase().includes(searchTerm);
+            return nameMatch || codeMatch;
+        });
+
+        if (filtered.length > 0) {
+            dropdown.innerHTML = filtered.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name + (opt.code ? ' (' + opt.code + ')' : ''));
+                const escapedName = (opt.name || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                return '<div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-0" ' +
+                            'data-id="' + opt.id + '" ' +
+                            'data-name="' + escapedName + '">' +
+                            '<div class="font-medium text-sm">' + display + '</div>' +
+                        '</div>';
+            }).join('');
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.innerHTML = '<div class="p-3 text-gray-500 text-sm">No results found</div>';
+            dropdown.style.display = 'block';
+        }
+    });
+    
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            searchInput.dispatchEvent(new Event('input'));
+        }
+    });
+
+    dropdown.addEventListener('click', function(e) {
+        const option = e.target.closest('[data-id]');
+        if (option) {
+            selectedOption = options.find(o => o.id == option.dataset.id);
+            if (selectedOption) {
+                hiddenInput.value = selectedOption.id;
+                const display = displayFn ? displayFn(selectedOption) : (selectedOption.name + (selectedOption.code ? ' (' + selectedOption.code + ')' : ''));
+                searchInput.value = display;
+                dropdown.style.display = 'none';
+                if (onSelect) onSelect(selectedOption);
+            }
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
+
+// Initialize searchable selects for Command Duration assignments
+function initializeCommandSelects() {
+    document.querySelectorAll('.command-select-wrapper').forEach(wrapper => {
+        const assignmentId = wrapper.dataset.assignmentId;
+        const searchInput = wrapper.querySelector('.command-search-input[data-assignment-id="' + assignmentId + '"]');
+        const hiddenInput = wrapper.querySelector('.command-hidden-input[data-assignment-id="' + assignmentId + '"]');
+        const dropdown = wrapper.querySelector('.command-dropdown[data-assignment-id="' + assignmentId + '"]');
+        
+        if (!searchInput || !hiddenInput || !dropdown) return;
+        
+        // Initialize with current value if exists
+        const currentValue = hiddenInput.value;
+        if (currentValue) {
+            const currentCommand = commandsCache.find(c => c.id == currentValue);
+            if (currentCommand) {
+                const display = currentCommand.name + (currentCommand.code ? ' (' + currentCommand.code + ')' : '');
+                searchInput.value = display;
+            }
+        }
+        
+        createCommandSearchableSelect(
+            searchInput,
+            hiddenInput,
+            dropdown,
+            commandsCache,
+            function(selectedCommand) {
+                if (selectedCommand) {
+                    updateCommandDurationDestination(assignmentId, selectedCommand.id);
+                }
+            },
+            function(cmd) {
+                return cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
+            }
+        );
+    });
+}
+
+function updateCommandDurationDestination(assignmentId, commandId) {
+    if (!commandId) return;
+    
+    const deploymentId = {{ $activeDraft->id ?? 0 }};
+    if (!deploymentId) {
+        alert('No active draft deployment found.');
+        return;
+    }
+    
+    // Build URL manually to ensure correct format
+    const baseUrl = '{{ url("/hrd/manning-deployments") }}';
+    const url = `${baseUrl}/${deploymentId}/update-destination/${assignmentId}`;
+    
+    console.log('Updating destination:', {
+        url: url,
+        deploymentId: deploymentId,
+        assignmentId: assignmentId,
+        commandId: commandId
+    });
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!csrfToken) {
+        alert('CSRF token not found. Please refresh the page.');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('_token', csrfToken);
+    formData.append('to_command_id', commandId);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json().then(data => {
+                return { ok: response.ok, status: response.status, data: data };
+            });
+        } else {
+            // If not JSON, return text
+            return response.text().then(text => {
+                return { ok: response.ok, status: response.status, data: { message: text || 'Unknown error' } };
+            });
+        }
+    })
+    .then(result => {
+        console.log('Result:', result);
+        if (result.status === 403) {
+            alert('Access denied. Please ensure you have HRD permissions.');
+            console.error('403 Forbidden:', result.data);
+            return;
+        }
+        
+        if (result.ok && result.data.success !== false) {
+            // Reload page to show updated grouping by command
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } else {
+            const errorMessage = result.data.message || result.data.error || 'Failed to update destination command.';
+            alert(errorMessage);
+            console.error('Update failed:', result);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update destination command. Please try again.');
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCommandSelects();
+});
 @endif
 </script>
 @endsection
