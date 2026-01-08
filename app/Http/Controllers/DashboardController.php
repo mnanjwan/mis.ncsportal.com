@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Emolument;
 use App\Models\Command;
@@ -1071,7 +1072,61 @@ class DashboardController extends Controller
     // Building Dashboard
     public function building()
     {
-        return view('dashboards.building.dashboard');
+        $user = auth()->user();
+        
+        if (!$user || !$user->hasRole('Building Unit')) {
+            return redirect()->route('building.dashboard')
+                ->with('error', 'Unauthorized access');
+        }
+
+        // Get Building Unit command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return view('dashboards.building.dashboard', ['rejectedAllocations' => collect([])]);
+        }
+
+        // Load recent rejected allocations (last 10) for quick handling
+        // Only show rejected allocations if there's no newer allocation (any status) for the same officer
+        // This prevents showing old rejections when officer has been re-allocated
+        $rejectedAllocations = \App\Models\OfficerQuarter::where('status', 'REJECTED')
+            ->with([
+                'officer:id,service_number,initials,surname,present_station',
+                'quarter:id,quarter_number,quarter_type,command_id',
+                'allocatedBy:id,email',
+                'allocatedBy.officer:id,user_id,initials,surname',
+            ])
+            ->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
+            ->whereHas('quarter', function ($q) use ($commandId) {
+                $q->where('command_id', $commandId);
+            })
+            ->whereNotExists(function ($q) {
+                // Exclude if there's ANY newer allocation (PENDING, ACCEPTED, or even REJECTED) for this officer
+                // This ensures we only show the most recent rejected allocation if it's the latest action
+                $q->select(DB::raw(1))
+                  ->from('officer_quarters as newer_allocations')
+                  ->whereColumn('newer_allocations.officer_id', 'officer_quarters.officer_id')
+                  ->whereColumn('newer_allocations.created_at', '>', 'officer_quarters.created_at');
+            })
+            ->orderBy('rejected_at', 'desc')
+            ->take(10)
+            ->get()
+            ->map(function ($allocation) {
+                // Ensure allocatedBy relationship is loaded
+                if ($allocation->allocatedBy && !$allocation->allocatedBy->relationLoaded('officer')) {
+                    $allocation->allocatedBy->load('officer:id,user_id,initials,surname');
+                }
+                return $allocation;
+            });
+
+        return view('dashboards.building.dashboard', compact('rejectedAllocations'));
     }
 
     public function quarters()

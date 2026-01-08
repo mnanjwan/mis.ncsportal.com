@@ -47,6 +47,26 @@ class QuarterController extends BaseController
             $query->where('is_occupied', $request->boolean('is_occupied'));
         }
 
+        // Sorting
+        $sort = $request->get('sort', 'quarter_number');
+        $order = $request->get('order', 'asc');
+        
+        // Map sort column names
+        $sortColumnMap = [
+            'quarter_number' => 'quarter_number',
+            'quarter_type' => 'quarter_type',
+            'status' => 'is_occupied',
+            'occupied_by' => 'is_occupied', // Secondary sort by quarter_number
+        ];
+        
+        $sortColumn = $sortColumnMap[$sort] ?? 'quarter_number';
+        $query->orderBy($sortColumn, $order);
+        
+        if ($sort === 'occupied_by') {
+            // Secondary sort by quarter_number for occupied_by
+            $query->orderBy('quarter_number', $order);
+        }
+
         $quarters = $query->with(['officerQuarters' => function ($q) {
             $q->where('is_current', true)
               ->where('status', 'ACCEPTED')
@@ -282,27 +302,45 @@ class QuarterController extends BaseController
             ->where('status', 'ACCEPTED')
             ->update(['is_current' => false]);
 
-        // Cancel any pending allocations for this officer
-        OfficerQuarter::where('officer_id', $request->officer_id)
-            ->where('status', 'PENDING')
-            ->update(['is_current' => false, 'status' => 'REJECTED', 'rejected_at' => now()]);
+        // Wrap allocation in a transaction to ensure consistency
+        $allocationDate = $request->allocation_date ?? now();
+        $allocation = null;
+        
+        DB::transaction(function () use ($request, $user, $quarter, $officer, $allocationDate, &$allocation) {
+            // Cancel any pending allocations for this officer
+            OfficerQuarter::where('officer_id', $request->officer_id)
+                ->where('status', 'PENDING')
+                ->update(['is_current' => false, 'status' => 'REJECTED', 'rejected_at' => now()]);
 
-        // Create new allocation with PENDING status - officer must accept
-        $allocation = OfficerQuarter::create([
-            'officer_id' => $request->officer_id,
-            'quarter_id' => $request->quarter_id,
-            'allocated_date' => $request->allocation_date ?? now(),
-            'is_current' => true,
-            'status' => 'PENDING',
-            'allocated_by' => $user->id,
-        ]);
+            // Create new allocation with PENDING status - officer must accept
+            $allocation = OfficerQuarter::create([
+                'officer_id' => $request->officer_id,
+                'quarter_id' => $request->quarter_id,
+                'allocated_date' => $allocationDate,
+                'is_current' => true,
+                'status' => 'PENDING',
+                'allocated_by' => $user->id,
+            ]);
 
-        // Refresh relationships
-        $allocation->load(['officer', 'quarter']);
+            // Refresh relationships
+            $allocation->load(['officer', 'quarter']);
+
+            // Don't mark quarter as occupied yet - wait for officer acceptance
+            // Don't update officer's quartered status yet - wait for officer acceptance
+        });
+
+        // Ensure allocation was created
+        if (!$allocation) {
+            return $this->errorResponse(
+                'Failed to create allocation',
+                null,
+                500,
+                'ALLOCATION_CREATION_FAILED'
+            );
+        }
 
         // Notify officer about pending quarter allocation (needs acceptance)
         $notificationService = app(NotificationService::class);
-        $allocationDate = $request->allocation_date ?? now();
         $notificationService->notifyQuarterAllocated($officer, $quarter, $allocationDate);
 
         return $this->successResponse([
@@ -545,9 +583,49 @@ class QuarterController extends BaseController
             });
         }
 
-        $requests = $query->orderBy('created_at', 'desc')->get();
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $order = $request->get('order', 'desc');
+        
+        // Map sort column names
+        $sortColumnMap = [
+            'created_at' => 'quarter_requests.created_at',
+            'surname' => 'officers.surname',
+            'service_number' => 'officers.service_number',
+            'preferred_quarter_type' => 'quarter_requests.preferred_quarter_type',
+            'status' => 'quarter_requests.status',
+        ];
+        
+        $sortColumn = $sortColumnMap[$sort] ?? 'quarter_requests.created_at';
+        
+        // For surname, we need to join officers table if not already joined
+        if ($sort === 'surname' || $sort === 'service_number') {
+            $query->join('officers', 'quarter_requests.officer_id', '=', 'officers.id');
+        }
+        
+        $query->orderBy($sortColumn, $order);
 
-        return $this->successResponse($requests);
+        // Pagination
+        $perPage = $request->get('per_page', 20);
+        $requests = $query->select('quarter_requests.*')->paginate($perPage);
+
+        return $this->paginatedResponse(
+            $requests->items(),
+            [
+                'current_page' => $requests->currentPage(),
+                'per_page' => $requests->perPage(),
+                'total' => $requests->total(),
+                'last_page' => $requests->lastPage(),
+                'from' => $requests->firstItem(),
+                'to' => $requests->lastItem(),
+            ],
+            [
+                'first' => $requests->url(1),
+                'last' => $requests->url($requests->lastPage()),
+                'prev' => $requests->previousPageUrl(),
+                'next' => $requests->nextPageUrl(),
+            ]
+        );
     }
 
     /**
@@ -982,7 +1060,8 @@ class QuarterController extends BaseController
         }
 
         // Get rejected allocations that haven't been re-allocated
-        // Exclude rejected allocations if there's a newer allocation (PENDING or ACCEPTED) for the same officer
+        // Only show rejected allocations if there's no newer allocation (any status) for the same officer
+        // This prevents showing old rejections when officer has been re-allocated
         $query = OfficerQuarter::where('status', 'REJECTED')
             ->with([
                 'officer:id,service_number,initials,surname,present_station',
@@ -997,11 +1076,11 @@ class QuarterController extends BaseController
                 $q->where('command_id', $commandId);
             })
             ->whereNotExists(function ($q) {
-                // Exclude if there's a newer allocation (PENDING or ACCEPTED) for this officer
+                // Exclude if there's ANY newer allocation (PENDING, ACCEPTED, or even REJECTED) for this officer
+                // This ensures we only show the most recent rejected allocation if it's the latest action
                 $q->select(DB::raw(1))
                   ->from('officer_quarters as newer_allocations')
                   ->whereColumn('newer_allocations.officer_id', 'officer_quarters.officer_id')
-                  ->whereIn('newer_allocations.status', ['PENDING', 'ACCEPTED'])
                   ->whereColumn('newer_allocations.created_at', '>', 'officer_quarters.created_at');
             });
 
@@ -1016,6 +1095,67 @@ class QuarterController extends BaseController
         $rejectedAllocations = $query->orderBy('rejected_at', 'desc')->get();
 
         return $this->successResponse($rejectedAllocations);
+    }
+
+    /**
+     * Get pending allocations (Building Unit)
+     */
+    public function pendingAllocations(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        if (!$user->hasRole('Building Unit')) {
+            return $this->errorResponse(
+                'Only Building Unit can view pending allocations',
+                null,
+                403,
+                'PERMISSION_DENIED'
+            );
+        }
+
+        // Building Unit MUST be assigned to a command
+        $buildingUnitRole = $user->roles()
+            ->where('name', 'Building Unit')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $buildingUnitRole?->pivot->command_id ?? null;
+        
+        if (!$commandId) {
+            return $this->errorResponse(
+                'Building Unit user must be assigned to a command',
+                null,
+                403,
+                'NO_COMMAND_ASSIGNED'
+            );
+        }
+
+        // Get pending allocations for officers in Building Unit's command
+        $query = OfficerQuarter::where('status', 'PENDING')
+            ->with([
+                'officer:id,service_number,initials,surname,present_station,substantive_rank',
+                'quarter:id,quarter_number,quarter_type,command_id',
+                'allocatedBy:id,email',
+                'allocatedBy.officer:id,user_id,initials,surname',
+            ])
+            ->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            })
+            ->whereHas('quarter', function ($q) use ($commandId) {
+                $q->where('command_id', $commandId);
+            });
+
+        // Filter by date range if provided
+        if ($request->has('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+        if ($request->has('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        $pendingAllocations = $query->orderBy('created_at', 'desc')->get();
+
+        return $this->successResponse($pendingAllocations);
     }
 }
 

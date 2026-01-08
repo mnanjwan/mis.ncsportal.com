@@ -11,12 +11,30 @@
         </div>
         <div class="kt-card-content">
             <form id="create-quarter-form" class="flex flex-col gap-5">
-                <!-- Command Selection -->
+                <!-- Command Selection (Readonly - Building Unit's Command) -->
                 <div class="flex flex-col gap-2">
                     <label class="kt-form-label">Command <span class="text-danger">*</span></label>
-                    <select id="command-id" name="command_id" class="kt-select" required>
-                        <option value="">Loading commands...</option>
-                    </select>
+                    @if($commandId)
+                        <input type="text" 
+                               id="command-display" 
+                               class="kt-input bg-muted/50 cursor-not-allowed" 
+                               value="{{ $commandName ?? 'N/A' }}"
+                               readonly
+                               disabled>
+                        <input type="hidden" 
+                               id="command-id" 
+                               name="command_id" 
+                               value="{{ $commandId }}">
+                        <span class="text-xs text-secondary-foreground">Command is automatically set based on your Building Unit assignment</span>
+                    @else
+                        <div class="kt-alert kt-alert-warning">
+                            <i class="ki-filled ki-information"></i>
+                            <div>
+                                <strong>No Command Assigned:</strong> You must be assigned to a command to create quarters. Please contact HRD.
+                            </div>
+                        </div>
+                        <input type="hidden" id="command-id" name="command_id" value="">
+                    @endif
                 </div>
 
                 <!-- Quarter Number -->
@@ -71,7 +89,12 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    loadCommands();
+    @if(!$commandId)
+        // Disable form if no command assigned
+        document.getElementById('create-quarter-form').querySelectorAll('input, select, button[type="submit"]').forEach(el => {
+            el.disabled = true;
+        });
+    @endif
     
     document.getElementById('quarter-type').addEventListener('change', (e) => {
         const customContainer = document.getElementById('custom-type-container');
@@ -86,51 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('create-quarter-form').addEventListener('submit', handleSubmit);
 });
-
-async function loadCommands() {
-    try {
-        const token = window.API_CONFIG?.token;
-        if (!token) {
-            console.error('API token not found');
-            return;
-        }
-
-        const res = await fetch('/api/v1/commands', {
-            headers: { 
-                'Authorization': 'Bearer ' + token, 
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok && data.success) {
-            const commands = data.data || [];
-            
-            const select = document.getElementById('command-id');
-            if (commands.length === 0) {
-                select.innerHTML = '<option value="">No commands available</option>';
-            } else {
-                // Pre-select Building Unit's command if available
-                const userCommandId = null; // Could be passed from backend if needed
-                select.innerHTML = '<option value="">Select a command</option>' +
-                    commands.map(cmd => `
-                        <option value="${cmd.id}" ${userCommandId == cmd.id ? 'selected' : ''}>
-                            ${cmd.name || cmd.code || 'N/A'}
-                        </option>
-                    `).join('');
-            }
-        } else {
-            const errorMsg = data.message || 'Failed to load commands';
-            console.error('API Error:', errorMsg);
-            document.getElementById('command-id').innerHTML = '<option value="">Error loading commands</option>';
-        }
-    } catch (error) {
-        console.error('Error loading commands:', error);
-        document.getElementById('command-id').innerHTML = '<option value="">Error loading commands</option>';
-    }
-}
 
 async function handleSubmit(e) {
     e.preventDefault();
@@ -147,8 +125,13 @@ async function handleSubmit(e) {
         }
     }
     
+    @if(!$commandId)
+        showError('You must be assigned to a command to create quarters. Please contact HRD.');
+        return;
+    @endif
+    
     if (!commandId) {
-        showError('Please select a command');
+        showError('Command is required');
         return;
     }
     

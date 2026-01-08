@@ -790,6 +790,8 @@ class OfficerController extends Controller
             ->take(5);
 
         // 6. Pending Quarter Allocations
+        // Load pending quarter allocations for this officer
+        // Show ALL pending allocations regardless of is_current or age - officer needs to see all pending actions
         $pendingAllocations = OfficerQuarter::where('officer_id', $officer->id)
             ->where('status', 'PENDING')
             ->with(['quarter:id,quarter_number,quarter_type,command_id', 'allocatedBy:id,email', 'allocatedBy.officer:id,user_id,initials,surname'])

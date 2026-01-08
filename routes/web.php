@@ -560,9 +560,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'building'])->name('dashboard');
         Route::get('/quarters', [QuarterController::class, 'index'])->name('quarters');
         Route::get('/quarters/create', [QuarterController::class, 'create'])->name('quarters.create');
-        Route::get('/quarters/allocate', [QuarterController::class, 'allocate'])->name('quarters.allocate');
         Route::get('/officers', [QuarterController::class, 'officers'])->name('officers');
         Route::get('/requests', [QuarterController::class, 'requests'])->name('requests');
+        Route::get('/allocations', [QuarterController::class, 'allocations'])->name('allocations');
+        Route::get('/pending-allocations', [QuarterController::class, 'pendingAllocations'])->name('pending-allocations');
         Route::get('/rejected-allocations', [QuarterController::class, 'rejectedAllocations'])->name('rejected-allocations');
     });
 

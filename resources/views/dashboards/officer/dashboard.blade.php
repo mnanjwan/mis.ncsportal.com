@@ -45,6 +45,43 @@
         </div>
     @endif
 
+    <!-- Pending Quarter Allocations Alert -->
+    @if(isset($pendingAllocations) && $pendingAllocations->count() > 0)
+        <div class="kt-card mb-5" style="background-color: #fef3c7; border: 2px solid #f59e0b;">
+            <div class="kt-card-content p-4">
+                <div class="flex items-start gap-3">
+                    <i class="ki-filled ki-home-2 text-xl" style="color: #f59e0b;"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold mb-3" style="color: #d97706;">
+                            You have {{ $pendingAllocations->count() }} pending quarter allocation{{ $pendingAllocations->count() !== 1 ? 's' : '' }} requiring your action
+                        </p>
+                        @foreach($pendingAllocations as $allocation)
+                            <div class="mb-3 pb-3 {{ !$loop->last ? 'border-b' : '' }}" style="border-color: #fbbf24;">
+                                @if($allocation->quarter)
+                                <p class="text-sm mb-2" style="color: #92400e;">
+                                    <strong>Quarter {{ $allocation->quarter->quarter_number }}</strong> ({{ $allocation->quarter->quarter_type }}) allocated on {{ $allocation->created_at->format('d/m/Y H:i') }}
+                                </p>
+                                @endif
+                                <div class="flex gap-2">
+                                    <button 
+                                        onclick="acceptAllocation({{ $allocation->id }})"
+                                        class="kt-btn kt-btn-sm" style="background-color: #10b981; border-color: #10b981; color: #ffffff;">
+                                        <i class="ki-filled ki-check"></i> Accept
+                                    </button>
+                                    <button 
+                                        onclick="rejectAllocation({{ $allocation->id }})"
+                                        class="kt-btn kt-btn-sm" style="background-color: #ef4444; border-color: #ef4444; color: #ffffff;">
+                                        <i class="ki-filled ki-cross"></i> Reject
+                                    </button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Roster Role Notice -->
         @if(isset($rosterRole) && $rosterRole)
@@ -132,6 +169,30 @@
                     </div>
                 </div>
             </div>
+
+            @if($officer && !$officer->quartered)
+            <div class="kt-card">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Quarter Status</span>
+                            <span class="text-2xl font-semibold text-mono">
+                                Not Quartered
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                            <i class="ki-filled ki-home-2 text-2xl text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <span class="text-xs text-secondary-foreground">Request accommodation</span>
+                        <a class="kt-btn kt-btn-warning justify-center" href="{{ route('officer.quarter-requests.create') }}">
+                            <i class="ki-filled ki-plus"></i> Request Quarter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
         <!-- End of Quick Actions -->
 

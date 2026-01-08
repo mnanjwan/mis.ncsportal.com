@@ -15,9 +15,6 @@
                 <a href="{{ route('building.quarters.create') }}" class="kt-btn kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Create New Quarter
                 </a>
-                <a href="{{ route('building.quarters.allocate') }}" class="kt-btn kt-btn-success">
-                    <i class="ki-filled ki-check"></i> Allocate Quarter
-                </a>
             </div>
         </div>
     </div>
@@ -33,7 +30,7 @@
                     <!-- Status Select -->
                     <div class="w-full md:w-48">
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Status</label>
-                        <select id="filter-status" class="kt-input w-full" onchange="loadQuarters()">
+                        <select id="filter-status" class="kt-input w-full" onchange="loadQuarters(1)">
                             <option value="">All Quarters</option>
                             <option value="0">Available</option>
                             <option value="1">Occupied</option>
@@ -42,7 +39,7 @@
 
                     <!-- Action Buttons -->
                     <div class="flex gap-2 flex-shrink-0">
-                        <button type="button" onclick="loadQuarters()" class="kt-btn kt-btn-primary w-full md:w-auto">
+                        <button type="button" onclick="loadQuarters(1)" class="kt-btn kt-btn-primary w-full md:w-auto">
                             <i class="ki-filled ki-filter"></i> Filter
                         </button>
                     </div>
@@ -63,16 +60,36 @@
                     <thead>
                         <tr class="border-b border-border">
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Quarter Number
+                                <a href="javascript:void(0)" onclick="sortTable('quarter_number')" class="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
+                                    Quarter Number
+                                    <span id="sort-icon-quarter_number" class="sort-icon opacity-50">
+                                        <i class="ki-filled ki-arrow-up-down text-xs"></i>
+                                    </span>
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Type
+                                <a href="javascript:void(0)" onclick="sortTable('quarter_type')" class="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
+                                    Type
+                                    <span id="sort-icon-quarter_type" class="sort-icon opacity-50">
+                                        <i class="ki-filled ki-arrow-up-down text-xs"></i>
+                                    </span>
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Status
+                                <a href="javascript:void(0)" onclick="sortTable('status')" class="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
+                                    Status
+                                    <span id="sort-icon-status" class="sort-icon opacity-50">
+                                        <i class="ki-filled ki-arrow-up-down text-xs"></i>
+                                    </span>
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Occupied By
+                                <a href="javascript:void(0)" onclick="sortTable('occupied_by')" class="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
+                                    Occupied By
+                                    <span id="sort-icon-occupied_by" class="sort-icon opacity-50">
+                                        <i class="ki-filled ki-arrow-up-down text-xs"></i>
+                                    </span>
+                                </a>
                             </th>
                             <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                 Actions
@@ -89,6 +106,9 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination -->
+            <div id="pagination" class="mt-6 pt-4 border-t border-border px-4 pb-4"></div>
         </div>
     </div>
 </div>
@@ -139,11 +159,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadQuarters();
 });
 
-async function loadQuarters() {
+let currentPage = 1;
+let currentSort = 'quarter_number';
+let currentOrder = 'asc';
+
+function sortTable(column) {
+    if (currentSort === column) {
+        // Toggle order if same column
+        currentOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+        // New column, default to ascending
+        currentSort = column;
+        currentOrder = 'asc';
+    }
+    
+    // Update all sort icons
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        icon.innerHTML = '<i class="ki-filled ki-arrow-up-down text-xs"></i>';
+        icon.classList.add('opacity-50');
+        icon.classList.remove('text-primary');
+    });
+    
+    // Update current sort icon
+    const currentIcon = document.getElementById(`sort-icon-${column}`);
+    if (currentIcon) {
+        currentIcon.innerHTML = `<i class="ki-filled ki-arrow-${currentOrder === 'asc' ? 'up' : 'down'} text-xs"></i>`;
+        currentIcon.classList.remove('opacity-50');
+        currentIcon.classList.add('text-primary');
+    }
+    
+    // Reload with new sort
+    loadQuarters(1);
+}
+
+async function loadQuarters(page = 1) {
     try {
         const token = window.API_CONFIG.token;
         const filter = document.getElementById('filter-status').value;
-        let url = '/api/v1/quarters?per_page=100';
+        let url = `/api/v1/quarters?per_page=20&page=${page}&sort=${currentSort}&order=${currentOrder}`;
         if (filter !== '') {
             url += `&is_occupied=${filter}`;
         }
@@ -160,7 +213,9 @@ async function loadQuarters() {
         
         if (res.ok && data.success) {
             const quarters = data.data || [];
+            currentPage = page;
             renderQuarters(quarters);
+            renderPagination(data.meta);
         } else {
             const errorMsg = data.message || 'Failed to load quarters';
             console.error('API Error:', errorMsg);
@@ -168,15 +223,117 @@ async function loadQuarters() {
             if (data.meta?.code === 'NO_COMMAND_ASSIGNED') {
                 showError('You must be assigned to a command to view quarters. Please contact HRD.');
                 renderQuarters([]);
+                renderPagination(null);
             } else {
                 showError(errorMsg);
                 renderQuarters([]);
+                renderPagination(null);
             }
         }
     } catch (error) {
         console.error('Error loading quarters:', error);
         showError('Error loading quarters');
+        renderPagination(null);
     }
+}
+
+function renderPagination(meta) {
+    const pagination = document.getElementById('pagination');
+    
+    if (!meta || meta.last_page <= 1) {
+        pagination.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-secondary-foreground">
+                    Showing ${meta?.from || 0} to ${meta?.to || 0} of ${meta?.total || 0} quarters
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    const current = meta.current_page || 1;
+    const last = meta.last_page || 1;
+    const total = meta.total || 0;
+    const from = meta.from || 0;
+    const to = meta.to || 0;
+    
+    let html = `
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-sm text-secondary-foreground">
+                Showing <span class="font-medium">${from}</span> to <span class="font-medium">${to}</span> of <span class="font-medium">${total}</span> quarters
+            </div>
+            <div class="flex items-center gap-1 flex-wrap justify-center">
+    `;
+    
+    // First & Previous buttons
+    if (current > 1) {
+        html += `
+            <button onclick="loadQuarters(1)" class="kt-btn kt-btn-sm kt-btn-secondary" ${current === 1 ? 'disabled' : ''}>
+                <i class="ki-filled ki-double-left"></i>
+            </button>
+            <button onclick="loadQuarters(${current - 1})" class="kt-btn kt-btn-sm kt-btn-secondary" ${current === 1 ? 'disabled' : ''}>
+                <i class="ki-filled ki-left"></i> Previous
+            </button>
+        `;
+    }
+    
+    // Page numbers
+    let startPage = Math.max(1, current - 2);
+    let endPage = Math.min(last, current + 2);
+    
+    // Adjust if we're near the beginning
+    if (current <= 3) {
+        endPage = Math.min(5, last);
+    }
+    
+    // Adjust if we're near the end
+    if (current >= last - 2) {
+        startPage = Math.max(1, last - 4);
+    }
+    
+    // Show first page if not in range
+    if (startPage > 1) {
+        html += `<button onclick="loadQuarters(1)" class="kt-btn kt-btn-sm kt-btn-secondary">1</button>`;
+        if (startPage > 2) {
+            html += `<span class="px-2 text-secondary-foreground">...</span>`;
+        }
+    }
+    
+    // Page number buttons
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === current) {
+            html += `<button class="kt-btn kt-btn-sm kt-btn-primary" disabled>${i}</button>`;
+        } else {
+            html += `<button onclick="loadQuarters(${i})" class="kt-btn kt-btn-sm kt-btn-secondary">${i}</button>`;
+        }
+    }
+    
+    // Show last page if not in range
+    if (endPage < last) {
+        if (endPage < last - 1) {
+            html += `<span class="px-2 text-secondary-foreground">...</span>`;
+        }
+        html += `<button onclick="loadQuarters(${last})" class="kt-btn kt-btn-sm kt-btn-secondary">${last}</button>`;
+    }
+    
+    // Next & Last buttons
+    if (current < last) {
+        html += `
+            <button onclick="loadQuarters(${current + 1})" class="kt-btn kt-btn-sm kt-btn-secondary" ${current === last ? 'disabled' : ''}>
+                Next <i class="ki-filled ki-right"></i>
+            </button>
+            <button onclick="loadQuarters(${last})" class="kt-btn kt-btn-sm kt-btn-secondary" ${current === last ? 'disabled' : ''}>
+                <i class="ki-filled ki-double-right"></i>
+            </button>
+        `;
+    }
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    pagination.innerHTML = html;
 }
 
 async function loadAllocations() {
@@ -301,7 +458,7 @@ async function deallocateQuarter(quarterId, officerId) {
                 const result = await deallocateRes.json();
                 if (result.success) {
                     showSuccess('Quarter deallocated successfully');
-                    loadQuarters();
+                    loadQuarters(currentPage);
                 }
             } else {
                 const error = await deallocateRes.json();

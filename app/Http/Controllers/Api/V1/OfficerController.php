@@ -56,14 +56,18 @@ class OfficerController extends BaseController
                     ]
                 );
             }
-            $query->where('present_station', $commandId);
+            // Ensure command_id is cast to integer for proper comparison
+            $query->where('present_station', (int) $commandId);
+            
+            // Building Unit cannot override their command filter - ignore any command_id parameter
+            // Their assigned command is already enforced above
+        } else {
+            // Apply command_id filter only for non-Building Unit roles
+            if ($request->has('command_id')) {
+                $query->where('present_station', $request->command_id);
+            }
         }
         // HRD and Area Controller see all officers (no filter)
-
-        // Apply filters
-        if ($request->has('command_id')) {
-            $query->where('present_station', $request->command_id);
-        }
 
         if ($request->has('rank')) {
             $query->where('substantive_rank', $request->rank);
@@ -86,12 +90,14 @@ class OfficerController extends BaseController
         }
 
         if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('service_number', 'like', "%{$search}%")
-                  ->orWhere('initials', 'like', "%{$search}%")
-                  ->orWhere('surname', 'like', "%{$search}%");
-            });
+            $search = trim($request->search);
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('service_number', 'like', "%{$search}%")
+                      ->orWhere('initials', 'like', "%{$search}%")
+                      ->orWhere('surname', 'like', "%{$search}%");
+                });
+            }
         }
 
         // Sorting
@@ -101,10 +107,47 @@ class OfficerController extends BaseController
 
         // Pagination
         $perPage = $request->get('per_page', 20);
-        $officers = $query->with('presentStation')->paginate($perPage);
+        $officers = $query->with(['presentStation', 'currentQuarter.quarter'])->paginate($perPage);
+
+        // Transform officers to include quarter information
+        $transformedOfficers = $officers->map(function ($officer) {
+            $officerData = $officer->toArray();
+            
+            // Check for pending allocations
+            $pendingAllocation = \App\Models\OfficerQuarter::where('officer_id', $officer->id)
+                ->where('status', 'PENDING')
+                ->where('is_current', true)
+                ->with('quarter:id,quarter_number,quarter_type')
+                ->first();
+            
+            if ($pendingAllocation && $pendingAllocation->quarter) {
+                // Officer has a pending allocation
+                $quarter = $pendingAllocation->quarter;
+                $officerData['has_pending_allocation'] = true;
+                $officerData['pending_quarter_number'] = $quarter->quarter_number;
+                $officerData['pending_quarter_type'] = $quarter->quarter_type;
+                $officerData['pending_quarter_display'] = $quarter->quarter_number . ($quarter->quarter_type ? ' - ' . $quarter->quarter_type : '');
+                $officerData['pending_allocation_id'] = $pendingAllocation->id;
+            } else {
+                $officerData['has_pending_allocation'] = false;
+            }
+            
+            // Add current quarter information if officer is quartered and has an accepted allocation
+            if ($officer->quartered && $officer->currentQuarter && $officer->currentQuarter->status === 'ACCEPTED') {
+                $quarter = $officer->currentQuarter->quarter;
+                if ($quarter) {
+                    $officerData['current_quarter_number'] = $quarter->quarter_number;
+                    $officerData['current_quarter_type'] = $quarter->quarter_type;
+                    // Format: "Quarter Number - Type" or just "Quarter Number" if no type
+                    $officerData['current_quarter_display'] = $quarter->quarter_number . ($quarter->quarter_type ? ' - ' . $quarter->quarter_type : '');
+                }
+            }
+            
+            return $officerData;
+        });
 
         return $this->paginatedResponse(
-            $officers->items(),
+            $transformedOfficers->toArray(),
             [
                 'current_page' => $officers->currentPage(),
                 'per_page' => $officers->perPage(),

@@ -63,8 +63,7 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="mt-6 pt-4 border-t border-border px-4" id="pagination">
-                </div>
+                <div id="pagination" class="mt-6 pt-4 border-t border-border px-4 pb-4"></div>
             </div>
         </div>
     </div>

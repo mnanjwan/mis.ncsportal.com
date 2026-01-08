@@ -3,12 +3,6 @@
 @section('title', 'Rejected Allocations')
 @section('page-title', 'Rejected Quarter Allocations')
 
-@section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('building.dashboard') }}">Building Unit</a>
-    <span>/</span>
-    <span class="text-primary">Rejected Allocations</span>
-@endsection
-
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
     <!-- Filters Card -->
@@ -54,19 +48,59 @@
                     <thead>
                         <tr class="border-b border-border">
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Rejected Date
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'rejected_at', 'sort_order' => request('sort_by') === 'rejected_at' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                   class="flex items-center gap-1 hover:text-primary transition-colors">
+                                    Rejected Date
+                                    @if(request('sort_by') === 'rejected_at' || !request('sort_by'))
+                                        <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' || !request('sort_order') ? 'down' : 'up' }} text-xs"></i>
+                                    @else
+                                        <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                    @endif
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Officer
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'officer_name', 'sort_order' => request('sort_by') === 'officer_name' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                   class="flex items-center gap-1 hover:text-primary transition-colors">
+                                    Officer
+                                    @if(request('sort_by') === 'officer_name')
+                                        <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                    @else
+                                        <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                    @endif
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Service Number
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'service_number', 'sort_order' => request('sort_by') === 'service_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                   class="flex items-center gap-1 hover:text-primary transition-colors">
+                                    Service Number
+                                    @if(request('sort_by') === 'service_number')
+                                        <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                    @else
+                                        <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                    @endif
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Quarter Number
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'quarter_number', 'sort_order' => request('sort_by') === 'quarter_number' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                   class="flex items-center gap-1 hover:text-primary transition-colors">
+                                    Quarter Number
+                                    @if(request('sort_by') === 'quarter_number')
+                                        <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                    @else
+                                        <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                    @endif
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                Quarter Type
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'quarter_type', 'sort_order' => request('sort_by') === 'quarter_type' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                   class="flex items-center gap-1 hover:text-primary transition-colors">
+                                    Quarter Type
+                                    @if(request('sort_by') === 'quarter_type')
+                                        <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                    @else
+                                        <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                    @endif
+                                </a>
                             </th>
                             <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                 Allocated By
@@ -207,9 +241,33 @@
                 <div class="flex flex-col gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Select New Quarter <span class="text-danger">*</span></label>
-                        <select id="reallocate-quarter-id" name="quarter_id" class="kt-input w-full" required>
-                            <option value="">Loading available quarters...</option>
-                        </select>
+                        <div class="relative">
+                            <input type="text" 
+                                   id="reallocate-quarter-search" 
+                                   class="kt-input w-full" 
+                                   placeholder="Search quarters by number or type..."
+                                   autocomplete="off">
+                            <input type="hidden" 
+                                   id="reallocate-quarter-id" 
+                                   name="quarter_id">
+                            <div id="reallocate-quarter-dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                                <!-- Options will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <div id="selected-reallocate-quarter" class="hidden mt-2 p-2 bg-muted/50 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-medium" id="selected-reallocate-quarter-name"></span>
+                                    <span class="text-xs text-secondary-foreground" id="selected-reallocate-quarter-details"></span>
+                                </div>
+                                <button type="button" 
+                                        id="clear-reallocate-quarter" 
+                                        class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
+                                    <i class="ki-filled ki-cross"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -229,8 +287,11 @@
 
 @push('scripts')
 <script>
+let quartersCache = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('reallocate-form').addEventListener('submit', handleReallocate);
+    setupReallocateQuarterSelect();
 });
 
 function openReallocateModal(allocationId, officerId, officerName, previousQuarter) {
@@ -238,6 +299,11 @@ function openReallocateModal(allocationId, officerId, officerName, previousQuart
     document.getElementById('reallocate-officer-id').value = officerId;
     document.getElementById('reallocate-officer-name').textContent = officerName;
     document.getElementById('reallocate-previous-quarter').textContent = previousQuarter;
+    
+    // Clear previous selection
+    document.getElementById('reallocate-quarter-id').value = '';
+    document.getElementById('reallocate-quarter-search').value = '';
+    document.getElementById('selected-reallocate-quarter').classList.add('hidden');
     
     // Load available quarters
     loadAvailableQuarters();
@@ -263,45 +329,139 @@ function closeReallocateModal() {
         modal.style.display = 'none';
     }
     document.getElementById('reallocate-form').reset();
+    document.getElementById('reallocate-quarter-id').value = '';
+    document.getElementById('reallocate-quarter-search').value = '';
+    document.getElementById('selected-reallocate-quarter').classList.add('hidden');
 }
 
-async function loadAvailableQuarters() {
-    try {
-        const token = window.API_CONFIG?.token;
-        if (!token) {
-            throw new Error('Authentication token not found');
-        }
+    // Create searchable select function (similar to Manning Request pattern)
+    function createSearchableSelect(searchInput, hiddenInput, dropdown, selectedDiv, selectedName, selectedDetails, options, searchFields, displayNameField, displayDetailsField, onSelect) {
+        let selectedOption = null;
 
-        const response = await fetch('/api/v1/quarters?is_occupied=0', {
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            if (searchTerm.length === 0) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+            
+            const filtered = options.filter(opt => {
+                return searchFields.some(field => {
+                    const value = String(opt[field] || '').toLowerCase();
+                    return value.includes(searchTerm);
+                });
+            });
+
+            if (filtered.length === 0) {
+                dropdown.innerHTML = '<div class="p-3 text-secondary-foreground">No results found</div>';
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            dropdown.innerHTML = filtered.map(opt => {
+                const name = opt[displayNameField] || 'N/A';
+                const details = opt[displayDetailsField] || '';
+                return '<div class="p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0" data-id="' + opt.id + '" data-name="' + name.replace(/'/g, "&#39;") + '" data-details="' + details.replace(/'/g, "&#39;") + '">' +
+                    '<div class="font-medium text-sm">' + name + '</div>' +
+                    (details ? '<div class="text-xs text-secondary-foreground">' + details + '</div>' : '') +
+                    '</div>';
+            }).join('');
+            dropdown.classList.remove('hidden');
+        });
+
+        dropdown.addEventListener('click', function(e) {
+            const option = e.target.closest('[data-id]');
+            if (option) {
+                const foundOption = options.find(o => o.id == option.dataset.id);
+                if (foundOption) {
+                    selectedOption = foundOption;
+                    hiddenInput.value = selectedOption.id;
+                    searchInput.value = selectedOption[displayNameField] || '';
+                    if (selectedName) selectedName.textContent = selectedOption[displayNameField] || '';
+                    if (selectedDetails) selectedDetails.textContent = selectedOption[displayDetailsField] || '';
+                    if (selectedDiv) selectedDiv.classList.remove('hidden');
+                    dropdown.classList.add('hidden');
+                    if (onSelect) onSelect(selectedOption);
+                }
             }
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to load quarters');
-        }
+        // Clear selection
+        document.getElementById('clear-reallocate-quarter')?.addEventListener('click', function() {
+            selectedOption = null;
+            hiddenInput.value = '';
+            searchInput.value = '';
+            if (selectedDiv) selectedDiv.classList.add('hidden');
+        });
 
-        const data = await response.json();
-        const quarters = data.data || [];
-        
-        const select = document.getElementById('reallocate-quarter-id');
-        if (quarters.length === 0) {
-            select.innerHTML = '<option value="">No available quarters</option>';
-        } else {
-            select.innerHTML = '<option value="">Select a quarter...</option>' +
-                quarters.map(q => 
-                    `<option value="${q.id}">${q.quarter_number} (${q.quarter_type})</option>`
-                ).join('');
-        }
-    } catch (error) {
-        console.error('Error loading quarters:', error);
-        document.getElementById('reallocate-quarter-id').innerHTML = `<option value="">Error: ${error.message}</option>`;
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
     }
-}
+
+    function setupReallocateQuarterSelect() {
+        const searchInput = document.getElementById('reallocate-quarter-search');
+        const hiddenInput = document.getElementById('reallocate-quarter-id');
+        const dropdown = document.getElementById('reallocate-quarter-dropdown');
+        const selectedDiv = document.getElementById('selected-reallocate-quarter');
+        const selectedName = document.getElementById('selected-reallocate-quarter-name');
+        const selectedDetails = document.getElementById('selected-reallocate-quarter-details');
+
+        // Create the select but it will be populated when modal opens
+        createSearchableSelect(
+            searchInput,
+            hiddenInput,
+            dropdown,
+            selectedDiv,
+            selectedName,
+            selectedDetails,
+            quartersCache,
+            ['quarter_number', 'quarter_type'],
+            'display_name',
+            'quarter_type',
+            null
+        );
+    }
+
+    async function loadAvailableQuarters() {
+        try {
+            const token = window.API_CONFIG?.token;
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            const response = await fetch('/api/v1/quarters?is_occupied=0', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to load quarters');
+            }
+
+            const data = await response.json();
+            quartersCache = (data.data || []).map(q => ({
+                id: q.id,
+                quarter_number: q.quarter_number || 'N/A',
+                quarter_type: q.quarter_type || 'N/A',
+                display_name: `${q.quarter_number || 'N/A'} (${q.quarter_type || 'N/A'})`
+            }));
+            
+            // Re-setup the select with new data
+            setupReallocateQuarterSelect();
+        } catch (error) {
+            console.error('Error loading quarters:', error);
+            quartersCache = [];
+        }
+    }
 
 async function handleReallocate(e) {
     e.preventDefault();

@@ -170,6 +170,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/quarters/requests/{id}/approve', [QuarterController::class, 'approveRequest']);
     Route::post('/quarters/requests/{id}/reject', [QuarterController::class, 'rejectRequest']);
     
+    // Pending Allocations (Building Unit)
+    Route::get('/quarters/pending-allocations', [QuarterController::class, 'pendingAllocations']);
+    
     // Rejected Allocations (Building Unit)
     Route::get('/quarters/rejected-allocations', [QuarterController::class, 'rejectedAllocations']);
 
