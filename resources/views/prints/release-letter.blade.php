@@ -183,11 +183,21 @@
         <div class="file-info">
             <table>
                 <tr>
-                    <td><strong>Date:</strong> {{ now()->format('d M Y') }}</td>
+                    <td><strong>Date:</strong> {{ $printDate ? \Carbon\Carbon::parse($printDate)->format('d M Y') : now()->format('d M Y') }}</td>
                 </tr>
+                @if(isset($releaseLetter) && $releaseLetter->letter_number)
+                <tr>
+                    <td><strong>Release Letter No:</strong> {{ $releaseLetter->letter_number }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td><strong>{{ $orderType }}:</strong> {{ $orderNumber }}</td>
                 </tr>
+                @if(isset($orderDate))
+                <tr>
+                    <td><strong>{{ $orderType }} Date:</strong> {{ $orderDate }}</td>
+                </tr>
+                @endif
             </table>
         </div>
     </div>
@@ -220,7 +230,7 @@
             Rank <strong>{{ strtoupper($posting->officer->substantive_rank ?? 'N/A') }}</strong>, 
             is hereby released from <strong>{{ strtoupper($fromCommand->name ?? 'N/A') }}</strong> 
             for posting to <strong>{{ strtoupper($toCommand->name ?? 'N/A') }}</strong> 
-            in accordance with {{ $orderType }} <strong>{{ $orderNumber }}</strong> dated {{ $posting->posting_date ? $posting->posting_date->format('d M Y') : now()->format('d M Y') }}.
+            in accordance with {{ $orderType }} <strong>{{ $orderNumber }}</strong> dated {{ $orderDate ?? ($posting->posting_date ? $posting->posting_date->format('d M Y') : now()->format('d M Y')) }}.
         </p>
         <p style="margin-top: 10px; text-align: justify;">
             The officer is to report to <strong>{{ strtoupper($toCommand->name ?? 'N/A') }}</strong> for acceptance and documentation.
@@ -230,9 +240,13 @@
     <div class="signature-section">
         <div class="signature-line"></div>
         <div style="margin-top: 5px;">
-            <strong>Staff Officer</strong><br>
+            @if(isset($printedBy) && $printedBy)
+                <strong>{{ strtoupper($printedBy->name ?? 'Staff Officer') }}</strong><br>
+            @else
+                <strong>Staff Officer</strong><br>
+            @endif
             <strong>{{ strtoupper($fromCommand->name ?? 'COMMAND') }}</strong><br>
-            <strong>Date & Stamp:</strong> {{ now()->format('d/m/Y') }}
+            <strong>Date & Stamp:</strong> {{ $printDate ? \Carbon\Carbon::parse($printDate)->format('d/m/Y') : now()->format('d/m/Y') }}
         </div>
     </div>
 

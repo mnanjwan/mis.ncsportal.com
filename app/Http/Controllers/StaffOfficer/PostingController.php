@@ -74,7 +74,8 @@ class PostingController extends Controller
             'officer.presentStation',
             'command',
             'movementOrder',
-            'staffOrder'
+            'staffOrder',
+            'releaseLetterPrintedBy'
         ])->findOrFail($postingId);
 
         // Verify this posting is for an officer in this command
@@ -97,8 +98,40 @@ class PostingController extends Controller
         $order = $posting->movementOrder ?? $posting->staffOrder;
         $orderType = $posting->movementOrder ? 'Movement Order' : 'Staff Order';
         $orderNumber = $order ? $order->order_number : 'N/A';
+        
+        // Get order date
+        if ($order && $order->created_at) {
+            $orderDate = \Carbon\Carbon::parse($order->created_at)->format('d M Y');
+        } elseif ($posting->posting_date) {
+            $orderDate = \Carbon\Carbon::parse($posting->posting_date)->format('d M Y');
+        } else {
+            $orderDate = now()->format('d M Y');
+        }
 
-        return view('prints.release-letter', compact('posting', 'fromCommand', 'toCommand', 'order', 'orderType', 'orderNumber'));
+        // Get release letter if it exists
+        $releaseLetter = \App\Models\ReleaseLetter::where('officer_id', $posting->officer_id)
+            ->where('command_id', $command->id)
+            ->where('release_date', '>=', $posting->posting_date ?? now()->subYear())
+            ->orderBy('created_at', 'desc')
+            ->with('preparedBy')
+            ->first();
+
+        // Get Staff Officer who printed it (if already printed)
+        $printedBy = $posting->releaseLetterPrintedBy;
+        $printDate = $posting->release_letter_printed_at ? \Carbon\Carbon::parse($posting->release_letter_printed_at) : now();
+
+        return view('prints.release-letter', compact(
+            'posting', 
+            'fromCommand', 
+            'toCommand', 
+            'order', 
+            'orderType', 
+            'orderNumber',
+            'orderDate',
+            'releaseLetter',
+            'printedBy',
+            'printDate'
+        ));
     }
 
     /**
