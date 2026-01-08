@@ -43,6 +43,7 @@
                         <option value="PENDING_RESPONSE" {{ request('status') === 'PENDING_RESPONSE' ? 'selected' : '' }}>Pending Response</option>
                         <option value="PENDING_REVIEW" {{ request('status') === 'PENDING_REVIEW' ? 'selected' : '' }}>Pending Review</option>
                         <option value="ACCEPTED" {{ request('status') === 'ACCEPTED' ? 'selected' : '' }}>Accepted</option>
+                        <option value="DISAPPROVAL" {{ request('status') === 'DISAPPROVAL' ? 'selected' : '' }}>Disapproval</option>
                         <option value="REJECTED" {{ request('status') === 'REJECTED' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </form>
@@ -83,6 +84,8 @@
                                             <span class="kt-badge kt-badge-info">Pending Review</span>
                                         @elseif($query->status === 'ACCEPTED')
                                             <span class="kt-badge kt-badge-success">Accepted</span>
+                                        @elseif($query->status === 'DISAPPROVAL')
+                                            <span class="kt-badge kt-badge-danger">Disapproval</span>
                                         @else
                                             <span class="kt-badge kt-badge-danger">Rejected</span>
                                         @endif

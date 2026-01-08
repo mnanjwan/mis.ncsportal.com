@@ -39,9 +39,10 @@ class DcAdminQueryController extends Controller
             ->pluck('id')
             ->toArray();
 
-        // Get accepted queries for officers in this command
+        // Get accepted and disapproved queries for officers in this command
+        // Both ACCEPTED and DISAPPROVAL are disciplinary records
         $query = Query::whereIn('officer_id', $officerIds)
-            ->where('status', 'ACCEPTED')
+            ->whereIn('status', ['ACCEPTED', 'DISAPPROVAL'])
             ->with(['officer', 'issuedBy'])
             ->orderBy('reviewed_at', 'desc');
 
@@ -82,7 +83,7 @@ class DcAdminQueryController extends Controller
         }
 
         $query = Query::with(['officer', 'issuedBy'])
-            ->where('status', 'ACCEPTED')
+            ->whereIn('status', ['ACCEPTED', 'DISAPPROVAL'])
             ->findOrFail($id);
 
         // Verify query belongs to officer in DC Admin's command

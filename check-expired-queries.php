@@ -92,7 +92,7 @@ if ($expiredQueries->isEmpty()) {
                 DB::beginTransaction();
                 
                 $query->update([
-                    'status' => 'ACCEPTED',
+                    'status' => 'DISAPPROVAL',
                     'reviewed_at' => now(),
                 ]);
                 

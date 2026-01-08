@@ -376,7 +376,7 @@ class Officer extends Model
 
     public function acceptedQueries()
     {
-        return $this->hasMany(Query::class)->where('status', 'ACCEPTED');
+        return $this->hasMany(Query::class)->whereIn('status', ['ACCEPTED', 'DISAPPROVAL']);
     }
 
     public function investigations()

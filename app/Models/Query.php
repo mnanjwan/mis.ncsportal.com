@@ -63,6 +63,11 @@ class Query extends Model
         return $query->where('status', 'REJECTED');
     }
 
+    public function scopeDisapproved($query)
+    {
+        return $query->where('status', 'DISAPPROVAL');
+    }
+
     // Helper methods
     public function isPendingResponse(): bool
     {
@@ -82,6 +87,11 @@ class Query extends Model
     public function isRejected(): bool
     {
         return $this->status === 'REJECTED';
+    }
+
+    public function isDisapproved(): bool
+    {
+        return $this->status === 'DISAPPROVAL';
     }
 
     /**

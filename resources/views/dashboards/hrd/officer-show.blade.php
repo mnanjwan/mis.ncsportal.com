@@ -692,6 +692,7 @@
                                                             @php
                                                                 $statusBadge = match($query->status) {
                                                                     'ACCEPTED' => 'success',
+                                                                    'DISAPPROVAL' => 'danger',
                                                                     'REJECTED' => 'danger',
                                                                     'PENDING_RESPONSE' => 'warning',
                                                                     'PENDING_REVIEW' => 'info',

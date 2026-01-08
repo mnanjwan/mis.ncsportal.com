@@ -20,8 +20,9 @@ class HrdQueryController extends Controller
      */
     public function index(Request $request)
     {
-        // Get accepted queries for all officers (HRD sees all)
-        $query = Query::where('status', 'ACCEPTED')
+        // Get accepted and disapproved queries for all officers (HRD sees all)
+        // Both ACCEPTED and DISAPPROVAL are disciplinary records
+        $query = Query::whereIn('status', ['ACCEPTED', 'DISAPPROVAL'])
             ->with(['officer.presentStation', 'issuedBy'])
             ->orderBy('reviewed_at', 'desc');
 
@@ -70,7 +71,7 @@ class HrdQueryController extends Controller
     public function show($id)
     {
         $query = Query::with(['officer.presentStation', 'issuedBy'])
-            ->where('status', 'ACCEPTED')
+            ->whereIn('status', ['ACCEPTED', 'DISAPPROVAL'])
             ->findOrFail($id);
 
         return view('dashboards.hrd.queries.show', compact('query'));

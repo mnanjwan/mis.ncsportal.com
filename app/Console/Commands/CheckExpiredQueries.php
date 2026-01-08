@@ -97,11 +97,11 @@ class CheckExpiredQueries extends Command
                     'status_before' => $query->status,
                 ]);
 
-                // Update query status to ACCEPTED in a tight transaction to prevent deadlocks
+                // Update query status to DISAPPROVAL in a tight transaction to prevent deadlocks
                 DB::beginTransaction();
 
                 $query->update([
-                    'status' => 'ACCEPTED',
+                    'status' => 'DISAPPROVAL',
                     'reviewed_at' => now(),
                 ]);
 

@@ -84,12 +84,6 @@ class PostingController extends Controller
                 ->with('error', 'This officer is not in your command.');
         }
 
-        // Verify release letter hasn't been printed yet
-        if ($posting->release_letter_printed) {
-            return redirect()->back()
-                ->with('error', 'Release letter has already been printed for this posting.');
-        }
-
         // Get from command (current command) and to command (destination)
         $fromCommand = $posting->officer->presentStation;
         $toCommand = $posting->command;
@@ -116,8 +110,20 @@ class PostingController extends Controller
             ->with('preparedBy')
             ->first();
 
-        // Get Staff Officer who printed it (if already printed)
-        $printedBy = $posting->releaseLetterPrintedBy;
+        // Get Staff Officer who printed it (if already printed), otherwise use current user
+        $printedByUser = $posting->releaseLetterPrintedBy;
+        if (!$printedByUser) {
+            // Use current authenticated user
+            $printedByUser = auth()->user();
+        }
+        
+        // Load officer relationship if user exists
+        if ($printedByUser && !$printedByUser->relationLoaded('officer')) {
+            $printedByUser->load('officer');
+        }
+        
+        // Get the officer record for the Staff Officer user
+        $printedBy = $printedByUser ? $printedByUser->officer : null;
         $printDate = $posting->release_letter_printed_at ? \Carbon\Carbon::parse($posting->release_letter_printed_at) : now();
 
         return view('prints.release-letter', compact(

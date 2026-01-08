@@ -238,13 +238,14 @@
     </div>
 
     <div class="signature-section">
+        @if(isset($printedBy) && $printedBy)
+            <div style="margin-bottom: 5px;">
+                <strong>{{ strtoupper($printedBy->initials ?? '') }} {{ strtoupper($printedBy->surname ?? '') }}</strong>
+            </div>
+        @endif
         <div class="signature-line"></div>
         <div style="margin-top: 5px;">
-            @if(isset($printedBy) && $printedBy)
-                <strong>{{ strtoupper($printedBy->name ?? 'Staff Officer') }}</strong><br>
-            @else
-                <strong>Staff Officer</strong><br>
-            @endif
+            <strong>Staff Officer</strong><br>
             <strong>{{ strtoupper($fromCommand->name ?? 'COMMAND') }}</strong><br>
             <strong>Date & Stamp:</strong> {{ $printDate ? \Carbon\Carbon::parse($printDate)->format('d/m/Y') : now()->format('d/m/Y') }}
         </div>

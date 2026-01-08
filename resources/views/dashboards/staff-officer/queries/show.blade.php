@@ -45,6 +45,8 @@
                     <span class="kt-badge kt-badge-info">Pending Review</span>
                 @elseif($query->status === 'ACCEPTED')
                     <span class="kt-badge kt-badge-success">Accepted</span>
+                @elseif($query->status === 'DISAPPROVAL')
+                    <span class="kt-badge kt-badge-danger">Disapproval</span>
                 @else
                     <span class="kt-badge kt-badge-danger">Rejected</span>
                 @endif

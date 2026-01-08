@@ -448,10 +448,57 @@ class OfficerController extends Controller
             ->orderBy('posting_date', 'desc')
             ->get();
 
+        // Load queries and automatically expire any that are overdue
         $queriesHistory = $officer->queries()
             ->with('issuedBy')
             ->orderBy('issued_at', 'desc')
             ->get();
+
+        // Automatically expire overdue queries before displaying to HRD
+        $expiredCount = 0;
+        $notificationService = app(NotificationService::class);
+        foreach ($queriesHistory as $query) {
+            if ($query->isOverdue()) {
+                try {
+                    DB::beginTransaction();
+                    $query->update([
+                        'status' => 'DISAPPROVAL',
+                        'reviewed_at' => now(),
+                    ]);
+                    DB::commit();
+                    $query->refresh();
+                    
+                    // Send notification if not already sent
+                    if ($query->officer && $query->officer->user) {
+                        try {
+                            $notificationService->notifyQueryExpired($query);
+                        } catch (\Exception $e) {
+                            // Log but don't fail if notification fails
+                            Log::warning('Failed to send query expiration notification in HRD profile view', [
+                                'query_id' => $query->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+                    
+                    $expiredCount++;
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Failed to expire query in HRD profile view', [
+                        'query_id' => $query->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+        
+        if ($expiredCount > 0) {
+            // Refresh the queries collection after expiration
+            $queriesHistory = $officer->queries()
+                ->with('issuedBy')
+                ->orderBy('issued_at', 'desc')
+                ->get();
+        }
 
         $promotionsHistory = $officer->promotions()
             ->orderBy('promotion_date', 'desc')
