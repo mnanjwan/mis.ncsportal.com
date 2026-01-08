@@ -19,19 +19,19 @@ return new class extends Migration
             $table->timestamp('accepted_at')->nullable()->after('accepted_by_new_command');
             $table->foreignId('accepted_by')->nullable()->after('accepted_at')->constrained('users')->nullOnDelete();
             
-            // Indexes for performance
-            $table->index('release_letter_printed');
-            $table->index('accepted_by_new_command');
-            $table->index(['release_letter_printed', 'accepted_by_new_command']);
+            // Indexes for performance (using custom names to avoid MySQL 64-char limit)
+            $table->index('release_letter_printed', 'idx_op_release_printed');
+            $table->index('accepted_by_new_command', 'idx_op_accepted');
+            $table->index(['release_letter_printed', 'accepted_by_new_command'], 'idx_op_release_accepted');
         });
     }
 
     public function down(): void
     {
         Schema::table('officer_postings', function (Blueprint $table) {
-            $table->dropIndex(['release_letter_printed', 'accepted_by_new_command']);
-            $table->dropIndex(['accepted_by_new_command']);
-            $table->dropIndex(['release_letter_printed']);
+            $table->dropIndex('idx_op_release_accepted');
+            $table->dropIndex('idx_op_accepted');
+            $table->dropIndex('idx_op_release_printed');
             
             $table->dropConstrainedForeignId('accepted_by');
             $table->dropColumn('accepted_at');
