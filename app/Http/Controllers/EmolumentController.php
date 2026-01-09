@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Command;
 use App\Models\Emolument;
 use App\Models\EmolumentAssessment;
+use App\Models\EmolumentAudit;
 use App\Models\EmolumentTimeline;
 use App\Models\EmolumentValidation;
 use Illuminate\Http\Request;
@@ -213,6 +214,77 @@ class EmolumentController extends Controller
             return view('dashboards.validator.emoluments-list', compact('emoluments', 'years'));
         }
 
+        // If Auditor, show validated emoluments pending audit
+        if ($user->hasRole('Auditor')) {
+            // Calculate statistics
+            $pendingAudit = Emolument::where('status', 'VALIDATED')->count();
+            $auditedToday = Emolument::where('status', 'AUDITED')
+                ->whereDate('audited_at', today())
+                ->count();
+            $totalAudited = Emolument::where('status', 'AUDITED')->count();
+            
+            // Base query for pending audits (VALIDATED status)
+            $query = Emolument::with(['officer.presentStation', 'timeline', 'assessment.assessor', 'validation.validator'])
+                ->where('status', 'VALIDATED');
+
+            // Filter by Year
+            if ($year = request('year')) {
+                $query->where('year', $year);
+            }
+
+            // Search by Name or Service Number
+            if ($search = request('search')) {
+                $query->whereHas('officer', function ($q) use ($search) {
+                    $q->where('service_number', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('other_names', 'like', "%{$search}%");
+                });
+            }
+
+            // Sorting
+            $sortBy = request('sort_by', 'validated_at');
+            $sortOrder = request('sort_order', 'desc');
+            $allowedSorts = ['year', 'validated_at', 'submitted_at'];
+
+            if ($sortBy === 'officer') {
+                $query->join('officers', 'emoluments.officer_id', '=', 'officers.id')
+                    ->orderBy('officers.surname', $sortOrder)
+                    ->orderBy('officers.initials', $sortOrder)
+                    ->select('emoluments.*');
+            } elseif ($sortBy === 'service_number') {
+                $query->join('officers', 'emoluments.officer_id', '=', 'officers.id')
+                    ->orderBy('officers.service_number', $sortOrder)
+                    ->select('emoluments.*');
+            } elseif ($sortBy === 'rank') {
+                $query->join('officers', 'emoluments.officer_id', '=', 'officers.id')
+                    ->orderBy('officers.substantive_rank', $sortOrder)
+                    ->select('emoluments.*');
+            } elseif ($sortBy === 'validator') {
+                $query->join('emolument_validations', 'emoluments.id', '=', 'emolument_validations.emolument_id')
+                    ->join('users', 'emolument_validations.validator_id', '=', 'users.id')
+                    ->orderBy('users.email', $sortOrder)
+                    ->select('emoluments.*');
+            } elseif (in_array($sortBy, $allowedSorts)) {
+                $query->orderBy($sortBy, $sortOrder);
+            } else {
+                $query->orderBy('validated_at', 'desc');
+            }
+
+            $emoluments = $query->paginate(20)->withQueryString();
+
+            // Get unique years for filter dropdown
+            $years = Emolument::distinct()->orderBy('year', 'desc')->pluck('year');
+
+            return view('dashboards.auditor.emoluments-list', compact(
+                'emoluments', 
+                'years',
+                'pendingAudit',
+                'auditedToday',
+                'totalAudited'
+            ));
+        }
+
         // Default: Officer view (My Emoluments)
         $officer = $user->officer;
 
@@ -230,6 +302,7 @@ class EmolumentController extends Controller
             'raised' => $emoluments->where('status', 'RAISED')->count(),
             'assessed' => $emoluments->where('status', 'ASSESSED')->count(),
             'validated' => $emoluments->where('status', 'VALIDATED')->count(),
+            'audited' => $emoluments->where('status', 'AUDITED')->count(),
             'processed' => $emoluments->where('status', 'PROCESSED')->count(),
         ];
 
@@ -354,13 +427,14 @@ class EmolumentController extends Controller
             'officer.presentStation',
             'timeline',
             'assessment.assessor',
-            'validation.validator'
+            'validation.validator',
+            'audit.auditor'
         ])->findOrFail($id);
 
         // Check authorization
         $user = auth()->user();
         if ($user->officer && $user->officer->id !== $emolument->officer_id) {
-            if (!$user->hasAnyRole(['HRD', 'Assessor', 'Validator', 'Accounts', 'Area Controller'])) {
+            if (!$user->hasAnyRole(['HRD', 'Assessor', 'Validator', 'Auditor', 'Accounts', 'Area Controller'])) {
                 abort(403, 'Unauthorized access');
             }
         }
@@ -378,6 +452,10 @@ class EmolumentController extends Controller
             $backRoute = 'validator.emoluments';
             $breadcrumbRole = 'Validator';
             $breadcrumbRoute = 'validator.dashboard';
+        } elseif ($user->hasRole('Auditor')) {
+            $backRoute = 'auditor.emoluments';
+            $breadcrumbRole = 'Auditor';
+            $breadcrumbRoute = 'auditor.dashboard';
         } elseif ($user->hasRole('HRD')) {
             $backRoute = 'hrd.emoluments';
             $breadcrumbRole = 'HRD';
@@ -656,9 +734,9 @@ class EmolumentController extends Controller
                 $validated['comments'] ?? null
             );
             
-            // If approved, notify accounts team
+            // If approved, notify auditors for audit
             if ($validated['validation_status'] === 'APPROVED') {
-                $notificationService->notifyEmolumentValidatedReadyForProcessing($emolument);
+                $notificationService->notifyEmolumentValidatedReadyForAudit($emolument);
             }
 
             // Redirect based on user role
@@ -688,11 +766,117 @@ class EmolumentController extends Controller
     }
 
     /**
-     * Show validated emoluments for processing (Accounts)
+     * Show audit form (Auditor)
+     */
+    public function audit($id)
+    {
+        $user = auth()->user();
+        $emolument = Emolument::with(['officer.presentStation', 'assessment.assessor', 'validation.validator'])->findOrFail($id);
+
+        if ($emolument->status !== 'VALIDATED') {
+            return redirect()->back()->with('error', 'Emolument must be validated before audit');
+        }
+
+        // Check if already audited
+        if ($emolument->audit) {
+            return redirect()->back()->with('error', 'This emolument has already been audited.');
+        }
+
+        // Ensure validation exists
+        if (!$emolument->validation) {
+            return redirect()->back()->with('error', 'Emolument validation record not found');
+        }
+
+        return view('forms.emolument.audit', compact('emolument'));
+    }
+
+    /**
+     * Process audit (Auditor)
+     */
+    public function processAudit(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $emolument = Emolument::with(['officer', 'validation'])->findOrFail($id);
+
+            if ($emolument->status !== 'VALIDATED') {
+                return redirect()->back()->with('error', 'Emolument must be validated before audit. Current status: ' . $emolument->status);
+            }
+
+            // Check if already audited
+            if ($emolument->audit) {
+                return redirect()->back()->with('error', 'This emolument has already been audited.');
+            }
+
+            // Ensure validation exists
+            if (!$emolument->validation) {
+                return redirect()->back()->with('error', 'Emolument validation record not found');
+            }
+
+            $validated = $request->validate([
+                'audit_status' => 'required|in:APPROVED,REJECTED',
+                'comments' => 'nullable|string|max:1000',
+            ]);
+
+            DB::beginTransaction();
+            
+            // Create audit record
+            $audit = EmolumentAudit::create([
+                'emolument_id' => $emolument->id,
+                'validation_id' => $emolument->validation->id,
+                'auditor_id' => auth()->id(),
+                'audit_status' => $validated['audit_status'],
+                'comments' => $validated['comments'] ?? null,
+            ]);
+
+            // Update emolument status
+            $emolument->update([
+                'status' => $validated['audit_status'] === 'APPROVED' ? 'AUDITED' : 'REJECTED',
+                'audited_at' => now(),
+            ]);
+
+            DB::commit();
+
+            // Send notifications
+            $notificationService = app(\App\Services\NotificationService::class);
+            
+            // Always notify officer about audit result
+            $notificationService->notifyEmolumentAudited(
+                $emolument, 
+                $validated['audit_status'], 
+                $validated['comments'] ?? null
+            );
+            
+            // If approved, notify accounts team
+            if ($validated['audit_status'] === 'APPROVED') {
+                $notificationService->notifyEmolumentAuditedReadyForProcessing($emolument);
+            }
+
+            return redirect()->route('auditor.emoluments')
+                ->with('success', 'Emolument audited successfully');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Audit failed: ' . $e->getMessage(), [
+                'emolument_id' => $id ?? null,
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()
+                ->with('error', 'Audit failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show validated emoluments for processing (Accounts) - Now shows AUDITED emoluments
      */
     public function validated(Request $request)
     {
-        $query = Emolument::where('status', 'VALIDATED')
+        $query = Emolument::where('status', 'AUDITED')
             ->with('officer.presentStation');
 
         if ($request->filled('year')) {
@@ -706,10 +890,10 @@ class EmolumentController extends Controller
             });
         }
 
-        $emoluments = $query->orderBy('validated_at', 'asc')->get();
+        $emoluments = $query->orderBy('audited_at', 'asc')->get();
 
         // Get unique years for filter
-        $years = Emolument::where('status', 'VALIDATED')
+        $years = Emolument::where('status', 'AUDITED')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
@@ -731,8 +915,8 @@ class EmolumentController extends Controller
     {
         $emolument = Emolument::findOrFail($id);
 
-        if ($emolument->status !== 'VALIDATED') {
-            return redirect()->back()->with('error', 'Only validated emoluments can be processed');
+        if ($emolument->status !== 'AUDITED') {
+            return redirect()->back()->with('error', 'Only audited emoluments can be processed');
         }
 
         DB::beginTransaction();
@@ -768,7 +952,7 @@ class EmolumentController extends Controller
         ]);
 
         $emoluments = Emolument::whereIn('id', $request->emolument_ids)
-            ->where('status', 'VALIDATED')
+            ->where('status', 'AUDITED')
             ->get();
 
         if ($emoluments->isEmpty()) {

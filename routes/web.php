@@ -454,6 +454,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/emoluments/{id}/validate', [EmolumentController::class, 'validateForm'])->name('emoluments.validate');
     });
 
+    // Auditor Routes
+    Route::prefix('auditor')->name('auditor.')->middleware('role:Auditor')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'auditor'])->name('dashboard');
+        Route::get('/emoluments', [EmolumentController::class, 'index'])->name('emoluments');
+        Route::get('/emoluments/{id}', [EmolumentController::class, 'show'])->name('emoluments.show');
+        Route::get('/emoluments/{id}/audit', [EmolumentController::class, 'audit'])->name('emoluments.audit');
+    });
+
     // Area Controller Routes
     Route::prefix('area-controller')->name('area-controller.')->middleware('role:Area Controller')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'areaController'])->name('dashboard');
@@ -701,6 +709,7 @@ Route::middleware('auth')->group(function () {
     // These routes don't require onboarding completion (admin/HRD functions)
     Route::post('/emolument/{id}/assess', [EmolumentController::class, 'processAssessment'])->name('emolument.process-assessment');
     Route::post('/emolument/{id}/validate', [EmolumentController::class, 'processValidation'])->name('emolument.process-validation');
+    Route::post('/emolument/{id}/audit', [EmolumentController::class, 'processAudit'])->name('emolument.process-audit');
     Route::post('/emolument/{id}/process-payment', [EmolumentController::class, 'processPayment'])->name('emolument.process-payment');
 });
 

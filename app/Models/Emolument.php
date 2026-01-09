@@ -22,6 +22,7 @@ class Emolument extends Model
         'submitted_at',
         'assessed_at',
         'validated_at',
+        'audited_at',
         'processed_at',
     ];
 
@@ -31,6 +32,7 @@ class Emolument extends Model
             'submitted_at' => 'datetime',
             'assessed_at' => 'datetime',
             'validated_at' => 'datetime',
+            'audited_at' => 'datetime',
             'processed_at' => 'datetime',
         ];
     }
@@ -54,6 +56,11 @@ class Emolument extends Model
     public function validation()
     {
         return $this->hasOne(EmolumentValidation::class);
+    }
+
+    public function audit()
+    {
+        return $this->hasOne(EmolumentAudit::class);
     }
 }
 

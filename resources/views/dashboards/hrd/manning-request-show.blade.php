@@ -116,7 +116,7 @@
                     </button>
                 @endif
                 @if($draftItemsCount > 0)
-                    <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
+                    <a href="{{ route('hrd.manning-deployments.draft') }}" 
                        class="kt-btn kt-btn-info">
                         <i class="ki-filled ki-file-add"></i> View in Draft ({{ $draftItemsCount }})
                     </a>

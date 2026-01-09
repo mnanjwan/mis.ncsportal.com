@@ -59,6 +59,12 @@ class RoleSeeder extends Seeder
                 'access_level' => 'command_level',
             ],
             [
+                'name' => 'Auditor',
+                'code' => 'AUDITOR',
+                'description' => 'Auditor - Emolument Auditor',
+                'access_level' => 'system_wide',
+            ],
+            [
                 'name' => 'Officer',
                 'code' => 'OFFICER',
                 'description' => 'Officer - End User',

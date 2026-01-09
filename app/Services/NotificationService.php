@@ -927,7 +927,7 @@ class NotificationService
 
         if ($status === 'APPROVED') {
             $title = 'Emolument Validated';
-            $message = "Your emolument for year {$emolument->year} has been validated and approved. It is now ready for payment processing.";
+            $message = "Your emolument for year {$emolument->year} has been validated and approved. It is now ready for audit.";
         } else {
             $title = 'Emolument Validation Rejected';
             $message = "Your emolument for year {$emolument->year} has been rejected during validation.";
@@ -947,9 +947,74 @@ class NotificationService
     }
 
     /**
-     * Notify Accounts team about validated emolument ready for processing
+     * Notify Auditors about validated emolument ready for audit
      */
-    public function notifyEmolumentValidatedReadyForProcessing($emolument): array
+    public function notifyEmolumentValidatedReadyForAudit($emolument): array
+    {
+        $officer = $emolument->officer;
+        if (!$officer) {
+            return [];
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+
+        // Get Auditors (system-wide role, no command restriction)
+        $auditors = User::whereHas('roles', function ($q) {
+            $q->where('name', 'Auditor')
+                ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        if ($auditors->isEmpty()) {
+            return [];
+        }
+
+        return $this->notifyMany(
+            $auditors,
+            'emolument_validated',
+            'Emolument Ready for Audit',
+            "Emolument for Officer {$officerName} ({$officer->service_number}) for year {$emolument->year} has been validated and is ready for audit.",
+            'emolument',
+            $emolument->id
+        );
+    }
+
+    /**
+     * Notify officer about emolument audit (approved or rejected)
+     */
+    public function notifyEmolumentAudited($emolument, string $status, ?string $comments = null): ?Notification
+    {
+        $officer = $emolument->officer;
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        $officerName = "{$officer->initials} {$officer->surname}";
+
+        if ($status === 'APPROVED') {
+            $title = 'Emolument Audited';
+            $message = "Your emolument for year {$emolument->year} has been audited and approved. It is now ready for payment processing.";
+        } else {
+            $title = 'Emolument Audit Rejected';
+            $message = "Your emolument for year {$emolument->year} has been rejected during audit.";
+            if ($comments) {
+                $message .= " Comments: {$comments}";
+            }
+        }
+
+        return $this->notify(
+            $officer->user,
+            'emolument_audited',
+            $title,
+            $message,
+            'emolument',
+            $emolument->id
+        );
+    }
+
+    /**
+     * Notify Accounts team about audited emolument ready for processing
+     */
+    public function notifyEmolumentAuditedReadyForProcessing($emolument): array
     {
         $officer = $emolument->officer;
         if (!$officer) {
@@ -970,9 +1035,9 @@ class NotificationService
 
         return $this->notifyMany(
             $accountsUsers,
-            'emolument_validated',
+            'emolument_audited',
             'Emolument Ready for Payment Processing',
-            "Emolument for Officer {$officerName} ({$officer->service_number}) for year {$emolument->year} has been validated and is ready for payment processing.",
+            "Emolument for Officer {$officerName} ({$officer->service_number}) for year {$emolument->year} has been audited and is ready for payment processing.",
             'emolument',
             $emolument->id
         );

@@ -104,6 +104,7 @@ class TestDataSeeder extends Seeder
             ['name' => 'Staff Officer', 'code' => 'STAFF_OFFICER', 'description' => 'Staff Officer'],
             ['name' => 'Assessor', 'code' => 'ASSESSOR', 'description' => 'Emolument Assessor'],
             ['name' => 'Validator', 'code' => 'VALIDATOR', 'description' => 'Emolument Validator'],
+            ['name' => 'Auditor', 'code' => 'AUDITOR', 'description' => 'Emolument Auditor'],
             ['name' => 'Accounts', 'code' => 'ACCOUNTS', 'description' => 'Accounts Department'],
         ];
         
@@ -122,6 +123,7 @@ class TestDataSeeder extends Seeder
             'STAFF_OFFICER' => 'staff@ncs.gov.ng',
             'ASSESSOR' => 'assessor@ncs.gov.ng',
             'VALIDATOR' => 'validator@ncs.gov.ng',
+            'AUDITOR' => 'auditor@ncs.gov.ng',
             'ACCOUNTS' => 'accounts@ncs.gov.ng',
         ];
         

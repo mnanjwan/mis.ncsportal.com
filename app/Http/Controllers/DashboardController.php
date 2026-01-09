@@ -712,6 +712,53 @@ class DashboardController extends Controller
         ));
     }
 
+    // Auditor Dashboard
+    public function auditor()
+    {
+        // Get statistics for Auditor (system-wide role, no command restrictions)
+        $pendingAuditCount = Emolument::where('status', 'VALIDATED')->count();
+        $auditedToday = Emolument::where('status', 'AUDITED')
+            ->whereDate('audited_at', today())
+            ->count();
+        $auditedThisMonth = Emolument::where('status', 'AUDITED')
+            ->whereMonth('audited_at', now()->month)
+            ->whereYear('audited_at', now()->year)
+            ->count();
+        $totalAudited = Emolument::where('status', 'AUDITED')->count();
+
+        // Emolument status breakdown
+        $emolumentStatus = [
+            'VALIDATED' => $pendingAuditCount,
+            'AUDITED' => $totalAudited,
+            'PROCESSED' => Emolument::where('status', 'PROCESSED')->count(),
+            'REJECTED' => Emolument::where('status', 'REJECTED')->count(),
+        ];
+
+        // Pending emoluments for audit (VALIDATED status)
+        $pendingEmoluments = Emolument::where('status', 'VALIDATED')
+            ->with(['officer.presentStation', 'assessment.assessor', 'validation.validator'])
+            ->orderBy('validated_at', 'asc')
+            ->take(10)
+            ->get();
+
+        // Recent audits (last 5)
+        $recentAudits = Emolument::where('status', 'AUDITED')
+            ->with(['officer.presentStation', 'audit.auditor'])
+            ->orderBy('audited_at', 'desc')
+            ->take(5)
+            ->get();
+
+        return view('dashboards.auditor.dashboard', compact(
+            'pendingAuditCount',
+            'auditedToday',
+            'auditedThisMonth',
+            'totalAudited',
+            'emolumentStatus',
+            'pendingEmoluments',
+            'recentAudits'
+        ));
+    }
+
     // Area Controller Dashboard
     public function areaController()
     {
@@ -1001,8 +1048,8 @@ class DashboardController extends Controller
     public function accounts()
     {
         // Get statistics
-        $validatedCount = Emolument::where('status', 'VALIDATED')->count();
-        $pendingProcessing = Emolument::where('status', 'VALIDATED')->count();
+        $auditedCount = Emolument::where('status', 'AUDITED')->count();
+        $pendingProcessing = Emolument::where('status', 'AUDITED')->count();
         $processedThisMonth = Emolument::where('status', 'PROCESSED')
             ->whereMonth('processed_at', now()->month)
             ->whereYear('processed_at', now()->year)
@@ -1017,7 +1064,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboards.accounts.dashboard', compact(
-            'validatedCount',
+            'auditedCount',
             'pendingProcessing',
             'processedThisMonth',
             'pendingChangeRequests',

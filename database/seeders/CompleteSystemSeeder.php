@@ -209,6 +209,7 @@ class CompleteSystemSeeder extends Seeder
             'BOARD' => Role::where('code', 'BOARD')->first(),
             'ASSESSOR' => Role::where('code', 'ASSESSOR')->first(),
             'VALIDATOR' => Role::where('code', 'VALIDATOR')->first(),
+            'AUDITOR' => Role::where('code', 'AUDITOR')->first(),
             'AREA_CONTROLLER' => Role::where('code', 'AREA_CONTROLLER')->first(),
             'DC_ADMIN' => Role::where('code', 'DC_ADMIN')->first(),
             'WELFARE' => Role::where('code', 'WELFARE')->first(),
@@ -245,7 +246,7 @@ class CompleteSystemSeeder extends Seeder
         }
 
         // System-wide roles (no command assignment)
-        $systemWideRoles = ['ESTABLISHMENT', 'ACCOUNTS', 'BOARD', 'WELFARE', 'TRADOC', 'ICT', 'INVESTIGATION_UNIT'];
+        $systemWideRoles = ['ESTABLISHMENT', 'ACCOUNTS', 'AUDITOR', 'BOARD', 'WELFARE', 'TRADOC', 'ICT', 'INVESTIGATION_UNIT'];
         foreach ($systemWideRoles as $roleCode) {
             if ($roles[$roleCode]) {
                 $email = strtolower($roleCode) . '@ncs.gov.ng';

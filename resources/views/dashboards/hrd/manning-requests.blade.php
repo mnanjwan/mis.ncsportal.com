@@ -179,7 +179,7 @@
                                                 View Details
                                             </a>
                                             @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
-                                                <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
+                                                <a href="{{ route('hrd.manning-deployments.draft') }}" 
                                                    class="kt-btn kt-btn-sm kt-btn-info">
                                                     <i class="ki-filled ki-file-add"></i> View Draft
                                                 </a>
@@ -260,7 +260,7 @@
                                     View Details
                                 </a>
                                 @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
-                                    <a href="{{ route('hrd.manning-requests.draft', $request->id) }}" 
+                                    <a href="{{ route('hrd.manning-deployments.draft') }}" 
                                        class="kt-btn kt-btn-sm kt-btn-info">
                                         <i class="ki-filled ki-file-add"></i> View Draft
                                     </a>
