@@ -558,6 +558,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/processed-history', [EmolumentController::class, 'processedHistory'])->name('processed-history');
         Route::get('/processed-history/export', [EmolumentController::class, 'exportProcessedReport'])->name('processed-history.export');
         Route::get('/processed-history/print', [EmolumentController::class, 'printProcessedReport'])->name('processed-history.print');
+        Route::get('/emoluments/print', [EmolumentController::class, 'printEmolumentsPage'])->name('emoluments.print');
+        Route::get('/emoluments/print/view', [EmolumentController::class, 'printAllEmoluments'])->name('emoluments.print.view');
         Route::get('/emoluments/{id}', [EmolumentController::class, 'show'])->name('emoluments.show');
         Route::post('/emoluments/{id}/process', [EmolumentController::class, 'processPayment'])->name('emoluments.process');
         Route::post('/emoluments/bulk-process', [EmolumentController::class, 'bulkProcess'])->name('emoluments.bulk-process');
@@ -658,6 +660,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/bulk-create-emails', [ICTController::class, 'bulkCreateEmails'])->name('bulk-create-emails');
         Route::get('/non-submitters', [ICTController::class, 'nonSubmitters'])->name('non-submitters');
         Route::get('/non-submitters/print', [ICTController::class, 'printNonSubmitters'])->name('non-submitters.print');
+        Route::get('/emoluments/print', [ICTController::class, 'printEmolumentsPage'])->name('emoluments.print');
+        Route::get('/emoluments/print/view', [ICTController::class, 'printAllEmoluments'])->name('emoluments.print.view');
     });
 
     // Welfare Routes

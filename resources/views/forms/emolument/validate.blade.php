@@ -204,6 +204,9 @@
             const modal = document.getElementById('profile-photo-modal');
             if (modal) {
                 modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
                 document.body.style.overflow = 'hidden';
             }
         }
@@ -212,6 +215,9 @@
             const modal = document.getElementById('profile-photo-modal');
             if (modal) {
                 modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
                 document.body.style.overflow = '';
             }
         }

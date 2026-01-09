@@ -37,7 +37,6 @@
                         <div class="lg:col-span-2">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
                             <div class="relative">
-                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
                                 <input type="text" 
                                        name="search" 
                                        value="{{ request('search') }}" 

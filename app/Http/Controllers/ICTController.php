@@ -426,4 +426,108 @@ class ICTController extends Controller
 
         return view('prints.non-submitters', compact('nonSubmitters', 'selectedYear', 'timeline'));
     }
+
+    /**
+     * Show print emoluments filter page (ICT)
+     */
+    public function printEmolumentsPage()
+    {
+        return view('dashboards.ict.print-emoluments');
+    }
+
+    /**
+     * Print all emoluments report with filters (ICT)
+     */
+    public function printAllEmoluments(Request $request)
+    {
+        $query = Emolument::with(['officer.presentStation.zone', 'assessment', 'validation', 'audit']);
+
+        // Filter by status
+        if ($request->filled('status') && $request->status !== 'ALL') {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by year
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+
+        // Filter by date range (if provided, overrides year filter)
+        if ($request->filled('date_from')) {
+            $query->whereDate('submitted_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('submitted_at', '<=', $request->date_to);
+        }
+
+        // Filter by zone
+        if ($request->filled('zone_id')) {
+            $zoneId = (int) $request->zone_id;
+            $query->whereHas('officer.presentStation', function ($q) use ($zoneId) {
+                $q->where('zone_id', $zoneId);
+            });
+        }
+
+        // Filter by command
+        if ($request->filled('command_id')) {
+            $commandId = (int) $request->command_id;
+            $query->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            });
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('officer', function ($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%");
+            });
+        }
+
+        // Get and sort results
+        $emoluments = $query->get();
+        
+        $sortBy = $request->get('sort_by', 'year');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        if ($sortBy === 'year') {
+            $emoluments = $emoluments->sortBy('year', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'status') {
+            $emoluments = $emoluments->sortBy('status', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'zone') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->zone->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'command') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'rank') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->substantive_rank ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } else {
+            // Default sort by year, then status, then zone
+            $emoluments = $emoluments->sortBy([
+                ['year', 'asc'],
+                ['status', 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->zone->name ?? '';
+                }, 'asc'],
+            ]);
+        }
+
+        $filters = [
+            'status' => $request->get('status', 'ALL'),
+            'year' => $request->get('year'),
+            'date_from' => $request->get('date_from'),
+            'date_to' => $request->get('date_to'),
+            'zone' => $request->filled('zone_id') ? \App\Models\Zone::find($request->zone_id)?->name : null,
+            'command' => $request->filled('command_id') ? \App\Models\Command::find($request->command_id)?->name : null,
+        ];
+
+        return view('prints.all-emoluments', compact('emoluments', 'filters'));
+    }
 }

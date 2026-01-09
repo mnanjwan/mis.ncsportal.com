@@ -282,8 +282,16 @@ i[class*="ki-"],
 }
 
 /* Ensure modals with hidden class are properly hidden */
-.kt-modal.hidden {
+.kt-modal.hidden:not([style*="display: flex"]):not([style*="display:flex"]) {
     display: none !important;
     visibility: hidden !important;
+}
+
+/* Ensure modals with inline display:flex are shown */
+.kt-modal[style*="display: flex"],
+.kt-modal[style*="display:flex"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 

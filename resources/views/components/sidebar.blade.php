@@ -337,6 +337,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('accounts.dashboard')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
                 ['icon' => 'ki-filled ki-file-check', 'title' => 'Processed History', 'href' => route('accounts.processed-history')],
+                ['icon' => 'ki-filled ki-printer', 'title' => 'Print Emoluments', 'href' => route('accounts.emoluments.print')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Account Change Requests', 'href' => route('accounts.account-change.pending')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
                 ['icon' => 'ki-filled ki-shield-cross', 'title' => 'Interdicted Officers', 'href' => route('accounts.interdicted-officers')],
@@ -383,6 +384,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('ict.dashboard')],
                 ['icon' => 'ki-filled ki-wallet', 'title' => 'Non-Submitters', 'href' => route('ict.non-submitters')],
+                ['icon' => 'ki-filled ki-printer', 'title' => 'Print Emoluments', 'href' => route('ict.emoluments.print')],
             ];
             break;
         case 'Investigation Unit':
