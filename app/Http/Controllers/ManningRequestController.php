@@ -1122,13 +1122,17 @@ class ManningRequestController extends Controller
         try {
             DB::beginTransaction();
 
-            // Get or create shared active draft deployment (not per-user)
+            // Get or create SHARED active draft deployment
+            // IMPORTANT: All manning requests use the SAME shared draft
+            // Officers from all requests are added to this single draft
+            // Only create a new draft if no draft exists (e.g., after publishing)
             $deployment = ManningDeployment::draft()
                 ->latest()
                 ->first();
 
             if (!$deployment) {
-                // Generate deployment number
+                // No active draft exists - create a new shared draft
+                // This will be used by ALL manning requests until it's published
                 $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
                 $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
                     ->orderBy('deployment_number', 'desc')
@@ -1222,12 +1226,17 @@ class ManningRequestController extends Controller
         try {
             DB::beginTransaction();
 
-            // Get or create shared active draft deployment
+            // Get or create SHARED active draft deployment
+            // IMPORTANT: All manning requests use the SAME shared draft
+            // Officers from all requests are added to this single draft
+            // Only create a new draft if no draft exists (e.g., after publishing)
             $deployment = ManningDeployment::draft()
                 ->latest()
                 ->first();
 
             if (!$deployment) {
+                // No active draft exists - create a new shared draft
+                // This will be used by ALL manning requests until it's published
                 $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
                 $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
                     ->orderBy('deployment_number', 'desc')
@@ -1635,14 +1644,17 @@ class ManningRequestController extends Controller
             $selectedOfficers = Officer::whereIn('id', $validated['selected_officers'])->get();
             $destinationCommand = $manningRequest->command;
 
-            // Get or create shared active draft deployment (not per-user)
-            // All HRD officers work with the same shared draft
+            // Get or create SHARED active draft deployment
+            // IMPORTANT: All manning requests use the SAME shared draft
+            // Officers from all requests are added to this single draft
+            // Only create a new draft if no draft exists (e.g., after publishing)
             $deployment = ManningDeployment::draft()
                 ->latest()
                 ->first();
 
             if (!$deployment) {
-                // Generate deployment number
+                // No active draft exists - create a new shared draft
+                // This will be used by ALL manning requests until it's published
                 $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
                 $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
                     ->orderBy('deployment_number', 'desc')
