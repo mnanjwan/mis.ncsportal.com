@@ -112,6 +112,7 @@ class DashboardController extends Controller
             'RAISED' => Emolument::where('status', 'RAISED')->count(),
             'ASSESSED' => Emolument::where('status', 'ASSESSED')->count(),
             'VALIDATED' => Emolument::where('status', 'VALIDATED')->count(),
+            'AUDITED' => Emolument::where('status', 'AUDITED')->count(),
             'PROCESSED' => Emolument::where('status', 'PROCESSED')->count(),
         ];
 

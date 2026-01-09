@@ -9,12 +9,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Modify the status enum to include AUDITED
-        DB::statement("ALTER TABLE emoluments MODIFY COLUMN status ENUM('RAISED', 'ASSESSED', 'VALIDATED', 'AUDITED', 'PROCESSED', 'REJECTED') DEFAULT 'RAISED'");
+        $driver = DB::connection()->getDriverName();
         
-        // Add audited_at timestamp field
-        Schema::table('emoluments', function (Blueprint $table) {
-            $table->timestamp('audited_at')->nullable()->after('validated_at');
+        // Modify the status enum to include AUDITED (only for MySQL/MariaDB)
+        // SQLite stores ENUMs as TEXT, so 'AUDITED' can be used without modifying the constraint
+        if (in_array($driver, ['mysql', 'mariadb'])) {
+            DB::statement("ALTER TABLE emoluments MODIFY COLUMN status ENUM('RAISED', 'ASSESSED', 'VALIDATED', 'AUDITED', 'PROCESSED', 'REJECTED') DEFAULT 'RAISED'");
+        }
+        
+        // Add audited_at timestamp field (works for all database types)
+        Schema::table('emoluments', function (Blueprint $table) use ($driver) {
+            if (in_array($driver, ['mysql', 'mariadb']) && Schema::hasColumn('emoluments', 'validated_at')) {
+                // MySQL/MariaDB: can use after() clause
+                $table->timestamp('audited_at')->nullable()->after('validated_at');
+            } else {
+                // SQLite/PostgreSQL: just add the column (after() not supported)
+                $table->timestamp('audited_at')->nullable();
+            }
         });
     }
 
@@ -24,8 +35,11 @@ return new class extends Migration
             $table->dropColumn('audited_at');
         });
         
-        // Revert status enum
-        DB::statement("ALTER TABLE emoluments MODIFY COLUMN status ENUM('RAISED', 'ASSESSED', 'VALIDATED', 'PROCESSED', 'REJECTED') DEFAULT 'RAISED'");
+        // Revert status enum (only for MySQL/MariaDB)
+        $driver = DB::connection()->getDriverName();
+        if (in_array($driver, ['mysql', 'mariadb'])) {
+            DB::statement("ALTER TABLE emoluments MODIFY COLUMN status ENUM('RAISED', 'ASSESSED', 'VALIDATED', 'PROCESSED', 'REJECTED') DEFAULT 'RAISED'");
+        }
     }
 };
 

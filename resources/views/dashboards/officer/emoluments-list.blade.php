@@ -55,7 +55,8 @@
                                     $statusClass = match($emolument->status) {
                                         'RAISED' => 'warning',
                                         'ASSESSED' => 'info',
-                                        'VALIDATED' => 'success',
+                                        'VALIDATED' => 'warning',
+                                        'AUDITED' => 'success',
                                         'PROCESSED' => 'success',
                                         'REJECTED' => 'danger',
                                         default => 'secondary'

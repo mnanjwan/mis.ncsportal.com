@@ -43,7 +43,8 @@
                                 $statusClass = match ($emolument->status) {
                                     'RAISED' => 'info',
                                     'ASSESSED' => 'warning',
-                                    'VALIDATED' => 'success',
+                                    'VALIDATED' => 'warning',
+                                    'AUDITED' => 'success',
                                     'PROCESSED' => 'success',
                                     'REJECTED' => 'danger',
                                     default => 'secondary'
@@ -154,14 +155,15 @@
                         <div class="relative">
                             @php
                                 $isRaised = $emolument->submitted_at !== null;
-                                $isAssessed = in_array($emolument->status, ['ASSESSED', 'VALIDATED', 'PROCESSED']) || $emolument->assessed_at;
-                                $isValidated = in_array($emolument->status, ['VALIDATED', 'PROCESSED']) || $emolument->validated_at;
+                                $isAssessed = in_array($emolument->status, ['ASSESSED', 'VALIDATED', 'AUDITED', 'PROCESSED']) || $emolument->assessed_at;
+                                $isValidated = in_array($emolument->status, ['VALIDATED', 'AUDITED', 'PROCESSED']) || $emolument->validated_at;
+                                $isAudited = in_array($emolument->status, ['AUDITED', 'PROCESSED']) || $emolument->audited_at;
                                 $isProcessed = $emolument->status === 'PROCESSED' || $emolument->processed_at;
                             @endphp
                             
                             <!-- Vertical Line - green for completed steps, gray for pending -->
                             @php
-                                $lastCompletedStep = $isProcessed ? 4 : ($isValidated ? 3 : ($isAssessed ? 2 : ($isRaised ? 1 : 0)));
+                                $lastCompletedStep = $isProcessed ? 5 : ($isAudited ? 4 : ($isValidated ? 3 : ($isAssessed ? 2 : ($isRaised ? 1 : 0))));
                                 $lineColor = $lastCompletedStep > 0 ? 'bg-[#088a56]' : 'bg-border';
                             @endphp
                             <div class="absolute left-3 top-0 bottom-0 w-0.5 {{ $lineColor }}"></div>
@@ -220,11 +222,32 @@
                                             @else
                                                 Pending
                                             @endif
-                                </p>
-                            </div>
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <!-- Step 4: Processed -->
+                                <!-- Step 4: Audited -->
+                                <div class="relative flex items-start gap-4">
+                                    <div class="flex-shrink-0 relative z-10">
+                                        <div class="w-6 h-6 rounded-full {{ $isAudited ? 'bg-[#088a56]' : 'bg-gray-200' }} border-2 border-white shadow-sm flex items-center justify-center">
+                                            <div class="w-2 h-2 rounded-full bg-white"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 pt-0.5">
+                                        <h4 class="text-sm font-semibold {{ $isAudited ? 'text-foreground' : 'text-secondary-foreground' }} mb-1">
+                                            Audited
+                                        </h4>
+                                        <p class="text-xs text-secondary-foreground">
+                                            @if($isAudited)
+                                                {{ $emolument->audited_at ? $emolument->audited_at->format('d M Y') : 'Completed' }}
+                                            @else
+                                                Pending
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Step 5: Processed -->
                                 <div class="relative flex items-start gap-4">
                                     <div class="flex-shrink-0 relative z-10">
                                         <div class="w-6 h-6 rounded-full {{ $isProcessed ? 'bg-[#088a56]' : 'bg-gray-200' }} border-2 border-white shadow-sm flex items-center justify-center">

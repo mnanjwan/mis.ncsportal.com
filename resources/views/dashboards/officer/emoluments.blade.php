@@ -137,7 +137,8 @@
                                         $statusClasses = [
                                             'RAISED' => 'bg-blue-100 text-blue-800',
                                             'ASSESSED' => 'bg-yellow-100 text-yellow-800',
-                                            'VALIDATED' => 'bg-green-100 text-green-800',
+                                            'VALIDATED' => 'bg-yellow-100 text-yellow-800',
+                                            'AUDITED' => 'bg-green-100 text-green-800',
                                             'PROCESSED' => 'bg-[#088a56] bg-opacity-10 text-[#088a56]',
                                             'REJECTED' => 'bg-red-100 text-red-800',
                                         ];
