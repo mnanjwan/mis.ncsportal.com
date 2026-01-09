@@ -28,6 +28,7 @@
         'Admin',
         'Zone Coordinator',
         'Validator',
+        'Auditor',
         'Assessor',
         'Staff Officer',
         'Officer'
@@ -292,6 +293,12 @@
                 ['icon' => 'ki-filled ki-wallet', 'title' => 'Emoluments', 'href' => route('validator.emoluments')],
             ];
             break;
+        case 'Auditor':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('auditor.dashboard')],
+                ['icon' => 'ki-filled ki-wallet', 'title' => 'Emoluments', 'href' => route('auditor.emoluments')],
+            ];
+            break;
         case 'Area Controller':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('area-controller.dashboard')],
@@ -463,11 +470,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="flex items-center gap-2.5 px-3.5">
-            <button class="kt-btn kt-btn-icon kt-btn-secondary [&_i]:text-white" data-kt-modal-toggle="#search_modal">
-                <i class="ki-filled ki-magnifier"></i>
-            </button>
         </div>
     </div>
     <!-- End of Sidebar Header -->
@@ -652,7 +654,7 @@
 <!-- End of Sidebar -->
 
 <!-- Logout Confirmation Modal -->
-<div class="kt-modal" data-kt-modal="true" id="logout-confirm-modal">
+<div class="kt-modal hidden" data-kt-modal="true" id="logout-confirm-modal">
     <div class="kt-modal-content max-w-[400px]">
         <div class="kt-modal-header py-4 px-5">
             <div class="flex items-center gap-3">

@@ -1064,12 +1064,20 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Get pending emoluments for action (AUDITED status)
+        $pendingEmoluments = Emolument::with(['officer.presentStation', 'audit.auditor'])
+            ->where('status', 'AUDITED')
+            ->orderBy('audited_at', 'desc')
+            ->take(10)
+            ->get();
+
         return view('dashboards.accounts.dashboard', compact(
             'auditedCount',
             'pendingProcessing',
             'processedThisMonth',
             'pendingChangeRequests',
-            'recentChangeRequests'
+            'recentChangeRequests',
+            'pendingEmoluments'
         ));
     }
 

@@ -125,9 +125,6 @@
     <!-- Notifications Drawer -->
     @include('components.notifications-drawer')
     <!-- End of Notifications Drawer -->
-    <!-- Search Modal -->
-    @include('components.search-modal')
-    <!-- End of Search Modal -->
     <!-- End of Page -->
     <!-- Scripts -->
     <script src="{{ asset('ncs-employee-portal/dist/assets/js/core.bundle.js') }}"></script>
@@ -143,6 +140,15 @@
     <script src="{{ asset('ncs-employee-portal/config/api.js') }}"></script>
     <script src="{{ asset('ncs-employee-portal/js/auth.js') }}"></script>
     <script src="{{ asset('ncs-employee-portal/js/utils.js') }}"></script>
+    <script>
+        // Ensure modals with 'hidden' class stay hidden on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.kt-modal.hidden').forEach(function(modal) {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            });
+        });
+    </script>
     @stack('scripts')
 </body>
 

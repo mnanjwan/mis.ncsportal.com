@@ -1,5 +1,5 @@
 <!-- Search Modal -->
-<div class="kt-modal" data-kt-modal="true" id="search_modal">
+<div class="kt-modal hidden" data-kt-modal="true" id="search_modal">
     <div class="kt-modal-content max-w-[600px] top-[15%]">
         <div class="kt-modal-header py-4 px-5">
             <i class="ki-filled ki-magnifier text-muted-foreground text-xl"></i>
@@ -25,6 +25,7 @@
                                     'Staff Officer' => route('staff-officer.dashboard'),
                                     'Assessor' => route('assessor.dashboard'),
                                     'Validator' => route('validator.dashboard'),
+                                    'Auditor' => route('auditor.dashboard'),
                                     'Area Controller' => route('area-controller.dashboard'),
                                     'DC Admin' => route('dc-admin.dashboard'),
                                     'Accounts' => route('accounts.dashboard'),

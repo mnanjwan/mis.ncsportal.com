@@ -557,6 +557,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/validated-officers', [EmolumentController::class, 'validated'])->name('validated-officers');
         Route::get('/processed-history', [EmolumentController::class, 'processedHistory'])->name('processed-history');
         Route::get('/processed-history/export', [EmolumentController::class, 'exportProcessedReport'])->name('processed-history.export');
+        Route::get('/processed-history/print', [EmolumentController::class, 'printProcessedReport'])->name('processed-history.print');
         Route::get('/emoluments/{id}', [EmolumentController::class, 'show'])->name('emoluments.show');
         Route::post('/emoluments/{id}/process', [EmolumentController::class, 'processPayment'])->name('emoluments.process');
         Route::post('/emoluments/bulk-process', [EmolumentController::class, 'bulkProcess'])->name('emoluments.bulk-process');

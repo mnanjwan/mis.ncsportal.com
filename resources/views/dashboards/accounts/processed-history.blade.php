@@ -32,7 +32,7 @@
             <div class="kt-card-content">
                 <form method="GET" action="{{ route('accounts.processed-history') }}" class="flex flex-col gap-4" id="filter-form">
                     <!-- Filter Controls -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                         <!-- Search Input -->
                         <div class="lg:col-span-2">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
@@ -44,6 +44,19 @@
                                        placeholder="Search Service No or Name..." 
                                        class="kt-input w-full pl-10">
                             </div>
+                        </div>
+
+                        <!-- Zone Select -->
+                        <div>
+                            <label class="block text-sm font-medium text-secondary-foreground mb-1">Zone</label>
+                            <select name="zone_id" class="kt-input w-full">
+                                <option value="">All Zones</option>
+                                @foreach($zones as $zone)
+                                    <option value="{{ $zone->id }}" {{ (string)request('zone_id') === (string)$zone->id ? 'selected' : '' }}>
+                                        {{ $zone->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <!-- Command Select -->
@@ -96,11 +109,16 @@
                         <button type="submit" class="kt-btn kt-btn-primary">
                             <i class="ki-filled ki-filter"></i> Filter
                         </button>
-                        @if(request()->anyFilled(['search', 'command_id', 'year', 'date_from', 'date_to']))
+                        @if(request()->anyFilled(['search', 'zone_id', 'command_id', 'year', 'date_from', 'date_to']))
                             <a href="{{ route('accounts.processed-history') }}" class="kt-btn kt-btn-outline">
                                 Clear
                             </a>
                         @endif
+                        <button type="button" 
+                                class="kt-btn kt-btn-primary"
+                                onclick="printReport()">
+                            <i class="ki-filled ki-printer"></i> Print
+                        </button>
                         <button type="button" 
                                 class="kt-btn kt-btn-success"
                                 onclick="exportReport('csv')">
@@ -143,18 +161,37 @@
                                         Service No
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'year', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'year', 'sort_order' => request('sort_by') === 'year' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Year
-                                            @if(request('sort_by') === 'year')
-                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'asc' ? 'up' : 'down' }} text-xs"></i>
+                                            @if(request('sort_by') === 'year' || !request('sort_by'))
+                                                <i class="ki-filled ki-arrow-{{ (request('sort_by') === 'year' && request('sort_order') === 'desc') || !request('sort_by') ? 'down' : 'up' }} text-xs"></i>
                                             @else
                                                 <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
                                             @endif
                                         </a>
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
-                                        Command
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'zone', 'sort_order' => request('sort_by') === 'zone' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Zone
+                                            @if(request('sort_by') === 'zone')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'desc' ? 'down' : 'up' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'command', 'sort_order' => request('sort_by') === 'command' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Command
+                                            @if(request('sort_by') === 'command')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'desc' ? 'down' : 'up' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'processed_at', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
@@ -190,6 +227,9 @@
                                             {{ $emolument->year }}
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            {{ $emolument->officer->presentStation->zone->name ?? 'N/A' }}
+                                        </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
                                             {{ $emolument->officer->presentStation->name ?? 'N/A' }}
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">
@@ -204,7 +244,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="py-12 text-center">
+                                        <td colspan="9" class="py-12 text-center">
                                             <i class="ki-filled ki-information text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground">No processed emoluments found</p>
                                         </td>
@@ -234,6 +274,9 @@
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="text-xs text-secondary-foreground">
                                                 {{ $emolument->year }}
+                                            </span>
+                                            <span class="text-xs text-secondary-foreground">
+                                                | {{ $emolument->officer->presentStation->zone->name ?? 'N/A' }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
                                                 | {{ $emolument->officer->presentStation->name ?? 'N/A' }}
@@ -285,6 +328,30 @@
             }
             
             window.location.href = '{{ route("accounts.processed-history.export") }}?' + params.toString();
+        }
+
+        function printReport() {
+            const form = document.getElementById('filter-form');
+            const formData = new FormData(form);
+            
+            const params = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    params.append(key, value);
+                }
+            }
+            
+            // Preserve sort parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('sort_by')) {
+                params.append('sort_by', urlParams.get('sort_by'));
+            }
+            if (urlParams.get('sort_order')) {
+                params.append('sort_order', urlParams.get('sort_order'));
+            }
+            
+            const printUrl = '{{ route("accounts.processed-history.print") }}?' + params.toString();
+            window.open(printUrl, '_blank');
         }
     </script>
     @endpush

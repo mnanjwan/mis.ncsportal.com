@@ -782,9 +782,41 @@ class EmolumentController extends Controller
             return redirect()->back()->with('error', 'This emolument has already been audited.');
         }
 
-        // Ensure validation exists
+        // Ensure assessment exists - create retroactively if missing
+        if (!$emolument->assessment) {
+            \Log::warning('Emolument VALIDATED but no assessment record found, creating retroactively', [
+                'emolument_id' => $emolument->id,
+            ]);
+            
+            EmolumentAssessment::create([
+                'emolument_id' => $emolument->id,
+                'assessor_id' => auth()->id(), // Use current user as fallback
+                'assessment_status' => 'APPROVED',
+                'comments' => 'Retroactively created assessment record',
+                'assessed_at' => $emolument->assessed_at ?? $emolument->validated_at ?? now(),
+            ]);
+            
+            // Reload the relationship
+            $emolument->load('assessment');
+        }
+
+        // Ensure validation exists - create retroactively if missing
         if (!$emolument->validation) {
-            return redirect()->back()->with('error', 'Emolument validation record not found');
+            \Log::warning('Emolument VALIDATED but no validation record found, creating retroactively', [
+                'emolument_id' => $emolument->id,
+            ]);
+            
+            EmolumentValidation::create([
+                'emolument_id' => $emolument->id,
+                'assessment_id' => $emolument->assessment->id,
+                'validator_id' => auth()->id(), // Use current user as fallback
+                'validation_status' => 'APPROVED',
+                'comments' => 'Retroactively created validation record',
+                'validated_at' => $emolument->validated_at ?? now(),
+            ]);
+            
+            // Reload the relationship
+            $emolument->load('validation');
         }
 
         return view('forms.emolument.audit', compact('emolument'));
@@ -797,7 +829,7 @@ class EmolumentController extends Controller
     {
         try {
             $user = auth()->user();
-            $emolument = Emolument::with(['officer', 'validation'])->findOrFail($id);
+            $emolument = Emolument::with(['officer', 'assessment', 'validation'])->findOrFail($id);
 
             if ($emolument->status !== 'VALIDATED') {
                 return redirect()->back()->with('error', 'Emolument must be validated before audit. Current status: ' . $emolument->status);
@@ -808,9 +840,41 @@ class EmolumentController extends Controller
                 return redirect()->back()->with('error', 'This emolument has already been audited.');
             }
 
-            // Ensure validation exists
+            // Ensure assessment exists - create retroactively if missing
+            if (!$emolument->assessment) {
+                \Log::warning('Emolument VALIDATED but no assessment record found, creating retroactively', [
+                    'emolument_id' => $emolument->id,
+                ]);
+                
+                EmolumentAssessment::create([
+                    'emolument_id' => $emolument->id,
+                    'assessor_id' => auth()->id(), // Use current user as fallback
+                    'assessment_status' => 'APPROVED',
+                    'comments' => 'Retroactively created assessment record',
+                    'assessed_at' => $emolument->assessed_at ?? $emolument->validated_at ?? now(),
+                ]);
+                
+                // Reload the relationship
+                $emolument->load('assessment');
+            }
+
+            // Ensure validation exists - create retroactively if missing
             if (!$emolument->validation) {
-                return redirect()->back()->with('error', 'Emolument validation record not found');
+                \Log::warning('Emolument VALIDATED but no validation record found, creating retroactively', [
+                    'emolument_id' => $emolument->id,
+                ]);
+                
+                EmolumentValidation::create([
+                    'emolument_id' => $emolument->id,
+                    'assessment_id' => $emolument->assessment->id,
+                    'validator_id' => auth()->id(), // Use current user as fallback
+                    'validation_status' => 'APPROVED',
+                    'comments' => 'Retroactively created validation record',
+                    'validated_at' => $emolument->validated_at ?? now(),
+                ]);
+                
+                // Reload the relationship
+                $emolument->load('validation');
             }
 
             $validated = $request->validate([
@@ -993,11 +1057,19 @@ class EmolumentController extends Controller
     public function processedHistory(Request $request)
     {
         $query = Emolument::where('status', 'PROCESSED')
-            ->with(['officer.presentStation', 'assessment', 'validation']);
+            ->with(['officer.presentStation.zone', 'assessment', 'validation']);
 
         // Filter by year
         if ($request->filled('year')) {
             $query->where('year', $request->year);
+        }
+
+        // Filter by zone
+        if ($request->filled('zone_id')) {
+            $zoneId = (int) $request->zone_id;
+            $query->whereHas('officer.presentStation', function ($q) use ($zoneId) {
+                $q->where('zone_id', $zoneId);
+            });
         }
 
         // Filter by command
@@ -1026,44 +1098,40 @@ class EmolumentController extends Controller
             });
         }
 
-        // Sorting
-        $sortBy = $request->get('sort_by', 'processed_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        $allowedSorts = ['processed_at', 'year'];
-        
-        if (in_array($sortBy, $allowedSorts)) {
-            $query->orderBy($sortBy, $sortOrder);
-        } else {
-            // Default sort by processed_at desc
-            $query->orderBy('processed_at', 'desc');
-        }
-        
-        // For officer name sorting, we'll sort after getting results
-        if ($sortBy === 'officer_id') {
-            $query->orderBy('processed_at', 'desc'); // Temporary order
-        }
-
-        // Get unique years for filter
-        $years = Emolument::where('status', 'PROCESSED')
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year')
-            ->filter()
-            ->values();
-
-        // Get commands for filter
-        $commands = Command::where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        // Get results
+        // Get results first (before sorting by zone/command which requires relationships)
         $emoluments = $query->get();
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'year');
+        $sortOrder = $request->get('sort_order', 'asc');
         
-        // Sort by officer name if requested (after getting results to avoid join issues)
-        if ($sortBy === 'officer_id') {
+        if ($sortBy === 'year') {
+            $emoluments = $emoluments->sortBy('year', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'zone') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->zone->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'command') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'processed_at') {
+            $emoluments = $emoluments->sortBy('processed_at', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'officer_id') {
             $emoluments = $emoluments->sortBy(function($emolument) {
                 return ($emolument->officer->surname ?? '') . ($emolument->officer->initials ?? '');
             }, SORT_REGULAR, $sortOrder === 'desc');
+        } else {
+            // Default sort by year, then zone, then command
+            $emoluments = $emoluments->sortBy([
+                ['year', 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->zone->name ?? '';
+                }, 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->name ?? '';
+                }, 'asc'],
+            ]);
         }
         
         // Paginate manually
@@ -1079,7 +1147,25 @@ class EmolumentController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        return view('dashboards.accounts.processed-history', compact('emoluments', 'years', 'commands'));
+        // Get unique years for filter
+        $years = Emolument::where('status', 'PROCESSED')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->filter()
+            ->values();
+
+        // Get zones for filter
+        $zones = \App\Models\Zone::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Get commands for filter
+        $commands = Command::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('dashboards.accounts.processed-history', compact('emoluments', 'years', 'zones', 'commands'));
     }
 
     /**
@@ -1088,11 +1174,136 @@ class EmolumentController extends Controller
     public function exportProcessedReport(Request $request)
     {
         $query = Emolument::where('status', 'PROCESSED')
-            ->with(['officer.presentStation', 'assessment', 'validation']);
+            ->with(['officer.presentStation.zone', 'assessment', 'validation']);
 
         // Apply same filters as history page
         if ($request->filled('year')) {
             $query->where('year', $request->year);
+        }
+        if ($request->filled('zone_id')) {
+            $zoneId = (int) $request->zone_id;
+            $query->whereHas('officer.presentStation', function ($q) use ($zoneId) {
+                $q->where('zone_id', $zoneId);
+            });
+        }
+        if ($request->filled('command_id')) {
+            $commandId = (int) $request->command_id;
+            $query->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            });
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('processed_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('processed_at', '<=', $request->date_to);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('officer', function ($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%");
+            });
+        }
+
+        // Get and sort results
+        $emoluments = $query->get();
+        
+        $sortBy = $request->get('sort_by', 'year');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        if ($sortBy === 'year') {
+            $emoluments = $emoluments->sortBy('year', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'zone') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->zone->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'command') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } else {
+            // Default sort by year, then zone, then command
+            $emoluments = $emoluments->sortBy([
+                ['year', 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->zone->name ?? '';
+                }, 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->name ?? '';
+                }, 'asc'],
+            ]);
+        }
+
+        $format = $request->get('format', 'csv');
+
+        if ($format === 'csv') {
+            $filename = 'processed_emoluments_' . date('Y-m-d') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ];
+
+            $callback = function() use ($emoluments) {
+                $file = fopen('php://output', 'w');
+                
+                // Headers
+                fputcsv($file, [
+                    'Officer Name',
+                    'Service Number',
+                    'Year',
+                    'Zone',
+                    'Command',
+                    'Processed Date',
+                    'Validated Date',
+                    'Assessed Date',
+                    'Bank Name',
+                    'Account Number'
+                ]);
+
+                // Data (already sorted before callback)
+                foreach ($emoluments as $emolument) {
+                    fputcsv($file, [
+                        ($emolument->officer->initials ?? '') . ' ' . ($emolument->officer->surname ?? ''),
+                        $emolument->officer->service_number ?? 'N/A',
+                        $emolument->year,
+                        $emolument->officer->presentStation->zone->name ?? 'N/A',
+                        $emolument->officer->presentStation->name ?? 'N/A',
+                        $emolument->processed_at ? $emolument->processed_at->format('Y-m-d') : 'N/A',
+                        $emolument->validated_at ? $emolument->validated_at->format('Y-m-d') : 'N/A',
+                        $emolument->assessed_at ? $emolument->assessed_at->format('Y-m-d') : 'N/A',
+                        $emolument->bank_name ?? 'N/A',
+                        $emolument->bank_account_number ?? 'N/A',
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
+        return redirect()->back()->with('error', 'Invalid export format');
+    }
+
+    /**
+     * Print processed emoluments report (Accounts)
+     */
+    public function printProcessedReport(Request $request)
+    {
+        $query = Emolument::where('status', 'PROCESSED')
+            ->with(['officer.presentStation.zone', 'assessment', 'validation']);
+
+        // Apply same filters as history page
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+        if ($request->filled('zone_id')) {
+            $zoneId = (int) $request->zone_id;
+            $query->whereHas('officer.presentStation', function ($q) use ($zoneId) {
+                $q->where('zone_id', $zoneId);
+            });
         }
         if ($request->filled('command_id')) {
             $query->whereHas('officer', function ($q) use ($request) {
@@ -1114,55 +1325,36 @@ class EmolumentController extends Controller
             });
         }
 
-        $emoluments = $query->orderBy('processed_at', 'desc')->get();
-
-        $format = $request->get('format', 'csv');
-
-        if ($format === 'csv') {
-            $filename = 'processed_emoluments_' . date('Y-m-d') . '.csv';
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            ];
-
-            $callback = function() use ($emoluments) {
-                $file = fopen('php://output', 'w');
-                
-                // Headers
-                fputcsv($file, [
-                    'Officer Name',
-                    'Service Number',
-                    'Year',
-                    'Command',
-                    'Processed Date',
-                    'Validated Date',
-                    'Assessed Date',
-                    'Bank Name',
-                    'Account Number'
-                ]);
-
-                // Data
-                foreach ($emoluments as $emolument) {
-                    fputcsv($file, [
-                        ($emolument->officer->initials ?? '') . ' ' . ($emolument->officer->surname ?? ''),
-                        $emolument->officer->service_number ?? 'N/A',
-                        $emolument->year,
-                        $emolument->officer->presentStation->name ?? 'N/A',
-                        $emolument->processed_at ? $emolument->processed_at->format('Y-m-d') : 'N/A',
-                        $emolument->validated_at ? $emolument->validated_at->format('Y-m-d') : 'N/A',
-                        $emolument->assessed_at ? $emolument->assessed_at->format('Y-m-d') : 'N/A',
-                        $emolument->bank_name ?? 'N/A',
-                        $emolument->bank_account_number ?? 'N/A',
-                    ]);
-                }
-
-                fclose($file);
-            };
-
-            return response()->stream($callback, 200, $headers);
+        // Get and sort results
+        $emoluments = $query->get();
+        
+        $sortBy = $request->get('sort_by', 'year');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        if ($sortBy === 'year') {
+            $emoluments = $emoluments->sortBy('year', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'zone') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->zone->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'command') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } else {
+            // Default sort by year, then zone, then command
+            $emoluments = $emoluments->sortBy([
+                ['year', 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->zone->name ?? '';
+                }, 'asc'],
+                [function($emolument) {
+                    return $emolument->officer->presentStation->name ?? '';
+                }, 'asc'],
+            ]);
         }
 
-        return redirect()->back()->with('error', 'Invalid export format');
+        return view('prints.processed-emoluments', compact('emoluments'));
     }
 }
 

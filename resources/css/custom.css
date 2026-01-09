@@ -281,3 +281,9 @@ i[class*="ki-"],
     opacity: 1 !important;
 }
 
+/* Ensure modals with hidden class are properly hidden */
+.kt-modal.hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
