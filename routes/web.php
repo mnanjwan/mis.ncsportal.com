@@ -707,6 +707,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('onboarding.complete')->group(function () {
         Route::get('/emolument/raise', [EmolumentController::class, 'create'])->name('emolument.raise');
         Route::post('/emolument/raise', [EmolumentController::class, 'store'])->name('emolument.store');
+        Route::post('/emolument/{id}/resubmit', [EmolumentController::class, 'resubmit'])->name('emolument.resubmit');
         Route::get('/leave/apply', [LeaveApplicationController::class, 'create'])->name('leave.apply');
         Route::post('/leave/apply', [LeaveApplicationController::class, 'store'])->name('leave.store');
         Route::get('/pass/apply', [PassApplicationController::class, 'create'])->name('pass.apply');

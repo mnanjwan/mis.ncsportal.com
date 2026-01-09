@@ -1501,6 +1501,51 @@ class EmolumentController extends Controller
 
         return view('prints.all-emoluments', compact('emoluments', 'filters'));
     }
+
+    /**
+     * Resubmit rejected emolument (Officer)
+     */
+    public function resubmit($id)
+    {
+        $user = auth()->user();
+        $emolument = Emolument::with(['officer', 'validation'])->findOrFail($id);
+
+        // Verify officer owns this emolument
+        if (!$user->officer || $user->officer->id !== $emolument->officer_id) {
+            return redirect()->back()->with('error', 'You can only resubmit your own emoluments.');
+        }
+
+        // Only allow resubmission if rejected at validation level
+        if ($emolument->status !== 'REJECTED') {
+            return redirect()->back()->with('error', 'Only rejected emoluments can be resubmitted.');
+        }
+
+        if (!$emolument->validation || $emolument->validation->validation_status !== 'REJECTED') {
+            return redirect()->back()->with('error', 'Only emoluments rejected during validation can be resubmitted.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Reset status to RAISED
+            $emolument->update([
+                'status' => 'RAISED',
+                'submitted_at' => now(),
+            ]);
+
+            DB::commit();
+
+            // Notify assessors about resubmission
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->notifyEmolumentRaised($emolument);
+
+            return redirect()->route('officer.emoluments')
+                ->with('success', 'Emolument resubmitted successfully. It will be reviewed again by the Assessor.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Emolument resubmission error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to resubmit emolument: ' . $e->getMessage());
+        }
+    }
 }
 
 

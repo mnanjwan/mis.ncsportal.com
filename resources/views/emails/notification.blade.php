@@ -9,7 +9,7 @@
     
     <p>Dear {{ $user->name }},</p>
     
-    <p>{{ $notification->message }}</p>
+    <div style="white-space: pre-line;">{{ $notification->message }}</div>
     
     @if($notification->entity_type && $notification->entity_id)
         <p>You can view the details by clicking the link below:</p>

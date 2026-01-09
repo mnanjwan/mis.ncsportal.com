@@ -118,7 +118,7 @@
                 <div class="kt-card-content space-y-5">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono">Decision <span class="text-red-500">*</span></label>
-                        <select class="kt-input @error('validation_status') border-red-500 @enderror" name="validation_status" required>
+                        <select class="kt-input @error('validation_status') border-red-500 @enderror" name="validation_status" id="validation_status" required>
                             <option value="">Select Decision</option>
                             <option value="APPROVED" {{ old('validation_status') == 'APPROVED' ? 'selected' : '' }}>Approve</option>
                             <option value="REJECTED" {{ old('validation_status') == 'REJECTED' ? 'selected' : '' }}>Reject</option>
@@ -128,8 +128,8 @@
                         @enderror
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label font-normal text-mono">Comments</label>
-                        <textarea class="kt-input @error('comments') border-red-500 @enderror" name="comments" rows="4"
+                        <label class="kt-form-label font-normal text-mono">Comments <span id="comments-required" class="text-danger hidden">*</span></label>
+                        <textarea class="kt-input @error('comments') border-red-500 @enderror" name="comments" id="comments" rows="4"
                             placeholder="Enter validation comments (optional for approval, required for rejection)">{{ old('comments') }}</textarea>
                         @error('comments')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -138,12 +138,34 @@
                 </div>
                 <div class="kt-card-footer flex justify-end items-center gap-3">
                     <a class="kt-btn kt-btn-outline" href="{{ route('validator.dashboard') }}">Cancel</a>
-                    <button class="kt-btn kt-btn-primary" type="submit">
+                    <button class="kt-btn kt-btn-primary" type="submit" id="submit-btn">
                         Submit Validation
                         <i class="ki-filled ki-check text-base"></i>
                     </button>
                 </div>
             </form>
+
+            <script>
+                document.getElementById('validation_status')?.addEventListener('change', function() {
+                    const commentsRequired = document.getElementById('comments-required');
+                    const commentsField = document.getElementById('comments');
+                    
+                    if (this.value === 'REJECTED') {
+                        commentsRequired.classList.remove('hidden');
+                        commentsField.setAttribute('required', 'required');
+                        commentsField.classList.add('border-warning');
+                    } else {
+                        commentsRequired.classList.add('hidden');
+                        commentsField.removeAttribute('required');
+                        commentsField.classList.remove('border-warning');
+                    }
+                });
+
+                // Trigger on page load if old value exists
+                @if(old('validation_status') === 'REJECTED')
+                    document.getElementById('validation_status').dispatchEvent(new Event('change'));
+                @endif
+            </script>
         </div>
 
         <div class="xl:col-span-1">

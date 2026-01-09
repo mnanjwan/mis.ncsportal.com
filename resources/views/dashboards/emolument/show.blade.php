@@ -99,6 +99,75 @@
                     </div>
                 </div>
 
+                <!-- Rejection Comments -->
+                @if($emolument->status === 'REJECTED')
+                    <div class="kt-card border-l-4 border-l-danger">
+                        <div class="kt-card-header bg-danger/10">
+                            <h3 class="kt-card-title text-danger">Rejection Details</h3>
+                        </div>
+                        <div class="kt-card-content space-y-4">
+                            @if($emolument->validation && $emolument->validation->validation_status === 'REJECTED' && $emolument->validation->comments)
+                                <div>
+                                    <h4 class="text-sm font-semibold text-foreground mb-2">Validation Rejection</h4>
+                                    <div class="bg-danger/5 border border-danger/20 rounded-lg p-4">
+                                        <p class="text-foreground whitespace-pre-line">{{ $emolument->validation->comments }}</p>
+                                        <p class="text-xs text-secondary-foreground mt-2">
+                                            Rejected on: {{ $emolument->validated_at ? $emolument->validated_at->format('d M Y, h:i A') : 'N/A' }}
+                                            @if($emolument->validation->validator)
+                                                by {{ $emolument->validation->validator->email }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($emolument->assessment && $emolument->assessment->assessment_status === 'REJECTED' && $emolument->assessment->comments)
+                                <div>
+                                    <h4 class="text-sm font-semibold text-foreground mb-2">Assessment Rejection</h4>
+                                    <div class="bg-danger/5 border border-danger/20 rounded-lg p-4">
+                                        <p class="text-foreground whitespace-pre-line">{{ $emolument->assessment->comments }}</p>
+                                        <p class="text-xs text-secondary-foreground mt-2">
+                                            Rejected on: {{ $emolument->assessed_at ? $emolument->assessed_at->format('d M Y, h:i A') : 'N/A' }}
+                                            @if($emolument->assessment->assessor)
+                                                by {{ $emolument->assessment->assessor->email }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($emolument->audit && $emolument->audit->audit_status === 'REJECTED' && $emolument->audit->comments)
+                                <div>
+                                    <h4 class="text-sm font-semibold text-foreground mb-2">Audit Rejection</h4>
+                                    <div class="bg-danger/5 border border-danger/20 rounded-lg p-4">
+                                        <p class="text-foreground whitespace-pre-line">{{ $emolument->audit->comments }}</p>
+                                        <p class="text-xs text-secondary-foreground mt-2">
+                                            Rejected on: {{ $emolument->audited_at ? $emolument->audited_at->format('d M Y, h:i A') : 'N/A' }}
+                                            @if($emolument->audit->auditor)
+                                                by {{ $emolument->audit->auditor->email }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+                            
+                            @if($emolument->validation && $emolument->validation->validation_status === 'REJECTED')
+                                @if(auth()->user()->officer && auth()->user()->officer->id === $emolument->officer_id)
+                                    <div class="mt-4 pt-4 border-t border-border">
+                                        <p class="text-sm text-secondary-foreground mb-3">
+                                            Your emolument was rejected during validation. You can resubmit it after making the necessary corrections.
+                                        </p>
+                                        <form action="{{ route('emolument.resubmit', $emolument->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to resubmit this emolument? It will be sent back for assessment.');">
+                                            @csrf
+                                            <button type="submit" class="kt-btn kt-btn-primary">
+                                                <i class="ki-filled ki-arrow-up"></i> Resubmit Emolument
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Notes -->
                 @if($emolument->notes)
                     <div class="kt-card">
