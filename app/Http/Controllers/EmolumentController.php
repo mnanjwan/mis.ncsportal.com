@@ -1100,7 +1100,7 @@ class EmolumentController extends Controller
 
         // Get results first (before sorting by zone/command which requires relationships)
         $emoluments = $query->get();
-
+        
         // Sorting
         $sortBy = $request->get('sort_by', 'year');
         $sortOrder = $request->get('sort_order', 'asc');
@@ -1120,6 +1120,10 @@ class EmolumentController extends Controller
         } elseif ($sortBy === 'officer_id') {
             $emoluments = $emoluments->sortBy(function($emolument) {
                 return ($emolument->officer->surname ?? '') . ($emolument->officer->initials ?? '');
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'rank') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->substantive_rank ?? '';
             }, SORT_REGULAR, $sortOrder === 'desc');
         } else {
             // Default sort by year, then zone, then command
@@ -1223,6 +1227,10 @@ class EmolumentController extends Controller
             $emoluments = $emoluments->sortBy(function($emolument) {
                 return $emolument->officer->presentStation->name ?? '';
             }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'rank') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->substantive_rank ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
         } else {
             // Default sort by year, then zone, then command
             $emoluments = $emoluments->sortBy([
@@ -1252,6 +1260,7 @@ class EmolumentController extends Controller
                 fputcsv($file, [
                     'Officer Name',
                     'Service Number',
+                    'Rank',
                     'Year',
                     'Zone',
                     'Command',
@@ -1267,6 +1276,7 @@ class EmolumentController extends Controller
                     fputcsv($file, [
                         ($emolument->officer->initials ?? '') . ' ' . ($emolument->officer->surname ?? ''),
                         $emolument->officer->service_number ?? 'N/A',
+                        $emolument->officer->substantive_rank ?? 'N/A',
                         $emolument->year,
                         $emolument->officer->presentStation->zone->name ?? 'N/A',
                         $emolument->officer->presentStation->name ?? 'N/A',
@@ -1306,8 +1316,9 @@ class EmolumentController extends Controller
             });
         }
         if ($request->filled('command_id')) {
-            $query->whereHas('officer', function ($q) use ($request) {
-                $q->where('present_station', $request->command_id);
+            $commandId = (int) $request->command_id;
+            $query->whereHas('officer', function ($q) use ($commandId) {
+                $q->where('present_station', $commandId);
             });
         }
         if ($request->filled('date_from')) {
@@ -1340,6 +1351,10 @@ class EmolumentController extends Controller
         } elseif ($sortBy === 'command') {
             $emoluments = $emoluments->sortBy(function($emolument) {
                 return $emolument->officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'rank') {
+            $emoluments = $emoluments->sortBy(function($emolument) {
+                return $emolument->officer->substantive_rank ?? '';
             }, SORT_REGULAR, $sortOrder === 'desc');
         } else {
             // Default sort by year, then zone, then command

@@ -161,6 +161,17 @@
                                         Service No
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'rank', 'sort_order' => request('sort_by') === 'rank' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
+                                           class="flex items-center gap-1 hover:text-primary transition-colors">
+                                            Rank
+                                            @if(request('sort_by') === 'rank')
+                                                <i class="ki-filled ki-arrow-{{ request('sort_order') === 'desc' ? 'down' : 'up' }} text-xs"></i>
+                                            @else
+                                                <i class="ki-filled ki-arrow-up-down text-xs opacity-50"></i>
+                                            @endif
+                                        </a>
+                                    </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'year', 'sort_order' => request('sort_by') === 'year' && request('sort_order') === 'asc' ? 'desc' : 'asc']) }}"
                                            class="flex items-center gap-1 hover:text-primary transition-colors">
                                             Year
@@ -223,6 +234,9 @@
                                                 {{ $emolument->officer->service_number ?? 'N/A' }}
                                             </span>
                                         </td>
+                                        <td class="py-3 px-4 text-sm text-secondary-foreground">
+                                            {{ $emolument->officer->substantive_rank ?? 'N/A' }}
+                                        </td>
                                         <td class="py-3 px-4 text-sm">
                                             {{ $emolument->year }}
                                         </td>
@@ -244,7 +258,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="py-12 text-center">
+                                        <td colspan="10" class="py-12 text-center">
                                             <i class="ki-filled ki-information text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground">No processed emoluments found</p>
                                         </td>
@@ -270,6 +284,9 @@
                                         </span>
                                         <span class="text-xs text-secondary-foreground">
                                             SVC: {{ $emolument->officer->service_number ?? 'N/A' }}
+                                        </span>
+                                        <span class="text-xs text-secondary-foreground">
+                                            Rank: {{ $emolument->officer->substantive_rank ?? 'N/A' }}
                                         </span>
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="text-xs text-secondary-foreground">

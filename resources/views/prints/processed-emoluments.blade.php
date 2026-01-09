@@ -123,6 +123,7 @@
                 <th>S/N</th>
                 <th>Officer Name</th>
                 <th>Service Number</th>
+                <th>Rank</th>
                 <th>Year</th>
                 <th>Zone</th>
                 <th>Command</th>
@@ -137,6 +138,7 @@
                     <td>{{ $index + 1 }}</td>
                     <td>{{ ($emolument->officer->initials ?? '') . ' ' . ($emolument->officer->surname ?? '') }}</td>
                     <td>{{ $emolument->officer->service_number ?? 'N/A' }}</td>
+                    <td>{{ $emolument->officer->substantive_rank ?? 'N/A' }}</td>
                     <td>{{ $emolument->year }}</td>
                     <td>{{ $emolument->officer->presentStation->zone->name ?? 'N/A' }}</td>
                     <td>{{ $emolument->officer->presentStation->name ?? 'N/A' }}</td>
@@ -146,7 +148,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 20px;">
+                    <td colspan="10" style="text-align: center; padding: 20px;">
                         No processed emoluments found
                     </td>
                 </tr>
