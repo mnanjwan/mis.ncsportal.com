@@ -636,9 +636,19 @@ class EmolumentController extends Controller
             }
         }
 
-        // Check if already validated
+        // Check if already validated (but allow re-validation if it was rejected and resubmitted)
         if ($emolument->validation) {
+            // Allow re-validation if emolument status is RAISED or ASSESSED (meaning it was resubmitted)
+            // and the previous validation was a rejection
+            if (in_array($emolument->status, ['RAISED', 'ASSESSED']) && 
+                $emolument->validation->validation_status === 'REJECTED') {
+                // Delete the old validation record to allow fresh validation
+                $emolument->validation->delete();
+                $emolument->refresh();
+            } else {
+                // If status is VALIDATED, AUDITED, or PROCESSED, don't allow re-validation
             return redirect()->back()->with('error', 'This emolument has already been validated.');
+            }
         }
 
         return view('forms.emolument.validate', compact('emolument'));
@@ -703,9 +713,19 @@ class EmolumentController extends Controller
                 $emolument->refresh();
             }
 
-            // Check if already validated
+            // Check if already validated (but allow re-validation if it was rejected and resubmitted)
             if ($emolument->validation) {
-                return redirect()->back()->with('error', 'This emolument has already been validated.');
+                // Allow re-validation if emolument status is RAISED or ASSESSED (meaning it was resubmitted)
+                // and the previous validation was a rejection
+                if (in_array($emolument->status, ['RAISED', 'ASSESSED']) && 
+                    $emolument->validation->validation_status === 'REJECTED') {
+                    // Delete the old validation record to allow fresh validation
+                    $emolument->validation->delete();
+                    $emolument->refresh();
+                } else {
+                    // If status is VALIDATED, AUDITED, or PROCESSED, don't allow re-validation
+                    return redirect()->back()->with('error', 'This emolument has already been validated.');
+                }
             }
 
             $validated = $request->validate([
@@ -1508,7 +1528,7 @@ class EmolumentController extends Controller
     public function resubmit($id)
     {
         $user = auth()->user();
-        $emolument = Emolument::with(['officer', 'validation'])->findOrFail($id);
+        $emolument = Emolument::with(['officer', 'validation', 'audit'])->findOrFail($id);
 
         // Verify officer owns this emolument
         if (!$user->officer || $user->officer->id !== $emolument->officer_id) {
@@ -1526,10 +1546,22 @@ class EmolumentController extends Controller
 
         DB::beginTransaction();
         try {
-            // Reset status to RAISED
+            // Delete old validation record (if exists) to allow re-validation
+            if ($emolument->validation) {
+                $emolument->validation->delete();
+            }
+            
+            // Delete old audit record (if exists) since we're starting fresh
+            if ($emolument->audit) {
+                $emolument->audit->delete();
+            }
+            
+            // Reset status to RAISED and clear validation/audit timestamps
             $emolument->update([
                 'status' => 'RAISED',
                 'submitted_at' => now(),
+                'validated_at' => null,
+                'audited_at' => null,
             ]);
 
             DB::commit();
