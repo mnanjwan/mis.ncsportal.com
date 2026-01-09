@@ -382,6 +382,7 @@
         case 'ICT':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('ict.dashboard')],
+                ['icon' => 'ki-filled ki-wallet', 'title' => 'Non-Submitters', 'href' => route('ict.non-submitters')],
             ];
             break;
         case 'Investigation Unit':

@@ -524,7 +524,15 @@ class EmolumentController extends Controller
 
         $validated = $request->validate([
             'assessment_status' => 'required|in:APPROVED,REJECTED',
-            'comments' => 'nullable|string',
+            'comments' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->assessment_status === 'REJECTED' && empty($value)) {
+                        $fail('Comments are required when rejecting an emolument.');
+                    }
+                },
+            ],
         ]);
 
         DB::beginTransaction();
@@ -702,7 +710,16 @@ class EmolumentController extends Controller
 
             $validated = $request->validate([
                 'validation_status' => 'required|in:APPROVED,REJECTED',
-                'comments' => 'nullable|string|max:1000',
+                'comments' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if ($request->validation_status === 'REJECTED' && empty($value)) {
+                            $fail('Comments are required when rejecting an emolument.');
+                        }
+                    },
+                ],
             ]);
 
             DB::beginTransaction();
@@ -879,7 +896,16 @@ class EmolumentController extends Controller
 
             $validated = $request->validate([
                 'audit_status' => 'required|in:APPROVED,REJECTED',
-                'comments' => 'nullable|string|max:1000',
+                'comments' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if ($request->audit_status === 'REJECTED' && empty($value)) {
+                            $fail('Comments are required when rejecting an emolument.');
+                        }
+                    },
+                ],
             ]);
 
             DB::beginTransaction();

@@ -855,9 +855,11 @@ class NotificationService
             $message = "Your emolument for year {$emolument->year} has been assessed and approved.";
         } else {
             $title = 'Emolument Assessment Rejected';
-            $message = "Your emolument for year {$emolument->year} has been rejected.";
+            $message = "Your emolument for year {$emolument->year} has been rejected during assessment.";
             if ($comments) {
-                $message .= " Comments: {$comments}";
+                $message .= "\n\nReason: {$comments}";
+            } else {
+                $message .= "\n\nPlease contact your Assessor for more details.";
             }
         }
 
@@ -932,7 +934,9 @@ class NotificationService
             $title = 'Emolument Validation Rejected';
             $message = "Your emolument for year {$emolument->year} has been rejected during validation.";
             if ($comments) {
-                $message .= " Comments: {$comments}";
+                $message .= "\n\nReason: {$comments}";
+            } else {
+                $message .= "\n\nPlease contact your Validator/Area Controller for more details.";
             }
         }
 
@@ -997,7 +1001,9 @@ class NotificationService
             $title = 'Emolument Audit Rejected';
             $message = "Your emolument for year {$emolument->year} has been rejected during audit.";
             if ($comments) {
-                $message .= " Comments: {$comments}";
+                $message .= "\n\nReason: {$comments}";
+            } else {
+                $message .= "\n\nPlease contact the Auditor for more details.";
             }
         }
 

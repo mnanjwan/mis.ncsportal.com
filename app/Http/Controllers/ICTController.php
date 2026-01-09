@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Officer;
+use App\Models\Emolument;
+use App\Models\EmolumentTimeline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -215,5 +217,213 @@ class ICTController extends Controller
             Log::error('ICT bulk email creation error: ' . $e->getMessage());
             return back()->with('error', 'Failed to create email addresses: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Display officers who did not submit emoluments
+     */
+    public function nonSubmitters(Request $request)
+    {
+        // Get active timeline or selected timeline
+        $selectedYear = $request->get('year', date('Y'));
+        $timeline = EmolumentTimeline::where('year', $selectedYear)
+            ->where('is_active', true)
+            ->first();
+
+        // Get all active officers
+        $query = Officer::where('is_active', true)
+            ->where('is_deceased', false)
+            ->with(['presentStation.zone']);
+
+        // Filter by command if provided
+        if ($request->filled('command_id')) {
+            $query->where('present_station', $request->command_id);
+        }
+
+        // Filter by zone if provided
+        if ($request->filled('zone_id')) {
+            $query->whereHas('presentStation', function($q) use ($request) {
+                $q->where('zone_id', $request->zone_id);
+            });
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('initials', 'like', "%{$search}%");
+            });
+        }
+
+        $allOfficers = $query->get();
+
+        // Get officers who submitted emoluments for the selected year
+        $submittedOfficerIds = [];
+        if ($timeline) {
+            $submittedOfficerIds = Emolument::where('timeline_id', $timeline->id)
+                ->pluck('officer_id')
+                ->toArray();
+        } else {
+            // If no timeline, check by year
+            $submittedOfficerIds = Emolument::where('year', $selectedYear)
+                ->pluck('officer_id')
+                ->toArray();
+        }
+
+        // Filter to only officers who didn't submit
+        $nonSubmitters = $allOfficers->filter(function($officer) use ($submittedOfficerIds) {
+            return !in_array($officer->id, $submittedOfficerIds);
+        });
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'service_number');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        if ($sortBy === 'service_number') {
+            $nonSubmitters = $nonSubmitters->sortBy('service_number', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'name') {
+            $nonSubmitters = $nonSubmitters->sortBy(function($officer) {
+                return ($officer->surname ?? '') . ($officer->initials ?? '');
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'rank') {
+            $nonSubmitters = $nonSubmitters->sortBy('substantive_rank', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'command') {
+            $nonSubmitters = $nonSubmitters->sortBy(function($officer) {
+                return $officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'zone') {
+            $nonSubmitters = $nonSubmitters->sortBy(function($officer) {
+                return $officer->presentStation->zone->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        }
+
+        // Paginate
+        $perPage = 20;
+        $currentPage = $request->get('page', 1);
+        $items = $nonSubmitters->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $total = $nonSubmitters->count();
+        $nonSubmitters = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        // Get available years from timelines
+        $years = EmolumentTimeline::where('is_active', true)
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+        
+        if (!in_array($selectedYear, $years)) {
+            $years[] = $selectedYear;
+            sort($years);
+            $years = array_reverse($years);
+        }
+
+        // Get zones and commands for filters
+        $zones = \App\Models\Zone::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        $commands = \App\Models\Command::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('dashboards.ict.non-submitters', compact(
+            'nonSubmitters',
+            'selectedYear',
+            'timeline',
+            'years',
+            'zones',
+            'commands'
+        ));
+    }
+
+    /**
+     * Print non-submitters report
+     */
+    public function printNonSubmitters(Request $request)
+    {
+        $selectedYear = $request->get('year', date('Y'));
+        $timeline = EmolumentTimeline::where('year', $selectedYear)
+            ->where('is_active', true)
+            ->first();
+
+        // Get all active officers
+        $query = Officer::where('is_active', true)
+            ->where('is_deceased', false)
+            ->with(['presentStation.zone']);
+
+        // Filter by command if provided
+        if ($request->filled('command_id')) {
+            $query->where('present_station', $request->command_id);
+        }
+
+        // Filter by zone if provided
+        if ($request->filled('zone_id')) {
+            $query->whereHas('presentStation', function($q) use ($request) {
+                $q->where('zone_id', $request->zone_id);
+            });
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('initials', 'like', "%{$search}%");
+            });
+        }
+
+        $allOfficers = $query->get();
+
+        // Get officers who submitted
+        $submittedOfficerIds = [];
+        if ($timeline) {
+            $submittedOfficerIds = Emolument::where('timeline_id', $timeline->id)
+                ->pluck('officer_id')
+                ->toArray();
+        } else {
+            $submittedOfficerIds = Emolument::where('year', $selectedYear)
+                ->pluck('officer_id')
+                ->toArray();
+        }
+
+        // Filter non-submitters
+        $nonSubmitters = $allOfficers->filter(function($officer) use ($submittedOfficerIds) {
+            return !in_array($officer->id, $submittedOfficerIds);
+        });
+
+        // Sort
+        $sortBy = $request->get('sort_by', 'service_number');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        if ($sortBy === 'service_number') {
+            $nonSubmitters = $nonSubmitters->sortBy('service_number', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'name') {
+            $nonSubmitters = $nonSubmitters->sortBy(function($officer) {
+                return ($officer->surname ?? '') . ($officer->initials ?? '');
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'rank') {
+            $nonSubmitters = $nonSubmitters->sortBy('substantive_rank', SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'command') {
+            $nonSubmitters = $nonSubmitters->sortBy(function($officer) {
+                return $officer->presentStation->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        } elseif ($sortBy === 'zone') {
+            $nonSubmitters = $nonSubmitters->sortBy(function($officer) {
+                return $officer->presentStation->zone->name ?? '';
+            }, SORT_REGULAR, $sortOrder === 'desc');
+        }
+
+        return view('prints.non-submitters', compact('nonSubmitters', 'selectedYear', 'timeline'));
     }
 }

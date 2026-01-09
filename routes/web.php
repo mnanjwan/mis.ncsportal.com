@@ -656,6 +656,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/create-emails', [ICTController::class, 'createEmails'])->name('create-emails');
         Route::post('/delete-personal-emails', [ICTController::class, 'deletePersonalEmails'])->name('delete-personal-emails');
         Route::post('/bulk-create-emails', [ICTController::class, 'bulkCreateEmails'])->name('bulk-create-emails');
+        Route::get('/non-submitters', [ICTController::class, 'nonSubmitters'])->name('non-submitters');
+        Route::get('/non-submitters/print', [ICTController::class, 'printNonSubmitters'])->name('non-submitters.print');
     });
 
     // Welfare Routes

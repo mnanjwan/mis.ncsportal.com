@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Submitters Report - Print</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 15mm;
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+            position: relative;
+        }
+        /* Watermark */
+        body::after {
+            content: "NCS Management Information System (MIS)";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 24pt;
+            font-weight: bold;
+            color: #228B22;
+            opacity: 0.25;
+            z-index: -1;
+            pointer-events: none;
+            white-space: nowrap;
+            font-family: 'Times New Roman', serif;
+            display: block;
+            width: 80%;
+            max-width: 80%;
+            text-align: center;
+        }
+        @media print {
+            body::after {
+                opacity: 0.20;
+                z-index: -1;
+                font-size: 20pt;
+                width: 70%;
+                max-width: 70%;
+            }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 3px 0;
+        }
+        .header h2 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 3px 0;
+        }
+        .report-info {
+            margin: 10px 0;
+            text-align: right;
+            font-size: 9pt;
+        }
+        .timeline-info {
+            margin: 10px 0;
+            padding: 8px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        th {
+            background-color: #f0f0f0;
+            border: 1px solid #000;
+            padding: 6px 4px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 9pt;
+        }
+        td {
+            border: 1px solid #000;
+            padding: 4px;
+            font-size: 9pt;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 8pt;
+        }
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px;">
+            Print Report
+        </button>
+    </div>
+
+    <div class="header">
+        <h1>NIGERIA CUSTOMS SERVICE</h1>
+        <h2>OFFICERS WHO DID NOT SUBMIT EMOLUMENTS</h2>
+        <h3>Year: {{ $selectedYear }}</h3>
+    </div>
+
+    <div class="report-info">
+        <p><strong>Generated:</strong> {{ now()->format('d M Y, h:i A') }}</p>
+        <p><strong>Total Records:</strong> {{ $nonSubmitters->count() }}</p>
+    </div>
+
+    @if($timeline)
+    <div class="timeline-info">
+        <p><strong>Submission Timeline:</strong> {{ $timeline->start_date->format('d M Y') }} - 
+        {{ ($timeline->is_extended && $timeline->extension_end_date) ? $timeline->extension_end_date->format('d M Y') : $timeline->end_date->format('d M Y') }}</p>
+    </div>
+    @endif
+
+    <table>
+        <thead>
+            <tr>
+                <th>S/N</th>
+                <th>Service Number</th>
+                <th>Officer Name</th>
+                <th>Rank</th>
+                <th>Zone</th>
+                <th>Command</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($nonSubmitters as $index => $officer)
+                <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td>{{ $officer->service_number ?? 'N/A' }}</td>
+                    <td>{{ ($officer->initials ?? '') . ' ' . ($officer->surname ?? '') }}</td>
+                    <td>{{ $officer->substantive_rank ?? 'N/A' }}</td>
+                    <td>{{ $officer->presentStation->zone->name ?? 'N/A' }}</td>
+                    <td>{{ $officer->presentStation->name ?? 'N/A' }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px;">
+                        All officers have submitted their emoluments for {{ $selectedYear }}
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Generated by NCS Employee Portal System</p>
+    </div>
+</body>
+</html>
+
