@@ -187,8 +187,8 @@
             <tr>
                 <th class="sn-col">S/N</th>
                 <th class="rank-col">Rank</th>
-                <th class="name-col">Name</th>
                 <th class="service-col">Service No</th>
+                <th class="name-col">Name</th>
                 <th class="command-col">Command</th>
                 <th class="score-col">Performance Rating (HRD Score)</th>
             </tr>
@@ -198,8 +198,8 @@
                 <tr>
                     <td>{{ $row['serial_number'] }}</td>
                     <td>{{ $row['rank'] }}</td>
-                    <td>{{ $row['name'] }}</td>
                     <td>{{ $row['service_number'] }}</td>
+                    <td>{{ $row['name'] }}</td>
                     <td>{{ $row['command'] }}</td>
                     <td>{{ $row['hrd_score'] }}</td>
                 </tr>

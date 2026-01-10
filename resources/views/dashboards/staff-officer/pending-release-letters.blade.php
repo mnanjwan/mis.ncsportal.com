@@ -24,10 +24,57 @@
             </a>
         </div>
 
+        <!-- Search Filter Card -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Search Officers</h3>
+            </div>
+            <div class="kt-card-content">
+                <form method="GET" action="{{ route('staff-officer.postings.pending-release-letters') }}" class="flex flex-col gap-4">
+                    <div class="flex flex-col md:flex-row gap-3 items-end">
+                        <!-- Search Input -->
+                        <div class="flex-1 min-w-[250px] w-full md:w-auto">
+                            <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
+                            <div class="relative">
+                                <input type="text" 
+                                       name="search" 
+                                       value="{{ request('search') }}"
+                                       class="kt-input w-full" 
+                                       placeholder="Search by name, service number, rank, or department...">
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button type="submit" class="kt-btn kt-btn-primary">
+                                <i class="ki-filled ki-magnifier"></i> Search
+                            </button>
+                            @if(request()->filled('search'))
+                                <a href="{{ route('staff-officer.postings.pending-release-letters') }}" class="kt-btn kt-btn-outline">
+                                    <i class="ki-filled ki-cross"></i> Clear
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Pending Release Letters List -->
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Officers Awaiting Release Letters</h3>
+                <div class="kt-card-toolbar">
+                    @if(request()->filled('search'))
+                        <span class="kt-badge kt-badge-info kt-badge-sm">
+                            {{ $pendingReleasePostings->total() }} result(s) found
+                        </span>
+                    @else
+                        <span class="kt-badge kt-badge-secondary kt-badge-sm">
+                            {{ $pendingReleasePostings->total() }} total
+                        </span>
+                    @endif
+                </div>
             </div>
             <div class="kt-card-content p-0 md:p-5">
                 @if($pendingReleasePostings->count() > 0)
@@ -86,10 +133,23 @@
                             </tbody>
                         </table>
                     </div>
+                    @if($pendingReleasePostings->hasPages())
+                        <div class="border-t border-border pt-4 mt-4 px-4 md:px-0">
+                            {{ $pendingReleasePostings->links() }}
+                        </div>
+                    @endif
                 @else
                     <div class="text-center py-12">
-                        <i class="ki-filled ki-check-circle text-4xl text-success mb-4"></i>
-                        <p class="text-secondary-foreground">No pending release letters. All officers have been released.</p>
+                        @if(request()->filled('search'))
+                            <i class="ki-filled ki-magnifier text-4xl text-muted-foreground mb-4"></i>
+                            <p class="text-secondary-foreground">No officers found matching your search criteria.</p>
+                            <a href="{{ route('staff-officer.postings.pending-release-letters') }}" class="kt-btn kt-btn-ghost mt-4">
+                                Clear Search
+                            </a>
+                        @else
+                            <i class="ki-filled ki-check-circle text-4xl text-success mb-4"></i>
+                            <p class="text-secondary-foreground">No pending release letters. All officers have been released.</p>
+                        @endif
                     </div>
                 @endif
             </div>

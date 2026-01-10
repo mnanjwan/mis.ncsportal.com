@@ -36,7 +36,7 @@ class PostingController extends Controller
     /**
      * List pending release letters (officers being posted OUT of this command)
      */
-    public function pendingReleaseLetters()
+    public function pendingReleaseLetters(Request $request)
     {
         $command = $this->getStaffOfficerCommand();
         
@@ -46,14 +46,41 @@ class PostingController extends Controller
         }
 
         // Get officers in this command that have pending postings OUT (awaiting release letter)
-        $pendingReleasePostings = OfficerPosting::where('is_current', false)
+        $query = OfficerPosting::where('is_current', false)
             ->where('release_letter_printed', false) // Not yet printed
             ->whereHas('officer', function ($q) use ($command) {
+                // Base constraint: officers must be in this command
                 $q->where('present_station', $command->id)->where('is_active', true);
             })
-            ->with(['officer.presentStation', 'officer.user', 'command', 'movementOrder', 'staffOrder'])
-            ->orderBy('posting_date', 'desc')
-            ->get();
+            ->with(['officer.presentStation', 'officer.user', 'command', 'movementOrder', 'staffOrder']);
+
+        // Search filter - search within officers in this command OR by destination command
+        // Note: Base constraint ensures officers are in this command, so we can safely search destination commands
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                // Search in officer details (service number, name, rank)
+                $q->whereHas('officer', function ($officerQuery) use ($search) {
+                    $officerQuery->where(function ($query) use ($search) {
+                        $query->where('service_number', 'like', "%{$search}%")
+                            ->orWhere('initials', 'like', "%{$search}%")
+                            ->orWhere('surname', 'like', "%{$search}%")
+                            ->orWhere('substantive_rank', 'like', "%{$search}%");
+                    });
+                })
+                // Search in destination command (to command) name/code
+                ->orWhereHas('command', function ($commandQuery) use ($search) {
+                    $commandQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Order by posting date descending
+        $query->orderBy('posting_date', 'desc');
+
+        // Paginate results
+        $pendingReleasePostings = $query->paginate(20)->withQueryString();
 
         return view('dashboards.staff-officer.pending-release-letters', compact('command', 'pendingReleasePostings'));
     }

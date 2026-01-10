@@ -220,8 +220,8 @@
             <thead>
                 <tr>
                     <th class="sn-col">SNO</th>
-                    <th class="svcno-col">SVCNO</th>
                     <th class="rank-col">RANK</th>
+                    <th class="svcno-col">SVCNO</th>
                     <th class="name-col">NAMES</th>
                     <th class="rmk-col">RMK</th>
                 </tr>
@@ -230,8 +230,8 @@
                 @foreach($courseData['officers'] as $officer)
                     <tr>
                         <td>{{ $officer['serial_number'] }}</td>
-                        <td>{{ $officer['service_number'] }}</td>
                         <td>{{ $officer['rank'] }}</td>
+                        <td>{{ $officer['service_number'] }}</td>
                         <td>{{ $officer['name'] }}</td>
                         <td>{{ $officer['remarks'] }}</td>
                     </tr>

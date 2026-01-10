@@ -171,8 +171,8 @@
         <thead>
             <tr>
                 <th class="sn-col">S/N</th>
-                <th class="svc-col">Service Number</th>
                 <th class="rank-col">Rank</th>
+                <th class="svc-col">Service Number</th>
                 <th class="initials-col">Initial</th>
                 <th class="name-col">Name</th>
                 <th class="unit-col">Unit</th>
@@ -185,8 +185,8 @@
             @foreach($items as $item)
                 <tr>
                     <td>{{ $item['serial_number'] }}</td>
-                    <td style="font-family: monospace;">{{ $item['service_number'] ?? 'N/A' }}</td>
                     <td>{{ $item['rank'] }}</td>
+                    <td style="font-family: monospace;">{{ $item['service_number'] ?? 'N/A' }}</td>
                     <td>{{ $item['initials'] }}</td>
                     <td>{{ $item['name'] }}</td>
                     <td>{{ $item['unit'] ?? '' }}</td>

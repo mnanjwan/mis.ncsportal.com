@@ -1143,6 +1143,7 @@ class PrintController extends Controller
             $items->push([
                 'serial_number' => 0, // Will be reassigned after sorting
                 'rank' => $officer->substantive_rank ?? 'N/A',
+                'service_number' => $officer->service_number ?? 'N/A',
                 'name' => $fullName ?: 'N/A',
                 'previous_posting' => $fromCommand ? $fromCommand->name : 'N/A',
                 'new_posting' => $toCommand ? $toCommand->name : 'N/A',

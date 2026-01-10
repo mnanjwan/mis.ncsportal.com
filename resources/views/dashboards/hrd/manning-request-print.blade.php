@@ -141,8 +141,8 @@
             <thead>
                 <tr>
                     <th>S/N</th>
-                    <th>SRV NO</th>
                     <th>RANK</th>
+                    <th>SRV NO</th>
                     <th>INITIALS</th>
                     <th>SURNAME</th>
                     <th>CURRENT POSTING</th>
@@ -153,8 +153,8 @@
                 @foreach($postedOfficers as $officer)
                     <tr>
                         <td>{{ $officer['serial_number'] }}</td>
-                        <td>{{ $officer['service_number'] }}</td>
                         <td>{{ strtoupper($officer['rank']) }}</td>
+                        <td>{{ $officer['service_number'] }}</td>
                         <td>{{ strtoupper($officer['initials']) }}</td>
                         <td>{{ strtoupper($officer['surname']) }}</td>
                         <td>{{ strtoupper($officer['current_posting']) }}</td>

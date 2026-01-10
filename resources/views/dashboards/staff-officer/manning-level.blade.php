@@ -101,8 +101,8 @@
                                         $percentage = $requested > 0 ? round(($approved / $requested) * 100, 1) : 0;
                                         
                                         if ($approved == 0) {
-                                            $statusClass = 'danger';
-                                            $statusText = 'Rejected';
+                                            $statusClass = 'warning';
+                                            $statusText = 'Pending';
                                         } elseif ($approved < $requested) {
                                             $statusClass = 'warning';
                                             $statusText = 'Partial';

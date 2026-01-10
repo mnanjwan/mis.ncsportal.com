@@ -172,8 +172,8 @@
         <thead>
             <tr>
                 <th class="sn-col">S/N</th>
-                <th class="svc-col">SVC-NO</th>
                 <th class="rank-col">RANK</th>
+                <th class="svc-col">SVC-NO</th>
                 <th class="initials-col">INITIALS</th>
                 <th class="name-col">SURNAME</th>
                 <th class="cond-col">COND FOR RET</th>
@@ -188,8 +188,8 @@
             @foreach($items as $item)
                 <tr>
                     <td>{{ $item['serial_number'] }}</td>
-                    <td style="font-family: monospace;">{{ $item['service_number'] ?? 'N/A' }}</td>
                     <td>{{ strtoupper($item['rank']) }}</td>
+                    <td style="font-family: monospace;">{{ $item['service_number'] ?? 'N/A' }}</td>
                     <td>{{ strtoupper($item['initials']) }}</td>
                     <td>{{ strtoupper($item['name']) }}</td>
                     <td>{{ $item['retirement_condition'] === 'AGE' ? 'AGE' : ($item['retirement_condition'] === 'SVC' ? 'SVC' : 'N/A') }}</td>

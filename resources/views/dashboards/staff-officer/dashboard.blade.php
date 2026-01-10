@@ -367,7 +367,7 @@
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
-                    The following officers have been released from their old commands and are awaiting acceptance into <strong>{{ $command->name }}</strong>. Accept them to complete the transfer.
+                    The following officers have been released from their former commands and are awaiting acceptance into <strong>{{ $command->name }}</strong>. Click "Accept Officer" to complete the transfer.
                 </p>
                 <!-- Table with horizontal scroll wrapper -->
                 <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
@@ -406,13 +406,13 @@
                                         {{ $posting->posting_date ? \Carbon\Carbon::parse($posting->posting_date)->format('M d, Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
-                                        @if($posting->released_at)
-                                            <form action="{{ route('staff-officer.officers.document', $officer->id) }}" method="POST"
-                                                class="inline">
+                                        @if($posting->release_letter_printed)
+                                            <form action="{{ route('staff-officer.postings.accept', $posting->id) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary"
-                                                    onclick="return confirm('Document this officer? This confirms their arrival at the command.')">
-                                                    <i class="ki-filled ki-file-check"></i> Document
+                                                <button type="submit" 
+                                                        class="kt-btn kt-btn-sm kt-btn-success"
+                                                        onclick="return confirm('Accept {{ $officer->initials }} {{ $officer->surname }} into {{ $command->name }}? This will complete the transfer.')">
+                                                    <i class="ki-filled ki-check"></i> Accept Officer
                                                 </button>
                                             </form>
                                         @else

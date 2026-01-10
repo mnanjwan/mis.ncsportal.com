@@ -161,9 +161,9 @@
         <thead>
             <tr>
                 <th>S/N</th>
+                <th>Rank</th>
                 <th>Service No</th>
                 <th>Officer Name</th>
-                <th>Rank</th>
                 <th>Year</th>
                 <th>Status</th>
                 <th>Zone</th>
@@ -177,9 +177,9 @@
             @forelse($emoluments as $index => $emolument)
                 <tr class="status-{{ strtolower($emolument->status) }}">
                     <td>{{ $index + 1 }}</td>
+                    <td>{{ $emolument->officer->substantive_rank ?? 'N/A' }}</td>
                     <td>{{ $emolument->officer->service_number ?? 'N/A' }}</td>
                     <td>{{ ($emolument->officer->initials ?? '') . ' ' . ($emolument->officer->surname ?? '') }}</td>
-                    <td>{{ $emolument->officer->substantive_rank ?? 'N/A' }}</td>
                     <td>{{ $emolument->year }}</td>
                     <td><strong>{{ $emolument->status }}</strong></td>
                     <td>{{ $emolument->officer->presentStation->zone->name ?? 'N/A' }}</td>

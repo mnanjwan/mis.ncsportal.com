@@ -163,9 +163,9 @@
             <thead>
                 <tr>
                     <th style="width: 5%;">S/N</th>
+                    <th style="width: 12%;">Rank</th>
                     <th style="width: 12%;">Service Number</th>
                     <th style="width: 20%;">Full Name</th>
-                    <th style="width: 12%;">Rank</th>
                     <th style="width: 15%;">Date Posted</th>
                     <th style="width: 15%;">Duration</th>
                     <th style="width: 11%;">Status</th>
@@ -175,9 +175,9 @@
                 @foreach($officers as $index => $officer)
                     <tr>
                         <td>{{ $index + 1 }}</td>
+                        <td>{{ $officer->substantive_rank }}</td>
                         <td>{{ $officer->service_number }}</td>
                         <td>{{ $officer->full_name }}</td>
-                        <td>{{ $officer->substantive_rank }}</td>
                         <td>{{ $officer->date_posted_to_command ? $officer->date_posted_to_command->format('d/m/Y') : 'N/A' }}</td>
                         <td>{{ $officer->duration_display }}</td>
                         <td>{{ $officer->current_status }}</td>

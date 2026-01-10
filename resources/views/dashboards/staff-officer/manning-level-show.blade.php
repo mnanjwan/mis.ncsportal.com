@@ -163,9 +163,12 @@
                                         $approved = $rankItems->whereNotNull('matched_officer_id')->count();
                                         $firstItem = $rankItems->first();
                                         
-                                        if ($approved == 0) {
+                                        if ($request->status === 'REJECTED') {
                                             $statusClass = 'danger';
                                             $statusText = 'Rejected';
+                                        } elseif ($approved == 0) {
+                                            $statusClass = 'warning';
+                                            $statusText = 'Pending';
                                         } elseif ($approved < $requested) {
                                             $statusClass = 'warning';
                                             $statusText = 'Partial';
@@ -210,9 +213,12 @@
                                 $approved = $rankItems->whereNotNull('matched_officer_id')->count();
                                 $firstItem = $rankItems->first();
                                 
-                                if ($approved == 0) {
+                                if ($request->status === 'REJECTED') {
                                     $statusClass = 'danger';
                                     $statusText = 'Rejected';
+                                } elseif ($approved == 0) {
+                                    $statusClass = 'warning';
+                                    $statusText = 'Pending';
                                 } elseif ($approved < $requested) {
                                     $statusClass = 'warning';
                                     $statusText = 'Partial';

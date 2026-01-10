@@ -168,8 +168,8 @@
         <thead>
             <tr>
                 <th class="sn-col">S/N</th>
-                <th class="svc-col">SVC-NO</th>
                 <th class="rank-col">RANK</th>
+                <th class="svc-col">SVC-NO</th>
                 <th class="initials-col">INITIALS</th>
                 <th class="surname-col">SURNAME</th>
                 <th class="cond-col">COND FOR RET</th>
@@ -184,8 +184,8 @@
             @foreach($retirements as $index => $retirement)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $retirement['service_number'] ?? 'N/A' }}</td>
                 <td>{{ strtoupper($retirement['rank'] ?? 'N/A') }}</td>
+                <td>{{ $retirement['service_number'] ?? 'N/A' }}</td>
                 <td>{{ strtoupper($retirement['initials'] ?? '') }}</td>
                 <td>{{ strtoupper($retirement['surname'] ?? '') }}</td>
                 <td>{{ strtoupper($retirement['retirement_type'] ?? 'N/A') }}</td>

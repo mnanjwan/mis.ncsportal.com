@@ -129,9 +129,10 @@
             border: 1px solid #000;
             padding: 6px;
         }
-        .sn-col { width: 8%; }
-        .rank-col { width: 20%; }
-        .name-col { width: 25%; }
+        .sn-col { width: 6%; }
+        .rank-col { width: 12%; }
+        .svc-col { width: 12%; }
+        .name-col { width: 23%; }
         .present-col { width: 23%; }
         .new-col { width: 24%; }
         .footer {
@@ -226,6 +227,7 @@
                     <tr>
                         <th class="sn-col">SNo</th>
                         <th class="rank-col">RANK</th>
+                        <th class="svc-col">SRV NO</th>
                         <th class="name-col">NAME</th>
                         <th class="present-col">PREVIOUS POSTING</th>
                         <th class="new-col">NEW POSTING</th>
@@ -236,6 +238,7 @@
                     <tr>
                         <td>{{ $officer['serial_number'] }}</td>
                         <td>{{ strtoupper($officer['rank']) }}</td>
+                        <td>{{ $officer['service_number'] ?? 'N/A' }}</td>
                         <td>{{ strtoupper($officer['initials'] . ' ' . $officer['surname']) }}</td>
                         <td>{{ strtoupper($officer['current_posting']) }}</td>
                         <td>{{ strtoupper($officer['new_posting']) }}</td>

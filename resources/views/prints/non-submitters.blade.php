@@ -136,9 +136,9 @@
         <thead>
             <tr>
                 <th>S/N</th>
+                <th>Rank</th>
                 <th>Service Number</th>
                 <th>Officer Name</th>
-                <th>Rank</th>
                 <th>Zone</th>
                 <th>Command</th>
             </tr>
@@ -147,9 +147,9 @@
             @forelse($nonSubmitters as $index => $officer)
                 <tr>
                     <td>{{ $index + 1 }}</td>
+                    <td>{{ $officer->substantive_rank ?? 'N/A' }}</td>
                     <td>{{ $officer->service_number ?? 'N/A' }}</td>
                     <td>{{ ($officer->initials ?? '') . ' ' . ($officer->surname ?? '') }}</td>
-                    <td>{{ $officer->substantive_rank ?? 'N/A' }}</td>
                     <td>{{ $officer->presentStation->zone->name ?? 'N/A' }}</td>
                     <td>{{ $officer->presentStation->name ?? 'N/A' }}</td>
                 </tr>

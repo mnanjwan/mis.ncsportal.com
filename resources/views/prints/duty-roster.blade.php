@@ -199,8 +199,8 @@
         <thead>
             <tr>
                 <th class="sn-col">S/N</th>
-                <th class="svc-col">SVC. NO.</th>
                 <th class="rank-col">RANK</th>
+                <th class="svc-col">SVC. NO.</th>
                 <th class="name-col">NAME</th>
                 <th class="unit-col">UNIT</th>
             </tr>
@@ -209,8 +209,8 @@
             @foreach($deployments as $index => $deployment)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $deployment['service_number'] }}</td>
                 <td>{{ strtoupper($deployment['rank']) }}</td>
+                <td>{{ $deployment['service_number'] }}</td>
                 <td>{{ strtoupper($deployment['name']) }}{{ $deployment['role'] ? ' ' . $deployment['role'] : '' }}</td>
                 <td>{{ strtoupper($deployment['unit']) }}</td>
             </tr>
