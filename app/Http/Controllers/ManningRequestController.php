@@ -2337,6 +2337,60 @@ class ManningRequestController extends Controller
                 // DO NOT notify officer yet - notification happens when release letter is printed
             }
 
+            // Update all MovementOrders with DRAFT status that are linked to this deployment
+            // MovementOrders are linked through ManningDeploymentAssignment notes like "From Movement Order: MO-2026-0105-001"
+            $movementOrderNumbers = [];
+            foreach ($assignmentsToPublish as $assignment) {
+                if ($assignment->notes && preg_match('/From Movement Order:\s*([A-Z0-9-]+)/i', $assignment->notes, $matches)) {
+                    $movementOrderNumbers[] = $matches[1];
+                }
+            }
+            
+            // Also find MovementOrders with DRAFT status that have OfficerPosting records for these officers
+            // (for officers that might have been added from other sources)
+            $officerIds = $assignmentsToPublish->pluck('officer_id')->unique();
+            
+            $draftMovementOrders = collect();
+            
+            // Find MovementOrders by order number from assignment notes
+            if (!empty($movementOrderNumbers)) {
+                $ordersByNumber = MovementOrder::where('status', 'DRAFT')
+                    ->whereIn('order_number', array_unique($movementOrderNumbers))
+                    ->get();
+                $draftMovementOrders = $draftMovementOrders->merge($ordersByNumber);
+            }
+            
+            // Find MovementOrders by officer postings
+            $ordersByPostings = MovementOrder::where('status', 'DRAFT')
+                ->whereHas('postings', function($q) use ($officerIds) {
+                    $q->whereIn('officer_id', $officerIds);
+                })
+                ->get();
+            $draftMovementOrders = $draftMovementOrders->merge($ordersByPostings);
+            
+            // Remove duplicates
+            $draftMovementOrders = $draftMovementOrders->unique('id');
+
+            $updatedMovementOrderCount = 0;
+            if ($draftMovementOrders->isNotEmpty()) {
+                foreach ($draftMovementOrders as $draftOrder) {
+                    $draftOrder->update([
+                        'status' => 'PUBLISHED',
+                    ]);
+                    $updatedMovementOrderCount++;
+                }
+                
+                Log::info('Manning Deployment - Publish: Updated existing MovementOrders to PUBLISHED', [
+                    'deployment_id' => $deployment->id,
+                    'updated_movement_orders_count' => $updatedMovementOrderCount,
+                    'movement_order_ids' => $draftMovementOrders->pluck('id')->toArray(),
+                    'movement_order_numbers' => $draftMovementOrders->pluck('order_number')->toArray(),
+                    'found_by_notes' => !empty($movementOrderNumbers),
+                    'found_by_postings' => $ordersByPostings->isNotEmpty(),
+                    'routePrefix' => $routePrefix,
+                ]);
+            }
+
             // Check if deployment has any remaining assignments before removing published ones
             $totalAssignments = $deployment->assignments()->count();
             $assignmentsToPublishCount = $assignmentsToPublish->count();
@@ -2387,6 +2441,11 @@ class ManningRequestController extends Controller
             $successMessage = "Movement Order {$orderNumber} published successfully! ";
             $manningRequestCount = $assignmentsToPublish->whereNotNull('manning_request_id')->count();
             $commandDurationCount = $assignmentsToPublish->whereNull('manning_request_id')->count();
+            
+            // Add message about updated MovementOrders if any
+            if ($updatedMovementOrderCount > 0) {
+                $successMessage .= " {$updatedMovementOrderCount} existing MovementOrder(s) with DRAFT status updated to PUBLISHED. ";
+            }
             
             if ($manningRequestId) {
                 $manningRequest = ManningRequest::find($manningRequestId);
@@ -2489,12 +2548,80 @@ class ManningRequestController extends Controller
 
     public function hrdPublishedIndex()
     {
-        $deployments = ManningDeployment::published()
-            ->with(['createdBy', 'publishedBy', 'assignments.officer', 'assignments.toCommand'])
+        // Determine route prefix based on URL path or route name
+        $path = request()->path();
+        $routeName = request()->route() ? request()->route()->getName() : '';
+        
+        $isZoneCoordinatorRoute = (strpos($path, 'zone-coordinator/') === 0) || 
+                                   (strpos($routeName, 'zone-coordinator.') === 0);
+        
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        
+        // Build query for published deployments
+        $deploymentsQuery = ManningDeployment::published()
+            ->with(['createdBy', 'publishedBy', 'assignments.officer', 'assignments.toCommand']);
+        
+        // Filter for Zone Coordinators - show deployments with assignments in their zone
+        if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD) {
+            $validationService = app(ZonalPostingValidationService::class);
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (!empty($zoneCommandIds)) {
+                // Show deployments that have assignments:
+                // 1. Linked to ZONE type manning requests from their zone, OR
+                // 2. With to_command_id or from_command_id in their zone (movement orders without manning request)
+                $deploymentsQuery->whereHas('assignments', function($q) use ($zoneCommandIds) {
+                    $q->where(function($subQ) use ($zoneCommandIds) {
+                        // Assignments linked to ZONE manning requests from their zone
+                        $subQ->whereHas('manningRequest', function($mrQ) use ($zoneCommandIds) {
+                            $mrQ->where('type', 'ZONE')
+                                ->whereIn('command_id', $zoneCommandIds);
+                        })
+                        // OR assignments to/from zone commands (movement orders without manning requests)
+                        ->orWhere(function($movQ) use ($zoneCommandIds) {
+                            $movQ->whereNull('manning_request_id')
+                                 ->where(function($cmdQ) use ($zoneCommandIds) {
+                                     $cmdQ->whereIn('to_command_id', $zoneCommandIds)
+                                          ->orWhereIn('from_command_id', $zoneCommandIds);
+                                 });
+                        });
+                    });
+                })
+                // STRICT: Exclude deployments with ANY GENERAL type assignments
+                ->whereDoesntHave('assignments', function($q) {
+                    $q->whereHas('manningRequest', function($mrQ) {
+                        $mrQ->where('type', 'GENERAL');
+                    });
+                });
+                
+                Log::info('Published Deployments - Zone Coordinator: Filtering by zone commands', [
+                    'user_id' => $user->id,
+                    'zone_command_ids' => $zoneCommandIds,
+                ]);
+            } else {
+                // No zone commands - return empty result
+                $deploymentsQuery->whereRaw('1 = 0'); // Return no results
+            }
+        } else {
+            // HRD: Only show deployments created by the current HRD user ("his own")
+            // This ensures HRD users only see their own published deployments
+            $deploymentsQuery->where('created_by', $user->id);
+            
+            Log::info('Published Deployments - HRD: Filtering by current user deployments only', [
+                'user_id' => $user->id,
+                'created_by_filter' => $user->id,
+            ]);
+        }
+        
+        $deployments = $deploymentsQuery
             ->orderBy('published_at', 'desc')
             ->paginate(20);
 
-        return view('dashboards.hrd.manning-deployments-published', compact('deployments'));
+        $routePrefix = $isZoneCoordinatorRoute ? 'zone-coordinator' : 'hrd';
+
+        return view('dashboards.hrd.manning-deployments-published', compact('deployments', 'routePrefix'));
     }
 
     // Area Controller Methods

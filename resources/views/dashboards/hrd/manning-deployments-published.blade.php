@@ -4,7 +4,7 @@
 @section('page-title', 'Published Deployments')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($routePrefix ?? 'hrd' . '.dashboard') }}">{{ $routePrefix === 'zone-coordinator' ? 'Zone Coordinator' : 'HRD' }}</a>
     <span>/</span>
     <span class="text-primary">Published Deployments</span>
 @endsection
@@ -18,12 +18,14 @@
             <p class="text-sm text-secondary-foreground mt-1">View all published manning deployments</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+            <a href="{{ route(($routePrefix ?? 'hrd') . '.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-file-add"></i> Draft Deployment
             </a>
-            <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
-                <i class="ki-filled ki-arrow-left"></i> Back to Requests
-            </a>
+            @if(($routePrefix ?? 'hrd') === 'hrd')
+                <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                    <i class="ki-filled ki-arrow-left"></i> Back to Requests
+                </a>
+            @endif
         </div>
     </div>
 
@@ -69,7 +71,7 @@
                                         {{ $deployment->assignments->count() }} officer(s)
                                     </td>
                                     <td class="py-3 px-4 text-right">
-                                        <a href="{{ route('hrd.manning-deployments.print', $deployment->id) }}" 
+                                        <a href="{{ route(($routePrefix ?? 'hrd') . '.manning-deployments.print', $deployment->id) }}" 
                                            target="_blank" 
                                            class="kt-btn kt-btn-sm kt-btn-secondary">
                                             <i class="ki-filled ki-printer"></i> Print

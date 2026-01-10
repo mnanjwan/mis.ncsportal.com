@@ -77,9 +77,15 @@
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Role</label>
                             <select name="role_id" class="kt-input w-full">
                                 <option value="">All Roles</option>
+                                @php
+                                    $roleDisplayMap = [
+                                        'Zone Coordinator' => 'Zonal Coordinator',
+                                        'Area Controller' => 'Head of Unit'
+                                    ];
+                                @endphp
                                 @foreach($allRoles as $role)
                                     <option value="{{ $role->id }}" {{ (string)request('role_id') === (string)$role->id ? 'selected' : '' }}>
-                                        {{ $role->name }}
+                                        {{ $roleDisplayMap[$role->name] ?? $role->name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -259,8 +265,14 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-4" style="white-space: nowrap;">
+                                            @php
+                                                $roleDisplayMap = [
+                                                    'Zone Coordinator' => 'Zonal Coordinator',
+                                                    'Area Controller' => 'Head of Unit'
+                                                ];
+                                            @endphp
                                             <span class="kt-badge kt-badge-primary kt-badge-sm">
-                                                {{ $role->name }}
+                                                {{ $roleDisplayMap[$role->name] ?? $role->name }}
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
@@ -341,9 +353,15 @@
                             <label class="block text-sm font-medium mb-1">Role <span class="text-danger">*</span></label>
                             <select name="role_id" id="editRoleId" class="kt-input w-full" required>
                                 <option value="">Select Role</option>
+                                @php
+                                    $roleDisplayMap = [
+                                        'Zone Coordinator' => 'Zonal Coordinator',
+                                        'Area Controller' => 'Head of Unit'
+                                    ];
+                                @endphp
                                 @foreach($allRoles as $role)
                                     <option value="{{ $role->id }}" data-requires-command="{{ in_array($role->name, $commandBasedRoles) ? '1' : '0' }}">
-                                        {{ $role->name }}
+                                        {{ $roleDisplayMap[$role->name] ?? $role->name }}
                                     </option>
                                 @endforeach
                             </select>

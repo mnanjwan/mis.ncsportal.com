@@ -29,8 +29,14 @@
                                 <h4 class="font-semibold text-info mb-2">Role Assignment Guidelines</h4>
                                 <ul class="text-sm text-secondary-foreground space-y-1 list-disc list-inside">
                                     <li><strong>Command-Based Roles</strong> require a command assignment: 
+                                        @php
+                                            $roleDisplayMap = [
+                                                'Zone Coordinator' => 'Zonal Coordinator',
+                                                'Area Controller' => 'Head of Unit'
+                                            ];
+                                        @endphp
                                         @foreach(($commandBasedRoles ?? ['Assessor', 'Validator', 'Staff Officer', 'Area Controller', 'DC Admin', 'Building Unit']) as $role)
-                                            <span class="font-medium">{{ $role }}</span>@if(!$loop->last), @endif
+                                            <span class="font-medium">{{ $roleDisplayMap[$role] ?? $role }}</span>@if(!$loop->last), @endif
                                         @endforeach
                                     </li>
                                     <li><strong>Independent Roles</strong> don't need a command: HRD, Establishment, Accounts, Board, Welfare, Investigation Unit, Officer</li>
@@ -124,10 +130,16 @@
                         </label>
                         <select name="role_id" id="role_id" class="kt-input w-full" required onchange="toggleCommandRequirement()">
                             <option value="">Select Role</option>
+                            @php
+                                $roleDisplayMap = [
+                                    'Zone Coordinator' => 'Zonal Coordinator',
+                                    'Area Controller' => 'Head of Unit'
+                                ];
+                            @endphp
                             @foreach($allRoles as $role)
                                 <option value="{{ $role->id }}" 
                                         data-requires-command="{{ in_array($role->name, $commandBasedRoles ?? []) ? '1' : '0' }}">
-                                    {{ $role->name }}
+                                    {{ $roleDisplayMap[$role->name] ?? $role->name }}
                                     @if(in_array($role->name, $commandBasedRoles ?? []))
                                         (Requires Command)
                                     @endif
