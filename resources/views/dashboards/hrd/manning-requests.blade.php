@@ -4,7 +4,12 @@
 @section('page-title', 'Manning Requests')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @php
+        $routePrefix = $routePrefix ?? 'hrd';
+        $dashboardRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.dashboard') : route('hrd.dashboard');
+        $breadcrumbLabel = $routePrefix === 'zone-coordinator' ? 'Zone Coordinator' : 'HRD';
+    @endphp
+    <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">{{ $breadcrumbLabel }}</a>
     <span>/</span>
     <span class="text-primary">Manning Requests</span>
 @endsection
@@ -41,13 +46,21 @@
             <p class="text-sm text-secondary-foreground mt-1">Manage approved manning requests and officer matching</p>
         </div>
         <div class="flex items-center gap-3">
+            @php
+                $routePrefix = $routePrefix ?? 'hrd';
+                $draftRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-deployments.draft') : route('hrd.manning-deployments.draft');
+                $publishedRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-deployments.published') : route('hrd.manning-deployments.published');
+                $printSelectedRoute = $routePrefix === 'zone-coordinator' ? '#' : route('hrd.manning-requests.print-selected');
+            @endphp
+            @if($routePrefix !== 'zone-coordinator')
             <button id="print-selected-btn" class="kt-btn kt-btn-sm kt-btn-secondary hidden" onclick="printSelected()">
                 <i class="ki-filled ki-printer"></i> Print Selected
             </button>
-            <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+            @endif
+            <a href="{{ $draftRoute }}" class="kt-btn kt-btn-sm kt-btn-primary">
                 <i class="ki-filled ki-file-add"></i> Draft Deployment
             </a>
-            <a href="{{ route('hrd.manning-deployments.published') }}" class="kt-btn kt-btn-sm kt-btn-secondary">
+            <a href="{{ $publishedRoute }}" class="kt-btn kt-btn-sm kt-btn-secondary">
                 <i class="ki-filled ki-check"></i> Published Deployments
             </a>
         </div>
@@ -56,16 +69,24 @@
     <!-- Manning Requests Card -->
     <div class="kt-card">
         <div class="kt-card-header">
-            <h3 class="kt-card-title">Approved Manning Requests (General Type Only)</h3>
+            @php
+                $routePrefix = $routePrefix ?? 'hrd';
+                $title = $routePrefix === 'zone-coordinator' ? 'Approved Manning Requests (Zone Type Only)' : 'Approved Manning Requests (General Type Only)';
+                $badge = $routePrefix === 'zone-coordinator' ? 'Zone Manning Level' : 'General Manning Level';
+                $note = $routePrefix === 'zone-coordinator' 
+                    ? 'This page shows only Zone Manning Level requests (GL 7 and below) for commands in your zone. General Manning Level requests are handled by HRD.'
+                    : 'This page shows only General Manning Level requests (all ranks). Zone Manning Level requests (GL 7 and below) are handled by Zone Coordinators via Movement Orders.';
+            @endphp
+            <h3 class="kt-card-title">{{ $title }}</h3>
             <div class="kt-card-toolbar">
-                <span class="kt-badge kt-badge-info kt-badge-sm">General Manning Level</span>
+                <span class="kt-badge kt-badge-info kt-badge-sm">{{ $badge }}</span>
             </div>
         </div>
         <div class="kt-card-content">
             <div class="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
                 <p class="text-sm text-info">
                     <i class="ki-filled ki-information"></i> 
-                    <strong>Note:</strong> This page shows only General Manning Level requests (all ranks). Zone Manning Level requests (GL 7 and below) are handled by Zone Coordinators via Movement Orders.
+                    <strong>Note:</strong> {{ $note }}
                 </p>
             </div>
             <!-- Tabs -->
@@ -182,13 +203,18 @@
                                         {{ $request->approved_at ? $request->approved_at->format('d/m/Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 text-right">
+                                        @php
+                                            $routePrefix = $routePrefix ?? 'hrd';
+                                            $showRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-requests.show', $request->id) : route('hrd.manning-requests.show', $request->id);
+                                            $draftRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-deployments.draft') : route('hrd.manning-deployments.draft');
+                                        @endphp
                                         <div class="flex items-center justify-end gap-2">
-                                            <a href="{{ route('hrd.manning-requests.show', $request->id) }}" 
+                                            <a href="{{ $showRoute }}" 
                                                class="kt-btn kt-btn-sm kt-btn-ghost">
                                                 View Details
                                             </a>
                                             @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
-                                                <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                                                <a href="{{ $draftRoute }}" 
                                                    class="kt-btn kt-btn-sm kt-btn-info">
                                                     <i class="ki-filled ki-file-add"></i> View Draft
                                                 </a>
@@ -264,12 +290,17 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <a href="{{ route('hrd.manning-requests.show', $request->id) }}" 
+                                @php
+                                    $routePrefix = $routePrefix ?? 'hrd';
+                                    $showRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-requests.show', $request->id) : route('hrd.manning-requests.show', $request->id);
+                                    $draftRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-deployments.draft') : route('hrd.manning-deployments.draft');
+                                @endphp
+                                <a href="{{ $showRoute }}" 
                                    class="kt-btn kt-btn-sm kt-btn-ghost">
                                     View Details
                                 </a>
                                 @if(isset($request->has_items_in_draft) && $request->has_items_in_draft)
-                                    <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                                    <a href="{{ $draftRoute }}" 
                                        class="kt-btn kt-btn-sm kt-btn-info">
                                         <i class="ki-filled ki-file-add"></i> View Draft
                                     </a>
@@ -329,6 +360,10 @@ function updatePrintButton() {
     }
 }
 
+@php
+    $routePrefix = $routePrefix ?? 'hrd';
+    $printSelectedUrl = $routePrefix === 'zone-coordinator' ? '#' : route('hrd.manning-requests.print-selected');
+@endphp
 function printSelected() {
     const checkboxes = document.querySelectorAll('.request-checkbox:checked');
     const selectedIds = Array.from(checkboxes).map(cb => cb.value);
@@ -338,9 +373,13 @@ function printSelected() {
         return;
     }
     
-    // Open print page in new window
-    const url = '{{ route("hrd.manning-requests.print-selected") }}?ids=' + selectedIds.join(',');
-    window.open(url, '_blank');
+    // Open print page in new window (only for HRD)
+    const url = '{{ $printSelectedUrl }}?ids=' + selectedIds.join(',');
+    if (url !== '#?ids=' + selectedIds.join(',')) {
+        window.open(url, '_blank');
+    } else {
+        alert('Print selected is only available for HRD.');
+    }
 }
 </script>
 @endsection

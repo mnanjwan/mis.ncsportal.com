@@ -528,6 +528,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/command-duration/add-to-draft', [CommandDurationController::class, 'addToDraft'])->name('command-duration.add-to-draft');
         Route::get('/command-duration/print', [CommandDurationController::class, 'print'])->name('command-duration.print');
         
+        // Manning Requests (for Zone Coordinators - ZONE type only)
+        Route::get('/manning-requests', [ManningRequestController::class, 'zoneCoordinatorIndex'])->name('manning-requests');
+        Route::get('/manning-requests/{id}', [ManningRequestController::class, 'zoneCoordinatorShow'])->name('manning-requests.show');
+        Route::post('/manning-requests/{id}/match-all', [ManningRequestController::class, 'zoneCoordinatorMatchAll'])->name('manning-requests.match-all');
+        
         // Manning Deployments (for draft management)
         Route::get('/manning-deployments/draft', [ManningRequestController::class, 'hrdDraftIndex'])->name('manning-deployments.draft');
         Route::delete('/manning-deployments/{deploymentId}/remove-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftRemoveOfficer'])->name('manning-deployments.draft.remove-officer');

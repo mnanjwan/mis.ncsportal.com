@@ -4,23 +4,37 @@
 @section('page-title', 'Manning Request Details')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @php
+        $routePrefix = $routePrefix ?? 'hrd';
+        $dashboardRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.dashboard') : route('hrd.dashboard');
+        $manningRequestsRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-requests') : route('hrd.manning-requests');
+        $breadcrumbLabel = $routePrefix === 'zone-coordinator' ? 'Zone Coordinator' : 'HRD';
+    @endphp
+    <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">{{ $breadcrumbLabel }}</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.manning-requests') }}">Manning Requests</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ $manningRequestsRoute }}">Manning Requests</a>
     <span>/</span>
     <span class="text-primary">View Details</span>
 @endsection
 
 @section('content')
+@php
+    $routePrefix = $routePrefix ?? 'hrd';
+    $manningRequestsRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-requests') : route('hrd.manning-requests');
+    $draftRoute = $routePrefix === 'zone-coordinator' ? route('zone-coordinator.manning-deployments.draft') : route('hrd.manning-deployments.draft');
+    $printRoute = $routePrefix === 'zone-coordinator' ? '#' : route('hrd.manning-requests.print', $request->id);
+@endphp
 <div class="grid gap-5 lg:gap-7.5">
     <!-- Back Button -->
     <div class="flex items-center justify-between">
-        <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+        <a href="{{ $manningRequestsRoute }}" class="kt-btn kt-btn-sm kt-btn-ghost">
             <i class="ki-filled ki-arrow-left"></i> Back to Manning Requests
         </a>
-        <a href="{{ route('hrd.manning-requests.print', $request->id) }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
+        @if($routePrefix !== 'zone-coordinator')
+        <a href="{{ $printRoute }}" target="_blank" class="kt-btn kt-btn-sm kt-btn-secondary">
             <i class="ki-filled ki-printer"></i> Print
         </a>
+        @endif
     </div>
 
     <!-- Request Header -->
@@ -108,6 +122,9 @@
                 $draftItemsCount = isset($itemsInDraft) ? $itemsInDraft->count() : 0;
             @endphp
             <div class="mb-4 flex items-center justify-end gap-3">
+                @php
+                    $routePrefix = $routePrefix ?? 'hrd';
+                @endphp
                 @if($pendingItemsCount > 0)
                     <button type="button" 
                             data-kt-modal-toggle="#match-all-ranks-modal" 
@@ -116,7 +133,7 @@
                     </button>
                 @endif
                 @if($draftItemsCount > 0)
-                    <a href="{{ route('hrd.manning-deployments.draft') }}" 
+                    <a href="{{ $draftRoute }}" 
                        class="kt-btn kt-btn-info">
                         <i class="ki-filled ki-file-add"></i> View in Draft ({{ $draftItemsCount }})
                     </a>
@@ -196,6 +213,9 @@
 </div>
 
 <!-- Match All Ranks Confirmation Modal -->
+@php
+    $routePrefix = $routePrefix ?? 'hrd';
+@endphp
 @if($pendingItemsCount > 0)
 <div class="kt-modal" data-kt-modal="true" id="match-all-ranks-modal">
     <div class="kt-modal-content max-w-[500px]">
@@ -211,7 +231,13 @@
             </button>
         </div>
         <div class="kt-modal-body py-5 px-5">
-            <form id="match-all-ranks-form" method="POST" action="{{ route('hrd.manning-requests.match-all', $request->id) }}">
+            @php
+                $routePrefix = $routePrefix ?? 'hrd';
+                $matchAllRoute = $routePrefix === 'zone-coordinator' 
+                    ? route('zone-coordinator.manning-requests.match-all', $request->id)
+                    : route('hrd.manning-requests.match-all', $request->id);
+            @endphp
+            <form id="match-all-ranks-form" method="POST" action="{{ $matchAllRoute }}">
                 @csrf
                 <p class="text-sm text-secondary-foreground mb-4">
                     This will automatically match and add officers for all <strong>{{ $pendingItemsCount }}</strong> pending rank(s) to the draft deployment at once.

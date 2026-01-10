@@ -13,6 +13,7 @@ use App\Models\Officer;
 use App\Models\MovementOrder;
 use App\Models\OfficerPosting;
 use App\Models\Command;
+use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\PostingWorkflowService;
 use App\Services\RankComparisonService;
@@ -42,6 +43,9 @@ class ManningRequestController extends Controller
             'hrdDraftPrint',
             'hrdPublishedIndex',
             'hrdAddToDraft',
+            'zoneCoordinatorIndex',
+            'zoneCoordinatorShow',
+            'zoneCoordinatorMatchAll',
             'areaControllerIndex',
             'areaControllerShow',
             'areaControllerApprove',
@@ -964,6 +968,498 @@ class ManningRequestController extends Controller
         }
 
         return view('dashboards.hrd.manning-requests-print-selected', compact('commandsData'));
+    }
+
+    // Zone Coordinator Methods
+    public function zoneCoordinatorIndex(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Check if user is Zone Coordinator
+        if (!$user->hasRole('Zone Coordinator')) {
+            abort(403, 'Only Zone Coordinators can access this page');
+        }
+
+        // Get Zone Coordinator's zone
+        $validationService = app(ZonalPostingValidationService::class);
+        $zoneCommandIds = $validationService->getZoneCommandIds($user);
+
+        if (empty($zoneCommandIds)) {
+            // No zone commands, return empty paginated result
+            $requests = new \Illuminate\Pagination\LengthAwarePaginator(
+                collect([]),
+                0,
+                20,
+                1,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+            $requestIdsInDraft = collect();
+            $requestIdsPublished = collect();
+            $pendingCount = 0;
+            $inDraftCount = 0;
+            $publishedCount = 0;
+            return view('dashboards.hrd.manning-requests', compact('requests', 'requestIdsInDraft', 'requestIdsPublished', 'pendingCount', 'inDraftCount', 'publishedCount'))->with('routePrefix', 'zone-coordinator');
+        }
+
+        // Determine which statuses to include based on the tab
+        $tab = $request->get('tab', 'pending');
+        $statuses = ['APPROVED'];
+
+        // For published tab, also include FULFILLED status
+        if ($tab === 'published') {
+            $statuses = ['APPROVED', 'FULFILLED'];
+        }
+
+        $query = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items'])
+            ->whereIn('status', $statuses)
+            ->where('type', 'ZONE') // Zone Coordinators only process ZONE type requests
+            ->whereIn('command_id', $zoneCommandIds); // Only requests from Zone Coordinator's zone
+
+        // Get all item IDs that are in draft deployments (only Zone Coordinator drafts)
+        $zoneCoordinatorUserIds = User::whereHas('roles', function($q) {
+            $q->where('name', 'Zone Coordinator');
+        })->pluck('id')->toArray();
+
+        // Get all draft assignments created by Zone Coordinators
+        $itemIdsInDraft = ManningDeploymentAssignment::whereHas('deployment', function ($q) use ($zoneCoordinatorUserIds) {
+            $q->where('status', 'DRAFT');
+            if (!empty($zoneCoordinatorUserIds)) {
+                $q->whereIn('created_by', $zoneCoordinatorUserIds); // Only Zone Coordinator drafts
+            } else {
+                $q->whereRaw('1 = 0'); // No zone coordinators, no drafts
+            }
+        })
+            ->whereNotNull('manning_request_item_id')
+            ->pluck('manning_request_item_id')
+            ->unique();
+
+        // Get request IDs that have items in draft, but only for ZONE type requests in Zone Coordinator's zone
+        $requestIdsInDraft = collect();
+        if ($itemIdsInDraft->isNotEmpty()) {
+            $requestIdsInDraft = ManningRequestItem::whereIn('id', $itemIdsInDraft)
+                ->whereHas('manningRequest', function($q) use ($zoneCommandIds) {
+                    $q->where('type', 'ZONE')
+                      ->whereIn('command_id', $zoneCommandIds);
+                })
+                ->pluck('manning_request_id')
+                ->unique();
+        }
+
+        // Get request IDs that are fully published (all items have matched_officer_id set)
+        // Only ZONE type requests from Zone Coordinator's zone
+        $requestIdsPublished = DB::table('manning_request_items')
+            ->join('manning_requests', 'manning_request_items.manning_request_id', '=', 'manning_requests.id')
+            ->whereIn('manning_requests.status', ['APPROVED', 'FULFILLED'])
+            ->where('manning_requests.type', 'ZONE') // Zone Coordinators only process ZONE type
+            ->whereIn('manning_requests.command_id', $zoneCommandIds) // Only from Zone Coordinator's zone
+            ->select('manning_request_items.manning_request_id')
+            ->groupBy('manning_request_items.manning_request_id')
+            ->havingRaw('COUNT(*) = SUM(CASE WHEN manning_request_items.matched_officer_id IS NOT NULL THEN 1 ELSE 0 END)')
+            ->havingRaw('COUNT(*) > 0')
+            ->pluck('manning_request_id');
+
+        // Filter by tab if provided
+        if ($tab === 'in_draft') {
+            // Show only requests with items in draft
+            if ($requestIdsInDraft->isNotEmpty()) {
+                $query->whereIn('manning_requests.id', $requestIdsInDraft);
+            } else {
+                // No requests in draft, return empty result
+                $query->whereRaw('1 = 0');
+            }
+        } elseif ($tab === 'published') {
+            // Show only fully published requests
+            if ($requestIdsPublished->isNotEmpty()) {
+                $query->whereIn('manning_requests.id', $requestIdsPublished);
+            } else {
+                // No published requests, return empty result
+                $query->whereRaw('1 = 0');
+            }
+        } else {
+            // Default: pending (not in draft and not published)
+            $excludeIds = $requestIdsInDraft->merge($requestIdsPublished)->unique();
+            if ($excludeIds->isNotEmpty()) {
+                $query->whereNotIn('manning_requests.id', $excludeIds);
+            }
+        }
+
+        // Sorting - Default to latest requests first (created_at desc)
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        $sortableColumns = [
+            'command' => function ($query, $order) {
+                $query->leftJoin('commands', 'manning_requests.command_id', '=', 'commands.id')
+                    ->orderBy('commands.name', $order);
+            },
+            'status' => 'status',
+            'approved_at' => 'approved_at',
+            'created_at' => 'created_at',
+        ];
+
+        $column = $sortableColumns[$sortBy] ?? 'created_at';
+        $order = in_array(strtolower($sortOrder), ['asc', 'desc']) ? strtolower($sortOrder) : 'desc';
+
+        if (is_callable($column)) {
+            $column($query, $order);
+        } else {
+            $query->orderBy($column, $order);
+        }
+
+        $requests = $query->select('manning_requests.*')->paginate(20)->withQueryString();
+
+        // Mark which requests have items in draft and which are published for display
+        $requests->getCollection()->transform(function ($manningRequest) use ($requestIdsInDraft, $requestIdsPublished) {
+            $manningRequest->has_items_in_draft = $requestIdsInDraft->contains($manningRequest->id);
+            $manningRequest->is_published = $requestIdsPublished->contains($manningRequest->id);
+            return $manningRequest;
+        });
+
+        // Calculate counts for each tab - only ZONE type for Zone Coordinators
+        $allApprovedRequestIds = ManningRequest::where('status', 'APPROVED')
+            ->where('type', 'ZONE') // Zone Coordinators only process ZONE type
+            ->whereIn('command_id', $zoneCommandIds) // Only from Zone Coordinator's zone
+            ->pluck('id');
+        $pendingCount = 0;
+        $inDraftCount = $requestIdsInDraft->count();
+        $publishedCount = $requestIdsPublished->count();
+
+        // Calculate pending count (not in draft and not published)
+        $excludeIds = $requestIdsInDraft->merge($requestIdsPublished)->unique();
+        if ($excludeIds->isNotEmpty()) {
+            $pendingCount = $allApprovedRequestIds->diff($excludeIds)->count();
+        } else {
+            $pendingCount = $allApprovedRequestIds->count();
+        }
+
+        return view('dashboards.hrd.manning-requests', compact('requests', 'requestIdsInDraft', 'requestIdsPublished', 'pendingCount', 'inDraftCount', 'publishedCount'))->with('routePrefix', 'zone-coordinator');
+    }
+
+    public function zoneCoordinatorShow($id)
+    {
+        $user = auth()->user();
+        
+        // Check if user is Zone Coordinator
+        if (!$user->hasRole('Zone Coordinator')) {
+            abort(403, 'Only Zone Coordinators can access this page');
+        }
+
+        // Get Zone Coordinator's zone
+        $validationService = app(ZonalPostingValidationService::class);
+        $zoneCommandIds = $validationService->getZoneCommandIds($user);
+
+        $request = ManningRequest::with(['command', 'requestedBy', 'approvedBy', 'items'])
+            ->findOrFail($id);
+
+        // Zone Coordinators can only view ZONE type requests
+        if ($request->type !== 'ZONE') {
+            abort(403, 'Zone Coordinators can only access Zone Manning Level requests. General requests are handled by HRD.');
+        }
+
+        // Verify request is from Zone Coordinator's zone
+        if (empty($zoneCommandIds) || !in_array($request->command_id, $zoneCommandIds)) {
+            abort(403, 'You can only view manning requests for commands in your zone.');
+        }
+
+        // Check which items have officers in draft deployments (only Zone Coordinator drafts)
+        $zoneCoordinatorUserIds = User::whereHas('roles', function($q) {
+            $q->where('name', 'Zone Coordinator');
+        })->pluck('id')->toArray();
+
+        $itemIds = $request->items->pluck('id');
+        $itemsInDraft = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
+            ->whereHas('deployment', function ($q) use ($zoneCoordinatorUserIds) {
+                $q->where('status', 'DRAFT')
+                  ->whereIn('created_by', $zoneCoordinatorUserIds); // Only Zone Coordinator drafts
+            })
+            ->pluck('manning_request_item_id')
+            ->unique();
+
+        return view('dashboards.hrd.manning-request-show', compact('request', 'itemsInDraft'))->with('routePrefix', 'zone-coordinator');
+    }
+
+    public function zoneCoordinatorMatchAll(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        // Check if user is Zone Coordinator
+        if (!$user->hasRole('Zone Coordinator')) {
+            abort(403, 'Only Zone Coordinators can access this page');
+        }
+
+        $manningRequest = ManningRequest::with('items')->findOrFail($id);
+
+        // Zone Coordinators can only match officers for ZONE type requests
+        if ($manningRequest->type !== 'ZONE') {
+            abort(403, 'Zone Coordinators can only match officers for Zone Manning Level requests.');
+        }
+
+        // Get Zone Coordinator's zone
+        $validationService = app(ZonalPostingValidationService::class);
+        $zoneCommandIds = $validationService->getZoneCommandIds($user);
+
+        if (empty($zoneCommandIds)) {
+            return redirect()->route('zone-coordinator.manning-requests.show', $id)
+                ->with('error', 'You do not have any commands assigned to your zone.');
+        }
+
+        // Verify request is from Zone Coordinator's zone
+        if (!in_array($manningRequest->command_id, $zoneCommandIds)) {
+            abort(403, 'You can only match officers for manning requests in your zone.');
+        }
+
+        // Get all pending items (not published, not in draft)
+        $itemIds = $manningRequest->items->pluck('id');
+        $zoneCoordinatorUserIds = User::whereHas('roles', function($q) {
+            $q->where('name', 'Zone Coordinator');
+        })->pluck('id')->toArray();
+
+        $itemsInDraft = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
+            ->whereHas('deployment', function ($q) use ($zoneCoordinatorUserIds) {
+                $q->where('status', 'DRAFT');
+                if (!empty($zoneCoordinatorUserIds)) {
+                    $q->whereIn('created_by', $zoneCoordinatorUserIds); // Only Zone Coordinator drafts
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+            })
+            ->pluck('manning_request_item_id')
+            ->unique();
+
+        $publishedItemIds = $manningRequest->items->whereNotNull('matched_officer_id')->pluck('id');
+        $pendingItems = $manningRequest->items->whereNotIn('id', $itemsInDraft)->whereNotIn('id', $publishedItemIds);
+
+        if ($pendingItems->isEmpty()) {
+            return redirect()->route('zone-coordinator.manning-requests.show', $id)
+                ->with('info', 'All ranks have already been matched or are in draft.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Get or create SHARED active draft deployment for Zone Coordinators
+            $deployment = ManningDeployment::draft()
+                ->whereIn('created_by', $zoneCoordinatorUserIds) // Only Zone Coordinator drafts
+                ->latest()
+                ->first();
+
+            if (!$deployment) {
+                // No active draft exists - create a new shared draft for Zone Coordinators
+                $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
+                $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
+                    ->orderBy('deployment_number', 'desc')
+                    ->first();
+
+                $newNumber = $lastDeployment ? ((int) substr($lastDeployment->deployment_number, -3)) + 1 : 1;
+                $deploymentNumber = $datePrefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+
+                $deployment = ManningDeployment::create([
+                    'deployment_number' => $deploymentNumber,
+                    'status' => 'DRAFT',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            $destinationCommand = $manningRequest->command;
+            $totalOfficersAdded = 0;
+            $ranksMatched = [];
+
+            // Match each pending item
+            foreach ($pendingItems as $item) {
+                // First, get all potential officers from Zone Coordinator's zone
+                $potentialOfficers = Officer::where('is_active', true)
+                    ->where('is_deceased', false)
+                    ->where('interdicted', false)
+                    ->where('suspended', false)
+                    ->where('dismissed', false)
+                    ->whereNotNull('substantive_rank')
+                    ->whereNotNull('present_station')
+                    ->whereIn('present_station', $zoneCommandIds) // Only officers in Zone Coordinator's zone
+                    ->get();
+
+                // Exclude officers from requesting command
+                if ($manningRequest->command_id) {
+                    $potentialOfficers = $potentialOfficers->reject(function($officer) use ($manningRequest) {
+                        return $officer->present_station == $manningRequest->command_id;
+                    });
+                }
+
+                // Filter by GL 7 and below only (for Zone Coordinators)
+                $filteredOfficerIds = [];
+                foreach ($potentialOfficers as $officer) {
+                    if ($validationService->isOfficerGL07OrBelow($officer->id)) {
+                        $filteredOfficerIds[] = $officer->id;
+                    }
+                }
+                
+                // If no officers match GL 7 and below, skip this item
+                if (empty($filteredOfficerIds)) {
+                    continue;
+                }
+
+                // Build query with filtered officer IDs
+                $query = Officer::whereIn('id', $filteredOfficerIds)
+                    ->where('is_active', true)
+                    ->where('is_deceased', false)
+                    ->where('interdicted', false)
+                    ->where('suspended', false)
+                    ->where('dismissed', false)
+                    ->whereNotNull('substantive_rank')
+                    ->whereNotNull('present_station');
+
+                // Match rank using the same logic as hrdMatchAll
+                if (!empty($item->rank)) {
+                    $requestedRank = trim($item->rank);
+
+                    $rankMappingToAbbr = [
+                        'Inspector of Customs (IC) GL07' => 'IC',
+                        'Inspector' => 'IC',
+                        'Assistant Inspector of Customs (AIC) GL06' => 'AIC',
+                        'Assistant Inspector' => 'AIC',
+                        'Customs Assistant I (CA I) GL05' => 'CA I',
+                        'Customs Assistant I' => 'CA I',
+                        'Customs Assistant II (CA II) GL04' => 'CA II',
+                        'Customs Assistant II' => 'CA II',
+                        'Customs Assistant III (CA III) GL03' => 'CA III',
+                        'Customs Assistant III' => 'CA III',
+                        'Customs Assistant' => 'CA I',
+                    ];
+
+                    $ranksToMatch = [strtolower(trim($requestedRank))];
+
+                    $foundAbbr = null;
+                    foreach ($rankMappingToAbbr as $fullName => $abbr) {
+                        $fullNameLower = strtolower(trim($fullName));
+                        $abbrLower = strtolower(trim($abbr));
+                        $requestedLower = strtolower(trim($requestedRank));
+
+                        if ($requestedLower === $abbrLower) {
+                            $foundAbbr = $abbr;
+                            foreach ($rankMappingToAbbr as $fn => $a) {
+                                if (strtolower(trim($a)) === $abbrLower) {
+                                    $ranksToMatch[] = strtolower(trim($fn));
+                                }
+                            }
+                            break;
+                        }
+
+                        if ($requestedLower === $fullNameLower) {
+                            $foundAbbr = $abbr;
+                            $ranksToMatch[] = $abbrLower;
+                            foreach ($rankMappingToAbbr as $fn => $a) {
+                                if (strtolower(trim($a)) === strtolower(trim($abbr))) {
+                                    $ranksToMatch[] = strtolower(trim($fn));
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    $ranksToMatch = array_unique($ranksToMatch);
+
+                    $query->where(function ($q) use ($ranksToMatch, $requestedRank) {
+                        $requestedRankLower = strtolower(trim($requestedRank));
+
+                        foreach ($ranksToMatch as $rankToMatch) {
+                            $q->orWhereRaw('LOWER(TRIM(substantive_rank)) = ?', [$rankToMatch]);
+                        }
+
+                        if (strlen($requestedRank) <= 10) {
+                            $q->orWhereRaw('LOWER(substantive_rank) LIKE ?', ['%(' . $requestedRankLower . ')%']);
+                        }
+                    });
+                }
+
+                // Filter by sex requirement
+                if ($item->sex_requirement !== 'ANY') {
+                    $query->where('sex', $item->sex_requirement);
+                }
+
+                // Exclude already matched officers
+                $alreadyMatched = ManningRequestItem::where('manning_request_id', $id)
+                    ->whereNotNull('matched_officer_id')
+                    ->pluck('matched_officer_id');
+
+                if ($alreadyMatched->isNotEmpty()) {
+                    $query->whereNotIn('id', $alreadyMatched);
+                }
+
+                // Exclude officers already in Zone Coordinator drafts
+                $officersInDraft = ManningDeploymentAssignment::whereHas('deployment', function ($q) use ($zoneCoordinatorUserIds) {
+                    $q->where('status', 'DRAFT');
+                    if (!empty($zoneCoordinatorUserIds)) {
+                        $q->whereIn('created_by', $zoneCoordinatorUserIds);
+                    } else {
+                        $q->whereRaw('1 = 0');
+                    }
+                })
+                    ->pluck('officer_id');
+
+                if ($officersInDraft->isNotEmpty()) {
+                    $query->whereNotIn('id', $officersInDraft);
+                }
+
+                // Get matched officers - only from Zone Coordinator's zone
+                $limit = max($item->quantity_needed * 5, 50);
+                $matchedOfficers = $query->with(['presentStation'])
+                    ->orderBy('present_station')
+                    ->take($limit)
+                    ->get();
+
+                // Add officers to draft
+                $quantityNeeded = $item->quantity_needed;
+                $selectedOfficers = $matchedOfficers->take($quantityNeeded);
+                $officersAddedForRank = 0;
+
+                foreach ($selectedOfficers as $officer) {
+                    $fromCommand = $officer->presentStation;
+
+                    $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
+                        ->where('officer_id', $officer->id)
+                        ->first();
+
+                    if (!$existing) {
+                        ManningDeploymentAssignment::create([
+                            'manning_deployment_id' => $deployment->id,
+                            'manning_request_id' => $manningRequest->id,
+                            'manning_request_item_id' => $item->id,
+                            'officer_id' => $officer->id,
+                            'from_command_id' => $fromCommand?->id,
+                            'to_command_id' => $destinationCommand->id,
+                            'rank' => $officer->substantive_rank,
+                        ]);
+                        $officersAddedForRank++;
+                        $totalOfficersAdded++;
+                    }
+                }
+
+                if ($officersAddedForRank > 0) {
+                    $ranksMatched[] = $item->rank . ' (' . $officersAddedForRank . ' officer' . ($officersAddedForRank > 1 ? 's' : '') . ')';
+                }
+            }
+
+            DB::commit();
+
+            if ($totalOfficersAdded > 0) {
+                $message = "Successfully matched {$totalOfficersAdded} officer(s) for " . count($ranksMatched) . " rank(s): " . implode(', ', $ranksMatched);
+                return redirect()->route('zone-coordinator.manning-requests.show', $id)
+                    ->with('success', $message);
+            } else {
+                return redirect()->route('zone-coordinator.manning-requests.show', $id)
+                    ->with('info', 'No matching officers found in your zone for the requested ranks.');
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to match all ranks (Zone Coordinator): ' . $e->getMessage(), [
+                'exception' => $e,
+                'manning_request_id' => $id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('zone-coordinator.manning-requests.show', $id)
+                ->with('error', 'Failed to match all ranks. Please try again.');
+        }
     }
 
     public function hrdMatch(Request $request, $id)

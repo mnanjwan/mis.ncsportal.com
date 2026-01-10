@@ -250,6 +250,7 @@
         case 'Zone Coordinator':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('zone-coordinator.dashboard')],
+                ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('zone-coordinator.manning-requests')],
                 [
                     'title' => 'Postings',
                     'icon' => 'ki-filled ki-people',
