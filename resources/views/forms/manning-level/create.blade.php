@@ -84,6 +84,19 @@
                         <input type="hidden" name="command_id" value="{{ $command->id }}"/>
                         <p class="text-xs text-secondary-foreground mt-1">This request is for your assigned command</p>
                 </div>
+                
+                <div class="flex flex-col gap-1">
+                    <label class="kt-form-label font-normal text-mono">Request Type <span class="text-danger">*</span></label>
+                    <select name="type" id="request_type" class="kt-input" required>
+                        <option value="">Select Request Type</option>
+                        <option value="GENERAL">General Manning Level (HRD) - All Ranks</option>
+                        <option value="ZONE">Zone Manning Level (Zone Coordinator) - GL 7 and Below Only</option>
+                    </select>
+                    <p class="text-xs text-secondary-foreground mt-1">
+                        <strong>General:</strong> For all ranks, processed by HRD<br>
+                        <strong>Zone:</strong> For GL 7 and below only, processed by Zone Coordinator
+                    </p>
+                </div>
                 @endif
                 
                 <div class="flex flex-col gap-4">
@@ -152,11 +165,52 @@
 let itemCount = 0;
 const ranks = @json($ranks ?? []);
 const qualifications = @json($qualifications ?? []);
+const zoneRanks = ['IC', 'AIC', 'CA I', 'CA II', 'CA III']; // GL 7 and below ranks
+
+// Get available ranks based on request type
+function getAvailableRanks(type) {
+    if (type === 'ZONE') {
+        return ranks.filter(rank => zoneRanks.includes(rank));
+    }
+    return ranks; // GENERAL - all ranks
+}
+
+// Update rank selects based on request type
+function updateRankSelects(type) {
+    const availableRanks = getAvailableRanks(type);
+    const rankSelects = document.querySelectorAll('select[name*="[rank]"]');
+    
+    rankSelects.forEach(select => {
+        const currentValue = select.value;
+        // Clear existing options except the default
+        select.innerHTML = '<option value="">Select Rank</option>';
+        
+        // Add available ranks (reversed for LIFO)
+        const reversedRanks = [...availableRanks].reverse();
+        reversedRanks.forEach(rank => {
+            const option = document.createElement('option');
+            option.value = rank;
+            option.textContent = rank;
+            if (currentValue === rank && availableRanks.includes(rank)) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+        
+        // If current value is not available, clear it
+        if (currentValue && !availableRanks.includes(currentValue)) {
+            select.value = '';
+        }
+    });
+}
 
 // Item template
 function createItemTemplate(index) {
+    // Get request type to determine available ranks
+    const requestType = document.getElementById('request_type')?.value || 'GENERAL';
+    const availableRanks = getAvailableRanks(requestType);
     // Reverse ranks array to show latest rank on top (LIFO - Last In First Out)
-    const reversedRanks = [...ranks].reverse();
+    const reversedRanks = [...availableRanks].reverse();
     const ranksHtml = reversedRanks.map(rank => `<option value="${rank}">${rank}</option>`).join('');
     const qualsHtml = qualifications.map(qual => `<option value="${qual}">${qual}</option>`).join('');
     
@@ -328,6 +382,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add item button
     document.getElementById('add-item-btn').addEventListener('click', addItem);
+    
+    // Handle request type change
+    const requestTypeSelect = document.getElementById('request_type');
+    if (requestTypeSelect) {
+        requestTypeSelect.addEventListener('change', function() {
+            const type = this.value;
+            if (type === 'ZONE') {
+                // Filter ranks to only show GL 7 and below
+                updateRankSelects('ZONE');
+            } else if (type === 'GENERAL') {
+                // Show all ranks
+                updateRankSelects('GENERAL');
+            }
+        });
+    }
     
     // Form submission - validate before submit
     document.getElementById('create-manning-request-form').addEventListener('submit', function(e) {

@@ -4,16 +4,18 @@
 @section('page-title', 'Draft Deployment Management')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.dashboard') }}">
+        {{ (isset($routePrefix) && $routePrefix === 'zone-coordinator') ? 'Zone Coordinator' : 'HRD' }}
+    </a>
     <span>/</span>
     @if(isset($manningRequest))
-        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.manning-requests') }}">Manning Requests</a>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.manning-requests') }}">Manning Requests</a>
         <span>/</span>
-        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.manning-requests.show', $manningRequest->id) }}">Request #{{ $manningRequest->id }}</a>
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.manning-requests.show', $manningRequest->id) }}">Request #{{ $manningRequest->id }}</a>
         <span>/</span>
         <span class="text-primary">Draft Deployment</span>
     @else
-    <span class="text-primary">Draft Deployment</span>
+        <span class="text-primary">Draft Deployment</span>
     @endif
 @endsection
 
@@ -27,13 +29,13 @@
         </div>
         <div class="flex items-center gap-3">
             @if(isset($manningRequest))
-                <a href="{{ route('hrd.manning-requests.show', $manningRequest->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                <a href="{{ route(($routePrefix ?? 'hrd') . '.manning-requests.show', $manningRequest->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                     <i class="ki-filled ki-arrow-left"></i> Back to Request Details
                 </a>
             @else
-            <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
-                <i class="ki-filled ki-arrow-left"></i> Back to Requests
-            </a>
+                <a href="{{ route(($routePrefix ?? 'hrd') . '.dashboard') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                    <i class="ki-filled ki-arrow-left"></i> Back to Dashboard
+                </a>
             @endif
         </div>
     </div>
@@ -104,7 +106,7 @@
                             @endif
                         </div>
                     </div>
-                    <form id="publish-deployment-form" action="{{ route('hrd.manning-deployments.publish', $activeDraft->id) }}" method="POST">
+                    <form id="publish-deployment-form" action="{{ route(($routePrefix ?? 'hrd') . '.manning-deployments.publish', $activeDraft->id) }}" method="POST">
                         @csrf
                         @if(isset($manningRequest))
                             <input type="hidden" name="manning_request_id" value="{{ $manningRequest->id }}">
@@ -260,14 +262,20 @@
         <div class="kt-card">
             <div class="kt-card-content p-12 text-center">
                 <i class="ki-filled ki-information text-4xl text-muted-foreground mb-4"></i>
-                <p class="text-secondary-foreground mb-4">No active draft deployment. Add officers from manning requests or Command Duration search to create one.</p>
+                <p class="text-secondary-foreground mb-4">No active draft deployment. Add officers from movement orders, manning requests, or Command Duration search to create one.</p>
                 <div class="flex items-center gap-3 justify-center">
-                    <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-primary">
-                        <i class="ki-filled ki-arrow-right"></i> Go to Manning Requests
-                    </a>
-                    <a href="{{ route('hrd.command-duration.index') }}" class="kt-btn kt-btn-secondary">
-                        <i class="ki-filled ki-search"></i> Command Duration Search
-                    </a>
+                    @if(!isset($routePrefix) || $routePrefix !== 'zone-coordinator')
+                        <a href="{{ route('hrd.manning-requests') }}" class="kt-btn kt-btn-primary">
+                            <i class="ki-filled ki-arrow-right"></i> Go to Manning Requests
+                        </a>
+                        <a href="{{ route('hrd.command-duration.index') }}" class="kt-btn kt-btn-secondary">
+                            <i class="ki-filled ki-search"></i> Command Duration Search
+                        </a>
+                    @else
+                        <a href="{{ route('zone-coordinator.movement-orders') }}" class="kt-btn kt-btn-primary">
+                            <i class="ki-filled ki-arrow-right"></i> Go to Movement Orders
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -291,7 +299,7 @@
                     </button>
                 </div>
                 <div class="kt-modal-body py-5 px-5">
-                    <form id="swap-form-{{ $assignment->id }}" method="POST" action="{{ route('hrd.manning-deployments.draft.swap-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}">
+                    <form id="swap-form-{{ $assignment->id }}" method="POST" action="{{ route(($routePrefix ?? 'hrd') . '.manning-deployments.draft.swap-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}">
                         @csrf
                         <p class="text-sm text-secondary-foreground mb-4">
                             Select a new officer to replace <span class="font-semibold">{{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}</span>:
@@ -332,7 +340,7 @@
                     </button>
                 </div>
                 <div class="kt-modal-body py-5 px-5">
-                    <form id="remove-form-{{ $assignment->id }}" method="POST" action="{{ route('hrd.manning-deployments.draft.remove-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}">
+                    <form id="remove-form-{{ $assignment->id }}" method="POST" action="{{ route(($routePrefix ?? 'hrd') . '.manning-deployments.draft.remove-officer', ['deploymentId' => $activeDraft->id, 'assignmentId' => $assignment->id]) }}">
                         @csrf
                         @method('DELETE')
                         <p class="text-sm text-secondary-foreground mb-4">
@@ -521,7 +529,7 @@ let searchTimeout;
     
     searchTimeout = setTimeout(() => {
                         // Build search URL with rank filter
-                        let searchUrl = `{{ route('hrd.officers.search') }}?`;
+                        let searchUrl = `{{ route(($routePrefix ?? 'hrd') . '.officers.search') }}?`;
                         if (query.length >= 1) {
                             searchUrl += `q=${encodeURIComponent(query)}`;
                         }
@@ -695,9 +703,10 @@ function updateCommandDurationDestination(assignmentId, commandId) {
         return;
     }
     
-    // Build URL manually to ensure correct format
-    const baseUrl = '{{ url("/hrd/manning-deployments") }}';
-    const url = `${baseUrl}/${deploymentId}/update-destination/${assignmentId}`;
+    // Build URL using route
+    const url = '{{ route(($routePrefix ?? "hrd") . ".manning-deployments.draft.update-destination", ["deploymentId" => ":deploymentId", "assignmentId" => ":assignmentId"]) }}'
+        .replace(':deploymentId', deploymentId)
+        .replace(':assignmentId', assignmentId);
     
     console.log('Updating destination:', {
         url: url,

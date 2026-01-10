@@ -44,11 +44,27 @@
 @else
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Actions -->
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-4">
             <h2 class="text-xl font-semibold text-foreground">Manning Level Requests</h2>
             <a href="{{ route('staff-officer.manning-level.create') }}" class="kt-btn kt-btn-primary">
                 <i class="ki-filled ki-plus"></i> Create Request
             </a>
+        </div>
+        
+        <!-- Info Card -->
+        <div class="kt-card bg-info/10 border border-info/20">
+            <div class="kt-card-content p-4">
+                <div class="flex items-start gap-3">
+                    <i class="ki-filled ki-information text-info text-xl mt-0.5"></i>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-semibold text-mono">Request Types</span>
+                        <span class="text-xs text-secondary-foreground">
+                            <strong>General:</strong> For all ranks, processed by HRD | 
+                            <strong>Zone:</strong> For GL 7 and below only (IC, AIC, CA I, CA II, CA III), processed by Zone Coordinator
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Approved Officers Summary by Rank -->
@@ -62,15 +78,16 @@
                 </div>
                 <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                     <p class="text-sm text-secondary-foreground mb-4 px-4 md:px-0">
-                        Summary of officers that HRD has matched for your approved manning requests. 
-                        <span class="text-xs text-muted-foreground">Compare requested vs approved to see which ranks were partially or fully rejected by HRD.</span>
+                        Summary of officers that HRD (General) or Zone Coordinator (Zone) has matched for your approved manning requests. 
+                        <span class="text-xs text-muted-foreground">Compare requested vs approved to see which ranks were partially or fully rejected. Zone requests are for GL 7 and below only.</span>
                     </p>
                     <!-- Table with horizontal scroll wrapper -->
                     <div class="table-scroll-wrapper overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-thin">
-                        <table class="kt-table" style="min-width: 600px; width: 100%;">
+                        <table class="kt-table" style="min-width: 800px; width: 100%;">
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Rank</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Type</th>
                                     <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Requested</th>
                                     <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Approved</th>
                                     <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">Status</th>
@@ -98,6 +115,14 @@
                                         <td class="py-3 px-4" style="white-space: nowrap;">
                                             <span class="text-sm font-medium text-foreground">{{ $rankSummary->rank }}</span>
                                         </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            @php
+                                                $typeColor = isset($rankSummary->type) && $rankSummary->type === 'Zone' ? 'primary' : 'info';
+                                            @endphp
+                                            <span class="kt-badge kt-badge-{{ $typeColor }} kt-badge-xs">
+                                                {{ $rankSummary->type ?? 'General' }}
+                                            </span>
+                                        </td>
                                         <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                             <span class="text-sm text-secondary-foreground">{{ $requested }}</span>
                                         </td>
@@ -119,6 +144,9 @@
                                 <tr class="border-t-2 border-primary">
                                     <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="text-sm font-semibold text-foreground">Total</span>
+                                    </td>
+                                    <td class="py-3 px-4" style="white-space: nowrap;">
+                                        <span class="text-xs text-secondary-foreground">-</span>
                                     </td>
                                     <td class="py-3 px-4 text-right" style="white-space: nowrap;">
                                         <span class="text-sm font-bold text-secondary-foreground">{{ $approvedOfficersByRank->sum('requested_count') }}</span>
@@ -146,6 +174,24 @@
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Requests for {{ $command->name }}</h3>
+                <div class="kt-card-toolbar">
+                    <!-- Filter by Type -->
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('staff-officer.manning-level', ['type' => 'GENERAL']) }}" 
+                           class="kt-btn kt-btn-sm {{ request('type') === 'GENERAL' || !request('type') ? 'kt-btn-primary' : 'kt-btn-secondary' }}">
+                            General
+                        </a>
+                        <a href="{{ route('staff-officer.manning-level', ['type' => 'ZONE']) }}" 
+                           class="kt-btn kt-btn-sm {{ request('type') === 'ZONE' ? 'kt-btn-primary' : 'kt-btn-secondary' }}">
+                            Zone
+                        </a>
+                        @if(request('type'))
+                            <a href="{{ route('staff-officer.manning-level') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+                                <i class="ki-filled ki-cross"></i> Clear
+                            </a>
+                        @endif
+                    </div>
+                </div>
             </div>
             <div class="kt-card-content">
                 @forelse($requests as $request)
@@ -155,9 +201,24 @@
                                 <i class="ki-filled ki-people text-primary text-xl"></i>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <span class="text-sm font-semibold text-foreground">
-                                    Request #{{ str_pad($request->id, 6, '0', STR_PAD_LEFT) }}
-                                </span>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-sm font-semibold text-foreground">
+                                        Request #{{ str_pad($request->id, 6, '0', STR_PAD_LEFT) }}
+                                    </span>
+                                    @php
+                                        $typeColors = [
+                                            'GENERAL' => 'info',
+                                            'ZONE' => 'primary',
+                                        ];
+                                        $typeLabels = [
+                                            'GENERAL' => 'General (HRD)',
+                                            'ZONE' => 'Zone (GL 7 & Below)',
+                                        ];
+                                        $typeColor = $typeColors[$request->type ?? 'GENERAL'] ?? 'secondary';
+                                        $typeLabel = $typeLabels[$request->type ?? 'GENERAL'] ?? 'GENERAL';
+                                    @endphp
+                                    <span class="kt-badge kt-badge-{{ $typeColor }} kt-badge-xs">{{ $typeLabel }}</span>
+                                </div>
                                 <span class="text-xs text-secondary-foreground">
                                     {{ $request->items->count() }} requirement(s) | 
                                     Created: {{ $request->created_at->format('M d, Y') }}

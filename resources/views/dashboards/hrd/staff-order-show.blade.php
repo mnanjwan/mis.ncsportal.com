@@ -154,11 +154,9 @@
                        class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-printer"></i> Print Order
                     </a>
-                    @if(!isset($routePrefix) || $routePrefix !== 'zone-coordinator')
-                        <a href="{{ route('hrd.staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-ghost">
-                            <i class="ki-filled ki-pencil"></i> Edit Order
-                        </a>
-                    @endif
+                    <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.edit', $order->id) }}" class="kt-btn kt-btn-ghost">
+                        <i class="ki-filled ki-pencil"></i> Edit Order
+                    </a>
                 </div>
             </div>
         </div>

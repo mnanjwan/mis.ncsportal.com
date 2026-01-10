@@ -811,6 +811,8 @@ class DashboardController extends Controller
         $zoneOfficers = collect();
         $zoneCommands = collect();
         $recentOrders = collect();
+        $draftDeployments = collect();
+        $draftDeploymentsCount = 0;
         $zoneStats = [
             'total_officers' => 0,
             'eligible_officers' => 0, // GL 07 and below
@@ -870,6 +872,23 @@ class DashboardController extends Controller
                         ->where('created_at', '>=', now()->subDays(30))
                         ->count(),
                 ];
+                
+                // Get draft deployments for zone (related to ZONE type manning requests from this zone)
+                $draftDeployments = \App\Models\ManningDeployment::where('status', 'DRAFT')
+                    ->whereHas('assignments.manningRequest', function($q) use ($zoneCommandIds) {
+                        $q->where('type', 'ZONE')
+                          ->whereIn('command_id', $zoneCommandIds);
+                    })
+                    ->with(['assignments.officer', 'assignments.toCommand', 'assignments.fromCommand'])
+                    ->orderBy('created_at', 'desc')
+                    ->take(5)
+                    ->get();
+                $draftDeploymentsCount = \App\Models\ManningDeployment::where('status', 'DRAFT')
+                    ->whereHas('assignments.manningRequest', function($q) use ($zoneCommandIds) {
+                        $q->where('type', 'ZONE')
+                          ->whereIn('command_id', $zoneCommandIds);
+                    })
+                    ->count();
             }
         }
 
@@ -879,7 +898,9 @@ class DashboardController extends Controller
             'zoneOfficers',
             'zoneCommands',
             'recentOrders',
-            'zoneStats'
+            'zoneStats',
+            'draftDeployments',
+            'draftDeploymentsCount'
         ));
     }
 

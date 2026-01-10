@@ -12,6 +12,7 @@ use App\Models\Zone;
 use App\Models\ManningDeployment;
 use App\Models\ManningDeploymentAssignment;
 use App\Models\MovementOrder;
+use App\Services\ZonalPostingValidationService;
 use Carbon\Carbon;
 
 class CommandDurationController extends Controller
@@ -19,7 +20,14 @@ class CommandDurationController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:HRD|Super Admin');
+        // Allow HRD, Zone Coordinator, and Super Admin
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if (!$user->hasRole('HRD') && !$user->hasRole('Zone Coordinator') && !$user->hasRole('Super Admin')) {
+                abort(403, 'Access denied. You must be HRD, Zone Coordinator, or Super Admin.');
+            }
+            return $next($request);
+        });
     }
 
     /**
@@ -27,23 +35,68 @@ class CommandDurationController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all zones for dropdown
-        $zones = Zone::where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        // Get commands based on selected zone
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        $validationService = app(ZonalPostingValidationService::class);
+        
+        $zones = collect();
         $commands = collect();
-        $selectedZoneId = $request->filled('zone_id') ? $request->zone_id : null;
-        if ($selectedZoneId) {
-            $commands = Command::where('zone_id', $selectedZoneId)
-                ->where('is_active', true)
+        $selectedZoneId = null;
+        $zoneReadOnly = false;
+        
+        // For Zone Coordinators, pre-fill zone and make it read-only
+        if ($isZoneCoordinator && !$isHRD) {
+            $zone = $validationService->getZoneCoordinatorZone($user);
+            if ($zone) {
+                $selectedZoneId = $zone->id;
+                $zones = collect([$zone]);
+                $zoneReadOnly = true;
+                
+                // Load all commands in the Zone Coordinator's zone
+                $commands = Command::where('zone_id', $zone->id)
+                        ->where('is_active', true)
+                        ->orderBy('name')
+                        ->get();
+            }
+        } else {
+            // HRD can select any zone
+            $zones = Zone::where('is_active', true)
                 ->orderBy('name')
                 ->get();
+            
+            $selectedZoneId = $request->filled('zone_id') ? $request->zone_id : null;
+            if ($selectedZoneId) {
+                $commands = Command::where('zone_id', $selectedZoneId)
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get();
+            }
         }
         
         // If AJAX request, return JSON with commands
         if ($request->wantsJson() || $request->ajax()) {
+            // For AJAX requests, ensure commands are loaded based on zone_id parameter or pre-selected zone
+            if (!$isZoneCoordinator || $isHRD) {
+                // HRD: Load commands based on zone_id parameter
+                $ajaxZoneId = $request->filled('zone_id') ? $request->zone_id : null;
+                if ($ajaxZoneId) {
+                    $commands = Command::where('zone_id', $ajaxZoneId)
+                        ->where('is_active', true)
+                        ->orderBy('name')
+                        ->get();
+                }
+            } else {
+                // Zone Coordinator: Always use their zone, ignore zone_id parameter
+                // Commands should already be loaded above, but reload to ensure they're fresh
+                if ($selectedZoneId) {
+                    $commands = Command::where('zone_id', $selectedZoneId)
+                        ->where('is_active', true)
+                        ->orderBy('name')
+                        ->get();
+                }
+            }
+            
             return response()->json([
                 'commands' => $commands->map(function($cmd) {
                     return ['id' => $cmd->id, 'name' => $cmd->name];
@@ -52,8 +105,23 @@ class CommandDurationController extends Controller
         }
 
         // Get unique ranks for filter and sort from lowest to highest
-        $ranks = Officer::whereNotNull('substantive_rank')
-            ->distinct()
+        // For Zone Coordinators, only show ranks for GL 07 and below
+        $ranksQuery = Officer::whereNotNull('substantive_rank');
+        
+        if ($isZoneCoordinator && !$isHRD) {
+            $ranksQuery->where(function($q) {
+                $q->where('salary_grade_level', 'GL05')
+                  ->orWhere('salary_grade_level', 'GL06')
+                  ->orWhere('salary_grade_level', 'GL07')
+                  ->orWhere('salary_grade_level', '05')
+                  ->orWhere('salary_grade_level', '06')
+                  ->orWhere('salary_grade_level', '07')
+                  ->orWhereRaw("CAST(SUBSTRING(salary_grade_level, 3) AS UNSIGNED) <= 7")
+                  ->orWhereRaw("CAST(salary_grade_level AS UNSIGNED) <= 7");
+            });
+        }
+        
+        $ranks = $ranksQuery->distinct()
             ->pluck('substantive_rank')
             ->filter()
             ->values()
@@ -61,11 +129,15 @@ class CommandDurationController extends Controller
         
         // Sort ranks from lowest to highest
         $ranks = $this->sortRanks($ranks);
+        
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
 
         return view('dashboards.hrd.command-duration.index', compact(
             'zones',
             'commands',
-            'ranks'
+            'ranks',
+            'zoneReadOnly',
+            'routePrefix'
         ))->with([
             'selected_zone_id' => $selectedZoneId,
         ]);
@@ -76,9 +148,14 @@ class CommandDurationController extends Controller
      */
     public function search(Request $request)
     {
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        
         // If GET request, redirect to index with parameters
         if ($request->isMethod('get')) {
-            return redirect()->route('hrd.command-duration.index', $request->only(['zone_id', 'command_id', 'rank', 'sex', 'duration_years']));
+            return redirect()->route($routePrefix . '.command-duration.index', $request->only(['zone_id', 'command_id', 'rank', 'sex', 'duration_years']));
         }
         
         $request->validate([
@@ -95,6 +172,8 @@ class CommandDurationController extends Controller
             return back()->withErrors(['command_id' => 'Selected command does not belong to the selected zone.']);
         }
 
+        $validationService = app(ZonalPostingValidationService::class);
+        
         // Build query
         $query = Officer::with(['presentStation.zone', 'currentPosting'])
             ->where('present_station', $commandId)
@@ -102,6 +181,15 @@ class CommandDurationController extends Controller
                 $q->where('command_id', $commandId)
                   ->where('is_current', true);
             });
+        
+        // Filter for Zone Coordinators
+        if ($isZoneCoordinator && !$isHRD) {
+            // Verify command is in zone
+            if (!$validationService->isCommandInZone($commandId, $user)) {
+                return back()->withErrors(['command_id' => 'Selected command is not in your zone.']);
+            }
+            // GL 07 filtering will be done after query execution
+        }
 
         // Optional filters
         if ($request->filled('rank')) {
@@ -139,8 +227,15 @@ class CommandDurationController extends Controller
         // Get officers
         $officers = $query->get();
 
+        // For Zone Coordinators, filter out officers above GL 07
+        if ($isZoneCoordinator && !$isHRD) {
+            $officers = $officers->filter(function($officer) use ($validationService) {
+                return $validationService->isOfficerGL07OrBelow($officer->id);
+            })->values();
+        }
+
         // Calculate duration and status for each officer
-        $officers = $officers->map(function($officer) {
+        $officers = $officers->map(function($officer) use ($isZoneCoordinator, $isHRD, $validationService) {
             $posting = $officer->currentPosting;
             
             if ($posting && $posting->posting_date) {
@@ -160,18 +255,53 @@ class CommandDurationController extends Controller
             $officer->current_status = $this->getOfficerStatus($officer);
             $officer->is_eligible_for_movement = $this->isEligibleForMovement($officer);
             $officer->is_in_draft = $this->isInDraft($officer->id);
+            
+            // For Zone Coordinators, add validation status
+            if ($isZoneCoordinator && !$isHRD) {
+                $officer->meets_command_duration = $validationService->checkCommandDuration($officer->id);
+                $officer->is_gl07_or_below = true; // Already filtered above
+                $officer->command_duration_message = $validationService->getCommandDurationMessage($officer->id);
+            }
 
             return $officer;
         });
 
         // Get filter data for view
+        // For Zone Coordinators, only show their zone
+        if ($isZoneCoordinator && !$isHRD) {
+            $zone = $validationService->getZoneCoordinatorZone($user);
+            if ($zone) {
+                $zones = collect([$zone]);
+            } else {
+                $zones = collect();
+            }
+        } else {
         $zones = Zone::where('is_active', true)->orderBy('name')->get();
+        }
+        
         $commands = Command::where('zone_id', $zoneId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
-        $ranks = Officer::whereNotNull('substantive_rank')
-            ->distinct()
+        
+        // Get unique ranks for filter and sort from lowest to highest
+        // For Zone Coordinators, only show ranks for GL 07 and below
+        $ranksQuery = Officer::whereNotNull('substantive_rank');
+        
+        if ($isZoneCoordinator && !$isHRD) {
+            $ranksQuery->where(function($q) {
+                $q->where('salary_grade_level', 'GL05')
+                  ->orWhere('salary_grade_level', 'GL06')
+                  ->orWhere('salary_grade_level', 'GL07')
+                  ->orWhere('salary_grade_level', '05')
+                  ->orWhere('salary_grade_level', '06')
+                  ->orWhere('salary_grade_level', '07')
+                  ->orWhereRaw("CAST(SUBSTRING(salary_grade_level, 3) AS UNSIGNED) <= 7")
+                  ->orWhereRaw("CAST(salary_grade_level AS UNSIGNED) <= 7");
+            });
+        }
+        
+        $ranks = $ranksQuery->distinct()
             ->pluck('substantive_rank')
             ->filter()
             ->values()
@@ -179,12 +309,17 @@ class CommandDurationController extends Controller
         
         // Sort ranks from lowest to highest
         $ranks = $this->sortRanks($ranks);
+        
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        $zoneReadOnly = $isZoneCoordinator && !$isHRD;
 
         return view('dashboards.hrd.command-duration.index', compact(
             'officers',
             'zones',
             'commands',
-            'ranks'
+            'ranks',
+            'routePrefix',
+            'zoneReadOnly'
         ))->with([
             'selected_zone_id' => $zoneId,
             'selected_command_id' => $commandId,
@@ -199,9 +334,29 @@ class CommandDurationController extends Controller
      */
     public function addToDraft(Request $request)
     {
+        Log::info('Command Duration - Add to Draft: Starting', [
+            'user_id' => auth()->id(),
+            'request_data' => $request->except(['officer_ids']), // Don't log full officer_ids array
+            'has_officer_ids' => $request->has('officer_ids'),
+        ]);
+
         $request->validate([
             'officer_ids' => 'required|string', // JSON string
             'command_id' => 'required|exists:commands,id',
+        ]);
+
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        $validationService = app(ZonalPostingValidationService::class);
+
+        Log::info('Command Duration - Add to Draft: User roles detected', [
+            'user_id' => $user->id,
+            'isZoneCoordinator' => $isZoneCoordinator,
+            'isHRD' => $isHRD,
+            'routePrefix' => $routePrefix,
+            'command_id' => $request->command_id,
         ]);
 
         try {
@@ -209,14 +364,35 @@ class CommandDurationController extends Controller
 
             // Decode JSON string to array
             $officerIds = json_decode($request->officer_ids, true);
+            Log::info('Command Duration - Add to Draft: Decoded officer IDs', [
+                'officer_ids_count' => is_array($officerIds) ? count($officerIds) : 0,
+                'officer_ids' => $officerIds,
+            ]);
+
             if (!is_array($officerIds) || empty($officerIds)) {
-                return back()->withErrors(['officers' => 'No officers selected.']);
+                Log::warning('Command Duration - Add to Draft: No officers selected', [
+                    'routePrefix' => $routePrefix,
+                ]);
+                $command = Command::find($request->command_id);
+                return redirect()->route($routePrefix . '.command-duration.index', [
+                    'zone_id' => $command?->zone_id,
+                    'command_id' => $request->command_id,
+                ])->withErrors(['officers' => 'No officers selected.']);
             }
 
             // Validate officer IDs exist
             $validOfficerIds = Officer::whereIn('id', $officerIds)->pluck('id')->toArray();
             if (count($validOfficerIds) !== count($officerIds)) {
-                return back()->withErrors(['officers' => 'Some selected officers are invalid.']);
+                Log::warning('Command Duration - Add to Draft: Invalid officer IDs', [
+                    'requested_count' => count($officerIds),
+                    'valid_count' => count($validOfficerIds),
+                    'routePrefix' => $routePrefix,
+                ]);
+                $command = Command::find($request->command_id);
+                return redirect()->route($routePrefix . '.command-duration.index', [
+                    'zone_id' => $command?->zone_id,
+                    'command_id' => $request->command_id,
+                ])->withErrors(['officers' => 'Some selected officers are invalid.']);
             }
 
             // For command duration search, officers are added to draft without a specific destination
@@ -224,33 +400,127 @@ class CommandDurationController extends Controller
             // Set to_command_id to from_command_id as placeholder (will be changed in draft view)
             // Note: to_command_id cannot be NULL in database, so we use from_command as temporary value
             $toCommandId = null; // Will be set to from_command_id for each officer
-
+            
             // Validate officers are eligible
             $officers = Officer::whereIn('id', $officerIds)->get();
             $ineligible = [];
             $eligible = [];
 
+            Log::info('Command Duration - Add to Draft: Validating officers', [
+                'total_officers' => $officers->count(),
+                'isZoneCoordinator' => $isZoneCoordinator && !$isHRD,
+            ]);
+
             foreach ($officers as $officer) {
                 if (!$this->isEligibleForMovement($officer)) {
                     $ineligible[] = $officer->full_name;
-                } else {
-                    $eligible[] = $officer;
+                    Log::info('Command Duration - Add to Draft: Officer ineligible for movement', [
+                        'officer_id' => $officer->id,
+                        'officer_name' => $officer->full_name,
+                        'reason' => 'Not eligible for movement',
+                    ]);
+                    continue;
                 }
+                
+                // Additional validations for Zone Coordinators
+                if ($isZoneCoordinator && !$isHRD) {
+                    // Check rank ceiling - only officers GL 07 and below are allowed
+                    $isGL07OrBelow = $validationService->isOfficerGL07OrBelow($officer->id);
+                    if (!$isGL07OrBelow) {
+                        $ineligible[] = $officer->full_name . ' (above GL 07)';
+                        Log::info('Command Duration - Add to Draft: Officer above GL 07', [
+                            'officer_id' => $officer->id,
+                            'officer_name' => $officer->full_name,
+                            'rank' => $officer->substantive_rank,
+                            'grade_level' => $officer->salary_grade_level,
+                        ]);
+                        continue;
+                    }
+                    // Note: Command duration check removed - only GL 07 ceiling applies
+                }
+                
+                $eligible[] = $officer;
             }
+
+            Log::info('Command Duration - Add to Draft: Officer validation complete', [
+                'eligible_count' => count($eligible),
+                'ineligible_count' => count($ineligible),
+                'ineligible_names' => $ineligible,
+            ]);
 
             if (!empty($ineligible)) {
                 DB::rollBack();
-                return back()->withErrors([
-                    'officers' => 'Some officers are not eligible for movement: ' . implode(', ', $ineligible)
+                Log::warning('Command Duration - Add to Draft: Rolling back due to ineligible officers', [
+                    'ineligible' => $ineligible,
+                    'routePrefix' => $routePrefix,
+                ]);
+                
+                // Get zone_id from command to redirect back with proper parameters
+                $command = Command::find($request->command_id);
+                $redirectParams = [
+                    'command_id' => $request->command_id,
+                ];
+                
+                if ($command) {
+                    $redirectParams['zone_id'] = $command->zone_id;
+                }
+                
+                // Build detailed error message
+                $errorMessage = 'Some officers are not eligible for movement: ' . implode(', ', $ineligible);
+                
+                Log::info('Command Duration - Add to Draft: Redirecting with errors', [
+                    'routePrefix' => $routePrefix,
+                    'redirectParams' => $redirectParams,
+                    'errorMessage' => $errorMessage,
+                ]);
+                
+                // Redirect directly to index (not search) to preserve errors
+                return redirect()->route($routePrefix . '.command-duration.index', $redirectParams)
+                    ->withErrors([
+                        'officers' => $errorMessage
                 ]);
             }
 
             // Get or create draft deployment
+            // For Zone Coordinators, find/create drafts that have assignments in their zone
+            // For HRD, find/create any draft
+            $deployment = null;
+            
+            if ($isZoneCoordinator && !$isHRD) {
+                // Zone Coordinator: Find draft with assignments in their zone ONLY
+                // Don't reuse HRD drafts - create new ones for Zone Coordinators
+                $zoneCommandIds = $validationService->getZoneCommandIds($user);
+                
+                if (!empty($zoneCommandIds)) {
+                    // Find existing draft that has assignments in their zone
             $deployment = ManningDeployment::draft()
+                        ->whereHas('assignments', function($q) use ($zoneCommandIds) {
+                            $q->where(function($subQ) use ($zoneCommandIds) {
+                                $subQ->whereIn('to_command_id', $zoneCommandIds)
+                                     ->orWhereIn('from_command_id', $zoneCommandIds);
+                            });
+                        })
                 ->latest()
                 ->first();
+                    
+                    Log::info('Command Duration - Add to Draft: Zone Coordinator draft lookup', [
+                        'zone_command_ids' => $zoneCommandIds,
+                        'found_deployment' => $deployment ? $deployment->id : null,
+                    ]);
+                }
+                // For Zone Coordinators, don't fall back to general drafts - create new one
+            } else {
+                // HRD: Get any draft deployment
+                $deployment = ManningDeployment::draft()
+                    ->latest()
+                    ->first();
+            }
 
             if (!$deployment) {
+                Log::info('Command Duration - Add to Draft: Creating new draft deployment', [
+                    'isZoneCoordinator' => $isZoneCoordinator && !$isHRD,
+                    'routePrefix' => $routePrefix,
+                ]);
                 $datePrefix = 'DEP-' . date('Y') . '-' . date('md') . '-';
                 $lastDeployment = ManningDeployment::where('deployment_number', 'LIKE', $datePrefix . '%')
                     ->orderBy('deployment_number', 'desc')
@@ -264,72 +534,197 @@ class CommandDurationController extends Controller
                     'status' => 'DRAFT',
                     'created_by' => auth()->id(),
                 ]);
+                Log::info('Command Duration - Add to Draft: Created new draft deployment', [
+                    'deployment_id' => $deployment->id,
+                    'deployment_number' => $deploymentNumber,
+                    'created_by' => auth()->id(),
+                    'routePrefix' => $routePrefix,
+                ]);
+            } else {
+                Log::info('Command Duration - Add to Draft: Using existing draft deployment', [
+                    'deployment_id' => $deployment->id,
+                    'deployment_number' => $deployment->deployment_number,
+                    'created_by' => $deployment->created_by,
+                    'routePrefix' => $routePrefix,
+                ]);
             }
 
             // Add officers to draft
             $added = 0;
-            $skipped = 0;
+            $skipped = [];
+            $skippedNames = [];
             foreach ($eligible as $officer) {
                 $fromCommand = $officer->presentStation;
 
-                // Check if officer is already in this deployment
-                $existing = ManningDeploymentAssignment::where('manning_deployment_id', $deployment->id)
-                    ->where('officer_id', $officer->id)
+                // Check if officer is in a PUBLISHED deployment (they're actually posted)
+                $inPublishedDeployment = ManningDeploymentAssignment::where('officer_id', $officer->id)
+                    ->whereHas('deployment', function($q) {
+                        $q->where('status', 'PUBLISHED');
+                    })
+                    ->exists();
+
+                if ($inPublishedDeployment) {
+                    $skipped[] = $officer->full_name . ' (already posted)';
+                    $skippedNames[] = $officer->full_name;
+                    Log::info('Command Duration - Add to Draft: Officer in published deployment (already posted)', [
+                        'officer_id' => $officer->id,
+                        'officer_name' => $officer->full_name,
+                    ]);
+                    continue;
+                }
+
+                // Check if officer is already in ANY draft deployment (skip them)
+                $inDraftDeployment = ManningDeploymentAssignment::where('officer_id', $officer->id)
+                    ->whereHas('deployment', function($q) {
+                        $q->where('status', 'DRAFT');
+                    })
                     ->first();
 
-                if (!$existing) {
-                    // Use from_command_id as temporary to_command_id (database requires NOT NULL)
-                    // HRD will change this in the draft view to the actual destination
-                    $tempToCommandId = $fromCommand?->id;
-                    
-                    // If no from_command, we need a valid command - use the search command as fallback
-                    if (!$tempToCommandId) {
-                        $searchCommand = Command::find($request->command_id);
-                        $tempToCommandId = $searchCommand?->id;
-                    }
-                    
-                    if (!$tempToCommandId) {
-                        // Skip if we can't determine a command
-                        continue;
-                    }
-                    
-                    ManningDeploymentAssignment::create([
-                        'manning_deployment_id' => $deployment->id,
-                        'manning_request_id' => null, // Not from manning request
-                        'manning_request_item_id' => null,
+                if ($inDraftDeployment) {
+                    $skipped[] = $officer->full_name . ' (already in draft)';
+                    $skippedNames[] = $officer->full_name;
+                    Log::info('Command Duration - Add to Draft: Officer already in draft deployment (skipping)', [
                         'officer_id' => $officer->id,
-                        'from_command_id' => $fromCommand?->id,
-                        'to_command_id' => $tempToCommandId, // Temporary: same as from_command, HRD will change in draft view
-                        'rank' => $officer->substantive_rank,
-                        'notes' => 'Added from Command Duration search - Destination to be selected',
+                        'officer_name' => $officer->full_name,
+                        'existing_deployment_id' => $inDraftDeployment->manning_deployment_id,
+                        'existing_assignment_id' => $inDraftDeployment->id,
                     ]);
-                    $added++;
-                } else {
-                    $skipped++;
+                    continue;
                 }
+
+                // Now add the officer to draft
+                // Use from_command_id as temporary to_command_id (database requires NOT NULL)
+                // HRD will change this in the draft view to the actual destination
+                $tempToCommandId = $fromCommand?->id;
+                
+                // If no from_command, we need a valid command - use the search command as fallback
+                if (!$tempToCommandId) {
+                    $searchCommand = Command::find($request->command_id);
+                    $tempToCommandId = $searchCommand?->id;
+                }
+                
+                if (!$tempToCommandId) {
+                    $skipped[] = $officer->full_name . ' (cannot determine command)';
+                    $skippedNames[] = $officer->full_name;
+                    Log::warning('Command Duration - Add to Draft: Skipping officer - cannot determine command', [
+                        'officer_id' => $officer->id,
+                        'officer_name' => $officer->full_name,
+                    ]);
+                    // Skip if we can't determine a command
+                    continue;
+                }
+                
+                ManningDeploymentAssignment::create([
+                    'manning_deployment_id' => $deployment->id,
+                    'manning_request_id' => null, // Not from manning request
+                    'manning_request_item_id' => null,
+                    'officer_id' => $officer->id,
+                    'from_command_id' => $fromCommand?->id,
+                    'to_command_id' => $tempToCommandId, // Temporary: same as from_command, HRD will change in draft view
+                    'rank' => $officer->substantive_rank,
+                    'notes' => 'Added from Command Duration search - Destination to be selected',
+                ]);
+                $added++;
+                Log::info('Command Duration - Add to Draft: Added officer to draft', [
+                    'officer_id' => $officer->id,
+                    'officer_name' => $officer->full_name,
+                    'deployment_id' => $deployment->id,
+                    'from_command_id' => $fromCommand?->id,
+                    'to_command_id' => $tempToCommandId,
+                ]);
             }
 
             DB::commit();
 
+            Log::info('Command Duration - Add to Draft: Transaction committed', [
+                'added' => $added,
+                'skipped_count' => count($skipped),
+                'skipped' => $skipped,
+                'routePrefix' => $routePrefix,
+                'deployment_id' => $deployment->id,
+            ]);
+
+            // Build success message with details
+            $message = '';
             if ($added > 0) {
                 $message = "{$added} officer(s) added to draft deployment.";
-                if ($skipped > 0) {
-                    $message .= " {$skipped} officer(s) were already in the draft.";
+            }
+            
+            if (!empty($skipped)) {
+                if ($message) {
+                    $message .= ' ';
                 }
-                return redirect()->route('hrd.manning-deployments.draft')
+                $message .= count($skipped) . ' officer(s) skipped: ' . implode(', ', $skipped);
+            }
+
+            // Get zone_id from command to redirect back with proper parameters
+            $command = Command::find($request->command_id);
+            $redirectParams = [
+                'command_id' => $request->command_id,
+            ];
+            
+            if ($command) {
+                $redirectParams['zone_id'] = $command->zone_id;
+            }
+
+            if ($added > 0) {
+                $redirectRoute = $routePrefix . '.manning-deployments.draft';
+                Log::info('Command Duration - Add to Draft: Redirecting to draft page', [
+                    'route' => $redirectRoute,
+                    'routePrefix' => $routePrefix,
+                    'message' => $message,
+                    'added' => $added,
+                    'skipped_count' => count($skipped),
+                ]);
+                
+                return redirect()->route($redirectRoute)
                     ->with('success', $message);
             } else {
-                return back()->with('info', 'No new officers added. All selected officers are already in the draft.');
+                Log::info('Command Duration - Add to Draft: No officers added, redirecting back to search', [
+                    'routePrefix' => $routePrefix,
+                    'skipped_count' => count($skipped),
+                    'skipped' => $skipped,
+                ]);
+                
+                // If all officers were skipped, show info message with details
+                $infoMessage = !empty($skipped) 
+                    ? 'No new officers added. ' . implode(', ', $skipped) . '.'
+                    : 'No new officers added. All selected officers are already in the draft.';
+                
+                return redirect()->route($routePrefix . '.command-duration.index', $redirectParams)
+                    ->with('info', $infoMessage);
             }
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to add officers to draft from command duration: ' . $e->getMessage(), [
-                'exception' => $e,
-                'officer_ids' => $officerIds,
+            Log::error('Command Duration - Add to Draft: Exception occurred', [
+                'exception' => $e->getMessage(),
+                'exception_trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+                'routePrefix' => $routePrefix ?? 'unknown',
+                'command_id' => $request->command_id ?? null,
+                'officer_ids' => $officerIds ?? [],
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
 
-            return back()->withErrors(['error' => 'Failed to add officers to draft. Please try again.']);
+            // Get zone_id from command to redirect back with proper parameters
+            $command = Command::find($request->command_id);
+            $redirectParams = [
+                'command_id' => $request->command_id,
+            ];
+            
+            if ($command) {
+                $redirectParams['zone_id'] = $command->zone_id;
+            }
+
+            Log::info('Command Duration - Add to Draft: Exception - Redirecting back to search', [
+                'routePrefix' => $routePrefix ?? 'unknown',
+                'redirectParams' => $redirectParams,
+            ]);
+
+            return redirect()->route($routePrefix . '.command-duration.index', $redirectParams)
+                ->withErrors(['error' => 'Failed to add officers to draft. Please try again.']);
         }
     }
 
@@ -349,6 +744,11 @@ class CommandDurationController extends Controller
         $zone = Zone::findOrFail($zoneId);
         $command = Command::findOrFail($commandId);
 
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        $validationService = app(ZonalPostingValidationService::class);
+
         // Build same query as search method
         $query = Officer::with(['presentStation.zone', 'currentPosting'])
             ->where('present_station', $commandId)
@@ -356,6 +756,14 @@ class CommandDurationController extends Controller
                 $q->where('command_id', $commandId)
                   ->where('is_current', true);
             });
+
+        // Filter for Zone Coordinators - verify command is in their zone
+        if ($isZoneCoordinator && !$isHRD) {
+            // Verify command is in zone
+            if (!$validationService->isCommandInZone($commandId, $user)) {
+                abort(403, 'Selected command is not in your zone.');
+            }
+        }
 
         // Apply same filters if provided
         if ($request->filled('rank')) {
@@ -388,6 +796,13 @@ class CommandDurationController extends Controller
         }
 
         $officers = $query->get();
+
+        // For Zone Coordinators, filter out officers above GL 07 (same as search method)
+        if ($isZoneCoordinator && !$isHRD) {
+            $officers = $officers->filter(function($officer) use ($validationService) {
+                return $validationService->isOfficerGL07OrBelow($officer->id);
+            })->values();
+        }
 
         // Calculate duration for each officer
         $officers = $officers->map(function($officer) {

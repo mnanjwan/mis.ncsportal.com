@@ -95,6 +95,19 @@
                         <input type="hidden" name="command_id" value="{{ $command->id }}"/>
                         <p class="text-xs text-secondary-foreground mt-1">This request is for your assigned command</p>
                 </div>
+                
+                <div class="flex flex-col gap-1">
+                    <label class="kt-form-label font-normal text-mono">Request Type <span class="text-danger">*</span></label>
+                    <input type="text" class="kt-input" value="{{ $request->type === 'ZONE' ? 'Zone Manning Level (GL 7 and Below Only)' : 'General Manning Level (All Ranks)' }}" disabled/>
+                    <input type="hidden" name="type" value="{{ $request->type ?? 'GENERAL' }}"/>
+                    <p class="text-xs text-secondary-foreground mt-1">
+                        @if($request->type === 'ZONE')
+                            <strong>Zone:</strong> Only ranks GL 7 and below: IC, AIC, CA I, CA II, CA III - processed by Zone Coordinator
+                        @else
+                            <strong>General:</strong> All ranks available - processed by HRD
+                        @endif
+                    </p>
+                </div>
                 @endif
                 
                 <div class="flex flex-col gap-4">
@@ -161,11 +174,23 @@ let itemCount = 0;
 const ranks = @json($ranks ?? []);
 const qualifications = @json($qualifications ?? []);
 const existingItems = @json($request->items ?? []);
+const requestType = '{{ $request->type ?? "GENERAL" }}';
+const zoneRanks = ['IC', 'AIC', 'CA I', 'CA II', 'CA III']; // GL 7 and below ranks
+
+// Get available ranks based on request type
+function getAvailableRanks(type) {
+    if (type === 'ZONE') {
+        return ranks.filter(rank => zoneRanks.includes(rank));
+    }
+    return ranks; // GENERAL - all ranks
+}
 
 // Item template
 function createItemTemplate(index, itemData = null) {
+    // Get available ranks based on request type
+    const availableRanks = getAvailableRanks(requestType);
     // Reverse ranks array to show latest rank on top (LIFO - Last In First Out)
-    const reversedRanks = [...ranks].reverse();
+    const reversedRanks = [...availableRanks].reverse();
     const ranksHtml = reversedRanks.map(rank => {
         const selected = itemData && itemData.rank === rank ? 'selected' : '';
         return `<option value="${rank}" ${selected}>${rank}</option>`;

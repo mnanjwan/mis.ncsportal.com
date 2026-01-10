@@ -4,9 +4,13 @@
 @section('page-title', 'Edit Movement Order')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @if(isset($routePrefix) && $routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @endif
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.movement-orders') }}">Movement Orders</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders') }}">Movement Orders</a>
     <span>/</span>
     <span class="text-primary">Edit</span>
 @endsection
@@ -15,7 +19,7 @@
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Back Button -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('hrd.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+            <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Movement Order
             </a>
         </div>
@@ -49,7 +53,7 @@
                 <h3 class="kt-card-title">Edit Movement Order</h3>
             </div>
             <div class="kt-card-content">
-                <form action="{{ route('hrd.movement-orders.update', $order->id) }}" method="POST" id="movement-order-form">
+                <form action="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.update', $order->id) }}" method="POST" id="movement-order-form">
                     @csrf
                     @method('PUT')
 
@@ -138,7 +142,7 @@
 
                         <!-- Form Actions -->
                         <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                            <a href="{{ route('hrd.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
+                            <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="kt-btn kt-btn-primary">

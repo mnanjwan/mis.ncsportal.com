@@ -4,9 +4,13 @@
 @section('page-title', 'Edit Staff Order')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @if(isset($routePrefix) && $routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @endif
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.staff-orders') }}">Staff Orders</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders') }}">Staff Orders</a>
     <span>/</span>
     <span class="text-primary">Edit</span>
 @endsection
@@ -15,7 +19,7 @@
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Back Button -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('hrd.staff-orders.show', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+            <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.show', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Order Details
             </a>
         </div>
@@ -49,7 +53,7 @@
                 <h3 class="kt-card-title">Edit Staff Order</h3>
             </div>
             <div class="kt-card-content">
-                <form action="{{ route('hrd.staff-orders.update', $order->id) }}" method="POST">
+                <form action="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.update', $order->id) }}" method="POST">
                     @csrf
                     @method('PUT')
 
@@ -79,7 +83,7 @@
                                     <span id="officer_select_text">
                                         @php
                                             $selectedOfficerId = old('officer_id', $order->officer_id);
-                                            $selectedOfficer = $officers->find($selectedOfficerId);
+                                            $selectedOfficer = $officers->firstWhere('id', $selectedOfficerId);
                                         @endphp
                                         {{ $selectedOfficer ? $selectedOfficer->initials . ' ' . $selectedOfficer->surname . ' (' . ($selectedOfficer->service_number ?? 'N/A') . ')' : 'Select an officer...' }}
                                     </span>
@@ -127,7 +131,7 @@
                                     <span id="from_command_select_text">
                                         @php
                                             $selectedFromCommandId = old('from_command_id', $order->from_command_id);
-                                            $selectedFromCommand = $commands->find($selectedFromCommandId);
+                                            $selectedFromCommand = $commands->firstWhere('id', $selectedFromCommandId);
                                         @endphp
                                         {{ $selectedFromCommand ? $selectedFromCommand->name . ($selectedFromCommand->zone ? ' (' . $selectedFromCommand->zone->name . ')' : '') : 'Select a command...' }}
                                     </span>
@@ -177,7 +181,7 @@
                                     <span id="to_command_select_text">
                                         @php
                                             $selectedToCommandId = old('to_command_id', $order->to_command_id);
-                                            $selectedToCommand = $commands->find($selectedToCommandId);
+                                            $selectedToCommand = $commands->firstWhere('id', $selectedToCommandId);
                                         @endphp
                                         {{ $selectedToCommand ? $selectedToCommand->name . ($selectedToCommand->zone ? ' (' . $selectedToCommand->zone->name . ')' : '') : 'Select a command...' }}
                                     </span>
@@ -271,7 +275,7 @@
 
                         <!-- Form Actions -->
                         <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                            <a href="{{ route('hrd.staff-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
+                            <a href="{{ route(($routePrefix ?? 'hrd') . '.staff-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="kt-btn kt-btn-primary">

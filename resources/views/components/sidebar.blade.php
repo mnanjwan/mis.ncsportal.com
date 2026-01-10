@@ -251,11 +251,12 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('zone-coordinator.dashboard')],
                 [
-                    'title' => 'Staff Orders',
-                    'icon' => 'ki-filled ki-file-up',
+                    'title' => 'Postings',
+                    'icon' => 'ki-filled ki-people',
                     'submenu' => [
-                        ['title' => 'View Orders', 'href' => route('zone-coordinator.staff-orders')],
-                        ['title' => 'Create Order', 'href' => route('zone-coordinator.staff-orders.create')],
+                        ['title' => 'Staff Orders', 'href' => route('zone-coordinator.staff-orders')],
+                        ['title' => 'Movement Orders', 'href' => route('zone-coordinator.movement-orders')],
+                        ['title' => 'Command Duration', 'href' => route('zone-coordinator.command-duration.index')],
                     ]
                 ],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Zone Officers', 'href' => route('zone-coordinator.officers')],
@@ -264,13 +265,20 @@
         case 'Staff Officer':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('staff-officer.dashboard')],
-                ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('staff-officer.leave-pass')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
+                [
+                    'title' => 'Postings',
+                    'icon' => 'ki-filled ki-file-up',
+                    'submenu' => [
+                        ['title' => 'Pending Release Letters', 'href' => route('staff-officer.postings.pending-release-letters')],
+                        ['title' => 'Pending Arrivals', 'href' => route('staff-officer.postings.pending-arrivals')],
+                    ]
+                ],
+                ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('staff-officer.leave-pass')],
                 ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('staff-officer.internal-staff-orders.index')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
                 ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('staff-officer.queries.index')],
-                ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
                 [
                     'title' => 'APER Forms',
                     'icon' => 'ki-filled ki-document',
@@ -279,6 +287,7 @@
                         ['title' => 'Review Rejected Forms', 'href' => route('staff-officer.aper-forms.review')],
                     ]
                 ],
+                ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
             ];
             break;
         case 'Assessor':

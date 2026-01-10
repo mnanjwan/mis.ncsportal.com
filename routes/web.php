@@ -40,6 +40,7 @@ use App\Http\Controllers\InvestigationController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\InternalStaffOrderController;
 use App\Http\Controllers\OfficerDeletionController;
+use App\Http\Controllers\CommandDurationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -215,6 +216,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/movement-orders/{id}', [MovementOrderController::class, 'update'])->name('movement-orders.update');
         Route::get('/movement-orders/{id}/eligible-officers', [MovementOrderController::class, 'eligibleOfficers'])->name('movement-orders.eligible-officers');
         Route::post('/movement-orders/{id}/post-officers', [MovementOrderController::class, 'postOfficers'])->name('movement-orders.post-officers');
+        Route::post('/movement-orders/{id}/add-to-draft', [MovementOrderController::class, 'addToDraft'])->name('movement-orders.add-to-draft');
         Route::post('/movement-orders/{id}/publish', [MovementOrderController::class, 'publish'])->name('movement-orders.publish');
 
         Route::get('/promotion-eligibility', [PromotionController::class, 'index'])->name('promotion-eligibility');
@@ -498,11 +500,42 @@ Route::middleware('auth')->group(function () {
     Route::prefix('zone-coordinator')->name('zone-coordinator.')->middleware('role:Zone Coordinator')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'zoneCoordinator'])->name('dashboard');
         Route::get('/officers', [OfficerController::class, 'zoneOfficers'])->name('officers');
+        Route::get('/officers/search', [OfficerController::class, 'search'])->name('officers.search');
+        
         // Staff Orders
         Route::get('/staff-orders', [StaffOrderController::class, 'index'])->name('staff-orders');
         Route::get('/staff-orders/create', [StaffOrderController::class, 'create'])->name('staff-orders.create');
         Route::post('/staff-orders', [StaffOrderController::class, 'store'])->name('staff-orders.store');
         Route::get('/staff-orders/{id}', [StaffOrderController::class, 'show'])->name('staff-orders.show');
+        Route::get('/staff-orders/{id}/edit', [StaffOrderController::class, 'edit'])->name('staff-orders.edit');
+        Route::put('/staff-orders/{id}', [StaffOrderController::class, 'update'])->name('staff-orders.update');
+        
+        // Movement Orders
+        Route::get('/movement-orders', [MovementOrderController::class, 'index'])->name('movement-orders');
+        Route::get('/movement-orders/create', [MovementOrderController::class, 'create'])->name('movement-orders.create');
+        Route::post('/movement-orders', [MovementOrderController::class, 'store'])->name('movement-orders.store');
+        Route::get('/movement-orders/{id}', [MovementOrderController::class, 'show'])->name('movement-orders.show');
+        Route::get('/movement-orders/{id}/edit', [MovementOrderController::class, 'edit'])->name('movement-orders.edit');
+        Route::put('/movement-orders/{id}', [MovementOrderController::class, 'update'])->name('movement-orders.update');
+        Route::get('/movement-orders/{id}/eligible-officers', [MovementOrderController::class, 'eligibleOfficers'])->name('movement-orders.eligible-officers');
+        Route::post('/movement-orders/{id}/post-officers', [MovementOrderController::class, 'postOfficers'])->name('movement-orders.post-officers');
+        Route::post('/movement-orders/{id}/add-to-draft', [MovementOrderController::class, 'addToDraft'])->name('movement-orders.add-to-draft');
+        Route::post('/movement-orders/{id}/publish', [MovementOrderController::class, 'publish'])->name('movement-orders.publish');
+        
+        // Command Duration
+        Route::get('/command-duration', [CommandDurationController::class, 'index'])->name('command-duration.index');
+        Route::match(['get', 'post'], '/command-duration/search', [CommandDurationController::class, 'search'])->name('command-duration.search');
+        Route::post('/command-duration/add-to-draft', [CommandDurationController::class, 'addToDraft'])->name('command-duration.add-to-draft');
+        Route::get('/command-duration/print', [CommandDurationController::class, 'print'])->name('command-duration.print');
+        
+        // Manning Deployments (for draft management)
+        Route::get('/manning-deployments/draft', [ManningRequestController::class, 'hrdDraftIndex'])->name('manning-deployments.draft');
+        Route::delete('/manning-deployments/{deploymentId}/remove-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftRemoveOfficer'])->name('manning-deployments.draft.remove-officer');
+        Route::post('/manning-deployments/{deploymentId}/swap-officer/{assignmentId}', [ManningRequestController::class, 'hrdDraftSwapOfficer'])->name('manning-deployments.draft.swap-officer');
+        Route::post('/manning-deployments/{deploymentId}/update-destination/{assignmentId}', [ManningRequestController::class, 'hrdDraftUpdateDestination'])->name('manning-deployments.draft.update-destination');
+        Route::post('/manning-deployments/{id}/publish', [ManningRequestController::class, 'hrdDraftPublish'])->name('manning-deployments.publish');
+        Route::get('/manning-deployments/{id}/print', [ManningRequestController::class, 'hrdDraftPrint'])->name('manning-deployments.print');
+        Route::get('/manning-deployments/published', [ManningRequestController::class, 'hrdPublishedIndex'])->name('manning-deployments.published');
     });
 
     // DC Admin Routes

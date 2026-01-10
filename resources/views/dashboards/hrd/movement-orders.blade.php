@@ -4,7 +4,11 @@
 @section('page-title', 'Movement Orders')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @if(isset($routePrefix) && $routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @endif
     <span>/</span>
     <span class="text-primary">Movement Orders</span>
 @endsection
@@ -16,7 +20,7 @@
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Movement Orders</h3>
                 <div class="kt-card-toolbar">
-                    <a href="{{ route('hrd.movement-orders.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                    <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
                         <i class="ki-filled ki-plus"></i> Create Movement Order
                     </a>
                 </div>
@@ -109,7 +113,10 @@
                                             {{ $order->manningRequest ? 'Request #' . $order->manningRequest->id : 'N/A' }}
                                         </td>
                                         <td class="py-3 px-4">
-                                            <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-sm">
+                                            @php
+                                                $isPublished = ($order->status ?? 'DRAFT') === 'PUBLISHED';
+                                            @endphp
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium {{ $isPublished ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-800 border border-gray-200' }}">
                                                 {{ $order->status ?? 'DRAFT' }}
                                             </span>
                                         </td>
@@ -118,12 +125,12 @@
                                         </td>
                                         <td class="py-3 px-4 text-right">
                                             <div class="flex items-center justify-end gap-2">
-                                                <a href="{{ route('hrd.movement-orders.show', $order->id) }}" 
+                                                <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}" 
                                                    class="kt-btn kt-btn-sm kt-btn-ghost">
                                                     View
                                                 </a>
                                                 @if($order->status !== 'CANCELLED' && $order->status !== 'PUBLISHED')
-                                                    <a href="{{ route('hrd.movement-orders.edit', $order->id) }}" 
+                                                    <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.edit', $order->id) }}" 
                                                        class="kt-btn kt-btn-sm kt-btn-secondary">
                                                         Edit
                                                     </a>
@@ -136,7 +143,7 @@
                                         <td colspan="6" class="py-12 text-center">
                                             <i class="ki-filled ki-abstract-26 text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground mb-4">No movement orders found</p>
-                                            <a href="{{ route('hrd.movement-orders.create') }}" class="kt-btn kt-btn-primary">
+                                            <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.create') }}" class="kt-btn kt-btn-primary">
                                                 Create First Movement Order
                                             </a>
                                         </td>

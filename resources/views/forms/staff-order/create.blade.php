@@ -102,7 +102,14 @@
 
                         <!-- Officer Selection (Searchable Select) -->
                         <div class="flex flex-col gap-1">
-                            <label class="kt-form-label">Officer <span class="text-danger">*</span></label>
+                            <div class="flex items-center justify-between">
+                                <label class="kt-form-label">Officer <span class="text-danger">*</span></label>
+                                @if($isZoneCoordinator ?? false)
+                                    <span class="text-xs text-secondary-foreground bg-blue-50 px-2 py-1 rounded">
+                                        <i class="ki-filled ki-information"></i> Showing only GL 07 and below officers in your zone
+                                    </span>
+                                @endif
+                            </div>
                             <div class="relative">
                                 <input type="hidden" name="officer_id" id="officer_id" value="{{ old('officer_id') }}" required>
                                 <button type="button" 
@@ -110,8 +117,15 @@
                                         class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('officer_id') border-danger @enderror">
                                     <span id="officer_select_text">
                                         @if(old('officer_id'))
-                                            @php $selectedOfficer = $officers->find(old('officer_id')); @endphp
-                                            {{ $selectedOfficer ? $selectedOfficer->initials . ' ' . $selectedOfficer->surname . ' (' . ($selectedOfficer->service_number ?? 'N/A') . ')' : 'Select an officer...' }}
+                                            @php $selectedOfficer = $officers->firstWhere('id', old('officer_id')); @endphp
+                                            @if($selectedOfficer)
+                                                {{ $selectedOfficer->initials . ' ' . $selectedOfficer->surname }} 
+                                                ({{ $selectedOfficer->service_number ?? 'N/A' }})
+                                                @if($selectedOfficer->salary_grade_level) - Grade: {{ $selectedOfficer->salary_grade_level }}@endif
+                                                @if($selectedOfficer->substantive_rank) - Rank: {{ $selectedOfficer->substantive_rank }}@endif
+                                            @else
+                                                Select an officer...
+                                            @endif
                                         @else
                                             Select an officer...
                                         @endif
@@ -137,16 +151,32 @@
                                                  data-id="{{ $officer->id }}" 
                                                  data-name="{{ $officer->initials }} {{ $officer->surname }}"
                                                  data-service="{{ $officer->service_number ?? 'N/A' }}"
+                                                 data-rank="{{ $officer->substantive_rank ?? 'N/A' }}"
+                                                 data-grade-level="{{ $officer->salary_grade_level ?? 'N/A' }}"
                                                  data-command-id="{{ $officer->present_station }}"
                                                  data-command-name="{{ $officer->presentStation->name ?? 'N/A' }}">
                                                 <div class="text-sm text-foreground font-medium">{{ $officer->initials }} {{ $officer->surname }}</div>
-                                                <div class="text-xs text-secondary-foreground">{{ $officer->service_number ?? 'N/A' }}@if($officer->presentStation) - {{ $officer->presentStation->name }}@endif</div>
+                                                <div class="text-xs text-secondary-foreground">
+                                                    {{ $officer->service_number ?? 'N/A' }}
+                                                    @if($officer->salary_grade_level)
+                                                        - Grade: {{ $officer->salary_grade_level }}
+                                                    @endif
+                                                    @if($officer->substantive_rank)
+                                                        - Rank: {{ $officer->substantive_rank }}
+                                                    @endif
+                                                    @if($officer->presentStation) - {{ $officer->presentStation->name }}@endif
+                                                </div>
                                             </div>
-                                @endforeach
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
-                            <span class="text-xs text-secondary-foreground">The "From Command" will be auto-filled when you select an officer.</span>
+                            <span class="text-xs text-secondary-foreground">
+                                The "From Command" will be auto-filled when you select an officer.
+                                @if($isZoneCoordinator ?? false)
+                                    <br><strong>Note:</strong> Only officers at GL 07 (IC) and below from commands in your zone are displayed.
+                                @endif
+                            </span>
                             @error('officer_id')
                                 <span class="text-sm text-danger">{{ $message }}</span>
                             @enderror
@@ -162,7 +192,7 @@
                                         class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('from_command_id') border-danger @enderror">
                                     <span id="from_command_select_text">
                                         @if(old('from_command_id'))
-                                            @php $selectedCommand = $commands->find(old('from_command_id')); @endphp
+                                            @php $selectedCommand = $commands->firstWhere('id', old('from_command_id')); @endphp
                                             {{ $selectedCommand ? $selectedCommand->name . ($selectedCommand->zone ? ' (' . $selectedCommand->zone->name . ')' : '') : 'Select a command...' }}
                                         @else
                                             Select a command (will auto-fill when officer is selected)...
@@ -213,7 +243,7 @@
                                         class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('to_command_id') border-danger @enderror">
                                     <span id="to_command_select_text">
                                         @if(old('to_command_id'))
-                                            @php $selectedCommand = $commands->find(old('to_command_id')); @endphp
+                                            @php $selectedCommand = $commands->firstWhere('id', old('to_command_id')); @endphp
                                             {{ $selectedCommand ? $selectedCommand->name . ($selectedCommand->zone ? ' (' . $selectedCommand->zone->name . ')' : '') : 'Select a command...' }}
                                         @else
                                             Select a command...
@@ -335,6 +365,8 @@
                         'id' => $officer->id,
                         'name' => $officer->initials . ' ' . $officer->surname,
                         'service_number' => $officer->service_number ?? 'N/A',
+                        'rank' => $officer->substantive_rank ?? 'N/A',
+                        'grade_level' => $officer->salary_grade_level ?? 'N/A',
                         'command_id' => $officer->present_station,
                         'command_name' => $officer->presentStation->name ?? 'N/A'
                     ];
@@ -385,6 +417,8 @@
                 
                 officerOptions.innerHTML = officersList.map(officer => {
                     const serviceText = officer.service_number !== 'N/A' ? officer.service_number : '';
+                    const gradeText = officer.grade_level !== 'N/A' ? ' - Grade: ' + officer.grade_level : '';
+                    const rankText = officer.rank !== 'N/A' ? ' - Rank: ' + officer.rank : '';
                     const commandText = officer.command_name !== 'N/A' ? ' - ' + officer.command_name : '';
                     
                     return `
@@ -392,10 +426,12 @@
                              data-id="${officer.id}" 
                              data-name="${officer.name}"
                              data-service="${officer.service_number}"
+                             data-rank="${officer.rank}"
+                             data-grade-level="${officer.grade_level}"
                              data-command-id="${officer.command_id}"
                              data-command-name="${officer.command_name}">
                             <div class="text-sm text-foreground font-medium">${officer.name}</div>
-                            <div class="text-xs text-secondary-foreground">${serviceText}${commandText}</div>
+                            <div class="text-xs text-secondary-foreground">${serviceText}${gradeText}${rankText}${commandText}</div>
                         </div>
                     `;
                 }).join('');
@@ -413,7 +449,11 @@
                         officerHiddenInput.value = id;
                         
                         // Update display text
-                        const displayText = name + (service !== 'N/A' ? ' (' + service + ')' : '');
+                        const rank = this.dataset.rank;
+                        const gradeLevel = this.dataset.gradeLevel;
+                        const rankDisplay = rank && rank !== 'N/A' ? ' - ' + rank : '';
+                        const gradeDisplay = gradeLevel && gradeLevel !== 'N/A' ? ' (' + gradeLevel + ')' : '';
+                        const displayText = name + (service !== 'N/A' ? ' (' + service + ')' : '') + rankDisplay + gradeDisplay;
                         officerSelectText.textContent = displayText;
                         
                         // Close dropdown
@@ -442,8 +482,10 @@
                     const filtered = officers.filter(officer => {
                         const nameMatch = officer.name.toLowerCase().includes(searchTerm);
                         const serviceMatch = officer.service_number && officer.service_number.toLowerCase().includes(searchTerm);
+                        const rankMatch = officer.rank && officer.rank.toLowerCase().includes(searchTerm);
+                        const gradeMatch = officer.grade_level && officer.grade_level.toLowerCase().includes(searchTerm);
                         const commandMatch = officer.command_name && officer.command_name.toLowerCase().includes(searchTerm);
-                        return nameMatch || serviceMatch || commandMatch;
+                        return nameMatch || serviceMatch || rankMatch || gradeMatch || commandMatch;
                     });
                     
                     renderOfficerOptions(filtered);
@@ -626,7 +668,9 @@
             @if(old('officer_id'))
                 const selectedOfficer = officers.find(o => o.id == {{ old('officer_id') }});
                 if (selectedOfficer) {
-                    const displayText = selectedOfficer.name + (selectedOfficer.service_number !== 'N/A' ? ' (' + selectedOfficer.service_number + ')' : '');
+                    const rankDisplay = selectedOfficer.rank && selectedOfficer.rank !== 'N/A' ? ' - ' + selectedOfficer.rank : '';
+                    const gradeDisplay = selectedOfficer.grade_level && selectedOfficer.grade_level !== 'N/A' ? ' (' + selectedOfficer.grade_level + ')' : '';
+                    const displayText = selectedOfficer.name + (selectedOfficer.service_number !== 'N/A' ? ' (' + selectedOfficer.service_number + ')' : '') + rankDisplay + gradeDisplay;
                     officerSelectText.textContent = displayText;
                 }
             @endif

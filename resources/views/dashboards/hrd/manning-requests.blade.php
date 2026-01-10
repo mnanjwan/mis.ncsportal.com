@@ -56,9 +56,18 @@
     <!-- Manning Requests Card -->
     <div class="kt-card">
         <div class="kt-card-header">
-            <h3 class="kt-card-title">Approved Manning Requests</h3>
+            <h3 class="kt-card-title">Approved Manning Requests (General Type Only)</h3>
+            <div class="kt-card-toolbar">
+                <span class="kt-badge kt-badge-info kt-badge-sm">General Manning Level</span>
+            </div>
         </div>
         <div class="kt-card-content">
+            <div class="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
+                <p class="text-sm text-info">
+                    <i class="ki-filled ki-information"></i> 
+                    <strong>Note:</strong> This page shows only General Manning Level requests (all ranks). Zone Manning Level requests (GL 7 and below) are handled by Zone Coordinators via Movement Orders.
+                </p>
+            </div>
             <!-- Tabs -->
             <div class="flex border-b border-border mb-5">
                 <a href="{{ request()->fullUrlWithQuery(['tab' => 'pending']) }}" 

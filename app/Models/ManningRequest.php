@@ -11,6 +11,7 @@ class ManningRequest extends Model
 
     protected $fillable = [
         'command_id',
+        'type',
         'requested_by',
         'status',
         'notes',

@@ -165,6 +165,39 @@ class OfficerController extends Controller
             });
         }
         
+        // For Zone Coordinators: filter officers to only show those in their zone (GL 07 and below)
+        $user = auth()->user();
+        $path = request()->path();
+        $routeName = request()->route() ? request()->route()->getName() : '';
+        
+        $isZoneCoordinatorRoute = (strpos($path, 'zone-coordinator/') === 0) || 
+                                   (strpos($routeName, 'zone-coordinator.') === 0);
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        
+        if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD) {
+            $validationService = app(\App\Services\ZonalPostingValidationService::class);
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (!empty($zoneCommandIds)) {
+                // Filter officers to only show those currently in the zone and GL 07 and below
+                $officersQuery->whereIn('present_station', $zoneCommandIds);
+                $officersQuery->where(function($q) {
+                    $q->where('salary_grade_level', 'GL05')
+                      ->orWhere('salary_grade_level', 'GL06')
+                      ->orWhere('salary_grade_level', 'GL07')
+                      ->orWhere('salary_grade_level', '05')
+                      ->orWhere('salary_grade_level', '06')
+                      ->orWhere('salary_grade_level', '07')
+                      ->orWhereRaw("CAST(SUBSTRING(salary_grade_level, 3) AS UNSIGNED) <= 7")
+                      ->orWhereRaw("CAST(salary_grade_level AS UNSIGNED) <= 7");
+                });
+            } else {
+                // No zone commands - return empty results
+                $officersQuery->whereRaw('1 = 0');
+            }
+        }
+        
         // Exclude officers already in the draft deployment
         // Get all officer IDs currently in draft deployments
         $officersInDraft = \App\Models\ManningDeploymentAssignment::whereHas('deployment', function($q) {

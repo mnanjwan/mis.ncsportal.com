@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\StaffOrder;
 use App\Services\PostingWorkflowService;
 use App\Services\NotificationService;
+use App\Services\ZonalPostingValidationService;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class StaffOrderController extends Controller
 {
@@ -104,7 +107,15 @@ class StaffOrderController extends Controller
         $isHRD = $user->hasRole('HRD');
         
         // Get officers with their present station (command)
+        // Only active officers who are not suspended, dismissed, interdicted, or under investigation
         $officersQuery = \App\Models\Officer::where('is_active', true)
+            ->where('suspended', false)
+            ->where('dismissed', false)
+            ->where('interdicted', false)
+            ->where(function($q) {
+                $q->whereNull('ongoing_investigation')
+                  ->orWhere('ongoing_investigation', false);
+            })
             ->with('presentStation.zone');
         
         // Get commands
@@ -112,53 +123,70 @@ class StaffOrderController extends Controller
             ->with('zone');
         
         // Filter for Zone Coordinators
-        if ($isZoneCoordinator && !$isHRD) {
-            // Get the zone coordinator's zone from their command assignment
-            $zoneCoordinatorRole = $user->roles()
-                ->where('name', 'Zone Coordinator')
-                ->wherePivot('is_active', true)
-                ->first();
+        $validationService = app(ZonalPostingValidationService::class);
+        $zoneCoordinatorZone = $validationService->getZoneCoordinatorZone($user);
+        
+        // Check if accessing via zone-coordinator route (route middleware ensures Zone Coordinator role)
+        $isZoneCoordinatorRoute = request()->is('zone-coordinator/*');
+        $shouldApplyZoneFiltering = $isZoneCoordinator && $zoneCoordinatorZone;
+        
+        if ($shouldApplyZoneFiltering || ($isZoneCoordinatorRoute && $zoneCoordinatorZone)) {
+            // Filter commands to only show those in coordinator's zone
+            $commandsQuery->where('zone_id', $zoneCoordinatorZone->id);
             
-            if ($zoneCoordinatorRole && $zoneCoordinatorRole->pivot->command_id) {
-                $coordinatorCommand = \App\Models\Command::find($zoneCoordinatorRole->pivot->command_id);
-                $coordinatorZone = $coordinatorCommand ? $coordinatorCommand->zone : null;
-                
-                if ($coordinatorZone) {
-                    // Filter commands to only show those in coordinator's zone
-                    $commandsQuery->where('zone_id', $coordinatorZone->id);
-                    
-                    // Filter officers to only show:
-                    // 1. Officers in commands within coordinator's zone
-                    // 2. Officers with GL 07 and below
-                    $zoneCommandIds = \App\Models\Command::where('zone_id', $coordinatorZone->id)
-                        ->pluck('id')
-                        ->toArray();
-                    
-                    $officersQuery->whereIn('present_station', $zoneCommandIds)
-                        ->where(function($q) {
-                            // GL 07 and below only
-                            $q->where('salary_grade_level', 'GL05')
-                              ->orWhere('salary_grade_level', 'GL06')
-                              ->orWhere('salary_grade_level', 'GL07')
-                              ->orWhere('salary_grade_level', '05')
-                              ->orWhere('salary_grade_level', '06')
-                              ->orWhere('salary_grade_level', '07')
-                              ->orWhereRaw("CAST(SUBSTRING(salary_grade_level, 3) AS UNSIGNED) <= 7")
-                              ->orWhereRaw("CAST(salary_grade_level AS UNSIGNED) <= 7");
-                        });
-                }
+            // Get zone command IDs
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (!empty($zoneCommandIds)) {
+                // Filter officers in zone commands
+                $officersQuery->whereIn('present_station', $zoneCommandIds);
             }
         }
         
         $officers = $officersQuery->orderBy('surname')->orderBy('initials')->get();
         $commands = $commandsQuery->orderBy('name')->get();
         
+        // For Zone Coordinators accessing via zone-coordinator routes, ALWAYS filter out officers above GL 07
+        if ($shouldApplyZoneFiltering || ($isZoneCoordinatorRoute && $zoneCoordinatorZone)) {
+            $initialCount = $officers->count();
+            
+            // Filter officers: only keep those at GL 07 and below
+            $filteredOfficers = collect();
+            $excludedOfficers = [];
+            foreach ($officers as $officer) {
+                $isGL07OrBelow = $validationService->isOfficerGL07OrBelow($officer->id);
+                if ($isGL07OrBelow) {
+                    $filteredOfficers->push($officer);
+                } else {
+                    $excludedOfficers[] = [
+                        'service' => $officer->service_number,
+                        'rank' => $officer->substantive_rank,
+                        'grade' => $officer->salary_grade_level
+                    ];
+                }
+            }
+            $officers = $filteredOfficers;
+            
+            // Log for debugging
+            if ($initialCount != $officers->count()) {
+                Log::info('Zone Coordinator GL 07 filtering applied', [
+                    'total_officers_before_filter' => $initialCount,
+                    'officers_after_gl07_filter' => $officers->count(),
+                    'filtered_out' => $initialCount - $officers->count(),
+                    'excluded_officers' => $excludedOfficers,
+                ]);
+            }
+        }
+        
         // Generate order number (format: SO-YYYY-MMDD-XXX)
         $lastOrder = StaffOrder::orderBy('created_at', 'desc')->first();
         $orderNumber = 'SO-' . date('Y') . '-' . date('md') . '-' . str_pad(($lastOrder ? (int)substr($lastOrder->order_number, -3) + 1 : 1), 3, '0', STR_PAD_LEFT);
         
-        // Determine route prefix based on role
-        $routePrefix = $isZoneCoordinator && !$isHRD ? 'zone-coordinator' : 'hrd';
+        // Determine route prefix based on route (not just role)
+        $isZoneCoordinatorRoute = request()->is('zone-coordinator/*');
+        $routePrefix = $isZoneCoordinatorRoute ? 'zone-coordinator' : 'hrd';
+        // Override isZoneCoordinator flag for view if accessing via zone-coordinator route
+        $isZoneCoordinatorForView = $isZoneCoordinatorRoute ? true : ($isZoneCoordinator && !$isHRD);
         
         return view('forms.staff-order.create', compact('officers', 'commands', 'orderNumber', 'isZoneCoordinator', 'routePrefix'));
     }
@@ -243,15 +271,33 @@ class StaffOrderController extends Controller
                     // Check officer's grade level (GL 07 and below only)
                     $officer = \App\Models\Officer::find($validated['officer_id']);
                     if ($officer) {
-                        $gradeLevelStr = $officer->salary_grade_level ?? '';
-                        // Extract numeric part (handle formats like "GL07", "07", "7", etc.)
-                        preg_match('/(\d+)/', $gradeLevelStr, $matches);
-                        $gradeLevel = isset($matches[1]) ? (int)$matches[1] : 99;
+                        $validationService = app(ZonalPostingValidationService::class);
                         
-                        if ($gradeLevel > 7) {
+                        // Rank ceiling check
+                        if (!$validationService->isOfficerGL07OrBelow($officer->id)) {
+                            $gradeLevelStr = $officer->salary_grade_level ?? 'Unknown';
                             return redirect()->back()
                                 ->withInput()
                                 ->with('error', 'Zone Coordinators can only post officers of GL 07 and below. This officer is ' . $gradeLevelStr . '.');
+                        }
+                        
+                        // Command duration check
+                        if (!$validationService->checkCommandDuration($officer->id)) {
+                            $message = $validationService->getCommandDurationMessage($officer->id);
+                            // Only show error if there's a specific message
+                            if ($message) {
+                                return redirect()->back()
+                                    ->withInput()
+                                    ->with('error', 'Officer has not completed minimum command duration. ' . $message);
+                            }
+                        }
+                        
+                        // Manning level check
+                        if (!$validationService->checkManningLevel($validated['from_command_id'], $validated['to_command_id'], $officer->id)) {
+                            $message = $validationService->getManningLevelMessage($validated['from_command_id'], $validated['to_command_id'], $officer->id);
+                            return redirect()->back()
+                                ->withInput()
+                                ->with('error', 'This posting violates manning level requirements. ' . $message);
                         }
                     }
                 } else {
@@ -307,14 +353,86 @@ class StaffOrderController extends Controller
         
         $order = StaffOrder::with(['officer', 'fromCommand', 'toCommand'])
             ->findOrFail($id);
-        $officers = \App\Models\Officer::where('is_active', true)
-            ->orderBy('surname')
-            ->get();
-        $commands = \App\Models\Command::where('is_active', true)
-            ->orderBy('name')
-            ->get();
         
-        return view('forms.staff-order.edit', compact('order', 'officers', 'commands'));
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        
+        // Get officers with their present station (command)
+        // Only active officers who are not suspended, dismissed, interdicted, or under investigation
+        $officersQuery = \App\Models\Officer::where('is_active', true)
+            ->where('suspended', false)
+            ->where('dismissed', false)
+            ->where('interdicted', false)
+            ->where(function($q) {
+                $q->whereNull('ongoing_investigation')
+                  ->orWhere('ongoing_investigation', false);
+            })
+            ->with('presentStation.zone');
+        
+        // Get commands
+        $commandsQuery = \App\Models\Command::where('is_active', true)
+            ->with('zone');
+        
+        // Filter for Zone Coordinators
+        $validationService = app(ZonalPostingValidationService::class);
+        $zoneCoordinatorZone = $validationService->getZoneCoordinatorZone($user);
+        
+        // Check if accessing via zone-coordinator route (route middleware ensures Zone Coordinator role)
+        $isZoneCoordinatorRoute = request()->is('zone-coordinator/*');
+        $shouldApplyZoneFiltering = $isZoneCoordinator && $zoneCoordinatorZone;
+        
+        if ($shouldApplyZoneFiltering || ($isZoneCoordinatorRoute && $zoneCoordinatorZone)) {
+            // Filter commands to only show those in coordinator's zone
+            $commandsQuery->where('zone_id', $zoneCoordinatorZone->id);
+            
+            // Get zone command IDs
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (!empty($zoneCommandIds)) {
+                // Filter officers in zone commands
+                $officersQuery->whereIn('present_station', $zoneCommandIds);
+            }
+        }
+        
+        $officers = $officersQuery->orderBy('surname')->orderBy('initials')->get();
+        $commands = $commandsQuery->orderBy('name')->get();
+        
+        // For Zone Coordinators accessing via zone-coordinator routes, ALWAYS filter out officers above GL 07
+        // But always include the current order's officer even if they don't match filters
+        if ($shouldApplyZoneFiltering || ($isZoneCoordinatorRoute && $zoneCoordinatorZone)) {
+            $filteredOfficers = collect();
+            $currentOrderOfficerId = $order->officer_id;
+            
+            // Ensure current order's officer is in the collection for display purposes
+            $currentOrderOfficer = $order->officer;
+            if ($currentOrderOfficer && !$officers->contains('id', $currentOrderOfficerId)) {
+                $officers->push($currentOrderOfficer);
+            }
+            
+            foreach ($officers as $officer) {
+                $isGL07OrBelow = $validationService->isOfficerGL07OrBelow($officer->id);
+                // Include officer if they're GL 07 or below, OR if they're the current order's officer
+                if ($isGL07OrBelow || $officer->id == $currentOrderOfficerId) {
+                    $filteredOfficers->push($officer);
+                }
+            }
+            $officers = $filteredOfficers;
+        }
+        
+        // Ensure current order's commands are in the commands collection
+        if ($order->fromCommand && !$commands->contains('id', $order->from_command_id)) {
+            $commands->push($order->fromCommand);
+        }
+        if ($order->toCommand && !$commands->contains('id', $order->to_command_id)) {
+            $commands->push($order->toCommand);
+        }
+        
+        // Determine route prefix based on route (not just role)
+        $isZoneCoordinatorRoute = request()->is('zone-coordinator/*');
+        $routePrefix = $isZoneCoordinatorRoute ? 'zone-coordinator' : 'hrd';
+        
+        return view('forms.staff-order.edit', compact('order', 'officers', 'commands', 'routePrefix'));
     }
 
     public function update(Request $request, $id)
@@ -334,6 +452,80 @@ class StaffOrderController extends Controller
             'status' => 'nullable|in:DRAFT,PUBLISHED,CANCELLED',
         ]);
 
+        // Zone Coordinator validation
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        
+        if ($isZoneCoordinator) {
+            // Get the zone coordinator's zone from their command assignment
+            $zoneCoordinatorRole = $user->roles()->where('name', 'Zone Coordinator')->wherePivot('is_active', true)->first();
+            
+            if ($zoneCoordinatorRole && $zoneCoordinatorRole->pivot->command_id) {
+                $coordinatorCommand = \App\Models\Command::find($zoneCoordinatorRole->pivot->command_id);
+                $coordinatorZone = $coordinatorCommand ? $coordinatorCommand->zone : null;
+                
+                if ($coordinatorZone) {
+                    // Get from and to commands
+                    $fromCommand = \App\Models\Command::find($validated['from_command_id']);
+                    $toCommand = \App\Models\Command::find($validated['to_command_id']);
+                    
+                    // Validate both commands are in coordinator's zone
+                    if (!$fromCommand || $fromCommand->zone_id != $coordinatorZone->id) {
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'You can only post officers within your zone. The source command is not in your zone.');
+                    }
+                    
+                    if (!$toCommand || $toCommand->zone_id != $coordinatorZone->id) {
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'You can only post officers within your zone. The destination command is not in your zone.');
+                    }
+                    
+                    // Check officer's grade level (GL 07 and below only)
+                    $officer = \App\Models\Officer::find($validated['officer_id']);
+                    if ($officer) {
+                        $validationService = app(ZonalPostingValidationService::class);
+                        
+                        // Rank ceiling check
+                        if (!$validationService->isOfficerGL07OrBelow($officer->id)) {
+                            $gradeLevelStr = $officer->salary_grade_level ?? 'Unknown';
+                            return redirect()->back()
+                                ->withInput()
+                                ->with('error', 'Zone Coordinators can only post officers of GL 07 and below. This officer is ' . $gradeLevelStr . '.');
+                        }
+                        
+                        // Command duration check
+                        if (!$validationService->checkCommandDuration($officer->id)) {
+                            $message = $validationService->getCommandDurationMessage($officer->id);
+                            // Only show error if there's a specific message
+                            if ($message) {
+                                return redirect()->back()
+                                    ->withInput()
+                                    ->with('error', 'Officer has not completed minimum command duration. ' . $message);
+                            }
+                        }
+                        
+                        // Manning level check (now only checks destination capacity)
+                        if (!$validationService->checkManningLevel($validated['from_command_id'], $validated['to_command_id'], $officer->id)) {
+                            $message = $validationService->getManningLevelMessage($validated['from_command_id'], $validated['to_command_id'], $officer->id);
+                            return redirect()->back()
+                                ->withInput()
+                                ->with('error', 'This posting violates manning level requirements. ' . $message);
+                        }
+                    }
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Your assigned command does not have a zone. Please contact HRD.');
+                }
+            } else {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'You must be assigned to a command to post officers. Please contact HRD.');
+            }
+        }
+
         // Check if status is changing to PUBLISHED before updating
         $oldStatus = $order->status;
         $newStatus = $validated['status'] ?? $order->status;
@@ -348,11 +540,16 @@ class StaffOrderController extends Controller
                 $workflowService->processStaffOrder($order);
             } catch (\Exception $e) {
                 // Log error but don't fail the update
-                \Log::error("Workflow automation failed: " . $e->getMessage());
+                Log::error("Workflow automation failed: " . $e->getMessage());
             }
         }
 
-        return redirect()->route('hrd.staff-orders.show', $order->id)
+        // Determine redirect route based on user role
+        $isHRD = $user->hasRole('HRD');
+        $isZoneCoordinatorRoute = request()->is('zone-coordinator/*');
+        $redirectRoute = ($isZoneCoordinatorRoute || ($isZoneCoordinator && !$isHRD)) ? 'zone-coordinator.staff-orders.show' : 'hrd.staff-orders.show';
+
+        return redirect()->route($redirectRoute, $order->id)
             ->with('success', 'Staff order updated successfully!');
     }
 }

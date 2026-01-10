@@ -16,6 +16,7 @@ use App\Models\Command;
 use App\Services\NotificationService;
 use App\Services\PostingWorkflowService;
 use App\Services\RankComparisonService;
+use App\Services\ZonalPostingValidationService;
 
 class ManningRequestController extends Controller
 {
@@ -75,26 +76,40 @@ class ManningRequestController extends Controller
             $query->where('status', $request->status);
         }
 
+        // Filter by type if provided
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
         $requests = $query->paginate(20)->withQueryString();
 
         // Calculate approved officers count by rank across all approved requests
-        // This shows how many officers HRD has matched for each rank vs how many were requested
-        // Note: When HRD matches multiple officers for one item, they create additional items
+        // This shows how many officers HRD/Zone Coordinator has matched for each rank vs how many were requested
+        // Note: When HRD/Zone Coordinator matches multiple officers for one item, they create additional items
         // So we count items with matched_officer_id for approved count
         $allItems = ManningRequestItem::whereHas('manningRequest', function ($q) use ($commandId) {
             $q->where('command_id', $commandId)
                 ->where('status', 'APPROVED');
         })
+            ->with('manningRequest')
             ->get();
 
-        // Group by rank and calculate requested vs approved
+        // Group by rank and type, then calculate requested vs approved
         $approvedOfficersByRank = $allItems->groupBy('rank')->map(function ($items, $rank) {
             $requested = $items->sum('quantity_needed');
             $approved = $items->whereNotNull('matched_officer_id')->count(); // Count matched officers
+            
+            // Get types for this rank (should be consistent, but showing both if mixed)
+            $types = $items->pluck('manningRequest.type')->unique()->values()->toArray();
+            $typeLabel = count($types) === 1 
+                ? ($types[0] === 'ZONE' ? 'Zone' : 'General') 
+                : 'Mixed';
+            
             return (object) [
                 'rank' => $rank,
                 'requested_count' => $requested,
-                'approved_count' => $approved
+                'approved_count' => $approved,
+                'type' => $typeLabel
             ];
         })->values()->sortBy('rank');
 
@@ -192,6 +207,7 @@ class ManningRequestController extends Controller
         }
 
         $request->validate([
+            'type' => 'required|in:GENERAL,ZONE',
             'notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.rank' => 'required|string|max:100',
@@ -200,6 +216,24 @@ class ManningRequestController extends Controller
             'items.*.qualification_requirement' => 'nullable|string|max:255',
             'items.*.qualification_custom' => 'nullable|string|max:255',
         ]);
+        
+        // Validate Zone type requests - only GL 7 and below ranks allowed
+        if ($request->type === 'ZONE') {
+            $zoneRanks = ['IC', 'AIC', 'CA I', 'CA II', 'CA III']; // GL 7 and below ranks
+            $invalidRanks = [];
+            
+            foreach ($validItems as $item) {
+                if (!in_array($item['rank'], $zoneRanks)) {
+                    $invalidRanks[] = $item['rank'];
+                }
+            }
+            
+            if (!empty($invalidRanks)) {
+                return redirect()->back()
+                    ->with('error', 'Zone Manning Level requests can only include ranks GL 7 and below (IC, AIC, CA I, CA II, CA III). Invalid ranks: ' . implode(', ', array_unique($invalidRanks)))
+                    ->withInput();
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -207,6 +241,7 @@ class ManningRequestController extends Controller
             // Create manning request (status: DRAFT, will be SUBMITTED when sent to Area Controller)
             $manningRequest = ManningRequest::create([
                 'command_id' => $commandId,
+                'type' => $request->type,
                 'requested_by' => $user->id,
                 'status' => 'DRAFT',
                 'notes' => $request->notes,
@@ -484,6 +519,29 @@ class ManningRequestController extends Controller
             'items.*.sex_requirement' => 'nullable|in:ANY,M,F',
             'items.*.qualification_requirement' => 'nullable|string|max:255',
         ]);
+        
+        // Validate Zone type requests - only GL 7 and below ranks allowed
+        if ($manningRequest->type === 'ZONE') {
+            $zoneRanks = ['IC', 'AIC', 'CA I', 'CA II', 'CA III']; // GL 7 and below ranks
+            
+            // Filter out empty items
+            $validItems = array_filter($request->items, function ($item) {
+                return !empty($item['rank']) && !empty($item['quantity_needed']);
+            });
+            
+            $invalidRanks = [];
+            foreach ($validItems as $item) {
+                if (!in_array($item['rank'], $zoneRanks)) {
+                    $invalidRanks[] = $item['rank'];
+                }
+            }
+            
+            if (!empty($invalidRanks)) {
+                return redirect()->back()
+                    ->with('error', 'Zone Manning Level requests can only include ranks GL 7 and below (IC, AIC, CA I, CA II, CA III). Invalid ranks: ' . implode(', ', array_unique($invalidRanks)))
+                    ->withInput();
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -535,7 +593,8 @@ class ManningRequestController extends Controller
         }
 
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items'])
-            ->whereIn('status', $statuses);
+            ->whereIn('status', $statuses)
+            ->where('type', 'GENERAL'); // HRD only processes GENERAL type requests
 
         // Get all item IDs that are in draft deployments
         $itemIdsInDraft = ManningDeploymentAssignment::whereHas('deployment', function ($q) {
@@ -556,9 +615,11 @@ class ManningRequestController extends Controller
         // Get request IDs that are fully published (all items have matched_officer_id set)
         // A request is published when all its items have matched_officer_id set
         // Include both APPROVED and FULFILLED statuses (FULFILLED means it was published)
+        // Only GENERAL type requests for HRD
         $requestIdsPublished = DB::table('manning_request_items')
             ->join('manning_requests', 'manning_request_items.manning_request_id', '=', 'manning_requests.id')
             ->whereIn('manning_requests.status', ['APPROVED', 'FULFILLED'])
+            ->where('manning_requests.type', 'GENERAL') // HRD only processes GENERAL type
             ->select('manning_request_items.manning_request_id')
             ->groupBy('manning_request_items.manning_request_id')
             ->havingRaw('COUNT(*) = SUM(CASE WHEN manning_request_items.matched_officer_id IS NOT NULL THEN 1 ELSE 0 END)')
@@ -622,8 +683,10 @@ class ManningRequestController extends Controller
             return $manningRequest;
         });
 
-        // Calculate counts for each tab
-        $allApprovedRequestIds = ManningRequest::where('status', 'APPROVED')->pluck('id');
+        // Calculate counts for each tab - only GENERAL type for HRD
+        $allApprovedRequestIds = ManningRequest::where('status', 'APPROVED')
+            ->where('type', 'GENERAL') // HRD only processes GENERAL type
+            ->pluck('id');
         $pendingCount = 0;
         $inDraftCount = $requestIdsInDraft->count();
         $publishedCount = $requestIdsPublished->count();
@@ -644,6 +707,11 @@ class ManningRequestController extends Controller
         $request = ManningRequest::with(['command', 'requestedBy', 'approvedBy', 'items'])
             ->findOrFail($id);
 
+        // HRD can only view GENERAL type requests
+        if ($request->type !== 'GENERAL') {
+            abort(403, 'HRD can only access General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
+
         // Check which items have officers in draft deployments
         $itemIds = $request->items->pluck('id');
         $itemsInDraft = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
@@ -660,6 +728,11 @@ class ManningRequestController extends Controller
     {
         $request = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items.matchedOfficer'])
             ->findOrFail($id);
+
+        // HRD can only print GENERAL type requests
+        if ($request->type !== 'GENERAL') {
+            abort(403, 'HRD can only print General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
 
         // Get all officers that were posted for this manning request
         // First try to get from published deployment assignments
@@ -775,9 +848,10 @@ class ManningRequestController extends Controller
             abort(400, 'Invalid request IDs');
         }
 
-        // Get all selected requests with their relationships
+        // Get all selected requests with their relationships - only GENERAL type for HRD
         $requests = ManningRequest::with(['command.zone', 'requestedBy', 'approvedBy', 'items.matchedOfficer'])
             ->whereIn('id', $requestIds)
+            ->where('type', 'GENERAL') // HRD can only print GENERAL type requests
             ->get();
 
         // Group requests by command
@@ -895,6 +969,12 @@ class ManningRequestController extends Controller
     public function hrdMatch(Request $request, $id)
     {
         $manningRequest = ManningRequest::with('items')->findOrFail($id);
+
+        // HRD can only match officers for GENERAL type requests
+        if ($manningRequest->type !== 'GENERAL') {
+            abort(403, 'HRD can only match officers for General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
+
         $itemId = $request->input('item_id');
 
         $item = ManningRequestItem::findOrFail($itemId);
@@ -1206,6 +1286,11 @@ class ManningRequestController extends Controller
     {
         $manningRequest = ManningRequest::with('items')->findOrFail($id);
 
+        // HRD can only match officers for GENERAL type requests
+        if ($manningRequest->type !== 'GENERAL') {
+            abort(403, 'HRD can only match officers for General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
+
         // Get all pending items (not published, not in draft)
         $itemIds = $manningRequest->items->pluck('id');
         $itemsInDraft = ManningDeploymentAssignment::whereIn('manning_request_item_id', $itemIds)
@@ -1443,6 +1528,11 @@ class ManningRequestController extends Controller
     {
         $manningRequest = ManningRequest::with(['command', 'items'])->findOrFail($id);
 
+        // HRD can only view drafts for GENERAL type requests
+        if ($manningRequest->type !== 'GENERAL') {
+            abort(403, 'HRD can only view drafts for General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
+
         // Get active draft deployment
         $activeDraft = ManningDeployment::draft()
             ->latest()
@@ -1495,6 +1585,11 @@ class ManningRequestController extends Controller
         \Log::info('Generate order called', ['request_id' => $id, 'input' => $request->all()]);
 
         $manningRequest = ManningRequest::with('items')->findOrFail($id);
+
+        // HRD can only generate orders for GENERAL type requests
+        if ($manningRequest->type !== 'GENERAL') {
+            abort(403, 'HRD can only generate orders for General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
 
         $validated = $request->validate([
             'selected_officers' => 'required|array|min:1',
@@ -1631,6 +1726,11 @@ class ManningRequestController extends Controller
     {
         $manningRequest = ManningRequest::with('items')->findOrFail($id);
 
+        // HRD can only add to draft for GENERAL type requests
+        if ($manningRequest->type !== 'GENERAL') {
+            abort(403, 'HRD can only add officers to draft for General Manning Level requests. Zone requests are handled by Zone Coordinator.');
+        }
+
         $validated = $request->validate([
             'selected_officers' => 'required|array|min:1',
             'selected_officers.*' => 'exists:officers,id',
@@ -1711,30 +1811,201 @@ class ManningRequestController extends Controller
 
     public function hrdDraftIndex()
     {
-        // Get shared active draft (not per-user - all HRD officers see the same draft)
-        $deployments = ManningDeployment::draft()
-            ->with(['createdBy', 'assignments.officer', 'assignments.toCommand', 'assignments.fromCommand'])
+        // Determine route prefix based on URL path or route name
+        $path = request()->path();
+        $routeName = request()->route() ? request()->route()->getName() : '';
+        
+        $isZoneCoordinatorRoute = (strpos($path, 'zone-coordinator/') === 0) || 
+                                   (strpos($routeName, 'zone-coordinator.') === 0);
+        
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        
+        // Build query for deployments
+        $deploymentsQuery = ManningDeployment::draft()
+            ->with(['createdBy', 'assignments.officer', 'assignments.toCommand', 'assignments.fromCommand', 'assignments.manningRequest']);
+        
+        // Get Zone Coordinator user IDs for filtering
+        $zoneCoordinatorUserIds = \App\Models\User::whereHas('roles', function($q) {
+            $q->where('name', 'Zone Coordinator');
+        })->pluck('id')->toArray();
+        
+        // Filter for Zone Coordinators - show deployments with assignments in their zone
+        // This includes both ZONE type manning requests AND movement orders
+        $validationService = null;
+        $zoneCommandIds = [];
+        if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD) {
+            $validationService = app(ZonalPostingValidationService::class);
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (!empty($zoneCommandIds)) {
+                // Show deployments that have assignments:
+                // 1. Linked to ZONE type manning requests from their zone, OR
+                // 2. With to_command_id or from_command_id in their zone (movement orders without manning request)
+                $deploymentsQuery->whereHas('assignments', function($q) use ($zoneCommandIds) {
+                    $q->where(function($subQ) use ($zoneCommandIds) {
+                        // Assignments linked to ZONE manning requests from their zone
+                        $subQ->whereHas('manningRequest', function($mrQ) use ($zoneCommandIds) {
+                            $mrQ->where('type', 'ZONE')
+                                ->whereIn('command_id', $zoneCommandIds);
+                        })
+                        // OR assignments to/from zone commands (movement orders without manning requests)
+                        ->orWhere(function($movQ) use ($zoneCommandIds) {
+                            $movQ->whereNull('manning_request_id')
+                                 ->where(function($cmdQ) use ($zoneCommandIds) {
+                                     $cmdQ->whereIn('to_command_id', $zoneCommandIds)
+                                          ->orWhereIn('from_command_id', $zoneCommandIds);
+                                 });
+                        });
+                    });
+                })
+                // STRICT: Exclude deployments with ANY GENERAL type assignments
+                ->whereDoesntHave('assignments', function($q) {
+                    $q->whereHas('manningRequest', function($mrQ) {
+                        $mrQ->where('type', 'GENERAL');
+                    });
+                })
+                // STRICT: Only show deployments created by Zone Coordinators
+                // This ensures complete separation - deployments created by Zone Coordinators are only visible to Zone Coordinators
+                // Use all zone coordinator IDs to ensure ONE shared draft for all Zone Coordinators
+                ->whereIn('created_by', $zoneCoordinatorUserIds);
+            } else {
+                $deploymentsQuery->whereRaw('1 = 0'); // No results if no zone commands
+            }
+        } else if ($isHRD && !$isZoneCoordinator) {
+            // HRD: Show ALL deployments created by HRD users (not Zone Coordinators)
+            // We rely on assignment-level filtering to show only HRD assignments
+            // This ensures ONE shared draft for all HRD users
+            $deploymentsQuery->whereNotIn('created_by', $zoneCoordinatorUserIds);
+        }
+        
+        $deployments = $deploymentsQuery
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get active draft (most recent) - shared across all HRD officers
+        // Get active draft (most recent) - shared across all HRD officers, filtered for zone coordinators
         $activeDraft = $deployments->first();
 
+        // Get all zone command IDs for HRD filtering (commands that belong to any zone)
+        $allZoneCommandIds = [];
+        if ($isHRD && !$isZoneCoordinator) {
+            $allZoneCommandIds = \App\Models\Command::whereNotNull('zone_id')
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+        }
+        
         // Group assignments by command for display
         $assignmentsByCommand = [];
         if ($activeDraft) {
-            $assignmentsByCommand = $activeDraft->getOfficersByCommand();
+            $allAssignments = $activeDraft->assignments()
+                ->with(['officer', 'toCommand', 'fromCommand', 'manningRequest'])
+                ->get();
+            
+            // Filter assignments for Zone Coordinators - only show assignments in their zone
+            if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD && !empty($zoneCommandIds)) {
+                $allAssignments = $allAssignments->filter(function($assignment) use ($zoneCommandIds) {
+                    // Include if:
+                    // 1. Linked to ZONE type manning request from their zone, OR
+                    // 2. To/from command is in their zone (movement orders)
+                    $isFromZoneManningRequest = $assignment->manningRequest && 
+                                                $assignment->manningRequest->type === 'ZONE' && 
+                                                in_array($assignment->manningRequest->command_id, $zoneCommandIds);
+                    $isFromZoneCommand = in_array($assignment->to_command_id, $zoneCommandIds) || 
+                                        (isset($assignment->from_command_id) && in_array($assignment->from_command_id, $zoneCommandIds));
+                    
+                    return $isFromZoneManningRequest || $isFromZoneCommand;
+                })->values();
+            }
+            // Filter assignments for HRD - exclude only ZONE type manning requests
+            // Note: We don't exclude based on command zone because HRD can post to zone commands for GENERAL requests
+            // The deployment-level filtering by created_by already ensures we only see HRD deployments
+            else if ($isHRD && !$isZoneCoordinator) {
+                $allAssignments = $allAssignments->filter(function($assignment) {
+                    // Exclude only if linked to ZONE type manning request
+                    // Since deployment is already filtered by created_by (HRD only), 
+                    // assignments without manning_request_id or with GENERAL type are HRD assignments
+                    if ($assignment->manningRequest) {
+                        return $assignment->manningRequest->type !== 'ZONE';
+                    }
+                    // Include assignments without manning requests (movement orders from HRD)
+                    return true;
+                })->values();
+            }
+            
+            // Group filtered assignments by command
+            $assignmentsByCommand = $allAssignments->groupBy('to_command_id');
         }
 
-        // Get manning levels summary
-        $manningLevels = $activeDraft ? $activeDraft->getManningLevels() : [];
+        // Get manning levels summary (filtered for zone coordinators and HRD)
+        $manningLevels = [];
+        if ($activeDraft) {
+            $allAssignmentsForLevels = $activeDraft->assignments()->with(['toCommand', 'officer', 'manningRequest'])->get();
+            
+            // Filter for zone coordinators if needed
+            if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD && !empty($zoneCommandIds)) {
+                $allAssignmentsForLevels = $allAssignmentsForLevels->filter(function($assignment) use ($zoneCommandIds) {
+                    $isFromZoneManningRequest = $assignment->manningRequest && 
+                                                $assignment->manningRequest->type === 'ZONE' && 
+                                                in_array($assignment->manningRequest->command_id, $zoneCommandIds);
+                    $isFromZoneCommand = in_array($assignment->to_command_id, $zoneCommandIds) || 
+                                        (isset($assignment->from_command_id) && in_array($assignment->from_command_id, $zoneCommandIds));
+                    return $isFromZoneManningRequest || $isFromZoneCommand;
+                })->values();
+            }
+            // Filter for HRD - exclude only ZONE type manning requests
+            // Note: We don't exclude based on command zone because HRD can post to zone commands for GENERAL requests
+            else if ($isHRD && !$isZoneCoordinator) {
+                $allAssignmentsForLevels = $allAssignmentsForLevels->filter(function($assignment) {
+                    // Exclude only if linked to ZONE type manning request
+                    if ($assignment->manningRequest) {
+                        return $assignment->manningRequest->type !== 'ZONE';
+                    }
+                    // Include assignments without manning requests (movement orders from HRD)
+                    return true;
+                })->values();
+            }
+            
+            foreach ($allAssignmentsForLevels as $assignment) {
+                if (!$assignment->officer) {
+                    continue;
+                }
+                $commandId = $assignment->to_command_id;
+                $commandName = $assignment->toCommand->name ?? 'Unknown';
+                if (!isset($manningLevels[$commandId])) {
+                    $manningLevels[$commandId] = [
+                        'command_id' => $commandId,
+                        'command_name' => $commandName,
+                        'officers' => [],
+                        'by_rank' => [],
+                    ];
+                }
+                $manningLevels[$commandId]['officers'][] = $assignment->officer;
+                $rank = $assignment->officer->substantive_rank ?? 'Unknown';
+                if (!isset($manningLevels[$commandId]['by_rank'][$rank])) {
+                    $manningLevels[$commandId]['by_rank'][$rank] = 0;
+                }
+                $manningLevels[$commandId]['by_rank'][$rank]++;
+            }
+        }
 
-        // Get all commands for "To Command" select (for Command Duration assignments)
-        $commands = \App\Models\Command::where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        // Get commands for "To Command" select
+        // For Zone Coordinators: only show commands in their zone
+        // For HRD: show all active commands
+        $commandsQuery = \App\Models\Command::where('is_active', true);
+        
+        if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD && !empty($zoneCommandIds)) {
+            $commandsQuery->whereIn('id', $zoneCommandIds);
+        }
+        // For HRD: show all active commands (no additional filtering)
+        
+        $commands = $commandsQuery->orderBy('name')->get();
+        
+        // Determine route prefix for view
+        $routePrefix = $isZoneCoordinatorRoute ? 'zone-coordinator' : 'hrd';
 
-        return view('dashboards.hrd.manning-deployment-draft', compact('activeDraft', 'assignmentsByCommand', 'manningLevels', 'commands'));
+        return view('dashboards.hrd.manning-deployment-draft', compact('activeDraft', 'assignmentsByCommand', 'manningLevels', 'commands', 'routePrefix'));
     }
 
     public function hrdDraftRemoveOfficer($deploymentId, $assignmentId)
@@ -1918,6 +2189,14 @@ class ManningRequestController extends Controller
 
     public function hrdDraftPublish($id, Request $request)
     {
+        // Determine route prefix based on URL path or route name
+        $path = request()->path();
+        $routeName = request()->route() ? request()->route()->getName() : '';
+        
+        $isZoneCoordinatorRoute = (strpos($path, 'zone-coordinator/') === 0) || 
+                                   (strpos($routeName, 'zone-coordinator.') === 0);
+        $routePrefix = $isZoneCoordinatorRoute ? 'zone-coordinator' : 'hrd';
+        
         try {
             DB::beginTransaction();
 
@@ -2140,8 +2419,8 @@ class ManningRequestController extends Controller
             
             $successMessage .= " Staff Officers have been notified about pending release letters and arrivals.";
 
-            // Always redirect to Published Deployments page after publishing
-            return redirect()->route('hrd.manning-deployments.published')
+            // Always redirect to Published Deployments page after publishing (using route prefix)
+            return redirect()->route($routePrefix . '.manning-deployments.published')
                 ->with('success', $successMessage);
 
         } catch (\Exception $e) {
@@ -2284,10 +2563,15 @@ class ManningRequestController extends Controller
             // Refresh to load relationships
             $manningRequest->refresh();
 
-            // Notify Staff Officer and HRD about approval
+            // Notify Staff Officer about approval
             $notificationService = app(NotificationService::class);
             $notificationService->notifyManningRequestApproved($manningRequest);
-            $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            
+            // Only notify HRD for GENERAL type requests
+            // ZONE type requests are handled by Zone Coordinators via Movement Orders
+            if ($manningRequest->type === 'GENERAL') {
+                $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            }
 
             return redirect()->route('area-controller.manning-level')
                 ->with('success', 'Manning request approved successfully.');
@@ -2438,10 +2722,15 @@ class ManningRequestController extends Controller
             // Refresh to load relationships
             $manningRequest->refresh();
 
-            // Notify Staff Officer and HRD about approval
+            // Notify Staff Officer about approval
             $notificationService = app(NotificationService::class);
             $notificationService->notifyManningRequestApproved($manningRequest);
-            $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            
+            // Only notify HRD for GENERAL type requests
+            // ZONE type requests are handled by Zone Coordinators via Movement Orders
+            if ($manningRequest->type === 'GENERAL') {
+                $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            }
 
             return redirect()->route('dc-admin.manning-level')
                 ->with('success', 'Manning request approved successfully.');

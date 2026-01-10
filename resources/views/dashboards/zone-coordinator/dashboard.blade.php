@@ -111,26 +111,68 @@ Zone Coordinator Dashboard
         </div>
         
         <!-- Quick Actions -->
-        <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">Quick Actions</h3>
-            </div>
-            <div class="kt-card-content">
-                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <a href="{{ route('zone-coordinator.staff-orders.create') }}" class="kt-btn kt-btn-primary w-full">
-                        <i class="ki-filled ki-file-up"></i>
-                        Create Staff Order
-                    </a>
-                    <a href="{{ route('zone-coordinator.staff-orders') }}" class="kt-btn kt-btn-ghost w-full">
-                        <i class="ki-filled ki-file-down"></i>
-                        View Staff Orders
-                    </a>
-                    <a href="{{ route('zone-coordinator.officers') }}" class="kt-btn kt-btn-ghost w-full">
-                        <i class="ki-filled ki-people"></i>
-                        View Zone Officers
-                    </a>
+        <div class="grid gap-5 lg:gap-7.5 md:grid-cols-2">
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Quick Actions</h3>
+                </div>
+                <div class="kt-card-content">
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <a href="{{ route('zone-coordinator.staff-orders.create') }}" class="kt-btn kt-btn-primary w-full">
+                            <i class="ki-filled ki-file-up"></i>
+                            Create Staff Order
+                        </a>
+                        <a href="{{ route('zone-coordinator.staff-orders') }}" class="kt-btn kt-btn-ghost w-full">
+                            <i class="ki-filled ki-file-down"></i>
+                            View Staff Orders
+                        </a>
+                        <a href="{{ route('zone-coordinator.officers') }}" class="kt-btn kt-btn-ghost w-full">
+                            <i class="ki-filled ki-people"></i>
+                            View Zone Officers
+                        </a>
+                        <a href="{{ route('zone-coordinator.movement-orders.create') }}" class="kt-btn kt-btn-ghost w-full">
+                            <i class="ki-filled ki-arrow-left-right"></i>
+                            Create Movement Order
+                        </a>
+                        <a href="{{ route('zone-coordinator.movement-orders') }}" class="kt-btn kt-btn-ghost w-full">
+                            <i class="ki-filled ki-map"></i>
+                            View Movement Orders
+                        </a>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Draft Deployments Card -->
+            <a href="{{ route('zone-coordinator.manning-deployments.draft') }}" class="kt-card hover:shadow-lg transition-shadow">
+                <div class="kt-card-content p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                                <i class="ki-filled ki-file-up text-xl text-warning"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm">Draft Deployments</h4>
+                                <p class="text-xs text-secondary-foreground">Manning Requests & Command Duration</p>
+                            </div>
+                        </div>
+                        <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $draftDeploymentsCount ?? 0 }}</span>
+                    </div>
+                    @if(($draftDeploymentsCount ?? 0) > 0)
+                        <div class="text-xs text-secondary-foreground space-y-1">
+                            @foreach($draftDeployments->take(3) as $deployment)
+                                <div class="truncate">
+                                    {{ $deployment->deployment_number }} - {{ $deployment->assignments->count() }} officer(s)
+                                </div>
+                            @endforeach
+                            @if($draftDeploymentsCount > 3)
+                                <div class="text-primary font-medium">+{{ $draftDeploymentsCount - 3 }} more</div>
+                            @endif
+                        </div>
+                    @else
+                        <p class="text-xs text-secondary-foreground">No draft deployments</p>
+                    @endif
+                </div>
+            </a>
         </div>
 
         <!-- Recent Staff Orders -->

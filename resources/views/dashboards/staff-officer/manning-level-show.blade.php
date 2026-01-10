@@ -52,9 +52,23 @@
                                 'FULFILLED' => 'info',
                             ];
                             $statusColor = $statusColors[$request->status] ?? 'secondary';
+                            
+                            $typeColors = [
+                                'GENERAL' => 'info',
+                                'ZONE' => 'primary',
+                            ];
+                            $typeLabels = [
+                                'GENERAL' => 'General (HRD)',
+                                'ZONE' => 'Zone (GL 7 & Below)',
+                            ];
+                            $typeColor = $typeColors[$request->type ?? 'GENERAL'] ?? 'secondary';
+                            $typeLabel = $typeLabels[$request->type ?? 'GENERAL'] ?? 'GENERAL';
                         @endphp
                         <span class="kt-badge kt-badge-{{ $statusColor }} kt-badge-lg">
                             {{ $request->status }}
+                        </span>
+                        <span class="kt-badge kt-badge-{{ $typeColor }} kt-badge-lg">
+                            {{ $typeLabel }}
                         </span>
                         @if($request->submitted_at)
                             <span class="text-sm text-secondary-foreground">
@@ -63,6 +77,17 @@
                         @endif
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-medium text-secondary-foreground">Request Type</label>
+                            <p class="text-sm text-foreground mt-1">
+                                <span class="kt-badge kt-badge-{{ $typeColor }} kt-badge-sm">{{ $typeLabel }}</span>
+                            </p>
+                            @if($request->type === 'ZONE')
+                                <p class="text-xs text-secondary-foreground mt-1">Only ranks GL 7 and below: IC, AIC, CA I, CA II, CA III</p>
+                            @else
+                                <p class="text-xs text-secondary-foreground mt-1">All ranks available</p>
+                            @endif
+                        </div>
                         <div>
                             <label class="text-sm font-medium text-secondary-foreground">Command</label>
                             <p class="text-sm text-foreground mt-1">{{ $request->command->name ?? 'N/A' }}</p>

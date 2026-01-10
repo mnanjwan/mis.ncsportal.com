@@ -4,11 +4,15 @@
 @section('page-title', 'Eligible Officers')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @if(isset($routePrefix) && $routePrefix === 'zone-coordinator')
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('zone-coordinator.dashboard') }}">Zone Coordinator</a>
+    @else
+        <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    @endif
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.movement-orders') }}">Movement Orders</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders') }}">Movement Orders</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.movement-orders.show', $order->id) }}">Order #{{ $order->order_number }}</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}">Order #{{ $order->order_number }}</a>
     <span>/</span>
     <span class="text-primary">Eligible Officers</span>
 @endsection
@@ -17,7 +21,7 @@
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Back Button -->
         <div class="flex items-center justify-between">
-            <a href="{{ route('hrd.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+            <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                 <i class="ki-filled ki-arrow-left"></i> Back to Movement Order
             </a>
         </div>
@@ -118,7 +122,7 @@
             </div>
             <div class="kt-card-content p-0 md:p-5 overflow-x-hidden">
                 @if($officers->count() > 0)
-                    <form action="{{ route('hrd.movement-orders.post-officers', $order->id) }}" method="POST" id="post-officers-form">
+                    <form action="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.post-officers', $order->id) }}" method="POST" id="post-officers-form">
                         @csrf
                         
                         <!-- Commands Selection -->
@@ -131,7 +135,7 @@
                                     </p>
                                 </div>
                                 <div class="flex items-center gap-3 ml-4">
-                                    <a href="{{ route('hrd.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
+                                    <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
                                         Cancel
                                     </a>
                                     <button type="submit" class="kt-btn kt-btn-primary" id="post-officers-btn-top" disabled>
@@ -139,12 +143,9 @@
                                     </button>
                                 </div>
                             </div>
-                            @php
-                                $commands = \App\Models\Command::where('is_active', true)->orderBy('name')->get();
-                            @endphp
                             <select name="default_command_id" id="default_command_id" class="kt-input">
                                 <option value="">Select default command...</option>
-                                @foreach($commands as $command)
+                                @foreach($availableCommands ?? [] as $command)
                                     <option value="{{ $command->id }}">{{ $command->name }}</option>
                                 @endforeach
                             </select>
@@ -210,7 +211,7 @@
                                                         data-index="{{ $index }}"
                                                         disabled>
                                                     <option value="">Select command...</option>
-                                                    @foreach($commands as $command)
+                                                    @foreach($availableCommands ?? [] as $command)
                                                         <option value="{{ $command->id }}">{{ $command->name }}</option>
                                                     @endforeach
                                                 </select>
@@ -223,7 +224,7 @@
 
                         <!-- Form Actions -->
                         <div class="flex items-center justify-end gap-3 p-4 border-t border-border">
-                            <a href="{{ route('hrd.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
+                            <a href="{{ route(($routePrefix ?? 'hrd') . '.movement-orders.show', $order->id) }}" class="kt-btn kt-btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="kt-btn kt-btn-primary" id="post-officers-btn" disabled>

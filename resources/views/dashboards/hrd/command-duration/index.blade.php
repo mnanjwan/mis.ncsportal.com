@@ -57,7 +57,7 @@
             <h3 class="kt-card-title">Search Officers by Command Duration</h3>
         </div>
         <div class="kt-card-content">
-            <form method="POST" action="{{ route('hrd.command-duration.search') }}" id="search-form" class="flex flex-col gap-4">
+            <form method="POST" action="{{ route($routePrefix . '.command-duration.search') }}" id="search-form" class="flex flex-col gap-4">
                 @csrf
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Zone (Required) -->
@@ -65,7 +65,7 @@
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">
                             Zone <span class="text-danger">*</span>
                         </label>
-                        <select name="zone_id" id="zone_id" class="kt-input w-full" required onchange="loadCommands()">
+                        <select name="zone_id" id="zone_id" class="kt-input w-full" required onchange="loadCommands()" {{ isset($zoneReadOnly) && $zoneReadOnly ? 'disabled' : '' }}>
                             <option value="">Select Zone</option>
                             @foreach($zones as $zone)
                                 <option value="{{ $zone->id }}" {{ (isset($selected_zone_id) && $selected_zone_id == $zone->id) ? 'selected' : '' }}>
@@ -73,6 +73,9 @@
                                 </option>
                             @endforeach
                         </select>
+                        @if(isset($zoneReadOnly) && $zoneReadOnly)
+                            <input type="hidden" name="zone_id" value="{{ $selected_zone_id }}">
+                        @endif
                     </div>
 
                     <!-- Command (Required) -->
@@ -80,7 +83,7 @@
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">
                             Command <span class="text-danger">*</span>
                         </label>
-                        <select name="command_id" id="command_id" class="kt-input w-full" required {{ !isset($selected_zone_id) ? 'disabled' : '' }}>
+                        <select name="command_id" id="command_id" class="kt-input w-full" required {{ (!isset($selected_zone_id) || empty($selected_zone_id)) && (!isset($zoneReadOnly) || !$zoneReadOnly) ? 'disabled' : '' }}>
                             <option value="">Select Command</option>
                             @foreach($commands as $command)
                                 <option value="{{ $command->id }}" {{ (isset($selected_command_id) && $selected_command_id == $command->id) ? 'selected' : '' }}>
@@ -282,7 +285,7 @@
 </div>
 
 <!-- Add to Draft Form (Hidden) -->
-<form id="add-to-draft-form" method="POST" action="{{ route('hrd.command-duration.add-to-draft') }}" style="display: none;">
+<form id="add-to-draft-form" method="POST" action="{{ route($routePrefix . '.command-duration.add-to-draft') }}" style="display: none;">
     @csrf
     <input type="hidden" name="command_id" id="draft-command-id" value="{{ $selected_command_id ?? (request('command_id') ?? '') }}">
     <input type="hidden" name="officer_ids" id="draft-officer-ids">
@@ -323,6 +326,8 @@
 </div>
 
 <script>
+const routePrefix = '{{ $routePrefix }}';
+
 function loadCommands() {
     const zoneId = document.getElementById('zone_id').value;
     const commandSelect = document.getElementById('command_id');
@@ -333,8 +338,15 @@ function loadCommands() {
         return;
     }
     
+    // Preserve currently selected command (if any)
+    const currentSelectedCommand = commandSelect.value;
+    
     // Load commands via AJAX
-    fetch(`{{ route('hrd.command-duration.index') }}?zone_id=${zoneId}`, {
+    const indexRoute = routePrefix === 'zone-coordinator' 
+        ? '{{ route("zone-coordinator.command-duration.index") }}'
+        : '{{ route("hrd.command-duration.index") }}';
+    
+    fetch(`${indexRoute}?zone_id=${zoneId}`, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -349,6 +361,10 @@ function loadCommands() {
                 const option = document.createElement('option');
                 option.value = cmd.id;
                 option.textContent = cmd.name;
+                // Preserve selection if the command still exists
+                if (currentSelectedCommand && cmd.id == currentSelectedCommand) {
+                    option.selected = true;
+                }
                 commandSelect.appendChild(option);
             });
         }
@@ -357,7 +373,7 @@ function loadCommands() {
     .catch(error => {
         console.error('Error loading commands:', error);
         // Fallback: reload page
-        window.location.href = `{{ route('hrd.command-duration.index') }}?zone_id=${zoneId}`;
+        window.location.href = `${indexRoute}?zone_id=${zoneId}`;
     });
 }
 
@@ -365,6 +381,11 @@ function resetForm() {
     document.getElementById('search-form').reset();
     document.getElementById('command_id').disabled = true;
     document.getElementById('command_id').innerHTML = '<option value="">Select Command</option>';
+    // If zone is read-only, restore the pre-selected zone
+    @if(isset($zoneReadOnly) && $zoneReadOnly && isset($selected_zone_id))
+        document.getElementById('zone_id').value = '{{ $selected_zone_id }}';
+        loadCommands();
+    @endif
 }
 
 function toggleAll(checkbox) {
@@ -434,8 +455,27 @@ function printResults() {
     if (formData.get('duration_years')) params.append('duration_years', formData.get('duration_years'));
     
     // Open print page
-    window.open(`{{ route('hrd.command-duration.print') }}?${params.toString()}`, '_blank');
+    const printRoute = routePrefix === 'zone-coordinator' 
+        ? '{{ route("zone-coordinator.command-duration.print") }}'
+        : '{{ route("hrd.command-duration.print") }}';
+    window.open(`${printRoute}?${params.toString()}`, '_blank');
 }
+
+// Load commands automatically on page load if zone is pre-selected
+document.addEventListener('DOMContentLoaded', function() {
+    const zoneId = document.getElementById('zone_id').value;
+    const commandSelect = document.getElementById('command_id');
+    const zoneField = document.getElementById('zone_id');
+    
+    // Always load commands via AJAX if zone is selected
+    // This ensures fresh data and consistency, especially for Zone Coordinators
+    if (zoneId) {
+        // If zone is read-only (Zone Coordinator) or commands aren't loaded, fetch them
+        if (zoneField.disabled || commandSelect.options.length <= 1) {
+            loadCommands();
+        }
+    }
+});
 </script>
 @endsection
 
