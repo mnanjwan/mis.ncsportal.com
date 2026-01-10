@@ -209,8 +209,8 @@
                                             <div class="flex items-center gap-2">
                                                 @if($officer->current_status === 'Active')
                                                     <span class="kt-badge kt-badge-success kt-badge-sm">{{ $officer->current_status }}</span>
-                                                @elseif($officer->current_status === 'Under Investigation')
-                                                    <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $officer->current_status }}</span>
+                                                @elseif($officer->current_status === 'Under Investigation' || $officer->current_status === 'Awaiting Release' || $officer->current_status === 'Awaiting Documentation')
+                                                    <span class="kt-badge kt-badge-warning kt-badge-sm" title="{{ $officer->current_status === 'Awaiting Release' ? 'Officer has pending posting awaiting release letter' : ($officer->current_status === 'Awaiting Documentation' ? 'Officer has pending posting awaiting documentation' : '') }}">{{ $officer->current_status }}</span>
                                                 @else
                                                     <span class="kt-badge kt-badge-danger kt-badge-sm">{{ $officer->current_status }}</span>
                                                 @endif
@@ -247,8 +247,8 @@
                                                 <div class="flex items-center gap-2">
                                                     @if($officer->current_status === 'Active')
                                                         <span class="kt-badge kt-badge-success kt-badge-sm">{{ $officer->current_status }}</span>
-                                                    @elseif($officer->current_status === 'Under Investigation')
-                                                        <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $officer->current_status }}</span>
+                                                    @elseif($officer->current_status === 'Under Investigation' || $officer->current_status === 'Awaiting Release' || $officer->current_status === 'Awaiting Documentation')
+                                                        <span class="kt-badge kt-badge-warning kt-badge-sm" title="{{ $officer->current_status === 'Awaiting Release' ? 'Officer has pending posting awaiting release letter' : ($officer->current_status === 'Awaiting Documentation' ? 'Officer has pending posting awaiting documentation' : '') }}">{{ $officer->current_status }}</span>
                                                     @else
                                                         <span class="kt-badge kt-badge-danger kt-badge-sm">{{ $officer->current_status }}</span>
                                                     @endif

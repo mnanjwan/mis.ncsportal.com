@@ -2495,15 +2495,137 @@ class ManningRequestController extends Controller
 
     public function hrdDraftPrint($id, Request $request)
     {
+        $user = auth()->user();
+        $isZoneCoordinator = $user->hasRole('Zone Coordinator');
+        $isHRD = $user->hasRole('HRD');
+        
+        // Determine route prefix based on URL path or route name
+        $path = request()->path();
+        $routeName = request()->route() ? request()->route()->getName() : '';
+        $fullUrl = request()->fullUrl();
+        
+        // Check if this is a Zone Coordinator route
+        $isZoneCoordinatorRoute = (strpos($path, 'zone-coordinator/') === 0) || 
+                                   (strpos($routeName, 'zone-coordinator.') === 0) ||
+                                   (strpos($fullUrl, '/zone-coordinator/') !== false);
+        
+        // If user is Zone Coordinator and not HRD, default to zone-coordinator route
+        if ($isZoneCoordinator && !$isHRD) {
+            $isZoneCoordinatorRoute = true;
+        }
+        
+        $routePrefix = $isZoneCoordinatorRoute ? 'zone-coordinator' : 'hrd';
+        
+        Log::info('Print: Method called', [
+            'user_id' => $user->id,
+            'deployment_id' => $id,
+            'path' => $path,
+            'route_name' => $routeName,
+            'full_url' => $fullUrl,
+            'isZoneCoordinator' => $isZoneCoordinator,
+            'isHRD' => $isHRD,
+            'isZoneCoordinatorRoute' => $isZoneCoordinatorRoute,
+            'routePrefix' => $routePrefix,
+        ]);
+        
         $deployment = ManningDeployment::with([
             'assignments.officer',
             'assignments.toCommand',
             'assignments.fromCommand'
         ])->findOrFail($id);
 
+        // Authorization check - match the same logic as published index
+        if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD) {
+            // Zone Coordinator: Verify deployment has assignments in their zone (same logic as published index)
+            $validationService = app(ZonalPostingValidationService::class);
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (empty($zoneCommandIds)) {
+                Log::warning('Print - Zone Coordinator: No zone commands found', ['user_id' => $user->id]);
+                abort(403, 'You do not have access to this deployment.');
+            }
+            
+            // Check if deployment has assignments in their zone (matching published index logic)
+            $hasZoneAssignments = $deployment->assignments()
+                ->where(function($q) use ($zoneCommandIds) {
+                    // Assignments linked to ZONE manning requests from their zone
+                    $q->whereHas('manningRequest', function($mrQ) use ($zoneCommandIds) {
+                        $mrQ->where('type', 'ZONE')
+                            ->whereIn('command_id', $zoneCommandIds);
+                    })
+                    // OR assignments to/from zone commands (movement orders without manning requests)
+                    ->orWhere(function($movQ) use ($zoneCommandIds) {
+                        $movQ->whereNull('manning_request_id')
+                             ->where(function($cmdQ) use ($zoneCommandIds) {
+                                 $cmdQ->whereIn('to_command_id', $zoneCommandIds)
+                                      ->orWhereIn('from_command_id', $zoneCommandIds);
+                             });
+                    });
+                })
+                ->exists();
+            
+            // Check if deployment has ANY GENERAL type assignments (should be excluded)
+            $hasGeneralAssignments = $deployment->assignments()
+                ->whereHas('manningRequest', function($mrQ) {
+                    $mrQ->where('type', 'GENERAL');
+                })
+                ->exists();
+            
+            Log::info('Print - Zone Coordinator: Authorization check', [
+                'user_id' => $user->id,
+                'deployment_id' => $deployment->id,
+                'zone_command_ids' => $zoneCommandIds,
+                'has_zone_assignments' => $hasZoneAssignments,
+                'has_general_assignments' => $hasGeneralAssignments,
+            ]);
+            
+            if (!$hasZoneAssignments || $hasGeneralAssignments) {
+                abort(403, 'You do not have access to this deployment.');
+            }
+        } else {
+            // HRD: Verify deployment was created by them
+            if ($deployment->created_by != $user->id) {
+                Log::warning('Print - HRD: Deployment not created by user', [
+                    'user_id' => $user->id,
+                    'deployment_id' => $deployment->id,
+                    'deployment_created_by' => $deployment->created_by,
+                ]);
+                abort(403, 'You do not have access to this deployment. You can only print deployments you created.');
+            }
+        }
+        
+        Log::info('Print: Access granted', [
+            'user_id' => $user->id,
+            'deployment_id' => $deployment->id,
+            'isZoneCoordinatorRoute' => $isZoneCoordinatorRoute,
+            'routePrefix' => $routePrefix,
+        ]);
+
         // Get assignments query
         $assignmentsQuery = $deployment->assignments()
             ->with(['officer', 'toCommand', 'fromCommand', 'manningRequestItem']);
+
+        // For Zone Coordinators, filter assignments to only show those in their zone
+        if ($isZoneCoordinatorRoute && $isZoneCoordinator && !$isHRD) {
+            $validationService = app(ZonalPostingValidationService::class);
+            $zoneCommandIds = $validationService->getZoneCommandIds($user);
+            
+            if (!empty($zoneCommandIds)) {
+                $assignmentsQuery->where(function($q) use ($zoneCommandIds) {
+                    $q->whereHas('manningRequest', function($mrQ) use ($zoneCommandIds) {
+                        $mrQ->where('type', 'ZONE')
+                            ->whereIn('command_id', $zoneCommandIds);
+                    })
+                    ->orWhere(function($movQ) use ($zoneCommandIds) {
+                        $movQ->whereNull('manning_request_id')
+                             ->where(function($cmdQ) use ($zoneCommandIds) {
+                                 $cmdQ->whereIn('to_command_id', $zoneCommandIds)
+                                      ->orWhereIn('from_command_id', $zoneCommandIds);
+                             });
+                    });
+                });
+            }
+        }
 
         // Filter by manning request if provided
         $manningRequestId = $request->get('manning_request_id');
@@ -2694,10 +2816,13 @@ class ManningRequestController extends Controller
             $notificationService = app(NotificationService::class);
             $notificationService->notifyManningRequestApproved($manningRequest);
             
-            // Only notify HRD for GENERAL type requests
-            // ZONE type requests are handled by Zone Coordinators via Movement Orders
+            // Notify appropriate roles based on request type
             if ($manningRequest->type === 'GENERAL') {
+                // GENERAL type: Notify HRD for officer matching
                 $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            } elseif ($manningRequest->type === 'ZONE') {
+                // ZONE type: Notify Zone Coordinators for processing via Movement Orders
+                $notificationService->notifyManningRequestApprovedToZoneCoordinators($manningRequest);
             }
 
             return redirect()->route('area-controller.manning-level')
@@ -2853,10 +2978,13 @@ class ManningRequestController extends Controller
             $notificationService = app(NotificationService::class);
             $notificationService->notifyManningRequestApproved($manningRequest);
             
-            // Only notify HRD for GENERAL type requests
-            // ZONE type requests are handled by Zone Coordinators via Movement Orders
+            // Notify appropriate roles based on request type
             if ($manningRequest->type === 'GENERAL') {
+                // GENERAL type: Notify HRD for officer matching
                 $notificationService->notifyManningRequestApprovedToHrd($manningRequest);
+            } elseif ($manningRequest->type === 'ZONE') {
+                // ZONE type: Notify Zone Coordinators for processing via Movement Orders
+                $notificationService->notifyManningRequestApprovedToZoneCoordinators($manningRequest);
             }
 
             return redirect()->route('dc-admin.manning-level')

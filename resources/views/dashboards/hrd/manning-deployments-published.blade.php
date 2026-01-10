@@ -4,7 +4,7 @@
 @section('page-title', 'Published Deployments')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route($routePrefix ?? 'hrd' . '.dashboard') }}">{{ $routePrefix === 'zone-coordinator' ? 'Zone Coordinator' : 'HRD' }}</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route(($routePrefix ?? 'hrd') . '.dashboard') }}">{{ ($routePrefix ?? 'hrd') === 'zone-coordinator' ? 'Zone Coordinator' : 'HRD' }}</a>
     <span>/</span>
     <span class="text-primary">Published Deployments</span>
 @endsection

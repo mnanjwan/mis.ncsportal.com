@@ -6,6 +6,7 @@ use App\Models\Notification;
 use App\Models\QuarterRequest;
 use App\Models\User;
 use App\Models\Query;
+use App\Models\Command;
 use App\Jobs\SendNotificationEmailJob;
 use App\Jobs\SendRoleAssignedMailJob;
 use App\Mail\NotificationMail;
@@ -472,7 +473,8 @@ class NotificationService
     }
 
     /**
-     * Notify Area Controllers about submitted manning request ready for approval
+     * Notify DC Admin and Area Controller about submitted manning request ready for approval
+     * Flow: Staff Officer -> DC Admin and Area Controller (for approval)
      */
     public function notifyManningRequestSubmitted($manningRequest): array
     {
@@ -493,12 +495,6 @@ class NotificationService
                 ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
-        // Get HRD users (they need to be aware of submitted requests)
-        $hrdUsers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'HRD')
-                ->where('user_roles.is_active', true);
-        })->where('is_active', true)->get();
-
         // Get DC Admins for the command (they handle command-level approvals)
         $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'DC Admin')
@@ -507,7 +503,7 @@ class NotificationService
         })->where('is_active', true)->get();
 
         // Combine all users to notify
-        $usersToNotify = $areaControllers->merge($hrdUsers)->merge($dcAdmins);
+        $usersToNotify = $areaControllers->merge($dcAdmins);
 
         if ($usersToNotify->isEmpty()) {
             return [];
@@ -556,6 +552,57 @@ class NotificationService
             'manning_request_approved',
             'Manning Request Approved - Ready for Matching',
             "Manning request for {$commandName} has been approved. It requires {$itemCount} position(s) with {$totalQuantity} officer(s) total. Please proceed with officer matching.",
+            'manning_request',
+            $manningRequest->id
+        );
+    }
+
+    /**
+     * Notify Zone Coordinators about approved ZONE type manning request ready for processing
+     */
+    public function notifyManningRequestApprovedToZoneCoordinators($manningRequest): array
+    {
+        $command = $manningRequest->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandName = $command->name;
+        $zone = $command->zone;
+
+        if (!$zone) {
+            return [];
+        }
+
+        // Get all commands in the same zone
+        $zoneCommandIds = Command::where('zone_id', $zone->id)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($zoneCommandIds)) {
+            return [];
+        }
+
+        // Get all Zone Coordinators assigned to commands in this zone
+        $zoneCoordinators = User::whereHas('roles', function ($q) use ($zoneCommandIds) {
+            $q->where('name', 'Zone Coordinator')
+                ->where('user_roles.is_active', true)
+                ->whereIn('user_roles.command_id', $zoneCommandIds);
+        })->where('is_active', true)->get();
+
+        if ($zoneCoordinators->isEmpty()) {
+            return [];
+        }
+
+        $itemCount = $manningRequest->items->count();
+        $totalQuantity = $manningRequest->items->sum('quantity_needed');
+
+        return $this->notifyMany(
+            $zoneCoordinators,
+            'manning_request_approved',
+            'Manning Request Approved - Ready for Processing',
+            "Zone manning request for {$commandName} has been approved. It requires {$itemCount} position(s) with {$totalQuantity} officer(s) total. Please proceed with creating movement orders.",
             'manning_request',
             $manningRequest->id
         );

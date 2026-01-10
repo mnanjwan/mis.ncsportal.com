@@ -412,12 +412,36 @@ class CommandDurationController extends Controller
             ]);
 
             foreach ($officers as $officer) {
-                if (!$this->isEligibleForMovement($officer)) {
-                    $ineligible[] = $officer->full_name;
+                // Check basic eligibility
+                if ($officer->suspended || $officer->dismissed || $officer->ongoing_investigation || $officer->interdicted || !$officer->is_active) {
+                    $status = $this->getOfficerStatus($officer);
+                    $ineligible[] = $officer->full_name . ' (' . $status . ')';
                     Log::info('Command Duration - Add to Draft: Officer ineligible for movement', [
                         'officer_id' => $officer->id,
                         'officer_name' => $officer->full_name,
-                        'reason' => 'Not eligible for movement',
+                        'status' => $status,
+                        'reason' => 'Basic eligibility failed',
+                    ]);
+                    continue;
+                }
+                
+                // Check for awaiting release or documentation
+                if ($this->isAwaitingRelease($officer)) {
+                    $ineligible[] = $officer->full_name . ' (Awaiting Release)';
+                    Log::info('Command Duration - Add to Draft: Officer awaiting release', [
+                        'officer_id' => $officer->id,
+                        'officer_name' => $officer->full_name,
+                        'reason' => 'Officer has pending posting awaiting release letter',
+                    ]);
+                    continue;
+                }
+                
+                if ($this->isAwaitingDocumentation($officer)) {
+                    $ineligible[] = $officer->full_name . ' (Awaiting Documentation)';
+                    Log::info('Command Duration - Add to Draft: Officer awaiting documentation', [
+                        'officer_id' => $officer->id,
+                        'officer_name' => $officer->full_name,
+                        'reason' => 'Officer has pending posting awaiting documentation',
                     ]);
                     continue;
                 }
@@ -831,12 +855,48 @@ class CommandDurationController extends Controller
     /**
      * Get officer status string
      */
+    /**
+     * Check if officer is awaiting release (has pending posting with release letter not printed)
+     * Only check postings that are not current (officers being posted OUT)
+     */
+    private function isAwaitingRelease($officer): bool
+    {
+        return OfficerPosting::where('officer_id', $officer->id)
+            ->where('is_current', false)
+            ->where('release_letter_printed', false)
+            ->whereNotNull('posting_date') // Must have a posting date (actual posting, not draft)
+            ->exists();
+    }
+
+    /**
+     * Check if officer is awaiting documentation (has pending posting with documented_at null)
+     * Only check postings that are not current (incoming postings that haven't been documented yet)
+     */
+    private function isAwaitingDocumentation($officer): bool
+    {
+        return OfficerPosting::where('officer_id', $officer->id)
+            ->where('is_current', false)
+            ->whereNull('documented_at')
+            ->whereNotNull('posting_date') // Must have a posting date (actual posting, not draft)
+            ->exists();
+    }
+
     private function getOfficerStatus($officer): string
     {
         if ($officer->dismissed) return 'Dismissed';
         if ($officer->suspended) return 'Suspended';
         if ($officer->interdicted) return 'Interdicted';
         if ($officer->ongoing_investigation) return 'Under Investigation';
+        
+        // Check for pending postings - awaiting release or documentation
+        if ($this->isAwaitingRelease($officer)) {
+            return 'Awaiting Release';
+        }
+        
+        if ($this->isAwaitingDocumentation($officer)) {
+            return 'Awaiting Documentation';
+        }
+        
         return 'Active';
     }
 
@@ -845,11 +905,17 @@ class CommandDurationController extends Controller
      */
     private function isEligibleForMovement($officer): bool
     {
-        return !$officer->suspended 
-            && !$officer->dismissed 
-            && !$officer->ongoing_investigation
-            && !$officer->interdicted
-            && $officer->is_active;
+        // Basic eligibility checks
+        if ($officer->suspended || $officer->dismissed || $officer->ongoing_investigation || $officer->interdicted || !$officer->is_active) {
+            return false;
+        }
+        
+        // Officers awaiting release or documentation should not be added for posting
+        if ($this->isAwaitingRelease($officer) || $this->isAwaitingDocumentation($officer)) {
+            return false;
+        }
+        
+        return true;
     }
 
 
