@@ -147,6 +147,7 @@
                     </thead>
                     <tbody>
                         @foreach($recentInvestigations as $investigation)
+                            @if($investigation->officer)
                             <tr class="border-b border-border last:border-0 hover:bg-muted/50">
                                 <td class="py-3 px-4">
                                     <div>
@@ -178,6 +179,7 @@
                                     </a>
                                 </td>
                             </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>

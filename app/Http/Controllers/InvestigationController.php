@@ -34,8 +34,9 @@ class InvestigationController extends Controller
         $dismissedCount = Investigation::where('status', 'DISMISSED')->count();
         $resolvedCount = Investigation::where('status', 'RESOLVED')->count();
 
-        // Get recent investigations
+        // Get recent investigations (only those with officers)
         $recentInvestigations = Investigation::with(['officer', 'investigationOfficer'])
+            ->whereHas('officer')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
