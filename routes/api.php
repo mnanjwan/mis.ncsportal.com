@@ -123,6 +123,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Promotions
     Route::get('/promotions', [PromotionController::class, 'index']);
     Route::get('/promotions/{id}', [PromotionController::class, 'show']);
+    Route::get('/promotion-eligibility-lists', [PromotionController::class, 'eligibilityLists']);
+    Route::get('/promotions/dashboard-stats', [PromotionController::class, 'dashboardStats']);
     Route::post('/promotions/eligibility-lists', [PromotionController::class, 'createEligibilityList']);
     Route::post('/promotions/eligibility-lists/{id}/generate', [PromotionController::class, 'generateEligibilityList']);
     Route::post('/promotions/{id}/approve', [PromotionController::class, 'approve']);

@@ -14,18 +14,25 @@ class PromotionController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Promotion::with(['officer', 'eligibilityList']);
+        $query = Promotion::with(['officer', 'eligibilityListItem']);
 
         if ($request->has('officer_id')) {
             $query->where('officer_id', $request->officer_id);
         }
 
         if ($request->has('eligibility_list_id')) {
-            $query->where('eligibility_list_id', $request->eligibility_list_id);
+            $query->whereHas('eligibilityListItem', function($q) use ($request) {
+                $q->where('eligibility_list_id', $request->eligibility_list_id);
+            });
         }
 
+        // Note: Promotion model doesn't have a status field, using approved_by_board instead
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'APPROVED') {
+                $query->where('approved_by_board', true);
+            } elseif ($request->status === 'PENDING') {
+                $query->where('approved_by_board', false);
+            }
         }
 
         $perPage = $request->get('per_page', 20);
@@ -47,9 +54,70 @@ class PromotionController extends BaseController
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $promotion = Promotion::with(['officer', 'eligibilityList'])->findOrFail($id);
+        $promotion = Promotion::with(['officer', 'eligibilityListItem.eligibilityList'])->findOrFail($id);
 
         return $this->successResponse($promotion);
+    }
+
+    /**
+     * List promotion eligibility lists
+     */
+    public function eligibilityLists(Request $request): JsonResponse
+    {
+        $query = PromotionEligibilityList::with(['generatedBy', 'items']);
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('year')) {
+            $query->where('year', $request->year);
+        }
+
+        $perPage = $request->get('per_page', 20);
+        $lists = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        // Add officers_count to each list
+        $lists->getCollection()->transform(function ($list) {
+            $list->officers_count = $list->items()->count();
+            return $list;
+        });
+
+        return $this->paginatedResponse(
+            $lists->items(),
+            [
+                'current_page' => $lists->currentPage(),
+                'per_page' => $lists->perPage(),
+                'total' => $lists->total(),
+                'last_page' => $lists->lastPage(),
+            ]
+        );
+    }
+
+    /**
+     * Get dashboard statistics
+     */
+    public function dashboardStats(Request $request): JsonResponse
+    {
+        // Count pending promotions (eligibility lists submitted to board)
+        $pendingCount = PromotionEligibilityList::where('status', 'SUBMITTED_TO_BOARD')->count();
+
+        // Count approved promotions this year
+        $currentYear = date('Y');
+        $approvedThisYear = Promotion::where('approved_by_board', true)
+            ->where(function($query) use ($currentYear) {
+                $query->whereYear('board_meeting_date', $currentYear)
+                      ->orWhere(function($q) use ($currentYear) {
+                          $q->whereNull('board_meeting_date')
+                            ->whereYear('created_at', $currentYear);
+                      });
+            })
+            ->count();
+
+        return $this->successResponse([
+            'pending_promotions' => $pendingCount,
+            'approved_this_year' => $approvedThisYear,
+        ]);
     }
 
     /**
@@ -108,7 +176,7 @@ class PromotionController extends BaseController
             );
         }
 
-        $eligibilityList = PromotionEligibilityList::with('criteria')->findOrFail($id);
+        $eligibilityList = PromotionEligibilityList::findOrFail($id);
 
         // This would typically involve complex logic to evaluate officers
         // For now, we'll just mark it as generated
@@ -139,9 +207,9 @@ class PromotionController extends BaseController
 
         $promotion = Promotion::findOrFail($id);
 
-        if ($promotion->status !== 'PENDING') {
+        if ($promotion->approved_by_board) {
             return $this->errorResponse(
-                'Only pending promotions can be approved',
+                'This promotion has already been approved',
                 null,
                 400,
                 'WORKFLOW_ERROR'

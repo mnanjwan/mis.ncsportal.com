@@ -54,19 +54,51 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-    const token = window.API_CONFIG.token;
+    const token = window.API_CONFIG?.token;
     
+    if (!token) {
+        console.error('API token not available');
+        document.getElementById('pending-promotions').textContent = '0';
+        document.getElementById('approved-year').textContent = '0';
+        return;
+    }
+
     try {
-        const res = await fetch('/api/v1/promotion-eligibility-lists?per_page=1', {
-            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+        // Fetch dashboard statistics
+        const statsRes = await fetch('/api/v1/promotions/dashboard-stats', {
+            headers: { 
+                'Authorization': 'Bearer ' + token, 
+                'Accept': 'application/json' 
+            }
         });
         
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById('pending-promotions').textContent = data.meta?.total || 0;
+        if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            if (statsData.data) {
+                document.getElementById('pending-promotions').textContent = statsData.data.pending_promotions || 0;
+                document.getElementById('approved-year').textContent = statsData.data.approved_this_year || 0;
+            }
+        } else {
+            // Fallback: try fetching eligibility lists directly
+            const listsRes = await fetch('/api/v1/promotion-eligibility-lists?status=SUBMITTED_TO_BOARD&per_page=1', {
+                headers: { 
+                    'Authorization': 'Bearer ' + token, 
+                    'Accept': 'application/json' 
+                }
+            });
+            
+            if (listsRes.ok) {
+                const listsData = await listsRes.json();
+                document.getElementById('pending-promotions').textContent = listsData.meta?.total || 0;
+            } else {
+                document.getElementById('pending-promotions').textContent = '0';
+            }
+            document.getElementById('approved-year').textContent = '0';
         }
     } catch (error) {
         console.error('Error loading dashboard data:', error);
+        document.getElementById('pending-promotions').textContent = '0';
+        document.getElementById('approved-year').textContent = '0';
     }
 });
 </script>
