@@ -1508,6 +1508,10 @@ class DashboardController extends Controller
 
         // Get ranks and grade levels
         $ranks = [
+            'CGC',
+            'DCG',
+            'ACG',
+            'CC',
             'DC',
             'AC',
             'CSC',
@@ -1525,7 +1529,7 @@ class DashboardController extends Controller
         $gradeLevels = [
             'GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07',
             'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12',
-            'GL 13', 'GL 14', 'GL 16', 'GL 17',
+            'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17',
         ];
 
         return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels'));

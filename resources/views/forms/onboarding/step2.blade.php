@@ -1480,11 +1480,6 @@ function validateStep2() {
         isValid = false;
     }
 
-    if (dopa && dopts && new Date(dopa) > new Date(dopts)) {
-        showError('date_posted_to_station', 'Date Posted to Station must be after Date of Present Appointment');
-        isValid = false;
-    }
-
     return isValid;
 }
 
