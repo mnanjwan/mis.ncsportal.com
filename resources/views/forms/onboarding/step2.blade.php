@@ -141,32 +141,26 @@
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Command/Present Station <span class="text-danger">*</span></label>
                         <div class="relative">
-                            <input type="text" 
-                                   id="command_search" 
-                                   class="kt-input w-full" 
-                                   placeholder="Select zone first, then search command..."
-                                   autocomplete="off"
-                                   readonly>
-                            <input type="hidden" 
-                                   name="command_id" 
-                                   id="command_id" 
-                                   value="{{ old('command_id', $savedData['command_id'] ?? '') }}"
-                                   required>
-                            <div id="command_dropdown" 
-                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
-                                <!-- Options will be populated by JavaScript -->
+                            <input type="hidden" name="command_id" id="command_id" value="{{ old('command_id', $savedData['command_id'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="command_id_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
+                                    disabled>
+                                <span id="command_id_select_text">Select zone first, then select command...</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="command_id_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="command_id_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search command..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="command_id_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
-                        <div id="selected_command" class="mt-2 p-2 bg-muted/50 rounded-lg hidden">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium" id="selected_command_name"></span>
-                                <button type="button" 
-                                        class="kt-btn kt-btn-sm kt-btn-ghost text-danger"
-                                        onclick="clearCommandSelection()">
-                                    <i class="ki-filled ki-cross"></i>
-                                </button>
-                            </div>
-                    </div>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -403,10 +397,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (firstItem && (firstItem.zone_id !== undefined || firstItem.zone !== undefined)) {
                     console.error('ERROR: Zones endpoint appears to be returning commands data instead of zones!', zonesData);
                     alert('Error: Zones endpoint is returning incorrect data. Please contact support.');
-                    return;
-                }
-                
-                // Initialize zone searchable select
+                    // Don't return - continue with other initializations
+                } else {
+                    // Initialize zone searchable select
                 const zoneOptions = [
                     {id: '', name: 'Select Zone...'},
                     ...zones.map(zone => ({id: zone.id, name: zone.name}))
@@ -428,19 +421,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (option.id) {
                                 loadCommandsForZone(option.id);
                             } else {
-                                clearCommandSelection();
+                                // Clear command selection when zone is cleared
+                                const commandTrigger = document.getElementById('command_id_select_trigger');
+                                const commandSelectText = document.getElementById('command_id_select_text');
+                                const commandHiddenInput = document.getElementById('command_id');
+                                if (commandTrigger && commandSelectText && commandHiddenInput) {
+                                    commandTrigger.disabled = true;
+                                    commandSelectText.textContent = 'Select zone first, then select command...';
+                                    commandHiddenInput.value = '';
+                                }
+                                clearError('command_id');
                             }
                         }
                     });
                     
-                    // Set initial value if saved
+                    // Set initial value if saved and load commands
                     if (savedZoneId) {
                         const savedZone = zones.find(z => z.id == savedZoneId);
                         if (savedZone) {
                             document.getElementById('zone_id').value = savedZoneId;
                             document.getElementById('zone_id_select_text').textContent = savedZone.name;
+                            // Load commands for the saved zone
+                            setTimeout(() => {
+                                loadCommandsForZone(savedZoneId, savedCommandId);
+                            }, 100);
                         }
                     }
+                }
                 }
             } else {
                 console.error('Zones data format error:', zonesData);
@@ -455,15 +462,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     zone_id: cmd.zone_id || (cmd.zone ? cmd.zone.id : null)
                 }));
                 
-                // If saved zone exists, load commands for that zone
-                if (savedZoneId) {
-                    // Wait a bit for zone select to be populated
-                    setTimeout(() => {
-                        loadCommandsForZone(savedZoneId, savedCommandId);
-                    }, 100);
-                }
-                
-                // Zone change is handled in the onSelect callback of the searchable select
+                // Commands will be loaded when zone is selected (handled in zone onSelect callback)
+                // If saved zone exists, it's already handled above in the zone initialization
             } else {
                 console.error('Commands data format error:', commandsData);
             }
@@ -488,79 +488,172 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error loading zones/commands:', error);
     }
     
-    // Initialize rank select
-    const ranks = @json($ranks ?? []);
-    if (ranks.length > 0) {
-        const rankOptions = [
-            {id: '', name: 'Select Rank...'},
-            ...ranks.map(rank => ({id: rank, name: rank}))
-        ];
-        
-        createSearchableSelect({
-            triggerId: 'substantive_rank_select_trigger',
-            hiddenInputId: 'substantive_rank',
-            dropdownId: 'substantive_rank_dropdown',
-            searchInputId: 'substantive_rank_search_input',
-            optionsContainerId: 'substantive_rank_options',
-            displayTextId: 'substantive_rank_select_text',
-            options: rankOptions,
-            placeholder: 'Select Rank...',
-            searchPlaceholder: 'Search rank...',
-            onSelect: function(option) {
-                // Auto-populate grade level when rank is selected
-                if (option.id && rankToGradeMap[option.id]) {
-                    const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
-                    const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
-                    if (gradeLevelHiddenInput && gradeLevelDisplayText) {
-                        gradeLevelHiddenInput.value = rankToGradeMap[option.id];
-                        gradeLevelDisplayText.textContent = rankToGradeMap[option.id];
-                        clearError('salary_grade_level');
+    // Initialize rank select (must happen regardless of zones/commands success)
+    try {
+        const ranks = @json($ranks ?? []);
+        if (ranks.length > 0) {
+            const rankOptions = [
+                {id: '', name: 'Select Rank...'},
+                ...ranks.map(rank => ({id: rank, name: rank}))
+            ];
+            
+            createSearchableSelect({
+                triggerId: 'substantive_rank_select_trigger',
+                hiddenInputId: 'substantive_rank',
+                dropdownId: 'substantive_rank_dropdown',
+                searchInputId: 'substantive_rank_search_input',
+                optionsContainerId: 'substantive_rank_options',
+                displayTextId: 'substantive_rank_select_text',
+                options: rankOptions,
+                placeholder: 'Select Rank...',
+                searchPlaceholder: 'Search rank...',
+                onSelect: function(option) {
+                    // Auto-populate grade level when rank is selected
+                    if (option.id && rankToGradeMap[option.id]) {
+                        const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+                        const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
+                        if (gradeLevelHiddenInput && gradeLevelDisplayText) {
+                            gradeLevelHiddenInput.value = rankToGradeMap[option.id];
+                            gradeLevelDisplayText.textContent = rankToGradeMap[option.id];
+                            clearError('salary_grade_level');
+                        }
                     }
                 }
+            });
+            
+            // Set initial value if saved
+            const savedRank = '{{ old('substantive_rank', $savedData['substantive_rank'] ?? '') }}';
+            if (savedRank) {
+                document.getElementById('substantive_rank').value = savedRank;
+                document.getElementById('substantive_rank_select_text').textContent = savedRank;
             }
-        });
-        
-        // Set initial value if saved
-        const savedRank = '{{ old('substantive_rank', $savedData['substantive_rank'] ?? '') }}';
-        if (savedRank) {
-            document.getElementById('substantive_rank').value = savedRank;
-            document.getElementById('substantive_rank_select_text').textContent = savedRank;
         }
+        
+        // Initialize grade level select
+        const gradeLevels = @json($gradeLevels ?? []);
+        if (gradeLevels.length > 0) {
+            const gradeLevelOptions = [
+                {id: '', name: 'Select Grade Level...'},
+                ...gradeLevels.map(level => ({id: level, name: level}))
+            ];
+            
+            createSearchableSelect({
+                triggerId: 'salary_grade_level_select_trigger',
+                hiddenInputId: 'salary_grade_level',
+                dropdownId: 'salary_grade_level_dropdown',
+                searchInputId: 'salary_grade_level_search_input',
+                optionsContainerId: 'salary_grade_level_options',
+                displayTextId: 'salary_grade_level_select_text',
+                options: gradeLevelOptions,
+                placeholder: 'Select Grade Level...',
+                searchPlaceholder: 'Search grade level...'
+            });
+            
+            // Set initial value if saved
+            const savedGradeLevel = '{{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') }}';
+            if (savedGradeLevel) {
+                document.getElementById('salary_grade_level').value = savedGradeLevel;
+                document.getElementById('salary_grade_level_select_text').textContent = savedGradeLevel;
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing rank/grade level selects:', error);
     }
     
-    // Initialize grade level select
-    const gradeLevels = @json($gradeLevels ?? []);
-    if (gradeLevels.length > 0) {
-        const gradeLevelOptions = [
-            {id: '', name: 'Select Grade Level...'},
-            ...gradeLevels.map(level => ({id: level, name: level}))
+    // Initialize unit select
+    try {
+        // Unit options
+        const units = [
+            'GD',
+            'SS'
+        ];
+        
+        const unitOptions = [
+            {id: '', name: 'Select Unit...'},
+            ...units.map(unit => ({id: unit, name: unit}))
         ];
         
         createSearchableSelect({
-            triggerId: 'salary_grade_level_select_trigger',
-            hiddenInputId: 'salary_grade_level',
-            dropdownId: 'salary_grade_level_dropdown',
-            searchInputId: 'salary_grade_level_search_input',
-            optionsContainerId: 'salary_grade_level_options',
-            displayTextId: 'salary_grade_level_select_text',
-            options: gradeLevelOptions,
-            placeholder: 'Select Grade Level...',
-            searchPlaceholder: 'Search grade level...'
+            triggerId: 'unit_select_trigger',
+            hiddenInputId: 'unit_id',
+            dropdownId: 'unit_dropdown',
+            searchInputId: 'unit_search_input',
+            optionsContainerId: 'unit_options',
+            displayTextId: 'unit_select_text',
+            options: unitOptions,
+            placeholder: 'Select Unit...',
+            searchPlaceholder: 'Search unit...'
         });
         
         // Set initial value if saved
-        const savedGradeLevel = '{{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') }}';
-        if (savedGradeLevel) {
-            document.getElementById('salary_grade_level').value = savedGradeLevel;
-            document.getElementById('salary_grade_level_select_text').textContent = savedGradeLevel;
+        const savedUnit = '{{ old('unit', $savedData['unit'] ?? '') }}';
+        if (savedUnit) {
+            document.getElementById('unit_id').value = savedUnit;
+            document.getElementById('unit_select_text').textContent = savedUnit;
         }
+    } catch (error) {
+        console.error('Error initializing unit select:', error);
     }
     
-    // Initialize education entries
-    initializeEducationSection();
+    // Initialize education entries (must happen regardless of other initializations)
+    try {
+        initializeEducationSection();
+    } catch (error) {
+        console.error('Error initializing education section:', error);
+    }
     
     // Initialize rank to grade level auto-mapping
-    initializeRankGradeMapping();
+    try {
+        initializeRankGradeMapping();
+    } catch (error) {
+        console.error('Error initializing rank grade mapping:', error);
+    }
+    
+    // Form submission handler (must be inside DOMContentLoaded)
+    try {
+        const form = document.getElementById('onboarding-step2-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!validateStep2()) {
+                    const firstError = document.querySelector('.error-message:not(.hidden)');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return false;
+                }
+                
+                this.submit();
+            });
+            
+            // Clear errors on input
+            form.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', function() {
+                    clearError(this.name);
+                    // Clear education field errors
+                    const errorSpan = this.parentElement?.querySelector('.error-message');
+                    if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
+                        errorSpan.textContent = '';
+                        errorSpan.classList.add('hidden');
+                        this.classList.remove('border-danger');
+                    }
+                });
+                input.addEventListener('change', function() {
+                    clearError(this.name);
+                    // Clear education field errors
+                    const errorSpan = this.parentElement?.querySelector('.error-message');
+                    if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
+                        errorSpan.textContent = '';
+                        errorSpan.classList.add('hidden');
+                        this.classList.remove('border-danger');
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Error setting up form submission handler:', error);
+    }
 });
 
 // Nigerian Institutions List (Universities and other institutions)
@@ -1143,92 +1236,65 @@ function loadCommandsForZone(zoneId, savedCommandId = null) {
         return cmdZoneId == zoneId;
     });
     
-    // Clear previous command selection
-    clearCommandSelection();
+    // Enable command select button
+    const commandTrigger = document.getElementById('command_id_select_trigger');
+    const commandSelectText = document.getElementById('command_id_select_text');
+    const commandHiddenInput = document.getElementById('command_id');
     
-    // Enable command search
-    const commandSearch = document.getElementById('command_search');
-    commandSearch.readOnly = false;
-    commandSearch.placeholder = 'Search command...';
-    
-    // Re-initialize searchable select with filtered commands
-    initializeCommandSearch();
-    
-    // If saved command exists and belongs to this zone, set it
-    if (savedCommandId) {
-        const savedCmd = window.commands.find(c => c.id == savedCommandId);
-        if (savedCmd) {
-            commandSearch.value = savedCmd.name;
-            document.getElementById('command_id').value = savedCmd.id;
-            document.getElementById('selected_command_name').textContent = savedCmd.name;
-            document.getElementById('selected_command').classList.remove('hidden');
-        }
+    if (!commandTrigger || !commandSelectText || !commandHiddenInput) {
+        return;
     }
-}
-
-function initializeCommandSearch() {
-    const commandSearch = document.getElementById('command_search');
-    const commandId = document.getElementById('command_id');
-    const commandDropdown = document.getElementById('command_dropdown');
-    const selectedCommand = document.getElementById('selected_command');
-    const selectedCommandName = document.getElementById('selected_command_name');
     
-    commandSearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const commands = window.commands || [];
+    if (zoneId && window.commands.length > 0) {
+        commandTrigger.disabled = false;
         
-        const filtered = commands.filter(cmd => 
-            cmd.name.toLowerCase().includes(searchTerm)
-        );
+        // Create command options
+        const commandOptions = [
+            {id: '', name: 'Select Command...'},
+            ...window.commands.map(cmd => ({id: cmd.id, name: cmd.name}))
+        ];
         
-        if (filtered.length > 0 && searchTerm.length > 0) {
-            commandDropdown.innerHTML = filtered.map(cmd => 
-                '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
-                'data-id="' + cmd.id + '" ' +
-                'data-name="' + cmd.name + '">' + cmd.name + '</div>'
-            ).join('');
-            commandDropdown.classList.remove('hidden');
+        // Remove old event listeners by removing and re-adding the select
+        // First, clear any existing initialization
+        if (window.commandSelectInstance) {
+            // Remove old listeners by recreating elements (simpler approach)
+            const oldDropdown = document.getElementById('command_id_dropdown');
+            if (oldDropdown) {
+                oldDropdown.innerHTML = '<div class="p-3 border-b border-input"><input type="text" id="command_id_search_input" class="kt-input w-full pl-10" placeholder="Search command..." autocomplete="off"></div><div id="command_id_options" class="max-h-60 overflow-y-auto"></div>';
+            }
+        }
+        
+        // Initialize command searchable select
+        createSearchableSelect({
+            triggerId: 'command_id_select_trigger',
+            hiddenInputId: 'command_id',
+            dropdownId: 'command_id_dropdown',
+            searchInputId: 'command_id_search_input',
+            optionsContainerId: 'command_id_options',
+            displayTextId: 'command_id_select_text',
+            options: commandOptions,
+            placeholder: 'Select Command...',
+            searchPlaceholder: 'Search command...'
+        });
+        
+        window.commandSelectInstance = true;
+        
+        // Set initial value if saved
+        if (savedCommandId) {
+            const savedCmd = window.commands.find(c => c.id == savedCommandId);
+            if (savedCmd) {
+                commandHiddenInput.value = savedCmd.id;
+                commandSelectText.textContent = savedCmd.name;
+            }
         } else {
-            commandDropdown.classList.add('hidden');
+            commandHiddenInput.value = '';
+            commandSelectText.textContent = 'Select Command...';
         }
-    });
-    
-    commandDropdown.addEventListener('click', function(e) {
-        const option = e.target.closest('[data-id]');
-        if (option) {
-            const cmdId = option.dataset.id;
-            const cmdName = option.dataset.name;
-            commandId.value = cmdId;
-            commandSearch.value = cmdName;
-            selectedCommandName.textContent = cmdName;
-            selectedCommand.classList.remove('hidden');
-            commandDropdown.classList.add('hidden');
-            clearError('command_id');
-        }
-    });
-    
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!commandSearch.contains(e.target) && !commandDropdown.contains(e.target)) {
-            commandDropdown.classList.add('hidden');
-        }
-    });
-}
-
-function clearCommandSelection() {
-    const commandSearch = document.getElementById('command_search');
-    const commandId = document.getElementById('command_id');
-    const selectedCommand = document.getElementById('selected_command');
-    
-    commandSearch.value = '';
-    commandId.value = '';
-    selectedCommand.classList.add('hidden');
-    
-    // Reset command search to readonly if no zone selected
-    const zoneId = document.getElementById('zone_id').value;
-    if (!zoneId) {
-        commandSearch.readOnly = true;
-        commandSearch.placeholder = 'Select zone first, then search command...';
+    } else {
+        // No zone selected or no commands available
+        commandTrigger.disabled = true;
+        commandSelectText.textContent = 'Select zone first, then select command...';
+        commandHiddenInput.value = '';
     }
     
     clearError('command_id');
@@ -1352,41 +1418,6 @@ function validateStep2() {
     return isValid;
 }
 
-// Form submission handler
-document.getElementById('onboarding-step2-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if (!validateStep2()) {
-        const firstError = document.querySelector('.error-message:not(.hidden)');
-        if (firstError) {
-            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return false;
-    }
-    
-    this.submit();
-});
-
-// Rank to Grade Level mapping
-const rankToGradeMap = {
-    'CGC': 'GL 18',
-    'DCG': 'GL 17',
-    'ACG': 'GL 16',
-    'CC': 'GL 15',
-    'DC': 'GL 14',
-    'AC': 'GL 13',
-    'CSC': 'GL 12',
-    'SC': 'GL 11',
-    'DSC': 'GL 10',
-    'ASC I': 'GL 09',
-    'ASC II': 'GL 08',
-    'IC': 'GL 07',
-    'AIC': 'GL 06',
-    'CA I': 'GL 05',
-    'CA II': 'GL 04',
-    'CA III': 'GL 03',
-};
-
 // Auto-populate grade level when rank is selected
 function initializeRankGradeMapping() {
     const rankHiddenInput = document.getElementById('substantive_rank');
@@ -1443,29 +1474,7 @@ function initializeRankGradeMapping() {
     }
 }
 
-// Clear errors on input
-document.querySelectorAll('#onboarding-step2-form input, #onboarding-step2-form select').forEach(input => {
-    input.addEventListener('input', function() {
-        clearError(this.name);
-        // Clear education field errors
-        const errorSpan = this.parentElement?.querySelector('.error-message');
-        if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
-            errorSpan.textContent = '';
-            errorSpan.classList.add('hidden');
-            this.classList.remove('border-danger');
-        }
-    });
-    input.addEventListener('change', function() {
-        clearError(this.name);
-        // Clear education field errors
-        const errorSpan = this.parentElement?.querySelector('.error-message');
-        if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
-            errorSpan.textContent = '';
-            errorSpan.classList.add('hidden');
-            this.classList.remove('border-danger');
-        }
-    });
-});
+// Clear errors on input - moved inside DOMContentLoaded above
 </script>
 @endpush
 @endsection
