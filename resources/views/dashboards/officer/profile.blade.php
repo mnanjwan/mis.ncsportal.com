@@ -35,6 +35,12 @@
                         <input type="file" id="profile-picture-upload" class="hidden" accept="image/*">
                         @endif
                     </div>
+                    @if($isOnboarded)
+                    <div class="text-xs" style="color: red; margin-top: 0.5rem;">
+                        <strong>Document Type Allowed:</strong> Images (all types)<br>
+                        <strong>Document Size Allowed:</strong> Maximum 5MB
+                    </div>
+                    @endif
                     <div class="flex flex-col gap-2 grow">
                         <h2 class="text-2xl font-semibold text-mono">
                             {{ $officer->initials ?? '' }} {{ $officer->surname ?? '' }}

@@ -101,22 +101,26 @@
                             <label for="relationship" class="block text-sm font-medium text-foreground mb-2">
                                 Relationship <span class="text-danger">*</span>
                             </label>
-                            <select id="relationship" 
-                                    name="relationship" 
-                                    class="kt-input w-full" 
-                                    required>
-                                <option value="">Select Relationship</option>
-                                <option value="Spouse" {{ old('relationship', $nextOfKin->relationship) == 'Spouse' ? 'selected' : '' }}>Spouse</option>
-                                <option value="Father" {{ old('relationship', $nextOfKin->relationship) == 'Father' ? 'selected' : '' }}>Father</option>
-                                <option value="Mother" {{ old('relationship', $nextOfKin->relationship) == 'Mother' ? 'selected' : '' }}>Mother</option>
-                                <option value="Brother" {{ old('relationship', $nextOfKin->relationship) == 'Brother' ? 'selected' : '' }}>Brother</option>
-                                <option value="Sister" {{ old('relationship', $nextOfKin->relationship) == 'Sister' ? 'selected' : '' }}>Sister</option>
-                                <option value="Son" {{ old('relationship', $nextOfKin->relationship) == 'Son' ? 'selected' : '' }}>Son</option>
-                                <option value="Daughter" {{ old('relationship', $nextOfKin->relationship) == 'Daughter' ? 'selected' : '' }}>Daughter</option>
-                                <option value="Uncle" {{ old('relationship', $nextOfKin->relationship) == 'Uncle' ? 'selected' : '' }}>Uncle</option>
-                                <option value="Aunt" {{ old('relationship', $nextOfKin->relationship) == 'Aunt' ? 'selected' : '' }}>Aunt</option>
-                                <option value="Other" {{ old('relationship', $nextOfKin->relationship) == 'Other' ? 'selected' : '' }}>Other</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="relationship" id="relationship" value="{{ old('relationship', $nextOfKin->relationship) ?? '' }}" required>
+                                <button type="button" 
+                                        id="relationship_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="relationship_select_text">{{ old('relationship', $nextOfKin->relationship) ? old('relationship', $nextOfKin->relationship) : 'Select Relationship' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="relationship_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-input">
+                                        <input type="text" 
+                                               id="relationship_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search relationship..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="relationship_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Phone Number -->
@@ -205,3 +209,141 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+// Initialize relationship select
+document.addEventListener('DOMContentLoaded', function() {
+    const relationshipOptions = [
+        {id: '', name: 'Select Relationship'},
+        {id: 'Spouse', name: 'Spouse'},
+        {id: 'Father', name: 'Father'},
+        {id: 'Mother', name: 'Mother'},
+        {id: 'Brother', name: 'Brother'},
+        {id: 'Sister', name: 'Sister'},
+        {id: 'Son', name: 'Son'},
+        {id: 'Daughter', name: 'Daughter'},
+        {id: 'Uncle', name: 'Uncle'},
+        {id: 'Aunt', name: 'Aunt'},
+        {id: 'Other', name: 'Other'}
+    ];
+
+    if (document.getElementById('relationship_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'relationship_select_trigger',
+            hiddenInputId: 'relationship',
+            dropdownId: 'relationship_dropdown',
+            searchInputId: 'relationship_search_input',
+            optionsContainerId: 'relationship_options',
+            displayTextId: 'relationship_select_text',
+            options: relationshipOptions,
+            placeholder: 'Select Relationship',
+            searchPlaceholder: 'Search relationship...'
+        });
+    }
+});
+</script>
+@endpush

@@ -36,27 +36,63 @@
                         <!-- Command Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Command</label>
-                            <select name="command_id" class="kt-input w-full">
-                                <option value="">All Commands</option>
-                                @foreach($commands as $command)
-                                    <option value="{{ $command->id }}" {{ request('command_id') == $command->id ? 'selected' : '' }}>
-                                        {{ $command->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="command_id" id="filter_command_id" value="{{ request('command_id') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_command_select_text">{{ request('command_id') ? ($commands->firstWhere('id', request('command_id'))->name ?? 'All Commands') : 'All Commands' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_command_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search commands..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_command_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Year Select -->
                         <div class="w-full md:w-36">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Year</label>
-                            <select name="year" class="kt-input w-full">
-                                <option value="">All Years</option>
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>
-                                        {{ $year }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="year" id="filter_year_id" value="{{ request('year') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_year_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_year_select_text">{{ request('year') ? request('year') : 'All Years' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_year_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_year_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search years..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_year_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
@@ -327,7 +363,143 @@
 
     @push('scripts')
     <script>
+        // Filter options data
+        @php
+            $commandOptions = $commands->map(function($command) {
+                return ['id' => $command->id, 'name' => $command->name];
+            })->values();
+            $commandOptions->prepend(['id' => '', 'name' => 'All Commands']);
+            $yearOptions = collect($years)->map(function($year) {
+                return ['id' => $year, 'name' => $year];
+            })->values();
+            $yearOptions->prepend(['id' => '', 'name' => 'All Years']);
+        @endphp
+        const commandOptions = @json($commandOptions);
+        const yearOptions = @json($yearOptions);
+
+        // Reusable function to create searchable select
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
+            let selectedOption = null;
+            let filteredOptions = [...options];
+
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
+                }
+
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                    const value = opt.id || opt.value || '';
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => (o.id || o.value || '') == id);
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                        }
+                    });
+                });
+            }
+
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                    return display.toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize filter selects
+            createSearchableSelect({
+                triggerId: 'filter_command_select_trigger',
+                hiddenInputId: 'filter_command_id',
+                dropdownId: 'filter_command_dropdown',
+                searchInputId: 'filter_command_search_input',
+                optionsContainerId: 'filter_command_options',
+                displayTextId: 'filter_command_select_text',
+                options: commandOptions,
+                placeholder: 'All Commands',
+                searchPlaceholder: 'Search commands...'
+            });
+
+            createSearchableSelect({
+                triggerId: 'filter_year_select_trigger',
+                hiddenInputId: 'filter_year_id',
+                dropdownId: 'filter_year_dropdown',
+                searchInputId: 'filter_year_search_input',
+                optionsContainerId: 'filter_year_options',
+                displayTextId: 'filter_year_select_text',
+                options: yearOptions,
+                placeholder: 'All Years',
+                searchPlaceholder: 'Search years...'
+            });
+
+            // Bulk selection functionality
             const selectAll = document.getElementById('select-all');
             const checkboxes = document.querySelectorAll('.emolument-checkbox');
             const bulkActions = document.getElementById('bulk-actions');

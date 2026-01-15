@@ -84,9 +84,10 @@
                                    accept=".csv,.txt"
                                    class="kt-input w-full" 
                                    required>
-                            <p class="text-xs text-secondary-foreground mt-1">
-                                Accepted formats: CSV, TXT (Maximum file size: 5MB)
-                            </p>
+                            <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
+                                <strong>Document Type Allowed:</strong> CSV, TXT<br>
+                                <strong>Document Size Allowed:</strong> Maximum 5MB
+                            </span>
                         </div>
 
                         <!-- CSV Format Instructions -->

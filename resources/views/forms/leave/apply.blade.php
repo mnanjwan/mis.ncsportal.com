@@ -63,14 +63,33 @@
                 <div class="kt-card-content space-y-5">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono">Leave Type</label>
-                        <select class="kt-input" name="leave_type_id" id="leave-type" required>
-                            <option value="">Select Leave Type</option>
-                            @foreach($leaveTypes as $type)
-                                <option value="{{ $type->id }}" {{ old('leave_type_id') == $type->id ? 'selected' : '' }}>
-                                    {{ $type->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="leave_type_id" id="leave-type" value="{{ old('leave_type_id') ?? '' }}" required>
+                            <button type="button" 
+                                    id="leave_type_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="leave_type_select_text">
+                                    @if(old('leave_type_id'))
+                                        @php $selectedType = $leaveTypes->firstWhere('id', old('leave_type_id')); @endphp
+                                        {{ $selectedType ? $selectedType->name : 'Select Leave Type' }}
+                                    @else
+                                        Select Leave Type
+                                    @endif
+                                </span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="leave_type_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="leave_type_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search leave type..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="leave_type_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="grid sm:grid-cols-2 gap-5">
                         <div class="flex flex-col gap-1">
@@ -99,8 +118,11 @@
                         <label class="kt-form-label font-normal text-mono">Supporting Documents</label>
                         <input class="kt-input" type="file" name="medical_certificate"
                             accept="image/jpeg,application/pdf" />
-                        <span class="text-xs text-secondary-foreground">Upload supporting documents (JPEG or PDF
-                            format)</span>
+                        <span class="text-xs text-secondary-foreground">Upload supporting documents</span>
+                        <span class="text-xs" style="color: red;">
+                            <strong>Document Type Allowed:</strong> JPEG or PDF format<br>
+                            <strong>Document Size Allowed:</strong> Maximum 5MB
+                        </span>
                     </div>
                 </div>
                 <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">
@@ -148,15 +170,148 @@
 
     @push('scripts')
         <script>
+            // Reusable function to create searchable select
+            function createSearchableSelect(config) {
+                const {
+                    triggerId,
+                    hiddenInputId,
+                    dropdownId,
+                    searchInputId,
+                    optionsContainerId,
+                    displayTextId,
+                    options,
+                    displayFn,
+                    onSelect,
+                    placeholder = 'Select...',
+                    searchPlaceholder = 'Search...'
+                } = config;
+
+                const trigger = document.getElementById(triggerId);
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const dropdown = document.getElementById(dropdownId);
+                const searchInput = document.getElementById(searchInputId);
+                const optionsContainer = document.getElementById(optionsContainerId);
+                const displayText = document.getElementById(displayTextId);
+
+                if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+                    return;
+                }
+
+                let selectedOption = null;
+                let filteredOptions = [...options];
+
+                // Render options
+                function renderOptions(opts) {
+                    if (opts.length === 0) {
+                        optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                        return;
+                    }
+
+                    optionsContainer.innerHTML = opts.map(opt => {
+                        const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                        const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                        return `
+                            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                                 data-id="${value}" 
+                                 data-name="${display}">
+                                <div class="text-sm text-foreground">${display}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Add click handlers
+                    optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const name = this.dataset.name;
+                            selectedOption = options.find(o => {
+                                const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                                return String(optValue) === String(id);
+                            });
+                            
+                            if (selectedOption || id === '') {
+                                hiddenInput.value = id;
+                                displayText.textContent = name;
+                                dropdown.classList.add('hidden');
+                                searchInput.value = '';
+                                filteredOptions = [...options];
+                                renderOptions(filteredOptions);
+                                
+                                if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                            }
+                        });
+                    });
+                }
+
+                // Initial render
+                renderOptions(filteredOptions);
+
+                // Search functionality
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    filteredOptions = options.filter(opt => {
+                        const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                        return String(display).toLowerCase().includes(searchTerm);
+                    });
+                    renderOptions(filteredOptions);
+                });
+
+                // Toggle dropdown
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (!dropdown.classList.contains('hidden')) {
+                        setTimeout(() => searchInput.focus(), 100);
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+
             document.addEventListener('DOMContentLoaded', () => {
+                // Leave type options
+                const leaveTypeOptions = [
+                    {id: '', name: 'Select Leave Type'},
+                    @foreach($leaveTypes as $type)
+                    {id: '{{ $type->id }}', name: '{{ $type->name }}'},
+                    @endforeach
+                ];
+
+                // Initialize leave type select
+                if (document.getElementById('leave_type_select_trigger')) {
+                    createSearchableSelect({
+                        triggerId: 'leave_type_select_trigger',
+                        hiddenInputId: 'leave-type',
+                        dropdownId: 'leave_type_dropdown',
+                        searchInputId: 'leave_type_search_input',
+                        optionsContainerId: 'leave_type_options',
+                        displayTextId: 'leave_type_select_text',
+                        options: leaveTypeOptions,
+                        placeholder: 'Select Leave Type',
+                        searchPlaceholder: 'Search leave type...',
+                        onSelect: function(option) {
+                            toggleEddField();
+                        }
+                    });
+                }
+
                 // Show EDD field for Maternity Leave
-                const leaveTypeSelect = document.getElementById('leave-type');
+                const leaveTypeHiddenInput = document.getElementById('leave-type');
                 const eddField = document.getElementById('edd_field');
-                const eddInput = eddField.querySelector('input');
+                const eddInput = eddField?.querySelector('input');
 
                 function toggleEddField() {
-                    const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
-                    if (selectedOption && selectedOption.text.includes('Maternity Leave')) {
+                    if (!eddField || !eddInput) return;
+                    
+                    const leaveTypeId = leaveTypeHiddenInput?.value;
+                    const leaveTypeName = document.getElementById('leave_type_select_text')?.textContent || '';
+                    
+                    if (leaveTypeName.includes('Maternity Leave')) {
                         eddField.style.display = 'block';
                         eddInput.required = true;
                     } else {
@@ -165,7 +320,19 @@
                     }
                 }
 
-                leaveTypeSelect.addEventListener('change', toggleEddField);
+                // Listen for changes on the hidden input
+                if (leaveTypeHiddenInput) {
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                                toggleEddField();
+                            }
+                        });
+                    });
+                    observer.observe(leaveTypeHiddenInput, { attributes: true, attributeFilter: ['value'] });
+                    
+                    leaveTypeHiddenInput.addEventListener('input', toggleEddField);
+                }
 
                 // Check on load in case of validation errors redirecting back
                 toggleEddField();

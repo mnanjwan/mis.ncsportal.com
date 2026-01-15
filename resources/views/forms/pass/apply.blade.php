@@ -83,8 +83,11 @@
                         <label class="kt-form-label font-normal text-mono">Supporting Documents</label>
                         <input class="kt-input" type="file" name="supporting_documents" accept="image/jpeg,application/pdf"
                             multiple />
-                        <span class="text-xs text-secondary-foreground">Upload supporting documents (JPEG or PDF
-                            format)</span>
+                        <span class="text-xs text-secondary-foreground">Upload supporting documents</span>
+                        <span class="text-xs" style="color: red;">
+                            <strong>Document Type Allowed:</strong> JPEG or PDF format (multiple files allowed)<br>
+                            <strong>Document Size Allowed:</strong> Maximum 5MB per file
+                        </span>
                     </div>
                 </div>
                 <div class="kt-card-footer flex justify-end items-center flex-wrap gap-3">

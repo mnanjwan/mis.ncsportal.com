@@ -136,9 +136,10 @@
                                    name="death_certificate" 
                                    class="kt-input w-full"
                                    accept=".jpeg,.jpg,.png,.pdf">
-                            <p class="text-xs text-secondary-foreground mt-1">
-                                Accepted formats: JPEG, JPG, PNG, PDF (Max: 5MB)
-                            </p>
+                            <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
+                                <strong>Document Type Allowed:</strong> JPEG, JPG, PNG, PDF<br>
+                                <strong>Document Size Allowed:</strong> Maximum 5MB
+                            </span>
                         </div>
 
                         <!-- Notes -->

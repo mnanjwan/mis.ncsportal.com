@@ -38,12 +38,26 @@
                                     @endphp
                                     <tr class="leave-row">
                                         <td class="py-2 px-3">
-                                            <select name="sick_leave_records[{{ $index }}][type]" class="kt-input text-sm">
-                                                <option value="">Select...</option>
-                                                <option value="Hospitalisation" {{ ($sickLeave['type'] ?? '') == 'Hospitalisation' ? 'selected' : '' }}>Hospitalisation</option>
-                                                <option value="Treatment Abroad" {{ ($sickLeave['type'] ?? '') == 'Treatment Abroad' ? 'selected' : '' }}>Treatment Received Abroad</option>
-                                                <option value="Sick Leave" {{ ($sickLeave['type'] ?? '') == 'Sick Leave' ? 'selected' : '' }}>Sick Leave</option>
-                                            </select>
+                                            <div class="relative">
+                                                <input type="hidden" name="sick_leave_records[{{ $index }}][type]" id="sick_leave_type_{{ $index }}_id" value="{{ $sickLeave['type'] ?? '' }}">
+                                                <button type="button" 
+                                                        id="sick_leave_type_{{ $index }}_select_trigger" 
+                                                        class="kt-input text-sm w-full text-left flex items-center justify-between cursor-pointer">
+                                                    <span id="sick_leave_type_{{ $index }}_select_text">{{ $sickLeave['type'] ?? 'Select...' }}</span>
+                                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                                </button>
+                                                <div id="sick_leave_type_{{ $index }}_dropdown" 
+                                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                                    <div class="p-3 border-b border-input">
+                                                        <input type="text" 
+                                                               id="sick_leave_type_{{ $index }}_search_input" 
+                                                               class="kt-input w-full pl-10 text-sm" 
+                                                               placeholder="Search..."
+                                                               autocomplete="off">
+                                                    </div>
+                                                    <div id="sick_leave_type_{{ $index }}_options" class="max-h-60 overflow-y-auto"></div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="py-2 px-3">
                                             <input type="date" name="sick_leave_records[{{ $index }}][from]" class="kt-input text-sm" value="{{ $sickLeave['from'] ?? '' }}">
@@ -299,20 +313,50 @@
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(b) Was there any joint discussion between you and your Supervisor on how to accomplish the targets set?</label>
-                        <select name="joint_discussion" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="YES" {{ old('joint_discussion', $formData['joint_discussion'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('joint_discussion', $formData['joint_discussion'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="joint_discussion" id="joint_discussion_id" value="{{ old('joint_discussion', $formData['joint_discussion'] ?? '') }}">
+                            <button type="button" 
+                                    id="joint_discussion_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="joint_discussion_select_text">{{ old('joint_discussion', $formData['joint_discussion'] ?? '') ? old('joint_discussion', $formData['joint_discussion'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="joint_discussion_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="joint_discussion_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="joint_discussion_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(c) Were you properly equipped professionally/Technical/ administratively to perform the jobs Allocated to You. YES/NO. If not what were your difficulties or constraints?</label>
                         <div class="flex flex-col gap-2">
-                            <select name="properly_equipped" class="kt-input">
-                                <option value="">Select...</option>
-                                <option value="YES" {{ old('properly_equipped', $formData['properly_equipped'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
-                                <option value="NO" {{ old('properly_equipped', $formData['properly_equipped'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="properly_equipped" id="properly_equipped_id" value="{{ old('properly_equipped', $formData['properly_equipped'] ?? '') }}">
+                                <button type="button" 
+                                        id="properly_equipped_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="properly_equipped_select_text">{{ old('properly_equipped', $formData['properly_equipped'] ?? '') ? old('properly_equipped', $formData['properly_equipped'] ?? '') : 'Select...' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="properly_equipped_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-input">
+                                        <input type="text" 
+                                               id="properly_equipped_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="properly_equipped_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
                             <textarea name="equipment_difficulties" class="kt-input" rows="3" placeholder="If NO, describe difficulties or constraints">{{ old('equipment_difficulties', $formData['equipment_difficulties'] ?? '') }}</textarea>
                         </div>
                     </div>
@@ -330,11 +374,26 @@
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(g) After the review, did your performance measure up the prescribed standards set at the beginning of the year?</label>
-                        <select name="performance_measure_up" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="YES" {{ old('performance_measure_up', $formData['performance_measure_up'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('performance_measure_up', $formData['performance_measure_up'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="performance_measure_up" id="performance_measure_up_id" value="{{ old('performance_measure_up', $formData['performance_measure_up'] ?? '') }}">
+                            <button type="button" 
+                                    id="performance_measure_up_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="performance_measure_up_select_text">{{ old('performance_measure_up', $formData['performance_measure_up'] ?? '') ? old('performance_measure_up', $formData['performance_measure_up'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="performance_measure_up_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="performance_measure_up_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="performance_measure_up_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(h) If the answer to (g) above is No, state what solution or admonition was given for the shortcomings:</label>
@@ -350,11 +409,26 @@
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(k) Did the performance of these ad hoc duties affect your real duties and if so, did you bring these to the attention of your supervisor?</label>
-                        <select name="adhoc_affected_duties" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="YES" {{ old('adhoc_affected_duties', $formData['adhoc_affected_duties'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('adhoc_affected_duties', $formData['adhoc_affected_duties'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="adhoc_affected_duties" id="adhoc_affected_duties_id" value="{{ old('adhoc_affected_duties', $formData['adhoc_affected_duties'] ?? '') }}">
+                            <button type="button" 
+                                    id="adhoc_affected_duties_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="adhoc_affected_duties_select_text">{{ old('adhoc_affected_duties', $formData['adhoc_affected_duties'] ?? '') ? old('adhoc_affected_duties', $formData['adhoc_affected_duties'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="adhoc_affected_duties_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="adhoc_affected_duties_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="adhoc_affected_duties_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="flex flex-col gap-2">

@@ -15,22 +15,52 @@
             <!-- Targets Agreement -->
             <div class="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg border border-border/50">
                 <label class="kt-form-label mb-0 font-medium">(a) Did you and the person reported upon agree on the targets set?</label>
-                <select name="targets_agreed" class="kt-input max-w-xs">
-                    <option value="">-- Select YES or NO --</option>
-                    <option value="YES" {{ old('targets_agreed', $form->targets_agreed) == 'YES' ? 'selected' : '' }}>YES</option>
-                    <option value="NO" {{ old('targets_agreed', $form->targets_agreed) == 'NO' ? 'selected' : '' }}>NO</option>
-                </select>
+                <div class="relative max-w-xs">
+                    <input type="hidden" name="targets_agreed" id="targets_agreed_id" value="{{ old('targets_agreed', $form->targets_agreed) ?? '' }}">
+                    <button type="button" 
+                            id="targets_agreed_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="targets_agreed_select_text">{{ old('targets_agreed', $form->targets_agreed) ? old('targets_agreed', $form->targets_agreed) : '-- Select YES or NO --' }}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="targets_agreed_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="targets_agreed_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="targets_agreed_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
                 <textarea name="targets_agreement_details" class="kt-input" rows="3" placeholder="If NO, please provide details...">{{ old('targets_agreement_details', $form->targets_agreement_details) }}</textarea>
             </div>
             
             <!-- Duties Agreement -->
             <div class="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg border border-border/50">
                 <label class="kt-form-label mb-0 font-medium">(b) Did you and the person reported upon agree on the main duties performed and the order of importance under the target set?</label>
-                <select name="duties_agreed" class="kt-input max-w-xs">
-                    <option value="">-- Select YES or NO --</option>
-                    <option value="YES" {{ old('duties_agreed', $form->duties_agreed) == 'YES' ? 'selected' : '' }}>YES</option>
-                    <option value="NO" {{ old('duties_agreed', $form->duties_agreed) == 'NO' ? 'selected' : '' }}>NO</option>
-                </select>
+                <div class="relative max-w-xs">
+                    <input type="hidden" name="duties_agreed" id="duties_agreed_id" value="{{ old('duties_agreed', $form->duties_agreed) ?? '' }}">
+                    <button type="button" 
+                            id="duties_agreed_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="duties_agreed_select_text">{{ old('duties_agreed', $form->duties_agreed) ? old('duties_agreed', $form->duties_agreed) : '-- Select YES or NO --' }}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="duties_agreed_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="duties_agreed_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="duties_agreed_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
                 <p class="text-xs text-secondary-foreground italic">(If NO, please discuss the changes with the officer and record any unsolved differences here)</p>
                 <textarea name="duties_agreement_details" class="kt-input" rows="3" placeholder="Record any differences or disagreements...">{{ old('duties_agreement_details', $form->duties_agreement_details) }}</textarea>
             </div>

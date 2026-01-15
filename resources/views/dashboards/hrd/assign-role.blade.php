@@ -47,39 +47,41 @@
                         </div>
                     </div>
 
-                    <!-- Command Selection (Searchable) -->
+                    <!-- Command Selection (Searchable Select) -->
                     <div>
                         <label class="block text-sm font-medium mb-1">
                             Command <span id="command_required_indicator" class="text-danger hidden">*</span>
                         </label>
                         <div class="relative">
-                            <input type="text" 
-                                   id="command_search" 
-                                   class="kt-input w-full" 
-                                   placeholder="Search command..."
-                                   autocomplete="off">
-                            <input type="hidden" 
-                                   name="command_id" 
-                                   id="command_id">
+                            <input type="hidden" name="command_id" id="command_id">
+                            <button type="button" 
+                                    id="command_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="command_select_text">Select Command</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
                             <div id="command_dropdown" 
-                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
-                                <!-- Options will be populated by JavaScript -->
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="command_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search commands..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="command_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
                             </div>
                         </div>
-                        <div id="selected_command" class="mt-2 p-2 bg-muted/50 rounded-lg hidden">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium" id="selected_command_name"></span>
-                                <button type="button" 
-                                        id="clear_command" 
-                                        class="kt-btn kt-btn-sm kt-btn-ghost text-danger">
-                                    <i class="ki-filled ki-cross"></i>
-                                </button>
-                            </div>
-                        </div>
+                        <p class="text-xs text-secondary-foreground mt-1" id="command_info">Select a command to view officers in that command</p>
                         @error('command_id')
                             <p class="text-danger text-sm mt-1">{{ $message }}</p>
                         @enderror
-                        <p class="text-xs text-secondary-foreground mt-1">Select a command to view officers in that command</p>
                     </div>
 
                     <!-- Officer Selection (Searchable Select) -->
@@ -101,7 +103,6 @@
                                 <!-- Search Box -->
                                 <div class="p-3 border-b border-input">
                                     <div class="relative">
-                                        <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                                         <input type="text" 
                                                id="officer_search_input" 
                                                class="kt-input w-full pl-10" 
@@ -123,29 +124,37 @@
                         @enderror
                     </div>
 
-                    <!-- Role Selection -->
+                    <!-- Role Selection (Searchable Select) -->
                     <div>
                         <label class="block text-sm font-medium mb-1">
                             Role <span class="text-danger">*</span>
                         </label>
-                        <select name="role_id" id="role_id" class="kt-input w-full" required onchange="toggleCommandRequirement()">
-                            <option value="">Select Role</option>
-                            @php
-                                $roleDisplayMap = [
-                                    'Zone Coordinator' => 'Zonal Coordinator',
-                                    'Area Controller' => 'Head of Unit'
-                                ];
-                            @endphp
-                            @foreach($allRoles as $role)
-                                <option value="{{ $role->id }}" 
-                                        data-requires-command="{{ in_array($role->name, $commandBasedRoles ?? []) ? '1' : '0' }}">
-                                    {{ $roleDisplayMap[$role->name] ?? $role->name }}
-                                    @if(in_array($role->name, $commandBasedRoles ?? []))
-                                        (Requires Command)
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="role_id" id="role_id" required>
+                            <button type="button" 
+                                    id="role_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="role_select_text">Select Role</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="role_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="role_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search roles..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="role_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                         <p class="text-xs text-secondary-foreground mt-1" id="role_info"></p>
                         @error('role_id')
                             <p class="text-danger text-sm mt-1">{{ $message }}</p>
@@ -177,99 +186,162 @@
                     'code' => $command->code ?? ''
                 ];
             })->values();
+            $roleDisplayMap = [
+                'Zone Coordinator' => 'Zonal Coordinator',
+                'Area Controller' => 'Head of Unit'
+            ];
+            $rolesData = $allRoles->map(function($role) use ($roleDisplayMap, $commandBasedRoles) {
+                $baseName = $roleDisplayMap[$role->name] ?? $role->name;
+                $requiresCommand = in_array($role->name, $commandBasedRoles ?? []);
+                return [
+                    'id' => $role->id,
+                    'name' => $baseName,
+                    'requiresCommand' => $requiresCommand ? '1' : '0',
+                    'displayName' => $baseName . ($requiresCommand ? ' (Requires Command)' : '')
+                ];
+            })->values();
         @endphp
         const commands = @json($commandsData);
+        const roles = @json($rolesData);
         let officers = [];
 
-        // Searchable Select Helper Function
-        function createSearchableSelect(searchInput, hiddenInput, dropdown, selectedDiv, selectedName, options, onSelect, displayFn) {
+        // Reusable function to create searchable select (matching Officer pattern)
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
             let selectedOption = null;
+            let filteredOptions = [...options];
 
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const filtered = options.filter(opt => {
-                    if (displayFn) {
-                        return displayFn(opt).toLowerCase().includes(searchTerm);
-                    }
-                    const nameMatch = opt.name && opt.name.toLowerCase().includes(searchTerm);
-                    const codeMatch = opt.code && opt.code.toLowerCase().includes(searchTerm);
-                    return nameMatch || codeMatch;
-                });
-
-                if (filtered.length > 0 && searchTerm.length > 0) {
-                    dropdown.innerHTML = filtered.map(opt => {
-                        const display = displayFn ? displayFn(opt) : (opt.name + (opt.code ? ' (' + opt.code + ')' : ''));
-                        return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0" ' +
-                                    'data-id="' + opt.id + '" ' +
-                                    'data-name="' + opt.name + '">' +
-                                    display +
-                                '</div>';
-                    }).join('');
-                    dropdown.classList.remove('hidden');
-                } else {
-                    dropdown.classList.add('hidden');
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
                 }
-            });
 
-            dropdown.addEventListener('click', function(e) {
-                const option = e.target.closest('[data-id]');
-                if (option) {
-                    selectedOption = options.find(o => o.id == option.dataset.id);
-                    if (selectedOption) {
-                        hiddenInput.value = selectedOption.id;
-                        const display = displayFn ? displayFn(selectedOption) : (selectedOption.name + (selectedOption.code ? ' (' + selectedOption.code + ')' : ''));
-                        searchInput.value = display;
-                        if (selectedName) {
-                            selectedDiv.querySelector(selectedName).textContent = display;
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.displayName || opt.name || opt.id);
+                    const value = opt.id || opt.value || '';
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => (o.id || o.value || '') == id);
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name || placeholder;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
                         }
-                        selectedDiv.classList.remove('hidden');
-                        dropdown.classList.add('hidden');
-                        if (onSelect) onSelect(selectedOption);
-                    }
-                }
-            });
-
-            // Clear selection
-            const clearBtn = selectedDiv.querySelector('button');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', function() {
-                    hiddenInput.value = '';
-                    searchInput.value = '';
-                    selectedDiv.classList.add('hidden');
-                    selectedOption = null;
-                    if (onSelect) onSelect(null);
+                    });
                 });
             }
 
-            // Hide dropdown when clicking outside
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.displayName || opt.name || opt.id || '');
+                    return display.toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                if (this.disabled) return;
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
-                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
                     dropdown.classList.add('hidden');
                 }
             });
         }
 
         // Initialize Command Searchable Select
-        createSearchableSelect(
-            document.getElementById('command_search'),
-            document.getElementById('command_id'),
-            document.getElementById('command_dropdown'),
-            document.getElementById('selected_command'),
-            '#selected_command_name',
-            commands,
-            function(selectedCommand) {
-                if (selectedCommand) {
-                    // Load officers for this command
-                    loadOfficersByCommand(selectedCommand.id);
-                } else {
-                    // Clear officers
-                    clearOfficers();
+        document.addEventListener('DOMContentLoaded', function() {
+            createSearchableSelect({
+                triggerId: 'command_select_trigger',
+                hiddenInputId: 'command_id',
+                dropdownId: 'command_dropdown',
+                searchInputId: 'command_search_input',
+                optionsContainerId: 'command_options',
+                displayTextId: 'command_select_text',
+                options: commands,
+                displayFn: (cmd) => cmd.name + (cmd.code ? ' (' + cmd.code + ')' : ''),
+                placeholder: 'Select Command',
+                searchPlaceholder: 'Search commands...',
+                onSelect: function(selectedCommand) {
+                    if (selectedCommand) {
+                        // Load officers for this command
+                        loadOfficersByCommand(selectedCommand.id);
+                    } else {
+                        // Clear officers
+                        clearOfficers();
+                    }
                 }
-            },
-            function(cmd) {
-                return cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
-            }
-        );
+            });
+
+            // Initialize Role Searchable Select
+            createSearchableSelect({
+                triggerId: 'role_select_trigger',
+                hiddenInputId: 'role_id',
+                dropdownId: 'role_dropdown',
+                searchInputId: 'role_search_input',
+                optionsContainerId: 'role_options',
+                displayTextId: 'role_select_text',
+                options: roles,
+                placeholder: 'Select Role',
+                searchPlaceholder: 'Search roles...',
+                onSelect: function(selectedRole) {
+                    toggleCommandRequirement();
+                }
+            });
+        });
 
         // Load officers by command
         function loadOfficersByCommand(commandId) {
@@ -437,14 +509,14 @@
 
         // Toggle command requirement based on selected role
         function toggleCommandRequirement() {
-            const roleSelect = document.getElementById('role_id');
+            const roleId = document.getElementById('role_id').value;
             const roleInfo = document.getElementById('role_info');
             const commandRequiredIndicator = document.getElementById('command_required_indicator');
             const commandIdInput = document.getElementById('command_id');
-            const selectedOption = roleSelect.options[roleSelect.selectedIndex];
+            const selectedRole = roles.find(r => r.id == roleId);
             
-            if (selectedOption && selectedOption.value) {
-                const requiresCommand = selectedOption.getAttribute('data-requires-command') === '1';
+            if (selectedRole && roleId) {
+                const requiresCommand = selectedRole.requiresCommand === '1';
                 if (requiresCommand) {
                     roleInfo.textContent = 'This role requires a command assignment.';
                     roleInfo.classList.remove('text-secondary-foreground');

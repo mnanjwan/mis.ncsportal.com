@@ -486,11 +486,26 @@
                         <label class="block text-sm font-medium text-foreground">
                             Verification Status <span class="text-danger">*</span>
                         </label>
-                        <select name="verification_status" class="kt-input" required>
-                            <option value="">Select status...</option>
-                            <option value="verified">Verified</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="verification_status" id="verification_status_id" value="{{ old('verification_status') ?? '' }}" required>
+                            <button type="button" 
+                                    id="verification_status_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="verification_status_select_text">{{ old('verification_status') ? (old('verification_status') === 'verified' ? 'Verified' : (old('verification_status') === 'rejected' ? 'Rejected' : 'Select status...')) : 'Select status...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="verification_status_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="verification_status_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search status..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="verification_status_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-foreground">
@@ -578,6 +593,130 @@
             modal.style.display = 'flex';
         }
     }
+
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+            return;
+        }
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => {
+                        const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                        return String(optValue) === String(id);
+                    });
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                return String(display).toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize verification status select
+    document.addEventListener('DOMContentLoaded', function() {
+        const verificationStatusOptions = [
+            {id: '', name: 'Select status...'},
+            {id: 'verified', name: 'Verified'},
+            {id: 'rejected', name: 'Rejected'}
+        ];
+
+        createSearchableSelect({
+            triggerId: 'verification_status_select_trigger',
+            hiddenInputId: 'verification_status_id',
+            dropdownId: 'verification_status_dropdown',
+            searchInputId: 'verification_status_search_input',
+            optionsContainerId: 'verification_status_options',
+            displayTextId: 'verification_status_select_text',
+            options: verificationStatusOptions,
+            placeholder: 'Select status...',
+            searchPlaceholder: 'Search status...'
+        });
+    });
 </script>
 @endpush
 

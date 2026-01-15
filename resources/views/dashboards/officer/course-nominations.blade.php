@@ -36,44 +36,125 @@
                         <!-- Status Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Status</label>
-                            <select name="status" class="kt-input w-full">
-                                <option value="">All Statuses</option>
-                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="status" id="filter_status_id" value="{{ request('status') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_status_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_status_select_text">{{ request('status') ? ucfirst(request('status')) : 'All Statuses' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_status_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_status_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search status..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_status_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Year Select -->
                         <div class="w-full md:w-36">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Year</label>
-                            <select name="year" class="kt-input w-full">
-                                <option value="">All Years</option>
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>
-                                        {{ $year }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="year" id="filter_year_id" value="{{ request('year') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_year_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_year_select_text">{{ request('year') ? request('year') : 'All Years' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_year_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_year_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search years..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_year_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Sort By -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Sort By</label>
-                            <select name="sort_by" class="kt-input w-full">
-                                <option value="start_date" {{ request('sort_by') == 'start_date' ? 'selected' : '' }}>Start Date</option>
-                                <option value="course_name" {{ request('sort_by') == 'course_name' ? 'selected' : '' }}>Course Name</option>
-                                <option value="completion_date" {{ request('sort_by') == 'completion_date' ? 'selected' : '' }}>Completion Date</option>
-                                <option value="created_at" {{ request('sort_by') == 'created_at' ? 'selected' : '' }}>Nominated Date</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="sort_by" id="filter_sort_by_id" value="{{ request('sort_by') ?? 'start_date' }}">
+                                <button type="button" 
+                                        id="filter_sort_by_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_sort_by_select_text">{{ request('sort_by') ? (request('sort_by') === 'start_date' ? 'Start Date' : (request('sort_by') === 'course_name' ? 'Course Name' : (request('sort_by') === 'completion_date' ? 'Completion Date' : 'Nominated Date'))) : 'Start Date' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_sort_by_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_sort_by_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search sort options..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_sort_by_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Sort Order -->
                         <div class="w-full md:w-36">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Order</label>
-                            <select name="sort_order" class="kt-input w-full">
-                                <option value="desc" {{ request('sort_order') == 'desc' ? 'selected' : '' }}>Descending</option>
-                                <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>Ascending</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="sort_order" id="filter_sort_order_id" value="{{ request('sort_order') ?? 'desc' }}">
+                                <button type="button" 
+                                        id="filter_sort_order_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_sort_order_select_text">{{ request('sort_order') ? (request('sort_order') === 'desc' ? 'Descending' : 'Ascending') : 'Descending' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_sort_order_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_sort_order_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search order..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_sort_order_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
@@ -297,5 +378,181 @@
             background: #555;
         }
     </style>
+
+<script>
+    // Filter options data
+    @php
+        $statusOptions = [
+            ['id' => '', 'name' => 'All Statuses'],
+            ['id' => 'pending', 'name' => 'Pending'],
+            ['id' => 'completed', 'name' => 'Completed']
+        ];
+        $yearOptions = collect($years)->map(function($year) {
+            return ['id' => $year, 'name' => $year];
+        })->values();
+        $yearOptions->prepend(['id' => '', 'name' => 'All Years']);
+        $sortByOptions = [
+            ['id' => 'start_date', 'name' => 'Start Date'],
+            ['id' => 'course_name', 'name' => 'Course Name'],
+            ['id' => 'completion_date', 'name' => 'Completion Date'],
+            ['id' => 'created_at', 'name' => 'Nominated Date']
+        ];
+        $sortOrderOptions = [
+            ['id' => 'desc', 'name' => 'Descending'],
+            ['id' => 'asc', 'name' => 'Ascending']
+        ];
+    @endphp
+    const statusOptions = @json($statusOptions);
+    const yearOptions = @json($yearOptions);
+    const sortByOptions = @json($sortByOptions);
+    const sortOrderOptions = @json($sortOrderOptions);
+
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                const value = opt.id || opt.value || '';
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => (o.id || o.value || '') == id);
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                return display.toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize filter selects
+    document.addEventListener('DOMContentLoaded', function() {
+        createSearchableSelect({
+            triggerId: 'filter_status_select_trigger',
+            hiddenInputId: 'filter_status_id',
+            dropdownId: 'filter_status_dropdown',
+            searchInputId: 'filter_status_search_input',
+            optionsContainerId: 'filter_status_options',
+            displayTextId: 'filter_status_select_text',
+            options: statusOptions,
+            placeholder: 'All Statuses',
+            searchPlaceholder: 'Search status...'
+        });
+
+        createSearchableSelect({
+            triggerId: 'filter_year_select_trigger',
+            hiddenInputId: 'filter_year_id',
+            dropdownId: 'filter_year_dropdown',
+            searchInputId: 'filter_year_search_input',
+            optionsContainerId: 'filter_year_options',
+            displayTextId: 'filter_year_select_text',
+            options: yearOptions,
+            placeholder: 'All Years',
+            searchPlaceholder: 'Search years...'
+        });
+
+        createSearchableSelect({
+            triggerId: 'filter_sort_by_select_trigger',
+            hiddenInputId: 'filter_sort_by_id',
+            dropdownId: 'filter_sort_by_dropdown',
+            searchInputId: 'filter_sort_by_search_input',
+            optionsContainerId: 'filter_sort_by_options',
+            displayTextId: 'filter_sort_by_select_text',
+            options: sortByOptions,
+            placeholder: 'Start Date',
+            searchPlaceholder: 'Search sort options...'
+        });
+
+        createSearchableSelect({
+            triggerId: 'filter_sort_order_select_trigger',
+            hiddenInputId: 'filter_sort_order_id',
+            dropdownId: 'filter_sort_order_dropdown',
+            searchInputId: 'filter_sort_order_search_input',
+            optionsContainerId: 'filter_sort_order_options',
+            displayTextId: 'filter_sort_order_select_text',
+            options: sortOrderOptions,
+            placeholder: 'Descending',
+            searchPlaceholder: 'Search order...'
+        });
+    });
+</script>
 @endsection
 

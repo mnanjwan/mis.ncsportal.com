@@ -46,12 +46,26 @@
                         <!-- Status Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Status</label>
-                            <select id="filter-status" class="kt-input w-full" onchange="loadRequests()">
-                                <option value="">All Requests</option>
-                                <option value="PENDING">Pending</option>
-                                <option value="APPROVED">Approved</option>
-                                <option value="REJECTED">Rejected</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" id="filter-status" value="">
+                                <button type="button" 
+                                        id="status_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="status_select_text">All Requests</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="status_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-input">
+                                        <input type="text" 
+                                               id="status_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search status..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="status_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
@@ -1078,6 +1092,134 @@
                     alert(message);
                 }
             }
+
+            // Reusable function to create searchable select
+            function createSearchableSelect(config) {
+                const {
+                    triggerId,
+                    hiddenInputId,
+                    dropdownId,
+                    searchInputId,
+                    optionsContainerId,
+                    displayTextId,
+                    options,
+                    displayFn,
+                    onSelect,
+                    placeholder = 'Select...',
+                    searchPlaceholder = 'Search...'
+                } = config;
+
+                const trigger = document.getElementById(triggerId);
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const dropdown = document.getElementById(dropdownId);
+                const searchInput = document.getElementById(searchInputId);
+                const optionsContainer = document.getElementById(optionsContainerId);
+                const displayText = document.getElementById(displayTextId);
+
+                if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+                    return;
+                }
+
+                let selectedOption = null;
+                let filteredOptions = [...options];
+
+                // Render options
+                function renderOptions(opts) {
+                    if (opts.length === 0) {
+                        optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                        return;
+                    }
+
+                    optionsContainer.innerHTML = opts.map(opt => {
+                        const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                        const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                        return `
+                            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                                 data-id="${value}" 
+                                 data-name="${display}">
+                                <div class="text-sm text-foreground">${display}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Add click handlers
+                    optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const name = this.dataset.name;
+                            selectedOption = options.find(o => {
+                                const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                                return String(optValue) === String(id);
+                            });
+                            
+                            if (selectedOption || id === '') {
+                                hiddenInput.value = id;
+                                displayText.textContent = name;
+                                dropdown.classList.add('hidden');
+                                searchInput.value = '';
+                                filteredOptions = [...options];
+                                renderOptions(filteredOptions);
+                                
+                                if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                            }
+                        });
+                    });
+                }
+
+                // Initial render
+                renderOptions(filteredOptions);
+
+                // Search functionality
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    filteredOptions = options.filter(opt => {
+                        const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                        return String(display).toLowerCase().includes(searchTerm);
+                    });
+                    renderOptions(filteredOptions);
+                });
+
+                // Toggle dropdown
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (!dropdown.classList.contains('hidden')) {
+                        setTimeout(() => searchInput.focus(), 100);
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Initialize status select on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                const statusOptions = [
+                    {id: '', name: 'All Requests'},
+                    {id: 'PENDING', name: 'Pending'},
+                    {id: 'APPROVED', name: 'Approved'},
+                    {id: 'REJECTED', name: 'Rejected'}
+                ];
+
+                createSearchableSelect({
+                    triggerId: 'status_select_trigger',
+                    hiddenInputId: 'filter-status',
+                    dropdownId: 'status_dropdown',
+                    searchInputId: 'status_search_input',
+                    optionsContainerId: 'status_options',
+                    displayTextId: 'status_select_text',
+                    options: statusOptions,
+                    placeholder: 'All Requests',
+                    searchPlaceholder: 'Search status...',
+                    onSelect: function() {
+                        loadRequests(1);
+                    }
+                });
+            });
         </script>
     @endpush
 @endsection

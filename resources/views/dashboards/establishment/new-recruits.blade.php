@@ -165,20 +165,26 @@
                                 <label for="substantive_rank" class="block text-sm font-medium text-foreground">
                                     Substantive Rank <span class="text-danger">*</span>
                                 </label>
-                                <select name="substantive_rank" 
-                                       id="substantive_rank"
-                                       class="kt-input @error('substantive_rank') kt-input-error @enderror"
-                                       required>
-                                    <option value="">Select Rank...</option>
-                                    @php
-                                        $ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
-                                    @endphp
-                                    @foreach($ranks as $rank)
-                                        <option value="{{ $rank }}" {{ old('substantive_rank') == $rank ? 'selected' : '' }}>
-                                            {{ $rank }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="substantive_rank" id="substantive_rank" value="{{ old('substantive_rank') ?? '' }}" required>
+                                    <button type="button" 
+                                            id="substantive_rank_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('substantive_rank') border-danger @enderror">
+                                        <span id="substantive_rank_select_text">{{ old('substantive_rank') ? old('substantive_rank') : 'Select Rank...' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="substantive_rank_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="substantive_rank_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search rank..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="substantive_rank_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                                 @error('substantive_rank')
                                     <p class="text-sm text-danger">{{ $message }}</p>
                                 @enderror
@@ -191,20 +197,26 @@
                                 <label for="salary_grade_level" class="block text-sm font-medium text-foreground">
                                     Salary Grade Level <span class="text-danger">*</span>
                                 </label>
-                                <select name="salary_grade_level" 
-                                       id="salary_grade_level"
-                                       class="kt-input @error('salary_grade_level') kt-input-error @enderror"
-                                       required>
-                                    <option value="">Select Grade Level...</option>
-                                    @php
-                                        $gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
-                                    @endphp
-                                    @foreach($gradeLevels as $gl)
-                                        <option value="{{ $gl }}" {{ old('salary_grade_level') == $gl ? 'selected' : '' }}>
-                                            {{ $gl }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="salary_grade_level" id="salary_grade_level" value="{{ old('salary_grade_level') ?? '' }}" required>
+                                    <button type="button" 
+                                            id="salary_grade_level_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('salary_grade_level') border-danger @enderror">
+                                        <span id="salary_grade_level_select_text">{{ old('salary_grade_level') ? old('salary_grade_level') : 'Select Grade Level...' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="salary_grade_level_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="salary_grade_level_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search grade level..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="salary_grade_level_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                                 @error('salary_grade_level')
                                     <p class="text-sm text-danger">{{ $message }}</p>
                                 @enderror
@@ -322,13 +334,26 @@
                                 <label for="unit" class="block text-sm font-medium text-foreground">
                                     Unit
                                 </label>
-                                <select name="unit" 
-                                       id="unit"
-                                       class="kt-input @error('unit') kt-input-error @enderror">
-                                    <option value="">Select Unit...</option>
-                                    <option value="General Duty (GD)" {{ old('unit') == 'General Duty (GD)' ? 'selected' : '' }}>General Duty (GD)</option>
-                                    <option value="Support Staff (SS)" {{ old('unit') == 'Support Staff (SS)' ? 'selected' : '' }}>Support Staff (SS)</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="unit" id="unit" value="{{ old('unit') ?? '' }}">
+                                    <button type="button" 
+                                            id="unit_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('unit') border-danger @enderror">
+                                        <span id="unit_select_text">{{ old('unit') ? old('unit') : 'Select Unit...' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="unit_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="unit_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search unit..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                                 @error('unit')
                                     <p class="text-sm text-danger">{{ $message }}</p>
                                 @enderror
@@ -398,6 +423,10 @@
                             <p class="text-xs text-secondary-foreground">
                                 CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>, <strong>date_of_first_appointment</strong>, <strong>date_of_present_appointment</strong>, <strong>date_posted_to_station</strong>, <strong>command_id</strong>, <strong>unit</strong> (optional). Maximum 10 entries per upload.
                             </p>
+                            <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
+                                <strong>Document Type Allowed:</strong> CSV, TXT<br>
+                                <strong>Document Size Allowed:</strong> Maximum 5MB
+                            </span>
                             <div class="mt-2 p-3 bg-muted/50 rounded border border-input">
                                 <p class="text-xs font-semibold mb-2">CSV Format Example:</p>
                                 <pre class="text-xs font-mono">email,initials,surname,substantive_rank,salary_grade_level,date_of_first_appointment,date_of_present_appointment,date_posted_to_station,command_id,unit
@@ -861,11 +890,26 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                 <label class="block text-sm font-medium text-foreground">
                                     Verification Status <span class="text-danger">*</span>
                                 </label>
-                                <select name="verification_status" class="kt-input" required>
-                                    <option value="">Select status...</option>
-                                    <option value="verified">Verified</option>
-                                    <option value="rejected">Rejected</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="verification_status" id="verify_verification_status_id" value="{{ old('verification_status') ?? '' }}" required>
+                                    <button type="button" 
+                                            id="verify_verification_status_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                        <span id="verify_verification_status_select_text">{{ old('verification_status') ? (old('verification_status') === 'verified' ? 'Verified' : (old('verification_status') === 'rejected' ? 'Rejected' : 'Select status...')) : 'Select status...' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="verify_verification_status_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="verify_verification_status_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search status..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="verify_verification_status_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium text-foreground">
@@ -994,7 +1038,6 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                 const gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
                 
                 const commands = @json(\App\Models\Command::orderBy('name')->get());
-                const commandsOptions = commands.map(cmd => `<option value="${cmd.id}">${cmd.name}</option>`).join('');
                 
                 const entryHtml = `
                     <div class="space-y-4 p-4 bg-muted/30 rounded border border-input" id="entry-${bulkEntryCount}">
@@ -1035,26 +1078,52 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                 <label class="block text-sm font-medium text-foreground">
                                     Rank <span class="text-danger">*</span>
                                 </label>
-                                <select name="entries[${bulkEntryCount}][substantive_rank]" 
-                                       class="kt-input entry-rank-select"
-                                       data-entry-index="${bulkEntryCount}"
-                                       required>
-                                    <option value="">Select...</option>
-                                    ${ranks.map(rank => `<option value="${rank}">${rank}</option>`).join('')}
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="entries[${bulkEntryCount}][substantive_rank]" id="entry_rank_${bulkEntryCount}_id" value="" required>
+                                    <button type="button" 
+                                            id="entry_rank_${bulkEntryCount}_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                        <span id="entry_rank_${bulkEntryCount}_select_text">Select...</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="entry_rank_${bulkEntryCount}_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="entry_rank_${bulkEntryCount}_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search rank..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="entry_rank_${bulkEntryCount}_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="space-y-2 flex items-end gap-2">
                                 <div class="flex-1">
                                     <label class="block text-sm font-medium text-foreground">
                                         GL <span class="text-danger">*</span>
                                     </label>
-                                    <select name="entries[${bulkEntryCount}][salary_grade_level]" 
-                                           class="kt-input entry-grade-level-select"
-                                           data-entry-index="${bulkEntryCount}"
-                                           required>
-                                        <option value="">Select...</option>
-                                        ${gradeLevels.map(gl => `<option value="${gl}">${gl}</option>`).join('')}
-                                    </select>
+                                    <div class="relative">
+                                        <input type="hidden" name="entries[${bulkEntryCount}][salary_grade_level]" id="entry_grade_${bulkEntryCount}_id" value="" required>
+                                        <button type="button" 
+                                                id="entry_grade_${bulkEntryCount}_select_trigger" 
+                                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                            <span id="entry_grade_${bulkEntryCount}_select_text">Select...</span>
+                                            <i class="ki-filled ki-down text-gray-400"></i>
+                                        </button>
+                                        <div id="entry_grade_${bulkEntryCount}_dropdown" 
+                                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                            <div class="p-3 border-b border-input">
+                                                <input type="text" 
+                                                       id="entry_grade_${bulkEntryCount}_search_input" 
+                                                       class="kt-input w-full pl-10" 
+                                                       placeholder="Search grade level..."
+                                                       autocomplete="off">
+                                            </div>
+                                            <div id="entry_grade_${bulkEntryCount}_options" class="max-h-60 overflow-y-auto"></div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <button type="button" 
                                         onclick="removeBulkEntry(${bulkEntryCount})" 
@@ -1097,23 +1166,51 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                 <label class="block text-sm font-medium text-foreground">
                                     Command/Present Station <span class="text-danger">*</span>
                                 </label>
-                                <select name="entries[${bulkEntryCount}][command_id]" 
-                                       class="kt-input"
-                                       required>
-                                    <option value="">Select...</option>
-                                    ${commandsOptions}
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="entries[${bulkEntryCount}][command_id]" id="entry_command_${bulkEntryCount}_id" value="" required>
+                                    <button type="button" 
+                                            id="entry_command_${bulkEntryCount}_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                        <span id="entry_command_${bulkEntryCount}_select_text">Select...</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="entry_command_${bulkEntryCount}_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="entry_command_${bulkEntryCount}_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search command..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="entry_command_${bulkEntryCount}_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium text-foreground">
                                     Unit
                                 </label>
-                                <select name="entries[${bulkEntryCount}][unit]" 
-                                       class="kt-input">
-                                    <option value="">Select...</option>
-                                    <option value="General Duty (GD)">General Duty (GD)</option>
-                                    <option value="Support Staff (SS)">Support Staff (SS)</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="entries[${bulkEntryCount}][unit]" id="entry_unit_${bulkEntryCount}_id" value="">
+                                    <button type="button" 
+                                            id="entry_unit_${bulkEntryCount}_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                        <span id="entry_unit_${bulkEntryCount}_select_text">Select...</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="entry_unit_${bulkEntryCount}_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="entry_unit_${bulkEntryCount}_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search unit..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="entry_unit_${bulkEntryCount}_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1121,20 +1218,96 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                 
                 document.getElementById('bulk-entries').insertAdjacentHTML('beforeend', entryHtml);
                 
-                // Setup event listener for the new rank select
-                const newRankSelect = document.querySelector(`select[name="entries[${bulkEntryCount}][substantive_rank]"]`);
-                const newGradeLevelSelect = document.querySelector(`select[name="entries[${bulkEntryCount}][salary_grade_level]"]`);
-                
-                if (newRankSelect && newGradeLevelSelect) {
-                    newRankSelect.addEventListener('change', function() {
-                        const selectedRank = this.value;
-                        if (selectedRank && rankToGradeMap[selectedRank]) {
-                            newGradeLevelSelect.value = rankToGradeMap[selectedRank];
-                        } else {
-                            newGradeLevelSelect.value = '';
+                // Initialize searchable selects for the new bulk entry
+                const rankOptions = [
+                    {id: '', name: 'Select...'},
+                    @foreach($ranks as $rank)
+                    {id: '{{ $rank }}', name: '{{ $rank }}'},
+                    @endforeach
+                ];
+
+                const gradeLevelOptions = [
+                    {id: '', name: 'Select...'},
+                    @foreach($gradeLevels as $gl)
+                    {id: '{{ $gl }}', name: '{{ $gl }}'},
+                    @endforeach
+                ];
+
+                const unitOptions = [
+                    {id: '', name: 'Select...'},
+                    {id: 'General Duty (GD)', name: 'General Duty (GD)'},
+                    {id: 'Support Staff (SS)', name: 'Support Staff (SS)'}
+                ];
+
+                const commandOptions = [
+                    {id: '', name: 'Select...'},
+                    @foreach(\App\Models\Command::orderBy('name')->get() as $command)
+                    {id: '{{ $command->id }}', name: '{{ $command->name }}'},
+                    @endforeach
+                ];
+
+                // Initialize rank select for bulk entry
+                createSearchableSelect({
+                    triggerId: `entry_rank_${bulkEntryCount}_select_trigger`,
+                    hiddenInputId: `entry_rank_${bulkEntryCount}_id`,
+                    dropdownId: `entry_rank_${bulkEntryCount}_dropdown`,
+                    searchInputId: `entry_rank_${bulkEntryCount}_search_input`,
+                    optionsContainerId: `entry_rank_${bulkEntryCount}_options`,
+                    displayTextId: `entry_rank_${bulkEntryCount}_select_text`,
+                    options: rankOptions,
+                    placeholder: 'Select...',
+                    searchPlaceholder: 'Search rank...',
+                    onSelect: function(option) {
+                        // Auto-select grade level when rank is selected
+                        if (option.id && rankToGradeMap[option.id]) {
+                            const gradeLevelHiddenInput = document.getElementById(`entry_grade_${bulkEntryCount}_id`);
+                            const gradeLevelDisplayText = document.getElementById(`entry_grade_${bulkEntryCount}_select_text`);
+                            if (gradeLevelHiddenInput && gradeLevelDisplayText) {
+                                gradeLevelHiddenInput.value = rankToGradeMap[option.id];
+                                gradeLevelDisplayText.textContent = rankToGradeMap[option.id];
+                            }
                         }
-                    });
-                }
+                    }
+                });
+
+                // Initialize grade level select for bulk entry
+                createSearchableSelect({
+                    triggerId: `entry_grade_${bulkEntryCount}_select_trigger`,
+                    hiddenInputId: `entry_grade_${bulkEntryCount}_id`,
+                    dropdownId: `entry_grade_${bulkEntryCount}_dropdown`,
+                    searchInputId: `entry_grade_${bulkEntryCount}_search_input`,
+                    optionsContainerId: `entry_grade_${bulkEntryCount}_options`,
+                    displayTextId: `entry_grade_${bulkEntryCount}_select_text`,
+                    options: gradeLevelOptions,
+                    placeholder: 'Select...',
+                    searchPlaceholder: 'Search grade level...'
+                });
+
+                // Initialize command select for bulk entry
+                createSearchableSelect({
+                    triggerId: `entry_command_${bulkEntryCount}_select_trigger`,
+                    hiddenInputId: `entry_command_${bulkEntryCount}_id`,
+                    dropdownId: `entry_command_${bulkEntryCount}_dropdown`,
+                    searchInputId: `entry_command_${bulkEntryCount}_search_input`,
+                    optionsContainerId: `entry_command_${bulkEntryCount}_options`,
+                    displayTextId: `entry_command_${bulkEntryCount}_select_text`,
+                    options: commandOptions,
+                    placeholder: 'Select...',
+                    searchPlaceholder: 'Search command...'
+                });
+
+                // Initialize unit select for bulk entry
+                createSearchableSelect({
+                    triggerId: `entry_unit_${bulkEntryCount}_select_trigger`,
+                    hiddenInputId: `entry_unit_${bulkEntryCount}_id`,
+                    dropdownId: `entry_unit_${bulkEntryCount}_dropdown`,
+                    searchInputId: `entry_unit_${bulkEntryCount}_search_input`,
+                    optionsContainerId: `entry_unit_${bulkEntryCount}_options`,
+                    displayTextId: `entry_unit_${bulkEntryCount}_select_text`,
+                    options: unitOptions,
+                    placeholder: 'Select...',
+                    searchPlaceholder: 'Search unit...'
+                });
                 
                 updateBulkSubmitButton();
             }
@@ -1178,6 +1351,109 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                 }
             }
 
+            // Reusable function to create searchable select
+            function createSearchableSelect(config) {
+                const {
+                    triggerId,
+                    hiddenInputId,
+                    dropdownId,
+                    searchInputId,
+                    optionsContainerId,
+                    displayTextId,
+                    options,
+                    displayFn,
+                    onSelect,
+                    placeholder = 'Select...',
+                    searchPlaceholder = 'Search...'
+                } = config;
+
+                const trigger = document.getElementById(triggerId);
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const dropdown = document.getElementById(dropdownId);
+                const searchInput = document.getElementById(searchInputId);
+                const optionsContainer = document.getElementById(optionsContainerId);
+                const displayText = document.getElementById(displayTextId);
+
+                if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+                    return;
+                }
+
+                let selectedOption = null;
+                let filteredOptions = [...options];
+
+                // Render options
+                function renderOptions(opts) {
+                    if (opts.length === 0) {
+                        optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                        return;
+                    }
+
+                    optionsContainer.innerHTML = opts.map(opt => {
+                        const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                        const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                        return `
+                            <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                                 data-id="${value}" 
+                                 data-name="${display}">
+                                <div class="text-sm text-foreground">${display}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Add click handlers
+                    optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const name = this.dataset.name;
+                            selectedOption = options.find(o => {
+                                const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                                return String(optValue) === String(id);
+                            });
+                            
+                            if (selectedOption || id === '') {
+                                hiddenInput.value = id;
+                                displayText.textContent = name;
+                                dropdown.classList.add('hidden');
+                                searchInput.value = '';
+                                filteredOptions = [...options];
+                                renderOptions(filteredOptions);
+                                
+                                if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                            }
+                        });
+                    });
+                }
+
+                // Initial render
+                renderOptions(filteredOptions);
+
+                // Search functionality
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    filteredOptions = options.filter(opt => {
+                        const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                        return String(display).toLowerCase().includes(searchTerm);
+                    });
+                    renderOptions(filteredOptions);
+                });
+
+                // Toggle dropdown
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (!dropdown.classList.contains('hidden')) {
+                        setTimeout(() => searchInput.focus(), 100);
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+
             // Rank to Grade Level mapping
             const rankToGradeMap = {
                 'DC': 'GL 14',
@@ -1196,29 +1472,62 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
 
             // Auto-select grade level when rank is selected
             function setupRankGradeLevelMapping() {
-                const rankSelect = document.getElementById('substantive_rank');
-                const gradeLevelSelect = document.getElementById('salary_grade_level');
+                const rankHiddenInput = document.getElementById('substantive_rank');
+                const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+                const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
 
-                if (rankSelect && gradeLevelSelect) {
-                    rankSelect.addEventListener('change', function() {
+                if (rankHiddenInput && gradeLevelHiddenInput) {
+                    // Listen for changes on the rank hidden input
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                                const selectedRank = rankHiddenInput.value;
+                                if (selectedRank && rankToGradeMap[selectedRank]) {
+                                    gradeLevelHiddenInput.value = rankToGradeMap[selectedRank];
+                                    if (gradeLevelDisplayText) {
+                                        gradeLevelDisplayText.textContent = rankToGradeMap[selectedRank];
+                                    }
+                                } else {
+                                    gradeLevelHiddenInput.value = '';
+                                    if (gradeLevelDisplayText) {
+                                        gradeLevelDisplayText.textContent = 'Select Grade Level...';
+                                    }
+                                }
+                            }
+                        });
+                    });
+                    observer.observe(rankHiddenInput, { attributes: true, attributeFilter: ['value'] });
+
+                    // Also listen for direct value changes
+                    rankHiddenInput.addEventListener('input', function() {
                         const selectedRank = this.value;
                         if (selectedRank && rankToGradeMap[selectedRank]) {
-                            gradeLevelSelect.value = rankToGradeMap[selectedRank];
+                            gradeLevelHiddenInput.value = rankToGradeMap[selectedRank];
+                            if (gradeLevelDisplayText) {
+                                gradeLevelDisplayText.textContent = rankToGradeMap[selectedRank];
+                            }
                         } else {
-                            gradeLevelSelect.value = '';
+                            gradeLevelHiddenInput.value = '';
+                            if (gradeLevelDisplayText) {
+                                gradeLevelDisplayText.textContent = 'Select Grade Level...';
+                            }
                         }
                     });
                 }
 
-                // Also setup for bulk entries
+                // Also setup for bulk entries (will be handled when bulk entries are created)
                 document.addEventListener('change', function(e) {
-                    if (e.target.name && e.target.name.includes('[substantive_rank]')) {
-                        const entryMatch = e.target.name.match(/entries\[(\d+)\]/);
+                    if (e.target.id && e.target.id.includes('entry_rank_') && e.target.id.includes('_id')) {
+                        const entryMatch = e.target.id.match(/entry_rank_(\d+)_id/);
                         if (entryMatch) {
                             const entryIndex = entryMatch[1];
-                            const gradeLevelSelect = document.querySelector(`select[name="entries[${entryIndex}][salary_grade_level]"]`);
-                            if (gradeLevelSelect && rankToGradeMap[e.target.value]) {
-                                gradeLevelSelect.value = rankToGradeMap[e.target.value];
+                            const gradeLevelHiddenInput = document.getElementById(`entry_grade_${entryIndex}_id`);
+                            const gradeLevelDisplayText = document.getElementById(`entry_grade_${entryIndex}_select_text`);
+                            if (gradeLevelHiddenInput && rankToGradeMap[e.target.value]) {
+                                gradeLevelHiddenInput.value = rankToGradeMap[e.target.value];
+                                if (gradeLevelDisplayText) {
+                                    gradeLevelDisplayText.textContent = rankToGradeMap[e.target.value];
+                                }
                             }
                         }
                     }
@@ -1230,6 +1539,105 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                 showTab('single');
                 setupRankGradeLevelMapping();
                 setupDateValidation();
+
+                // Rank options
+                const rankOptions = [
+                    {id: '', name: 'Select Rank...'},
+                    @php
+                        $ranks = ['DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
+                    @endphp
+                    @foreach($ranks as $rank)
+                    {id: '{{ $rank }}', name: '{{ $rank }}'},
+                    @endforeach
+                ];
+
+                // Grade level options
+                const gradeLevelOptions = [
+                    {id: '', name: 'Select Grade Level...'},
+                    @php
+                        $gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
+                    @endphp
+                    @foreach($gradeLevels as $gl)
+                    {id: '{{ $gl }}', name: '{{ $gl }}'},
+                    @endforeach
+                ];
+
+                // Unit options
+                const unitOptions = [
+                    {id: '', name: 'Select Unit...'},
+                    {id: 'General Duty (GD)', name: 'General Duty (GD)'},
+                    {id: 'Support Staff (SS)', name: 'Support Staff (SS)'}
+                ];
+
+                // Verification status options
+                const verificationStatusOptions = [
+                    {id: '', name: 'Select status...'},
+                    {id: 'verified', name: 'Verified'},
+                    {id: 'rejected', name: 'Rejected'}
+                ];
+
+                // Initialize substantive rank select
+                createSearchableSelect({
+                    triggerId: 'substantive_rank_select_trigger',
+                    hiddenInputId: 'substantive_rank',
+                    dropdownId: 'substantive_rank_dropdown',
+                    searchInputId: 'substantive_rank_search_input',
+                    optionsContainerId: 'substantive_rank_options',
+                    displayTextId: 'substantive_rank_select_text',
+                    options: rankOptions,
+                    placeholder: 'Select Rank...',
+                    searchPlaceholder: 'Search rank...',
+                    onSelect: function(option) {
+                        // Auto-select grade level when rank is selected
+                        if (option.id && rankToGradeMap[option.id]) {
+                            const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+                            const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
+                            if (gradeLevelHiddenInput && gradeLevelDisplayText) {
+                                gradeLevelHiddenInput.value = rankToGradeMap[option.id];
+                                gradeLevelDisplayText.textContent = rankToGradeMap[option.id];
+                            }
+                        }
+                    }
+                });
+
+                // Initialize salary grade level select
+                createSearchableSelect({
+                    triggerId: 'salary_grade_level_select_trigger',
+                    hiddenInputId: 'salary_grade_level',
+                    dropdownId: 'salary_grade_level_dropdown',
+                    searchInputId: 'salary_grade_level_search_input',
+                    optionsContainerId: 'salary_grade_level_options',
+                    displayTextId: 'salary_grade_level_select_text',
+                    options: gradeLevelOptions,
+                    placeholder: 'Select Grade Level...',
+                    searchPlaceholder: 'Search grade level...'
+                });
+
+                // Initialize unit select
+                createSearchableSelect({
+                    triggerId: 'unit_select_trigger',
+                    hiddenInputId: 'unit',
+                    dropdownId: 'unit_dropdown',
+                    searchInputId: 'unit_search_input',
+                    optionsContainerId: 'unit_options',
+                    displayTextId: 'unit_select_text',
+                    options: unitOptions,
+                    placeholder: 'Select Unit...',
+                    searchPlaceholder: 'Search unit...'
+                });
+
+                // Initialize verification status select in verify modal
+                createSearchableSelect({
+                    triggerId: 'verify_verification_status_select_trigger',
+                    hiddenInputId: 'verify_verification_status_id',
+                    dropdownId: 'verify_verification_status_dropdown',
+                    searchInputId: 'verify_verification_status_search_input',
+                    optionsContainerId: 'verify_verification_status_options',
+                    displayTextId: 'verify_verification_status_select_text',
+                    options: verificationStatusOptions,
+                    placeholder: 'Select status...',
+                    searchPlaceholder: 'Search status...'
+                });
             });
             
             // Date validation for initiate create form

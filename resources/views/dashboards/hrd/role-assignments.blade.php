@@ -75,43 +75,94 @@
                         <!-- Role Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Role</label>
-                            <select name="role_id" class="kt-input w-full">
-                                <option value="">All Roles</option>
-                                @php
-                                    $roleDisplayMap = [
-                                        'Zone Coordinator' => 'Zonal Coordinator',
-                                        'Area Controller' => 'Head of Unit'
-                                    ];
-                                @endphp
-                                @foreach($allRoles as $role)
-                                    <option value="{{ $role->id }}" {{ (string)request('role_id') === (string)$role->id ? 'selected' : '' }}>
-                                        {{ $roleDisplayMap[$role->name] ?? $role->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="role_id" id="filter_role_id" value="{{ request('role_id') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_role_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_role_select_text">{{ request('role_id') ? ($allRoles->firstWhere('id', request('role_id')) ? $allRoles->firstWhere('id', request('role_id'))->name : 'All Roles') : 'All Roles' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_role_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_role_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search roles..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_role_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Command Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Command</label>
-                            <select name="command_id" class="kt-input w-full">
-                                <option value="">All Commands</option>
-                                @foreach($commands as $command)
-                                    <option value="{{ $command->id }}" {{ (string)request('command_id') === (string)$command->id ? 'selected' : '' }}>
-                                        {{ $command->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="command_id" id="filter_command_id" value="{{ request('command_id') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_command_select_text">{{ request('command_id') ? ($commands->firstWhere('id', request('command_id')) ? $commands->firstWhere('id', request('command_id'))->name : 'All Commands') : 'All Commands' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_command_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search commands..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_command_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Status Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Status</label>
-                            <select name="status" class="kt-input w-full">
-                                <option value="">All Status</option>
-                                <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="status" id="filter_status_id" value="{{ request('status') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_status_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_status_select_text">{{ request('status') ? ucfirst(request('status')) : 'All Status' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_status_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_status_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search status..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_status_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
@@ -265,14 +316,8 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-4" style="white-space: nowrap;">
-                                            @php
-                                                $roleDisplayMap = [
-                                                    'Zone Coordinator' => 'Zonal Coordinator',
-                                                    'Area Controller' => 'Head of Unit'
-                                                ];
-                                            @endphp
                                             <span class="kt-badge kt-badge-primary kt-badge-sm">
-                                                {{ $roleDisplayMap[$role->name] ?? $role->name }}
+                                                {{ $role->name }}
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
@@ -351,29 +396,61 @@
                     <div class="flex flex-col gap-4">
                         <div>
                             <label class="block text-sm font-medium mb-1">Role <span class="text-danger">*</span></label>
-                            <select name="role_id" id="editRoleId" class="kt-input w-full" required>
-                                <option value="">Select Role</option>
-                                @php
-                                    $roleDisplayMap = [
-                                        'Zone Coordinator' => 'Zonal Coordinator',
-                                        'Area Controller' => 'Head of Unit'
-                                    ];
-                                @endphp
-                                @foreach($allRoles as $role)
-                                    <option value="{{ $role->id }}" data-requires-command="{{ in_array($role->name, $commandBasedRoles) ? '1' : '0' }}">
-                                        {{ $roleDisplayMap[$role->name] ?? $role->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="role_id" id="editRoleId" required>
+                                <button type="button" 
+                                        id="edit_role_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="edit_role_select_text">Select Role</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="edit_role_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="edit_role_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search roles..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="edit_role_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div id="editCommandField">
                             <label class="block text-sm font-medium mb-1">Command <span class="text-danger">*</span></label>
-                            <select name="command_id" id="editCommandId" class="kt-input w-full" required>
-                                <option value="">Select Command</option>
-                                @foreach($commands as $command)
-                                    <option value="{{ $command->id }}">{{ $command->name }} ({{ $command->code }})</option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="command_id" id="editCommandId" required>
+                                <button type="button" 
+                                        id="edit_command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="edit_command_select_text">Select Command</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="edit_command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="edit_command_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search commands..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="edit_command_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label class="flex items-center gap-2">
@@ -434,10 +511,236 @@
     </style>
 
     <script>
+        // Data for searchable selects
+        @php
+            $roleDisplayMap = [
+                'Zone Coordinator' => 'Zonal Coordinator',
+                'Area Controller' => 'Head of Unit'
+            ];
+            $filterRolesData = $allRoles->map(function($role) use ($roleDisplayMap) {
+                return [
+                    'id' => $role->id,
+                    'name' => $roleDisplayMap[$role->name] ?? $role->name
+                ];
+            })->values();
+            $filterCommandsData = $commands->map(function($command) {
+                return [
+                    'id' => $command->id,
+                    'name' => $command->name,
+                    'code' => $command->code ?? ''
+                ];
+            })->values();
+            $statusOptions = [
+                ['id' => '', 'name' => 'All Status'],
+                ['id' => 'active', 'name' => 'Active'],
+                ['id' => 'inactive', 'name' => 'Inactive']
+            ];
+            $editRolesData = $allRoles->map(function($role) use ($roleDisplayMap, $commandBasedRoles) {
+                return [
+                    'id' => $role->id,
+                    'name' => $roleDisplayMap[$role->name] ?? $role->name,
+                    'requiresCommand' => in_array($role->name, $commandBasedRoles ?? []) ? '1' : '0'
+                ];
+            })->values();
+            $editCommandsData = $commands->map(function($command) {
+                return [
+                    'id' => $command->id,
+                    'name' => $command->name,
+                    'code' => $command->code ?? ''
+                ];
+            })->values();
+        @endphp
+        const filterRoles = @json($filterRolesData);
+        const filterCommands = @json($filterCommandsData);
+        const filterStatuses = @json($statusOptions);
+        const editRoles = @json($editRolesData);
+        const editCommands = @json($editCommandsData);
+
+        // Reusable function to create searchable select
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
+            let selectedOption = null;
+            let filteredOptions = [...options];
+
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
+                }
+
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                    const value = opt.id || opt.value || '';
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => (o.id || o.value || '') == id);
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                        }
+                    });
+                });
+            }
+
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                    return display.toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Initialize filter selects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter Role Select
+            createSearchableSelect({
+                triggerId: 'filter_role_select_trigger',
+                hiddenInputId: 'filter_role_id',
+                dropdownId: 'filter_role_dropdown',
+                searchInputId: 'filter_role_search_input',
+                optionsContainerId: 'filter_role_options',
+                displayTextId: 'filter_role_select_text',
+                options: [{id: '', name: 'All Roles'}, ...filterRoles],
+                placeholder: 'All Roles',
+                searchPlaceholder: 'Search roles...'
+            });
+
+            // Filter Command Select
+            createSearchableSelect({
+                triggerId: 'filter_command_select_trigger',
+                hiddenInputId: 'filter_command_id',
+                dropdownId: 'filter_command_dropdown',
+                searchInputId: 'filter_command_search_input',
+                optionsContainerId: 'filter_command_options',
+                displayTextId: 'filter_command_select_text',
+                options: [{id: '', name: 'All Commands'}, ...filterCommands],
+                displayFn: (cmd) => cmd.name + (cmd.code ? ' (' + cmd.code + ')' : ''),
+                placeholder: 'All Commands',
+                searchPlaceholder: 'Search commands...'
+            });
+
+            // Filter Status Select
+            createSearchableSelect({
+                triggerId: 'filter_status_select_trigger',
+                hiddenInputId: 'filter_status_id',
+                dropdownId: 'filter_status_dropdown',
+                searchInputId: 'filter_status_search_input',
+                optionsContainerId: 'filter_status_options',
+                displayTextId: 'filter_status_select_text',
+                options: filterStatuses,
+                placeholder: 'All Status',
+                searchPlaceholder: 'Search status...'
+            });
+
+            // Edit Modal Role Select
+            createSearchableSelect({
+                triggerId: 'edit_role_select_trigger',
+                hiddenInputId: 'editRoleId',
+                dropdownId: 'edit_role_dropdown',
+                searchInputId: 'edit_role_search_input',
+                optionsContainerId: 'edit_role_options',
+                displayTextId: 'edit_role_select_text',
+                options: editRoles,
+                placeholder: 'Select Role',
+                searchPlaceholder: 'Search roles...',
+                onSelect: function(selected) {
+                    toggleEditCommandRequirement();
+                }
+            });
+
+            // Edit Modal Command Select
+            createSearchableSelect({
+                triggerId: 'edit_command_select_trigger',
+                hiddenInputId: 'editCommandId',
+                dropdownId: 'edit_command_dropdown',
+                searchInputId: 'edit_command_search_input',
+                optionsContainerId: 'edit_command_options',
+                displayTextId: 'edit_command_select_text',
+                options: editCommands,
+                displayFn: (cmd) => cmd.name + (cmd.code ? ' (' + cmd.code + ')' : ''),
+                placeholder: 'Select Command',
+                searchPlaceholder: 'Search commands...'
+            });
+        });
+
         function editAssignment(userId, roleId, roleName, commandId, isActive, requiresCommand, officerCommandId) {
-            document.getElementById('editRoleId').value = roleId;
+            // Find role and command names for display
+            const role = editRoles.find(r => r.id == roleId);
+            const command = editCommands.find(c => c.id == commandId);
+            
+            document.getElementById('editRoleId').value = roleId || '';
             document.getElementById('editCommandId').value = commandId || '';
             document.getElementById('editIsActive').checked = isActive;
+            
+            // Update display texts
+            if (role) {
+                document.getElementById('edit_role_select_text').textContent = role.name;
+            }
+            if (command) {
+                document.getElementById('edit_command_select_text').textContent = command.name + (command.code ? ' (' + command.code + ')' : '');
+            }
             
             // Store original values for command filtering
             window.currentEditRequiresCommand = requiresCommand;
@@ -464,36 +767,56 @@
         }
         
         function toggleEditCommandRequirement() {
-            const roleSelect = document.getElementById('editRoleId');
+            const roleId = document.getElementById('editRoleId').value;
             const commandField = document.getElementById('editCommandField');
-            const commandSelect = document.getElementById('editCommandId');
-            const selectedOption = roleSelect.options[roleSelect.selectedIndex];
-            const requiresCommand = selectedOption ? selectedOption.getAttribute('data-requires-command') === '1' : window.currentEditRequiresCommand;
+            const commandHiddenInput = document.getElementById('editCommandId');
+            const role = editRoles.find(r => r.id == roleId);
+            const requiresCommand = role ? role.requiresCommand === '1' : window.currentEditRequiresCommand;
             
-            // Reset all options visibility first
-            Array.from(commandSelect.options).forEach(option => {
-                option.style.display = '';
+            // Filter commands based on officer's command if needed
+            let availableCommands = [...editCommands];
+            if (requiresCommand && window.currentEditOfficerCommandId && window.currentEditOfficerCommandId !== 'null') {
+                availableCommands = editCommands.filter(cmd => 
+                    cmd.id == window.currentEditOfficerCommandId || cmd.id == window.currentEditCommandId
+                );
+            }
+            
+            // Reinitialize command select with filtered options
+            const commandOptionsContainer = document.getElementById('edit_command_options');
+            commandOptionsContainer.innerHTML = availableCommands.map(cmd => {
+                const display = cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${cmd.id}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Re-add click handlers
+            commandOptionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    const cmd = availableCommands.find(c => c.id == id);
+                    
+                    if (cmd) {
+                        commandHiddenInput.value = id;
+                        document.getElementById('edit_command_select_text').textContent = name;
+                        document.getElementById('edit_command_dropdown').classList.add('hidden');
+                        document.getElementById('edit_command_search_input').value = '';
+                    }
+                });
             });
             
             if (requiresCommand) {
                 commandField.style.display = 'block';
-                commandSelect.required = true;
-                
-                // Filter commands to only show the officer's command if role is command-based
-                if (window.currentEditOfficerCommandId && window.currentEditOfficerCommandId !== 'null') {
-                    Array.from(commandSelect.options).forEach(option => {
-                        if (option.value === '') return; // Keep placeholder
-                        // Only show the officer's command
-                        option.style.display = option.value == window.currentEditOfficerCommandId || option.value == window.currentEditCommandId ? '' : 'none';
-                    });
-                }
+                commandHiddenInput.setAttribute('required', 'required');
             } else {
                 commandField.style.display = 'none';
-                commandSelect.required = false;
+                commandHiddenInput.removeAttribute('required');
             }
         }
-        
-        // Listen for role changes in edit modal
-        document.getElementById('editRoleId')?.addEventListener('change', toggleEditCommandRequirement);
     </script>
 @endsection

@@ -73,26 +73,26 @@
                         <label class="block text-sm font-medium mb-1">
                             Investigation Status <span class="text-danger">*</span>
                         </label>
-                        <select name="status" 
-                                class="kt-input w-full @error('status') border-danger @enderror"
-                                required>
-                            <option value="">Select Status</option>
-                            <option value="ONGOING_INVESTIGATION" {{ old('status', $investigation->status) === 'ONGOING_INVESTIGATION' ? 'selected' : '' }}>
-                                Ongoing Investigation
-                            </option>
-                            <option value="INTERDICTED" {{ old('status', $investigation->status) === 'INTERDICTED' ? 'selected' : '' }}>
-                                Interdicted
-                            </option>
-                            <option value="SUSPENDED" {{ old('status', $investigation->status) === 'SUSPENDED' ? 'selected' : '' }}>
-                                Suspended
-                            </option>
-                            <option value="DISMISSED" {{ old('status', $investigation->status) === 'DISMISSED' ? 'selected' : '' }}>
-                                Dismissed
-                            </option>
-                            <option value="RESOLVED" {{ old('status', $investigation->status) === 'RESOLVED' ? 'selected' : '' }}>
-                                Resolved
-                            </option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="status" id="status_id" value="{{ old('status', $investigation->status) ?? '' }}" required>
+                            <button type="button" 
+                                    id="status_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('status') border-danger @enderror">
+                                <span id="status_select_text">{{ old('status', $investigation->status) ? (old('status', $investigation->status) === 'ONGOING_INVESTIGATION' ? 'Ongoing Investigation' : (old('status', $investigation->status) === 'INTERDICTED' ? 'Interdicted' : (old('status', $investigation->status) === 'SUSPENDED' ? 'Suspended' : (old('status', $investigation->status) === 'DISMISSED' ? 'Dismissed' : (old('status', $investigation->status) === 'RESOLVED' ? 'Resolved' : 'Select Status'))))) : 'Select Status' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="status_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="status_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search status..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="status_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <p class="text-xs text-secondary-foreground mt-1">
                             <strong>Note:</strong> Officers with Ongoing Investigation, Interdiction, Suspension, or Dismissal status cannot appear on Promotion Eligibility Lists. Interdicted officers will appear on Accounts unit's interdicted officers list. Setting status to Resolved will clear investigation flags (but not dismissal, which is permanent).
                         </p>
@@ -127,6 +127,139 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+            return;
+        }
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => {
+                        const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                        return String(optValue) === String(id);
+                    });
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                return String(display).toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Status options
+        const statusOptions = [
+            {id: '', name: 'Select Status'},
+            {id: 'ONGOING_INVESTIGATION', name: 'Ongoing Investigation'},
+            {id: 'INTERDICTED', name: 'Interdicted'},
+            {id: 'SUSPENDED', name: 'Suspended'},
+            {id: 'DISMISSED', name: 'Dismissed'},
+            {id: 'RESOLVED', name: 'Resolved'}
+        ];
+
+        // Initialize status select
+        createSearchableSelect({
+            triggerId: 'status_select_trigger',
+            hiddenInputId: 'status_id',
+            dropdownId: 'status_dropdown',
+            searchInputId: 'status_search_input',
+            optionsContainerId: 'status_options',
+            displayTextId: 'status_select_text',
+            options: statusOptions,
+            placeholder: 'Select Status',
+            searchPlaceholder: 'Search status...'
+        });
+    });
+</script>
+@endpush
 @endsection
 
 

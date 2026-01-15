@@ -37,27 +37,51 @@ Zone Officers
                     <!-- Rank Select -->
                     <div class="w-full md:w-48">
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Rank</label>
-                        <select name="rank" class="kt-input w-full">
-                            <option value="">All Ranks</option>
-                            @foreach($ranks as $rank)
-                                <option value="{{ $rank }}" {{ request('rank') === $rank ? 'selected' : '' }}>
-                                    {{ $rank }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="rank" id="rank_id" value="{{ request('rank') ?? '' }}">
+                            <button type="button" 
+                                    id="rank_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="rank_select_text">{{ request('rank') ? request('rank') : 'All Ranks' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="rank_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="rank_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search rank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="rank_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Command Select -->
                     <div class="w-full md:w-48">
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Command</label>
-                        <select name="command_id" class="kt-input w-full">
-                            <option value="">All Commands</option>
-                            @foreach($commands as $command)
-                                <option value="{{ $command->id }}" {{ request('command_id') == $command->id ? 'selected' : '' }}>
-                                    {{ $command->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="command_id" id="command_id" value="{{ request('command_id') ?? '' }}">
+                            <button type="button" 
+                                    id="command_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="command_select_text">{{ request('command_id') ? ($commands->firstWhere('id', request('command_id')) ? $commands->firstWhere('id', request('command_id'))->name : 'All Commands') : 'All Commands' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="command_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="command_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search command..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="command_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Action Buttons -->
@@ -229,9 +253,161 @@ Zone Officers
         border-radius: 4px;
     }
 
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-        background: #555;
-    }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
 </style>
+
+@push('scripts')
+<script>
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+            return;
+        }
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => {
+                        const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                        return String(optValue) === String(id);
+                    });
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                return String(display).toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Rank options
+        const rankOptions = [
+            {id: '', name: 'All Ranks'},
+            @foreach($ranks as $rank)
+            {id: '{{ $rank }}', name: '{{ $rank }}'},
+            @endforeach
+        ];
+
+        // Command options
+        const commandOptions = [
+            {id: '', name: 'All Commands'},
+            @foreach($commands as $command)
+            {id: '{{ $command->id }}', name: '{{ $command->name }}'},
+            @endforeach
+        ];
+
+        // Initialize rank select
+        createSearchableSelect({
+            triggerId: 'rank_select_trigger',
+            hiddenInputId: 'rank_id',
+            dropdownId: 'rank_dropdown',
+            searchInputId: 'rank_search_input',
+            optionsContainerId: 'rank_options',
+            displayTextId: 'rank_select_text',
+            options: rankOptions,
+            placeholder: 'All Ranks',
+            searchPlaceholder: 'Search rank...'
+        });
+
+        // Initialize command select
+        createSearchableSelect({
+            triggerId: 'command_select_trigger',
+            hiddenInputId: 'command_id',
+            dropdownId: 'command_dropdown',
+            searchInputId: 'command_search_input',
+            optionsContainerId: 'command_options',
+            displayTextId: 'command_select_text',
+            options: commandOptions,
+            placeholder: 'All Commands',
+            searchPlaceholder: 'Search command...'
+        });
+    });
+</script>
+@endpush
 @endsection
 

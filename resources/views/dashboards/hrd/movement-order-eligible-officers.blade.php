@@ -72,27 +72,61 @@
                     </div>
                     <div class="w-full md:w-48">
                         <label class="block text-sm font-medium mb-2">Filter by Rank</label>
-                        <select id="rank-filter" class="kt-input w-full">
-                            <option value="">All Ranks</option>
-                            @php
-                                $allRanks = $officers->pluck('substantive_rank')->filter()->unique()->sort()->values();
-                            @endphp
-                            @foreach($allRanks as $rank)
-                                <option value="{{ $rank }}">{{ $rank }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" id="rank-filter" value="">
+                            <button type="button" 
+                                    id="rank_filter_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="rank_filter_select_text">All Ranks</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="rank_filter_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="rank_filter_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search ranks..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="rank_filter_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="w-full md:w-48">
                         <label class="block text-sm font-medium mb-2">Filter by Current Station</label>
-                        <select id="station-filter" class="kt-input w-full">
-                            <option value="">All Stations</option>
-                            @php
-                                $allStations = $officers->pluck('presentStation.name')->filter()->unique()->sort()->values();
-                            @endphp
-                            @foreach($allStations as $station)
-                                <option value="{{ $station }}">{{ $station }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" id="station-filter" value="">
+                            <button type="button" 
+                                    id="station_filter_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="station_filter_select_text">All Stations</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="station_filter_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="station_filter_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search stations..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="station_filter_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <button type="button" 
@@ -143,12 +177,32 @@
                                     </button>
                                 </div>
                             </div>
-                            <select name="default_command_id" id="default_command_id" class="kt-input">
-                                <option value="">Select default command...</option>
-                                @foreach($availableCommands ?? [] as $command)
-                                    <option value="{{ $command->id }}">{{ $command->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="default_command_id" id="default_command_id" value="">
+                                <button type="button" 
+                                        id="default_command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="default_command_select_text">Select default command...</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="default_command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="default_command_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search commands..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="default_command_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                             <button type="button" id="apply-default-command" class="kt-btn kt-btn-sm kt-btn-secondary mt-2">
                                 Apply to All Selected
                             </button>
@@ -206,15 +260,33 @@
                                                 <span class="font-semibold">{{ $officer->months_at_station ?? 0 }}</span> months
                                             </td>
                                             <td class="py-3 px-4">
-                                                <select name="to_command_ids[]" 
-                                                        class="kt-input kt-input-sm command-select"
-                                                        data-index="{{ $index }}"
-                                                        disabled>
-                                                    <option value="">Select command...</option>
-                                                    @foreach($availableCommands ?? [] as $command)
-                                                        <option value="{{ $command->id }}">{{ $command->name }}</option>
-                                                    @endforeach
-                                                </select>
+                                                <div class="relative">
+                                                    <input type="hidden" name="to_command_ids[]" class="command-select-hidden" data-index="{{ $index }}" value="" disabled>
+                                                    <button type="button" 
+                                                            class="kt-input kt-input-sm w-full text-left flex items-center justify-between cursor-pointer command-select-trigger {{ $index }}"
+                                                            data-index="{{ $index }}"
+                                                            disabled>
+                                                        <span class="command-select-text-{{ $index }}">Select command...</span>
+                                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                                    </button>
+                                                    <div class="command-select-dropdown-{{ $index }} absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden"
+                                                         data-index="{{ $index }}">
+                                                        <!-- Search Box -->
+                                                        <div class="p-3 border-b border-input">
+                                                            <div class="relative">
+                                                                <input type="text" 
+                                                                       class="kt-input w-full pl-10 command-select-search-{{ $index }}" 
+                                                                       placeholder="Search commands..."
+                                                                       autocomplete="off"
+                                                                       data-index="{{ $index }}">
+                                                            </div>
+                                                        </div>
+                                                        <!-- Options Container -->
+                                                        <div class="command-select-options-{{ $index }} max-h-60 overflow-y-auto" data-index="{{ $index }}">
+                                                            <!-- Options will be populated by JavaScript -->
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -247,6 +319,124 @@
 
     @push('scripts')
     <script>
+        // Data for searchable selects
+        @php
+            $allRanks = $officers->pluck('substantive_rank')->filter()->unique()->sort()->values();
+            $allStations = $officers->pluck('presentStation.name')->filter()->unique()->sort()->values();
+            $ranksData = $allRanks->map(function($rank) {
+                return ['id' => $rank, 'name' => $rank];
+            })->values();
+            $stationsData = $allStations->map(function($station) {
+                return ['id' => $station, 'name' => $station];
+            })->values();
+            $commandsData = collect($availableCommands ?? [])->map(function($command) {
+                return [
+                    'id' => $command->id,
+                    'name' => $command->name,
+                    'code' => $command->code ?? ''
+                ];
+            })->values();
+        @endphp
+        const filterRanks = @json($ranksData);
+        const filterStations = @json($stationsData);
+        const availableCommands = @json($commandsData);
+
+        // Reusable function to create searchable select
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
+            let selectedOption = null;
+            let filteredOptions = [...options];
+
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
+                }
+
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                    const value = opt.id || opt.value || '';
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => (o.id || o.value || '') == id);
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                        }
+                    });
+                });
+            }
+
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                    return display.toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
         // Dynamic Search and Filter Functionality
         function filterOfficers() {
             const searchInput = document.getElementById('officer-search-input');
@@ -302,19 +492,169 @@
             const searchInput = document.getElementById('officer-search-input');
             const rankFilter = document.getElementById('rank-filter');
             const stationFilter = document.getElementById('station-filter');
+            const rankDisplayText = document.getElementById('rank_filter_select_text');
+            const stationDisplayText = document.getElementById('station_filter_select_text');
             
             if (searchInput) searchInput.value = '';
             if (rankFilter) rankFilter.value = '';
             if (stationFilter) stationFilter.value = '';
+            if (rankDisplayText) rankDisplayText.textContent = 'All Ranks';
+            if (stationDisplayText) stationDisplayText.textContent = 'All Stations';
             filterOfficers();
         };
         
-        // Initialize: Ensure all command selects start disabled
+            // Initialize: Ensure all command selects start disabled
         document.addEventListener('DOMContentLoaded', function() {
+            // Ensure all command select triggers start disabled
+            document.querySelectorAll('.command-select-trigger').forEach(trigger => {
+                trigger.disabled = true;
+                trigger.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+            // Initialize Rank Filter Select
+            createSearchableSelect({
+                triggerId: 'rank_filter_select_trigger',
+                hiddenInputId: 'rank-filter',
+                dropdownId: 'rank_filter_dropdown',
+                searchInputId: 'rank_filter_search_input',
+                optionsContainerId: 'rank_filter_options',
+                displayTextId: 'rank_filter_select_text',
+                options: [{id: '', name: 'All Ranks'}, ...filterRanks],
+                placeholder: 'All Ranks',
+                searchPlaceholder: 'Search ranks...',
+                onSelect: function() {
+                    filterOfficers();
+                }
+            });
+
+            // Initialize Station Filter Select
+            createSearchableSelect({
+                triggerId: 'station_filter_select_trigger',
+                hiddenInputId: 'station-filter',
+                dropdownId: 'station_filter_dropdown',
+                searchInputId: 'station_filter_search_input',
+                optionsContainerId: 'station_filter_options',
+                displayTextId: 'station_filter_select_text',
+                options: [{id: '', name: 'All Stations'}, ...filterStations],
+                placeholder: 'All Stations',
+                searchPlaceholder: 'Search stations...',
+                onSelect: function() {
+                    filterOfficers();
+                }
+            });
+
+            // Initialize Default Command Select
+            createSearchableSelect({
+                triggerId: 'default_command_select_trigger',
+                hiddenInputId: 'default_command_id',
+                dropdownId: 'default_command_dropdown',
+                searchInputId: 'default_command_search_input',
+                optionsContainerId: 'default_command_options',
+                displayTextId: 'default_command_select_text',
+                options: availableCommands,
+                displayFn: (cmd) => cmd.name + (cmd.code ? ' (' + cmd.code + ')' : ''),
+                placeholder: 'Select default command...',
+                searchPlaceholder: 'Search commands...'
+            });
+
+            // Initialize table row command selects
+            function initializeTableCommandSelects() {
+                const commandSelects = document.querySelectorAll('.command-select-trigger');
+                commandSelects.forEach(trigger => {
+                    const index = trigger.dataset.index;
+                    const hiddenInput = document.querySelector(`.command-select-hidden[data-index="${index}"]`);
+                    const dropdown = document.querySelector(`.command-select-dropdown-${index}`);
+                    const searchInput = document.querySelector(`.command-select-search-${index}`);
+                    const optionsContainer = document.querySelector(`.command-select-options-${index}`);
+                    const displayText = document.querySelector(`.command-select-text-${index}`);
+
+                    // Render options
+                    function renderCommandOptions() {
+                        optionsContainer.innerHTML = availableCommands.map(cmd => {
+                            const display = cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
+                            return `
+                                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 table-command-option" 
+                                     data-id="${cmd.id}" 
+                                     data-name="${display}"
+                                     data-index="${index}">
+                                    <div class="text-sm text-foreground">${display}</div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        // Add click handlers
+                        optionsContainer.querySelectorAll('.table-command-option').forEach(option => {
+                            option.addEventListener('click', function() {
+                                const id = this.dataset.id;
+                                const name = this.dataset.name;
+                                hiddenInput.value = id;
+                                displayText.textContent = name;
+                                dropdown.classList.add('hidden');
+                                searchInput.value = '';
+                                updatePostButton();
+                            });
+                        });
+                    }
+
+                    // Initial render
+                    renderCommandOptions();
+
+                    // Search functionality
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const filtered = availableCommands.filter(cmd => {
+                            const display = cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
+                            return display.toLowerCase().includes(searchTerm);
+                        });
+                        
+                        optionsContainer.innerHTML = filtered.map(cmd => {
+                            const display = cmd.name + (cmd.code ? ' (' + cmd.code + ')' : '');
+                            return `
+                                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 table-command-option" 
+                                     data-id="${cmd.id}" 
+                                     data-name="${display}"
+                                     data-index="${index}">
+                                    <div class="text-sm text-foreground">${display}</div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        // Re-add click handlers
+                        optionsContainer.querySelectorAll('.table-command-option').forEach(option => {
+                            option.addEventListener('click', function() {
+                                const id = this.dataset.id;
+                                const name = this.dataset.name;
+                                hiddenInput.value = id;
+                                displayText.textContent = name;
+                                dropdown.classList.add('hidden');
+                                searchInput.value = '';
+                                updatePostButton();
+                            });
+                        });
+                    });
+
+                    // Toggle dropdown
+                    trigger.addEventListener('click', function(e) {
+                        if (this.disabled) return;
+                        e.stopPropagation();
+                        dropdown.classList.toggle('hidden');
+                        if (!dropdown.classList.contains('hidden')) {
+                            setTimeout(() => searchInput.focus(), 100);
+                        }
+                    });
+
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', function(e) {
+                        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                            dropdown.classList.add('hidden');
+                        }
+                    });
+                });
+            }
+
+            initializeTableCommandSelects();
+
             // Setup search and filter event listeners
             const searchInput = document.getElementById('officer-search-input');
-            const rankFilter = document.getElementById('rank-filter');
-            const stationFilter = document.getElementById('station-filter');
             
             if (searchInput) {
                 let searchTimeout;
@@ -322,14 +662,6 @@
                     clearTimeout(searchTimeout);
                     searchTimeout = setTimeout(filterOfficers, 300); // Debounce for 300ms
                 });
-            }
-            
-            if (rankFilter) {
-                rankFilter.addEventListener('change', filterOfficers);
-            }
-            
-            if (stationFilter) {
-                stationFilter.addEventListener('change', filterOfficers);
             }
             document.querySelectorAll('.command-select').forEach(select => {
                 select.disabled = true;
@@ -369,11 +701,21 @@
         // Toggle command select enabled/disabled based on checkbox
         function toggleCommandSelect(checkbox) {
             const index = checkbox.dataset.index;
-            const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
-            if (commandSelect) {
-                commandSelect.disabled = !checkbox.checked;
-                if (!checkbox.checked) {
-                    commandSelect.value = '';
+            const commandSelectTrigger = document.querySelector(`.command-select-trigger[data-index="${index}"]`);
+            const commandSelectHidden = document.querySelector(`.command-select-hidden[data-index="${index}"]`);
+            const commandSelectText = document.querySelector(`.command-select-text-${index}`);
+            
+            if (commandSelectTrigger && commandSelectHidden) {
+                if (checkbox.checked) {
+                    commandSelectTrigger.disabled = false;
+                    commandSelectHidden.disabled = false;
+                    commandSelectTrigger.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    commandSelectTrigger.disabled = true;
+                    commandSelectHidden.disabled = true;
+                    commandSelectTrigger.classList.add('opacity-50', 'cursor-not-allowed');
+                    commandSelectHidden.value = '';
+                    if (commandSelectText) commandSelectText.textContent = 'Select command...';
                 }
             }
         }
@@ -396,9 +738,10 @@
             let atLeastOneHasCommand = false;
             checkedBoxes.forEach(checkbox => {
                 const index = checkbox.dataset.index;
-                const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
+                const commandSelectHidden = document.querySelector(`.command-select-hidden[data-index="${index}"]`);
+                const commandSelectTrigger = document.querySelector(`.command-select-trigger[data-index="${index}"]`);
                 // Check if select exists, is enabled (not disabled), and has a value
-                if (commandSelect && !commandSelect.disabled && commandSelect.value && commandSelect.value !== '') {
+                if (commandSelectHidden && commandSelectTrigger && !commandSelectTrigger.disabled && commandSelectHidden.value && commandSelectHidden.value !== '') {
                     atLeastOneHasCommand = true;
                 }
             });
@@ -437,9 +780,9 @@
             }
         }
 
-        // Command select change handler
-        document.querySelectorAll('.command-select').forEach(select => {
-            select.addEventListener('change', function() {
+        // Command select change handler (for table row selects)
+        document.querySelectorAll('.command-select-hidden').forEach(hiddenInput => {
+            hiddenInput.addEventListener('change', function() {
                 updatePostButton();
             });
         });
@@ -458,12 +801,24 @@
                 return;
             }
 
+            const selectedCommand = availableCommands.find(cmd => cmd.id == defaultCommandId);
+            if (!selectedCommand) {
+                alert('Selected command not found.');
+                return;
+            }
+
+            const displayText = selectedCommand.name + (selectedCommand.code ? ' (' + selectedCommand.code + ')' : '');
+
             let appliedCount = 0;
             document.querySelectorAll('.officer-checkbox:checked').forEach(checkbox => {
                 const index = checkbox.dataset.index;
-                const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
-                if (commandSelect && !commandSelect.disabled) {
-                    commandSelect.value = defaultCommandId;
+                const commandSelectHidden = document.querySelector(`.command-select-hidden[data-index="${index}"]`);
+                const commandSelectText = document.querySelector(`.command-select-text-${index}`);
+                const commandSelectTrigger = document.querySelector(`.command-select-trigger[data-index="${index}"]`);
+                
+                if (commandSelectHidden && !commandSelectTrigger.disabled) {
+                    commandSelectHidden.value = defaultCommandId;
+                    if (commandSelectText) commandSelectText.textContent = displayText;
                     appliedCount++;
                 }
             });
@@ -493,11 +848,11 @@
             
             checkedBoxes.forEach(checkbox => {
                 const index = checkbox.dataset.index;
-                const commandSelect = document.querySelector(`.command-select[data-index="${index}"]`);
+                const commandSelectHidden = document.querySelector(`.command-select-hidden[data-index="${index}"]`);
                 const row = checkbox.closest('tr');
                 const name = row.querySelector('td:nth-child(3)').textContent.trim();
                 
-                if (commandSelect && commandSelect.value) {
+                if (commandSelectHidden && commandSelectHidden.value) {
                     officersWithCommands.push(name);
                 } else {
                     officersWithoutCommands.push(name);

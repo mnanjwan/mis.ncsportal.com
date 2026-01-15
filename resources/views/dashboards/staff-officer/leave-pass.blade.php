@@ -43,14 +43,34 @@
                 <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-mono">Leave Applications</h3>
                     <div class="flex items-center gap-3">
-                            <form method="GET" action="{{ route('staff-officer.leave-pass') }}" class="inline">
+                            <form method="GET" action="{{ route('staff-officer.leave-pass') }}" id="leave-status-filter-form" class="inline">
                                 <input type="hidden" name="type" value="leave">
-                                <select name="status" class="kt-input" onchange="this.form.submit()">
-                                    <option value="">All Status</option>
-                                    <option value="PENDING" {{ request('status') === 'PENDING' ? 'selected' : '' }}>Pending</option>
-                                    <option value="APPROVED" {{ request('status') === 'APPROVED' ? 'selected' : '' }}>Approved</option>
-                                    <option value="REJECTED" {{ request('status') === 'REJECTED' ? 'selected' : '' }}>Rejected</option>
-                        </select>
+                                <div class="relative">
+                                    <input type="hidden" name="status" id="leave_filter_status_id" value="{{ request('status') ?? '' }}">
+                                    <button type="button" 
+                                            id="leave_filter_status_select_trigger" 
+                                            class="kt-input text-left flex items-center justify-between cursor-pointer">
+                                        <span id="leave_filter_status_select_text">{{ request('status') ? (request('status') === 'PENDING' ? 'Pending' : (request('status') === 'APPROVED' ? 'Approved' : 'Rejected')) : 'All Status' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="leave_filter_status_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <!-- Search Box -->
+                                        <div class="p-3 border-b border-input">
+                                            <div class="relative">
+                                                <input type="text" 
+                                                       id="leave_filter_status_search_input" 
+                                                       class="kt-input w-full pl-10" 
+                                                       placeholder="Search status..."
+                                                       autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <!-- Options Container -->
+                                        <div id="leave_filter_status_options" class="max-h-60 overflow-y-auto">
+                                            <!-- Options will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
             </div>
                     </div>
@@ -111,14 +131,34 @@
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-mono">Pass Applications</h3>
                         <div class="flex items-center gap-3">
-                            <form method="GET" action="{{ route('staff-officer.leave-pass') }}" class="inline">
+                            <form method="GET" action="{{ route('staff-officer.leave-pass') }}" id="pass-status-filter-form" class="inline">
                                 <input type="hidden" name="type" value="pass">
-                                <select name="status" class="kt-input" onchange="this.form.submit()">
-                                    <option value="">All Status</option>
-                                    <option value="PENDING" {{ request('status') === 'PENDING' ? 'selected' : '' }}>Pending</option>
-                                    <option value="APPROVED" {{ request('status') === 'APPROVED' ? 'selected' : '' }}>Approved</option>
-                                    <option value="REJECTED" {{ request('status') === 'REJECTED' ? 'selected' : '' }}>Rejected</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="status" id="pass_filter_status_id" value="{{ request('status') ?? '' }}">
+                                    <button type="button" 
+                                            id="pass_filter_status_select_trigger" 
+                                            class="kt-input text-left flex items-center justify-between cursor-pointer">
+                                        <span id="pass_filter_status_select_text">{{ request('status') ? (request('status') === 'PENDING' ? 'Pending' : (request('status') === 'APPROVED' ? 'Approved' : 'Rejected')) : 'All Status' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="pass_filter_status_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <!-- Search Box -->
+                                        <div class="p-3 border-b border-input">
+                                            <div class="relative">
+                                                <input type="text" 
+                                                       id="pass_filter_status_search_input" 
+                                                       class="kt-input w-full pl-10" 
+                                                       placeholder="Search status..."
+                                                       autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <!-- Options Container -->
+                                        <div id="pass_filter_status_options" class="max-h-60 overflow-y-auto">
+                                            <!-- Options will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -179,4 +219,149 @@
                             </div>
                         </div>
 @endif
+
+<script>
+    // Status options
+    const statusOptions = [
+        {id: '', name: 'All Status'},
+        {id: 'PENDING', name: 'Pending'},
+        {id: 'APPROVED', name: 'Approved'},
+        {id: 'REJECTED', name: 'Rejected'}
+    ];
+
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                const value = opt.id || opt.value || '';
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => (o.id || o.value || '') == id);
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                return display.toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize status filter selects
+    document.addEventListener('DOMContentLoaded', function() {
+        // Leave status filter
+        @if($type === 'leave')
+        createSearchableSelect({
+            triggerId: 'leave_filter_status_select_trigger',
+            hiddenInputId: 'leave_filter_status_id',
+            dropdownId: 'leave_filter_status_dropdown',
+            searchInputId: 'leave_filter_status_search_input',
+            optionsContainerId: 'leave_filter_status_options',
+            displayTextId: 'leave_filter_status_select_text',
+            options: statusOptions,
+            placeholder: 'All Status',
+            searchPlaceholder: 'Search status...',
+            onSelect: function() {
+                document.getElementById('leave-status-filter-form').submit();
+            }
+        });
+        @endif
+
+        // Pass status filter
+        @if($type === 'pass')
+        createSearchableSelect({
+            triggerId: 'pass_filter_status_select_trigger',
+            hiddenInputId: 'pass_filter_status_id',
+            dropdownId: 'pass_filter_status_dropdown',
+            searchInputId: 'pass_filter_status_search_input',
+            optionsContainerId: 'pass_filter_status_options',
+            displayTextId: 'pass_filter_status_select_text',
+            options: statusOptions,
+            placeholder: 'All Status',
+            searchPlaceholder: 'Search status...',
+            onSelect: function() {
+                document.getElementById('pass-status-filter-form').submit();
+            }
+        });
+        @endif
+    });
+</script>
 @endsection

@@ -64,35 +64,78 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
-                        <select name="substantive_rank" id="substantive_rank" class="kt-input" required>
-                            <option value="">Select Rank...</option>
-                            @php
-                                $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
-                            @endphp
-                            @foreach($ranks as $rank)
-                                <option value="{{ $rank }}" {{ old('substantive_rank', $savedData['substantive_rank'] ?? '') == $rank ? 'selected' : '' }}>{{ $rank }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="substantive_rank" id="substantive_rank" value="{{ old('substantive_rank', $savedData['substantive_rank'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="substantive_rank_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="substantive_rank_select_text">{{ old('substantive_rank', $savedData['substantive_rank'] ?? '') ? old('substantive_rank', $savedData['substantive_rank'] ?? '') : 'Select Rank...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="substantive_rank_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="substantive_rank_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search rank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="substantive_rank_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
-                        <select name="salary_grade_level" id="salary_grade_level" class="kt-input" required>
-                            <option value="">Select Grade Level...</option>
-                            @php
-                                $gradeLevels = ['GL 03', 'GL 04', 'GL 05', 'GL 06', 'GL 07', 'GL 08', 'GL 09', 'GL 10', 'GL 11', 'GL 12', 'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17', 'GL 18'];
-                            @endphp
-                            @foreach($gradeLevels as $gl)
-                                <option value="{{ $gl }}" {{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') == $gl ? 'selected' : '' }}>{{ $gl }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="salary_grade_level" id="salary_grade_level" value="{{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="salary_grade_level_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="salary_grade_level_select_text">{{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') ? old('salary_grade_level', $savedData['salary_grade_level'] ?? '') : 'Select Grade Level...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="salary_grade_level_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="salary_grade_level_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search grade level..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="salary_grade_level_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Zone <span class="text-danger">*</span></label>
-                        <select name="zone_id" id="zone_id" class="kt-input" required>
-                            <option value="">Select Zone...</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="zone_id" id="zone_id" value="{{ old('zone_id', $savedData['zone_id'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="zone_id_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="zone_id_select_text">@php
+                                    $zoneId = old('zone_id', $savedData['zone_id'] ?? '');
+                                    $selectedZone = $zoneId ? $zones->firstWhere('id', $zoneId) : null;
+                                    echo $selectedZone ? $selectedZone->name : 'Select Zone...';
+                                @endphp</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="zone_id_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="zone_id_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search zone..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="zone_id_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -133,11 +176,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Unit</label>
-                        <select name="unit" class="kt-input">
-                            <option value="">Select Unit...</option>
-                            <option value="General Duty (GD)" {{ old('unit', $savedData['unit'] ?? '') == 'General Duty (GD)' ? 'selected' : '' }}>General Duty (GD)</option>
-                            <option value="Support Staff (SS)" {{ old('unit', $savedData['unit'] ?? '') == 'Support Staff (SS)' ? 'selected' : '' }}>Support Staff (SS)</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="unit" id="unit_id" value="{{ old('unit', $savedData['unit'] ?? '') }}">
+                            <button type="button" 
+                                    id="unit_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="unit_select_text">{{ old('unit', $savedData['unit'] ?? '') ? old('unit', $savedData['unit'] ?? '') : 'Select Unit...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="unit_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="unit_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search unit..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -192,6 +250,129 @@
 
 @push('scripts')
 <script>
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+// Rank to Grade Level mapping
+const rankToGradeMap = {
+    'CGC': 'GL 17',
+    'DCG': 'GL 17',
+    'ACG': 'GL 16',
+    'CC': 'GL 15',
+    'DC': 'GL 14',
+    'AC': 'GL 13',
+    'CSC': 'GL 12',
+    'SC': 'GL 11',
+    'DSC': 'GL 10',
+    'ASC I': 'GL 09',
+    'ASC II': 'GL 08',
+    'IC': 'GL 07',
+    'AIC': 'GL 06',
+    'CA I': 'GL 05',
+    'CA II': 'GL 04',
+    'CA III': 'GL 03'
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Load zones and commands
     const token = window.API_CONFIG?.token || '{{ auth()->user()?->createToken('token')->plainTextToken ?? '' }}';
@@ -225,16 +406,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
                 
-                const zoneSelect = document.getElementById('zone_id');
-                zones.forEach(zone => {
-                    const option = document.createElement('option');
-                    option.value = zone.id;
-                    option.textContent = zone.name;
-                    if (zone.id == savedZoneId) {
-                        option.selected = true;
+                // Initialize zone searchable select
+                const zoneOptions = [
+                    {id: '', name: 'Select Zone...'},
+                    ...zones.map(zone => ({id: zone.id, name: zone.name}))
+                ];
+                
+                if (document.getElementById('zone_id_select_trigger')) {
+                    createSearchableSelect({
+                        triggerId: 'zone_id_select_trigger',
+                        hiddenInputId: 'zone_id',
+                        dropdownId: 'zone_id_dropdown',
+                        searchInputId: 'zone_id_search_input',
+                        optionsContainerId: 'zone_id_options',
+                        displayTextId: 'zone_id_select_text',
+                        options: zoneOptions,
+                        placeholder: 'Select Zone...',
+                        searchPlaceholder: 'Search zone...',
+                        onSelect: function(option) {
+                            // Load commands when zone is selected
+                            if (option.id) {
+                                loadCommandsForZone(option.id);
+                            } else {
+                                clearCommandSelection();
+                            }
+                        }
+                    });
+                    
+                    // Set initial value if saved
+                    if (savedZoneId) {
+                        const savedZone = zones.find(z => z.id == savedZoneId);
+                        if (savedZone) {
+                            document.getElementById('zone_id').value = savedZoneId;
+                            document.getElementById('zone_id_select_text').textContent = savedZone.name;
+                        }
                     }
-                    zoneSelect.appendChild(option);
-                });
+                }
             } else {
                 console.error('Zones data format error:', zonesData);
             }
@@ -256,16 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }, 100);
                 }
                 
-                // Handle zone change
-                const zoneSelect = document.getElementById('zone_id');
-                zoneSelect.addEventListener('change', function() {
-                    const selectedZoneId = this.value;
-                    if (selectedZoneId) {
-                        loadCommandsForZone(selectedZoneId);
-                    } else {
-                        clearCommandSelection();
-                    }
-                });
+                // Zone change is handled in the onSelect callback of the searchable select
             } else {
                 console.error('Commands data format error:', commandsData);
             }
@@ -288,6 +486,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (error) {
         console.error('Error loading zones/commands:', error);
+    }
+    
+    // Initialize rank select
+    const ranks = @json($ranks ?? []);
+    if (ranks.length > 0) {
+        const rankOptions = [
+            {id: '', name: 'Select Rank...'},
+            ...ranks.map(rank => ({id: rank, name: rank}))
+        ];
+        
+        createSearchableSelect({
+            triggerId: 'substantive_rank_select_trigger',
+            hiddenInputId: 'substantive_rank',
+            dropdownId: 'substantive_rank_dropdown',
+            searchInputId: 'substantive_rank_search_input',
+            optionsContainerId: 'substantive_rank_options',
+            displayTextId: 'substantive_rank_select_text',
+            options: rankOptions,
+            placeholder: 'Select Rank...',
+            searchPlaceholder: 'Search rank...',
+            onSelect: function(option) {
+                // Auto-populate grade level when rank is selected
+                if (option.id && rankToGradeMap[option.id]) {
+                    const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+                    const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
+                    if (gradeLevelHiddenInput && gradeLevelDisplayText) {
+                        gradeLevelHiddenInput.value = rankToGradeMap[option.id];
+                        gradeLevelDisplayText.textContent = rankToGradeMap[option.id];
+                        clearError('salary_grade_level');
+                    }
+                }
+            }
+        });
+        
+        // Set initial value if saved
+        const savedRank = '{{ old('substantive_rank', $savedData['substantive_rank'] ?? '') }}';
+        if (savedRank) {
+            document.getElementById('substantive_rank').value = savedRank;
+            document.getElementById('substantive_rank_select_text').textContent = savedRank;
+        }
+    }
+    
+    // Initialize grade level select
+    const gradeLevels = @json($gradeLevels ?? []);
+    if (gradeLevels.length > 0) {
+        const gradeLevelOptions = [
+            {id: '', name: 'Select Grade Level...'},
+            ...gradeLevels.map(level => ({id: level, name: level}))
+        ];
+        
+        createSearchableSelect({
+            triggerId: 'salary_grade_level_select_trigger',
+            hiddenInputId: 'salary_grade_level',
+            dropdownId: 'salary_grade_level_dropdown',
+            searchInputId: 'salary_grade_level_search_input',
+            optionsContainerId: 'salary_grade_level_options',
+            displayTextId: 'salary_grade_level_select_text',
+            options: gradeLevelOptions,
+            placeholder: 'Select Grade Level...',
+            searchPlaceholder: 'Search grade level...'
+        });
+        
+        // Set initial value if saved
+        const savedGradeLevel = '{{ old('salary_grade_level', $savedData['salary_grade_level'] ?? '') }}';
+        if (savedGradeLevel) {
+            document.getElementById('salary_grade_level').value = savedGradeLevel;
+            document.getElementById('salary_grade_level_select_text').textContent = savedGradeLevel;
+        }
     }
     
     // Initialize education entries
@@ -646,12 +912,26 @@ function addEducationEntry(data = null) {
             </div>
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Entry Qualification <span class="text-danger">*</span></label>
-                <select name="education[${entryId}][qualification]" class="kt-input education-qualification" required>
-                    <option value="">-- Select Qualification --</option>
-                    ${qualifications.map(qual => 
-                        `<option value="${qual}" ${savedQualification == qual ? 'selected' : ''}>${qual}</option>`
-                    ).join('')}
-                </select>
+                <div class="relative">
+                    <input type="hidden" name="education[${entryId}][qualification]" id="education_qualification_${entryId}_id" value="${savedQualification}" required>
+                    <button type="button" 
+                            id="education_qualification_${entryId}_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="education_qualification_${entryId}_select_text">${savedQualification ? savedQualification : '-- Select Qualification --'}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="education_qualification_${entryId}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="education_qualification_${entryId}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search qualification..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="education_qualification_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
             <div class="flex flex-col gap-1">
@@ -701,6 +981,26 @@ function addEducationEntry(data = null) {
     
     // Initialize discipline search for this entry
     initializeDisciplineSearch(entryId);
+    
+    // Initialize qualification searchable select
+    if (typeof createSearchableSelect === 'function') {
+        const qualificationOptions = [
+            {id: '', name: '-- Select Qualification --'},
+            ...qualifications.map(qual => ({id: qual, name: qual}))
+        ];
+        
+        createSearchableSelect({
+            triggerId: `education_qualification_${entryId}_select_trigger`,
+            hiddenInputId: `education_qualification_${entryId}_id`,
+            dropdownId: `education_qualification_${entryId}_dropdown`,
+            searchInputId: `education_qualification_${entryId}_search_input`,
+            optionsContainerId: `education_qualification_${entryId}_options`,
+            displayTextId: `education_qualification_${entryId}_select_text`,
+            options: qualificationOptions,
+            placeholder: '-- Select Qualification --',
+            searchPlaceholder: 'Search qualification...'
+        });
+    }
 }
 
 function removeEducationEntry(entryId) {
@@ -1089,28 +1389,56 @@ const rankToGradeMap = {
 
 // Auto-populate grade level when rank is selected
 function initializeRankGradeMapping() {
-    const rankSelect = document.getElementById('substantive_rank');
-    const gradeLevelSelect = document.getElementById('salary_grade_level');
+    const rankHiddenInput = document.getElementById('substantive_rank');
+    const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+    const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
     
-    if (rankSelect && gradeLevelSelect) {
-        rankSelect.addEventListener('change', function() {
+    if (rankHiddenInput && gradeLevelHiddenInput) {
+        // Listen for changes on the rank hidden input
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    const selectedRank = rankHiddenInput.value;
+                    if (selectedRank && rankToGradeMap[selectedRank]) {
+                        gradeLevelHiddenInput.value = rankToGradeMap[selectedRank];
+                        if (gradeLevelDisplayText) {
+                            gradeLevelDisplayText.textContent = rankToGradeMap[selectedRank];
+                        }
+                        clearError('salary_grade_level');
+                    } else if (!selectedRank) {
+                        gradeLevelHiddenInput.value = '';
+                        if (gradeLevelDisplayText) {
+                            gradeLevelDisplayText.textContent = 'Select Grade Level...';
+                        }
+                    }
+                }
+            });
+        });
+        observer.observe(rankHiddenInput, { attributes: true, attributeFilter: ['value'] });
+
+        // Also listen for direct value changes
+        rankHiddenInput.addEventListener('input', function() {
             const selectedRank = this.value;
-            
             if (selectedRank && rankToGradeMap[selectedRank]) {
-                const gradeLevel = rankToGradeMap[selectedRank];
-                gradeLevelSelect.value = gradeLevel;
+                gradeLevelHiddenInput.value = rankToGradeMap[selectedRank];
+                if (gradeLevelDisplayText) {
+                    gradeLevelDisplayText.textContent = rankToGradeMap[selectedRank];
+                }
                 clearError('salary_grade_level');
-                
-                // Trigger change event to ensure form validation recognizes the change
-                gradeLevelSelect.dispatchEvent(new Event('change'));
             } else if (!selectedRank) {
-                gradeLevelSelect.value = '';
+                gradeLevelHiddenInput.value = '';
+                if (gradeLevelDisplayText) {
+                    gradeLevelDisplayText.textContent = 'Select Grade Level...';
+                }
             }
         });
         
         // Auto-populate on page load if rank is already selected
-        if (rankSelect.value && rankToGradeMap[rankSelect.value]) {
-            gradeLevelSelect.value = rankToGradeMap[rankSelect.value];
+        if (rankHiddenInput.value && rankToGradeMap[rankHiddenInput.value]) {
+            gradeLevelHiddenInput.value = rankToGradeMap[rankHiddenInput.value];
+            if (gradeLevelDisplayText) {
+                gradeLevelDisplayText.textContent = rankToGradeMap[rankHiddenInput.value];
+            }
         }
     }
 }

@@ -77,26 +77,36 @@
                     </p>
                 </div>
 
-                <!-- Course Name -->
+                <!-- Course Name (Searchable Select) -->
                 <div class="space-y-2">
                     <label for="course_name" class="block text-sm font-medium text-foreground">
                         Course Name <span class="text-danger">*</span>
                     </label>
-                    <div class="flex gap-2">
-                        <select name="course_name" 
-                                id="course_name"
-                                class="kt-input @error('course_name') kt-input-error @enderror flex-1"
-                                required>
-                            <option value="">Select a course or enter new...</option>
-                            @foreach($courses as $course)
-                                <option value="{{ $course->name }}" {{ old('course_name') == $course->name ? 'selected' : '' }}>
-                                    {{ $course->name }}
-                                </option>
-                            @endforeach
-                            <option value="__NEW__" {{ old('course_name') === '__NEW__' || (old('course_name') && !$courses->contains('name', old('course_name')) && old('course_name') !== '__NEW__') ? 'selected' : '' }}>
-                                + Add New Course
-                            </option>
-                        </select>
+                    <div class="relative">
+                        <input type="hidden" name="course_name" id="course_name" required>
+                        <button type="button" 
+                                id="course_name_select_trigger" 
+                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('course_name') kt-input-error @enderror">
+                            <span id="course_name_select_text">Select a course or enter new...</span>
+                            <i class="ki-filled ki-down text-gray-400"></i>
+                        </button>
+                        <div id="course_name_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                            <!-- Search Box -->
+                            <div class="p-3 border-b border-input">
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="course_name_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search courses..."
+                                           autocomplete="off">
+                                </div>
+                            </div>
+                            <!-- Options Container -->
+                            <div id="course_name_options" class="max-h-60 overflow-y-auto">
+                                <!-- Options will be populated by JavaScript -->
+                            </div>
+                        </div>
                     </div>
                     <input type="text" 
                            name="course_name_custom" 
@@ -352,32 +362,159 @@
         }
     });
 
-    // Handle course name dropdown/input switching
-    const courseNameSelect = document.getElementById('course_name');
+    // Course Name data
+    @php
+        $coursesData = $courses->map(function($course) {
+            return ['id' => $course->name, 'name' => $course->name];
+        })->values();
+        // Add "Add New Course" option
+        $coursesData->push(['id' => '__NEW__', 'name' => '+ Add New Course']);
+    @endphp
+    const courseNames = @json($coursesData);
+
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                const value = opt.id || opt.value || '';
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => (o.id || o.value || '') == id);
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name || placeholder;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                return display.toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize course name searchable select
     const courseNameCustom = document.getElementById('course_name_custom');
+    const courseNameHiddenInput = document.getElementById('course_name');
     
-    courseNameSelect.addEventListener('change', function() {
-        if (this.value === '__NEW__') {
-            courseNameCustom.classList.remove('hidden');
-            courseNameCustom.required = true;
-            courseNameSelect.required = false;
-            courseNameCustom.focus();
-        } else {
-            courseNameCustom.classList.add('hidden');
-            courseNameCustom.required = false;
-            courseNameSelect.required = true;
+    createSearchableSelect({
+        triggerId: 'course_name_select_trigger',
+        hiddenInputId: 'course_name',
+        dropdownId: 'course_name_dropdown',
+        searchInputId: 'course_name_search_input',
+        optionsContainerId: 'course_name_options',
+        displayTextId: 'course_name_select_text',
+        options: courseNames,
+        placeholder: 'Select a course or enter new...',
+        searchPlaceholder: 'Search courses...',
+        onSelect: function(option) {
+            if (option.id === '__NEW__') {
+                courseNameCustom.classList.remove('hidden');
+                courseNameCustom.required = true;
+                courseNameHiddenInput.required = false;
+                courseNameCustom.focus();
+            } else {
+                courseNameCustom.classList.add('hidden');
+                courseNameCustom.required = false;
+                courseNameHiddenInput.required = true;
+            }
         }
     });
 
-    // Initialize on page load - check if "__NEW__" is selected or if custom input has a value
-    if (courseNameSelect.value === '__NEW__' || (courseNameCustom.value && courseNameCustom.value.trim().length > 0)) {
-        if (courseNameSelect.value !== '__NEW__') {
-            courseNameSelect.value = '__NEW__';
-        }
+    // Initialize on page load - check if custom input has a value
+    @if(old('course_name') && old('course_name') !== '__NEW__' && !$courses->contains('name', old('course_name')))
+        // If old course_name exists but is not in the list, show custom input
         courseNameCustom.classList.remove('hidden');
         courseNameCustom.required = true;
-        courseNameSelect.required = false;
-    }
+        courseNameHiddenInput.required = false;
+        courseNameHiddenInput.value = '__NEW__';
+        document.getElementById('course_name_select_text').textContent = '+ Add New Course';
+    @elseif(old('course_name') === '__NEW__')
+        courseNameCustom.classList.remove('hidden');
+        courseNameCustom.required = true;
+        courseNameHiddenInput.required = false;
+        document.getElementById('course_name_select_text').textContent = '+ Add New Course';
+    @elseif(old('course_name') && $courses->contains('name', old('course_name')))
+        // Set the selected course
+        const oldCourseName = '{{ old('course_name') }}';
+        courseNameHiddenInput.value = oldCourseName;
+        document.getElementById('course_name_select_text').textContent = oldCourseName;
+    @endif
 
     // Form submission - use custom input if "__NEW__" is selected and validate officer selection
     document.querySelector('form').addEventListener('submit', function(e) {
@@ -390,7 +527,7 @@
         }
 
         // Validate course name
-        if (courseNameSelect.value === '__NEW__') {
+        if (courseNameHiddenInput.value === '__NEW__') {
             if (!courseNameCustom.value.trim()) {
                 e.preventDefault();
                 alert('Please enter a course name');
@@ -398,7 +535,6 @@
                 return false;
             }
             // Keep course_name as "__NEW__" so controller knows to use course_name_custom
-            // Don't change courseNameSelect.value here
         }
     });
 </script>

@@ -83,13 +83,27 @@
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Training Results</h3>
                 <div class="kt-card-toolbar flex items-center gap-3">
-                    <form method="GET" action="{{ route('tradoc.dashboard') }}" class="flex items-center gap-2">
-                        <select name="rank" id="rank-filter" class="kt-input kt-input-sm" style="min-width: 150px;" onchange="this.form.submit()">
-                            <option value="">All Ranks</option>
-                            @foreach($availableRanks ?? [] as $rank)
-                                <option value="{{ $rank }}" {{ $selectedRank === $rank ? 'selected' : '' }}>{{ $rank }}</option>
-                            @endforeach
-                        </select>
+                    <form method="GET" action="{{ route('tradoc.dashboard') }}" id="rank-filter-form" class="flex items-center gap-2">
+                        <div class="relative">
+                            <input type="hidden" name="rank" id="rank-filter" value="{{ $selectedRank ?? '' }}">
+                            <button type="button" 
+                                    id="rank_filter_select_trigger" 
+                                    class="kt-input kt-input-sm text-left flex items-center justify-between cursor-pointer" style="min-width: 150px;">
+                                <span id="rank_filter_select_text">{{ $selectedRank ? $selectedRank : 'All Ranks' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="rank_filter_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="rank_filter_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search rank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="rank_filter_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </form>
                     <button type="button" onclick="showDownloadModal()" class="kt-btn kt-btn-sm kt-btn-success">
                         <i class="ki-filled ki-file-down"></i> Download CSV
@@ -279,12 +293,26 @@
                         <label for="download-rank" class="block text-sm font-medium text-foreground mb-2">
                             Select Rank to Download <span class="text-danger">*</span>
                         </label>
-                        <select name="rank" id="download-rank" class="kt-input w-full" required>
-                            <option value="">All Ranks</option>
-                            @foreach($availableRanks ?? [] as $rank)
-                                <option value="{{ $rank }}" {{ $selectedRank === $rank ? 'selected' : '' }}>{{ $rank }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="rank" id="download-rank" value="{{ $selectedRank ?? '' }}" required>
+                            <button type="button" 
+                                    id="download_rank_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="download_rank_select_text">{{ $selectedRank ? $selectedRank : 'All Ranks' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="download_rank_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="download_rank_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search rank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="download_rank_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <p class="text-xs text-secondary-foreground mt-1">
                             Select a rank to download results for that rank only, or leave as "All Ranks" to download everything.
                         </p>
@@ -339,6 +367,151 @@
 
     @push('scripts')
     <script>
+        // Reusable function to create searchable select
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
+            if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+                return;
+            }
+
+            let selectedOption = null;
+            let filteredOptions = [...options];
+
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
+                }
+
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                    const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => {
+                            const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                            return String(optValue) === String(id);
+                        });
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                        }
+                    });
+                });
+            }
+
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                    return String(display).toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Rank options
+            const rankOptions = [
+                {id: '', name: 'All Ranks'},
+                @if(isset($availableRanks))
+                @foreach($availableRanks as $rank)
+                {id: '{{ $rank }}', name: '{{ $rank }}'},
+                @endforeach
+                @endif
+            ];
+
+            // Initialize rank filter select
+            createSearchableSelect({
+                triggerId: 'rank_filter_select_trigger',
+                hiddenInputId: 'rank-filter',
+                dropdownId: 'rank_filter_dropdown',
+                searchInputId: 'rank_filter_search_input',
+                optionsContainerId: 'rank_filter_options',
+                displayTextId: 'rank_filter_select_text',
+                options: rankOptions,
+                placeholder: 'All Ranks',
+                searchPlaceholder: 'Search rank...',
+                onSelect: function() {
+                    document.getElementById('rank-filter-form').submit();
+                }
+            });
+
+            // Initialize download rank select
+            createSearchableSelect({
+                triggerId: 'download_rank_select_trigger',
+                hiddenInputId: 'download-rank',
+                dropdownId: 'download_rank_dropdown',
+                searchInputId: 'download_rank_search_input',
+                optionsContainerId: 'download_rank_options',
+                displayTextId: 'download_rank_select_text',
+                options: rankOptions,
+                placeholder: 'All Ranks',
+                searchPlaceholder: 'Search rank...'
+            });
+        });
+
         function showResultModal(resultId) {
             // Fetch result details via AJAX
             fetch(`{{ url('tradoc/results') }}/${resultId}`, {

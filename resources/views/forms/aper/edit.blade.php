@@ -275,6 +275,268 @@ function addTrainingRow() {
 function removeTrainingRow(button) {
     button.closest('tr').remove();
 }
+
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+// Initialize all searchable selects on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // YES/NO options
+    const yesNoOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'YES', name: 'YES'},
+        {id: 'NO', name: 'NO'}
+    ];
+
+    const yesNoOptionsWithLabel = [
+        {id: '', name: '-- Select YES or NO --'},
+        {id: 'YES', name: 'YES'},
+        {id: 'NO', name: 'NO'}
+    ];
+
+    // Title options
+    const titleOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'Mr', name: 'Mr.'},
+        {id: 'Mrs', name: 'Mrs.'},
+        {id: 'Miss', name: 'Miss.'}
+    ];
+
+    // Cadre options
+    const cadreOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'GD', name: 'GD'},
+        {id: 'SS', name: 'SS'}
+    ];
+
+    // Sick leave type options
+    const sickLeaveTypeOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'Hospitalisation', name: 'Hospitalisation'},
+        {id: 'Treatment Abroad', name: 'Treatment Received Abroad'},
+        {id: 'Sick Leave', name: 'Sick Leave'}
+    ];
+
+    // Initialize Part 1 selects
+    if (document.getElementById('title_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'title_select_trigger',
+            hiddenInputId: 'title_id',
+            dropdownId: 'title_dropdown',
+            searchInputId: 'title_search_input',
+            optionsContainerId: 'title_options',
+            displayTextId: 'title_select_text',
+            options: titleOptions,
+            placeholder: 'Select...',
+            searchPlaceholder: 'Search...'
+        });
+    }
+
+    if (document.getElementById('cadre_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'cadre_select_trigger',
+            hiddenInputId: 'cadre_id',
+            dropdownId: 'cadre_dropdown',
+            searchInputId: 'cadre_search_input',
+            optionsContainerId: 'cadre_options',
+            displayTextId: 'cadre_select_text',
+            options: cadreOptions,
+            placeholder: 'Select...',
+            searchPlaceholder: 'Search...'
+        });
+    }
+
+    // Initialize Part 2 selects
+    const part2Selects = [
+        {id: 'joint_discussion', options: yesNoOptions},
+        {id: 'properly_equipped', options: yesNoOptions},
+        {id: 'performance_measure_up', options: yesNoOptions},
+        {id: 'adhoc_affected_duties', options: yesNoOptions}
+    ];
+
+    part2Selects.forEach(select => {
+        if (document.getElementById(`${select.id}_select_trigger`)) {
+            createSearchableSelect({
+                triggerId: `${select.id}_select_trigger`,
+                hiddenInputId: `${select.id}_id`,
+                dropdownId: `${select.id}_dropdown`,
+                searchInputId: `${select.id}_search_input`,
+                optionsContainerId: `${select.id}_options`,
+                displayTextId: `${select.id}_select_text`,
+                options: select.options,
+                placeholder: 'Select...',
+                searchPlaceholder: 'Search...'
+            });
+        }
+    });
+
+    // Initialize existing sick leave type selects in the table
+    document.querySelectorAll('[id^="sick_leave_type_"][id$="_select_trigger"]').forEach(trigger => {
+        const match = trigger.id.match(/sick_leave_type_(\d+)_select_trigger/);
+        if (match) {
+            const index = match[1];
+            createSearchableSelect({
+                triggerId: `sick_leave_type_${index}_select_trigger`,
+                hiddenInputId: `sick_leave_type_${index}_id`,
+                dropdownId: `sick_leave_type_${index}_dropdown`,
+                searchInputId: `sick_leave_type_${index}_search_input`,
+                optionsContainerId: `sick_leave_type_${index}_options`,
+                displayTextId: `sick_leave_type_${index}_select_text`,
+                options: sickLeaveTypeOptions,
+                placeholder: 'Select...',
+                searchPlaceholder: 'Search...'
+            });
+        }
+    });
+
+    // Initialize Part 3 selects
+    const part3Selects = [
+        {id: 'effective_use_capabilities', options: yesNoOptions},
+        {id: 'job_satisfaction', options: yesNoOptions}
+    ];
+
+    part3Selects.forEach(select => {
+        if (document.getElementById(`${select.id}_select_trigger`)) {
+            createSearchableSelect({
+                triggerId: `${select.id}_select_trigger`,
+                hiddenInputId: `${select.id}_id`,
+                dropdownId: `${select.id}_dropdown`,
+                searchInputId: `${select.id}_search_input`,
+                optionsContainerId: `${select.id}_options`,
+                displayTextId: `${select.id}_select_text`,
+                options: select.options,
+                placeholder: 'Select...',
+                searchPlaceholder: 'Search...'
+            });
+        }
+    });
+
+    // Initialize Reporting Officer selects
+    const reportingOfficerSelects = [
+        {id: 'targets_agreed', options: yesNoOptionsWithLabel},
+        {id: 'duties_agreed', options: yesNoOptionsWithLabel},
+        {id: 'disciplinary_action', options: yesNoOptionsWithLabel},
+        {id: 'special_commendation', options: yesNoOptionsWithLabel},
+        {id: 'suggest_different_job', options: yesNoOptionsWithLabel},
+        {id: 'suggest_transfer', options: yesNoOptionsWithLabel}
+    ];
+
+    reportingOfficerSelects.forEach(select => {
+        if (document.getElementById(`${select.id}_select_trigger`)) {
+            createSearchableSelect({
+                triggerId: `${select.id}_select_trigger`,
+                hiddenInputId: `${select.id}_id`,
+                dropdownId: `${select.id}_dropdown`,
+                searchInputId: `${select.id}_search_input`,
+                optionsContainerId: `${select.id}_options`,
+                displayTextId: `${select.id}_select_text`,
+                options: select.options,
+                placeholder: select.options[0].name,
+                searchPlaceholder: 'Search...'
+            });
+        }
+    });
+});
 </script>
 @endsection
 

@@ -36,36 +36,94 @@
                         <!-- Type Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Type</label>
-                            <select name="type" class="kt-input w-full">
-                                <option value="">All Types</option>
-                                <option value="leave" {{ request('type') == 'leave' ? 'selected' : '' }}>Leave</option>
-                                <option value="pass" {{ request('type') == 'pass' ? 'selected' : '' }}>Pass</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="type" id="filter_type_id" value="{{ request('type') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_type_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_type_select_text">{{ request('type') ? ucfirst(request('type')) : 'All Types' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_type_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_type_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search types..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_type_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Status Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Status</label>
-                            <select name="status" class="kt-input w-full">
-                                <option value="">All Statuses</option>
-                                <option value="PENDING" {{ request('status') == 'PENDING' ? 'selected' : '' }}>Pending</option>
-                                <option value="APPROVED" {{ request('status') == 'APPROVED' ? 'selected' : '' }}>Approved</option>
-                                <option value="REJECTED" {{ request('status') == 'REJECTED' ? 'selected' : '' }}>Rejected</option>
-                                <option value="CANCELLED" {{ request('status') == 'CANCELLED' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="status" id="filter_status_id" value="{{ request('status') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_status_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_status_select_text">{{ request('status') ? request('status') : 'All Statuses' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_status_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_status_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search status..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_status_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Year Select -->
                         <div class="w-full md:w-36">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Year</label>
-                            <select name="year" class="kt-input w-full">
-                                <option value="">All Years</option>
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>
-                                        {{ $year }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="year" id="filter_year_id" value="{{ request('year') ?? '' }}">
+                                <button type="button" 
+                                        id="filter_year_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="filter_year_select_text">{{ request('year') ? request('year') : 'All Years' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="filter_year_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <!-- Search Box -->
+                                    <div class="p-3 border-b border-input">
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="filter_year_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search years..."
+                                                   autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <!-- Options Container -->
+                                    <div id="filter_year_options" class="max-h-60 overflow-y-auto">
+                                        <!-- Options will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
@@ -293,5 +351,165 @@
             background: #555;
         }
     </style>
+
+<script>
+    // Filter options data
+    @php
+        $typeOptions = [
+            ['id' => '', 'name' => 'All Types'],
+            ['id' => 'leave', 'name' => 'Leave'],
+            ['id' => 'pass', 'name' => 'Pass']
+        ];
+        $statusOptions = [
+            ['id' => '', 'name' => 'All Statuses'],
+            ['id' => 'PENDING', 'name' => 'Pending'],
+            ['id' => 'APPROVED', 'name' => 'Approved'],
+            ['id' => 'REJECTED', 'name' => 'Rejected'],
+            ['id' => 'CANCELLED', 'name' => 'Cancelled']
+        ];
+        $yearOptions = collect($years)->map(function($year) {
+            return ['id' => $year, 'name' => $year];
+        })->values();
+        $yearOptions->prepend(['id' => '', 'name' => 'All Years']);
+    @endphp
+    const typeOptions = @json($typeOptions);
+    const statusOptions = @json($statusOptions);
+    const yearOptions = @json($yearOptions);
+
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                const value = opt.id || opt.value || '';
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => (o.id || o.value || '') == id);
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                return display.toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize filter selects
+    document.addEventListener('DOMContentLoaded', function() {
+        createSearchableSelect({
+            triggerId: 'filter_type_select_trigger',
+            hiddenInputId: 'filter_type_id',
+            dropdownId: 'filter_type_dropdown',
+            searchInputId: 'filter_type_search_input',
+            optionsContainerId: 'filter_type_options',
+            displayTextId: 'filter_type_select_text',
+            options: typeOptions,
+            placeholder: 'All Types',
+            searchPlaceholder: 'Search types...'
+        });
+
+        createSearchableSelect({
+            triggerId: 'filter_status_select_trigger',
+            hiddenInputId: 'filter_status_id',
+            dropdownId: 'filter_status_dropdown',
+            searchInputId: 'filter_status_search_input',
+            optionsContainerId: 'filter_status_options',
+            displayTextId: 'filter_status_select_text',
+            options: statusOptions,
+            placeholder: 'All Statuses',
+            searchPlaceholder: 'Search status...'
+        });
+
+        createSearchableSelect({
+            triggerId: 'filter_year_select_trigger',
+            hiddenInputId: 'filter_year_id',
+            dropdownId: 'filter_year_dropdown',
+            searchInputId: 'filter_year_search_input',
+            optionsContainerId: 'filter_year_options',
+            displayTextId: 'filter_year_select_text',
+            options: yearOptions,
+            placeholder: 'All Years',
+            searchPlaceholder: 'Search years...'
+        });
+    });
+</script>
 @endsection
 

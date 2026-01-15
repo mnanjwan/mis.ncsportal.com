@@ -78,17 +78,37 @@
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">
                             Zone <span class="text-danger">*</span>
                         </label>
-                        <select name="zone_id" 
-                                class="kt-input w-full @error('zone_id') border-danger @enderror" 
-                                required>
-                            <option value="">Select Zone</option>
-                            @foreach($zones as $zone)
-                                <option value="{{ $zone->id }}" 
-                                        {{ old('zone_id', $command->zone_id) == $zone->id ? 'selected' : '' }}>
-                                    {{ $zone->name }} ({{ $zone->code }})
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="zone_id" id="zone_id" value="{{ old('zone_id', $command->zone_id) ?? '' }}" required>
+                            <button type="button" 
+                                    id="zone_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer @error('zone_id') border-danger @enderror">
+                                <span id="zone_select_text">
+                                    @php
+                                        $selectedZone = $zones->firstWhere('id', old('zone_id', $command->zone_id));
+                                    @endphp
+                                    {{ $selectedZone ? $selectedZone->name . ' (' . $selectedZone->code . ')' : 'Select Zone' }}
+                                </span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="zone_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="zone_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search zones..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="zone_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                         @error('zone_id')
                             <p class="text-xs text-danger mt-1">{{ $message }}</p>
                         @enderror
@@ -131,5 +151,131 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Data for searchable select
+        @php
+            $zonesData = $zones->map(function($zone) {
+                return [
+                    'id' => $zone->id,
+                    'name' => $zone->name,
+                    'code' => $zone->code ?? ''
+                ];
+            })->values();
+        @endphp
+        const zones = @json($zonesData);
+
+        // Reusable function to create searchable select
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
+            let selectedOption = null;
+            let filteredOptions = [...options];
+
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
+                }
+
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                    const value = opt.id || opt.value || '';
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => (o.id || o.value || '') == id);
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                        }
+                    });
+                });
+            }
+
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                    return display.toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Initialize zone select
+        document.addEventListener('DOMContentLoaded', function() {
+            createSearchableSelect({
+                triggerId: 'zone_select_trigger',
+                hiddenInputId: 'zone_id',
+                dropdownId: 'zone_dropdown',
+                searchInputId: 'zone_search_input',
+                optionsContainerId: 'zone_options',
+                displayTextId: 'zone_select_text',
+                options: zones,
+                displayFn: (zone) => zone.name + (zone.code ? ' (' + zone.code + ')' : ''),
+                placeholder: 'Select Zone',
+                searchPlaceholder: 'Search zones...'
+            });
+        });
+    </script>
 @endsection
 

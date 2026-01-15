@@ -30,12 +30,26 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label text-sm mb-1">Title</label>
-                        <select name="title" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="Mr" {{ old('title', $formData['title'] ?? '') == 'Mr' ? 'selected' : '' }}>Mr.</option>
-                            <option value="Mrs" {{ old('title', $formData['title'] ?? '') == 'Mrs' ? 'selected' : '' }}>Mrs.</option>
-                            <option value="Miss" {{ old('title', $formData['title'] ?? '') == 'Miss' ? 'selected' : '' }}>Miss.</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="title" id="title_id" value="{{ old('title', $formData['title'] ?? '') }}">
+                            <button type="button" 
+                                    id="title_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="title_select_text">{{ old('title', $formData['title'] ?? '') ? (old('title', $formData['title'] ?? '') === 'Mr' ? 'Mr.' : (old('title', $formData['title'] ?? '') === 'Mrs' ? 'Mrs.' : 'Miss.')) : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="title_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="title_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="title_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label text-sm mb-1">Surname</label>
@@ -58,11 +72,27 @@
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label text-sm mb-1">Cadre (Specify whether GD or SS)</label>
-                        <select name="cadre" class="kt-input" readonly>
-                            <option value="">Select...</option>
-                            <option value="GD" {{ old('cadre', $formData['cadre'] ?? '') == 'GD' ? 'selected' : '' }}>GD</option>
-                            <option value="SS" {{ old('cadre', $formData['cadre'] ?? '') == 'SS' ? 'selected' : '' }}>SS</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="cadre" id="cadre_id" value="{{ old('cadre', $formData['cadre'] ?? '') }}">
+                            <button type="button" 
+                                    id="cadre_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
+                                    readonly>
+                                <span id="cadre_select_text">{{ old('cadre', $formData['cadre'] ?? '') ? old('cadre', $formData['cadre'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="cadre_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="cadre_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="cadre_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label text-sm mb-1">Unit (For Support Staff)</label>

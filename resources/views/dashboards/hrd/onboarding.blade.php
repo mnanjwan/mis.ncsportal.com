@@ -202,6 +202,10 @@
                         <p class="text-xs text-secondary-foreground">
                             CSV file must have columns: <strong>service_number</strong>, <strong>email</strong>, and optionally <strong>name</strong>. Maximum 10 entries per upload.
                         </p>
+                        <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
+                            <strong>Document Type Allowed:</strong> CSV, TXT<br>
+                            <strong>Document Size Allowed:</strong> Maximum 5MB
+                        </span>
                         <div class="mt-2 p-3 bg-muted/50 rounded border border-input">
                             <p class="text-xs font-semibold mb-2">CSV Format Example:</p>
                             <pre class="text-xs font-mono">service_number,email,name

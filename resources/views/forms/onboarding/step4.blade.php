@@ -85,6 +85,10 @@
                             <!-- Selected files will be displayed here -->
                         </div>
                         <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space.</small>
+                        <span class="text-xs" style="color: red;">
+                            <strong>Document Type Allowed:</strong> JPEG, JPG, PNG (multiple files allowed)<br>
+                            <strong>Document Size Allowed:</strong> Maximum 5MB per file
+                        </span>
                     </div>
                 </div>
                 
@@ -147,9 +151,12 @@
                                     <p class="text-xs text-center text-muted mt-2">
                                         <span class="text-danger font-semibold">Required</span><br>
                                         Recommended: 2x2 inches<br>
-                                        White background<br>
-                                        Max size: 2MB
+                                        White background
                                     </p>
+                                    <span class="text-xs text-center" style="color: red; display: block; margin-top: 0.5rem;">
+                                        <strong>Document Type Allowed:</strong> Images (all types)<br>
+                                        <strong>Document Size Allowed:</strong> 2MB (final), 5MB (for cropping)
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -276,6 +283,109 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
 let nokEntryCount = 0;
 const MAX_NOK_ENTRIES = 5;
 
@@ -387,12 +497,26 @@ function addNOKEntry(data = null) {
             </div>
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Relationship <span class="text-danger">*</span></label>
-                <select name="next_of_kin[${entryId}][relationship]" class="kt-input nok-relationship" required>
-                    <option value="">Select...</option>
-                    ${relationships.map(rel => 
-                        `<option value="${rel}" ${savedRelationship == rel ? 'selected' : ''}>${rel}</option>`
-                    ).join('')}
-                </select>
+                <div class="relative">
+                    <input type="hidden" name="next_of_kin[${entryId}][relationship]" id="nok_relationship_${entryId}_id" value="${savedRelationship}" required>
+                    <button type="button" 
+                            id="nok_relationship_${entryId}_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="nok_relationship_${entryId}_select_text">${savedRelationship ? savedRelationship : 'Select...'}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="nok_relationship_${entryId}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="nok_relationship_${entryId}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search relationship..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="nok_relationship_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
             <div class="flex flex-col gap-1">
@@ -428,6 +552,26 @@ function addNOKEntry(data = null) {
     `;
     
     entriesContainer.appendChild(entryDiv);
+    
+    // Initialize relationship searchable select
+    if (typeof createSearchableSelect === 'function') {
+        const relationshipOptions = [
+            {id: '', name: 'Select...'},
+            ...relationships.map(rel => ({id: rel, name: rel}))
+        ];
+        
+        createSearchableSelect({
+            triggerId: `nok_relationship_${entryId}_select_trigger`,
+            hiddenInputId: `nok_relationship_${entryId}_id`,
+            dropdownId: `nok_relationship_${entryId}_dropdown`,
+            searchInputId: `nok_relationship_${entryId}_search_input`,
+            optionsContainerId: `nok_relationship_${entryId}_options`,
+            displayTextId: `nok_relationship_${entryId}_select_text`,
+            options: relationshipOptions,
+            placeholder: 'Select...',
+            searchPlaceholder: 'Search relationship...'
+        });
+    }
     
     // Update primary status on radio change
     const primaryRadio = entryDiv.querySelector('.primary-nok-radio');

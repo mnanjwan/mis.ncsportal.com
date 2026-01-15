@@ -28,20 +28,50 @@
                 <div class="flex flex-col gap-4 mt-2">
                     <div class="flex flex-col gap-3">
                         <label class="kt-form-label mb-0 font-medium">(a) A different job in the same grade: Yes/No</label>
-                        <select name="suggest_different_job" class="kt-input max-w-xs">
-                            <option value="">-- Select YES or NO --</option>
-                            <option value="YES" {{ old('suggest_different_job', $form->suggest_different_job) == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('suggest_different_job', $form->suggest_different_job) == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
+                        <div class="relative max-w-xs">
+                            <input type="hidden" name="suggest_different_job" id="suggest_different_job_id" value="{{ old('suggest_different_job', $form->suggest_different_job) ?? '' }}">
+                            <button type="button" 
+                                    id="suggest_different_job_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="suggest_different_job_select_text">{{ old('suggest_different_job', $form->suggest_different_job) ? old('suggest_different_job', $form->suggest_different_job) : '-- Select YES or NO --' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="suggest_different_job_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="suggest_different_job_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="suggest_different_job_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <textarea name="different_job_details" class="kt-input" rows="3" placeholder="If YES, specify the type of job and provide reasons...">{{ old('different_job_details', $form->different_job_details) }}</textarea>
                     </div>
                     <div class="flex flex-col gap-3 border-t border-border/50 pt-4">
                         <label class="kt-form-label mb-0 font-medium">(b) Transfer to a job at similar level in another occupational group or cadre? Yes/No.</label>
-                        <select name="suggest_transfer" class="kt-input max-w-xs">
-                            <option value="">-- Select YES or NO --</option>
-                            <option value="YES" {{ old('suggest_transfer', $form->suggest_transfer) == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('suggest_transfer', $form->suggest_transfer) == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
+                        <div class="relative max-w-xs">
+                            <input type="hidden" name="suggest_transfer" id="suggest_transfer_id" value="{{ old('suggest_transfer', $form->suggest_transfer) ?? '' }}">
+                            <button type="button" 
+                                    id="suggest_transfer_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="suggest_transfer_select_text">{{ old('suggest_transfer', $form->suggest_transfer) ? old('suggest_transfer', $form->suggest_transfer) : '-- Select YES or NO --' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="suggest_transfer_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="suggest_transfer_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="suggest_transfer_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <textarea name="transfer_details" class="kt-input" rows="3" placeholder="If YES, specify the type of job and provide reasons...">{{ old('transfer_details', $form->transfer_details) }}</textarea>
                     </div>
                 </div>

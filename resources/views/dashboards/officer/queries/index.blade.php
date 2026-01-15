@@ -37,15 +37,33 @@
         <div class="kt-card-header">
             <h3 class="kt-card-title">Query History</h3>
             <div class="kt-card-toolbar">
-                <form method="GET" action="{{ route('officer.queries.index') }}" class="inline">
-                    <select name="status" class="kt-input" onchange="this.form.submit()">
-                        <option value="">All Status</option>
-                        <option value="PENDING_RESPONSE" {{ request('status') === 'PENDING_RESPONSE' ? 'selected' : '' }}>Pending Response</option>
-                        <option value="PENDING_REVIEW" {{ request('status') === 'PENDING_REVIEW' ? 'selected' : '' }}>Pending Review</option>
-                        <option value="ACCEPTED" {{ request('status') === 'ACCEPTED' ? 'selected' : '' }}>Accepted</option>
-                        <option value="DISAPPROVAL" {{ request('status') === 'DISAPPROVAL' ? 'selected' : '' }}>Disapproval</option>
-                        <option value="REJECTED" {{ request('status') === 'REJECTED' ? 'selected' : '' }}>Rejected</option>
-                    </select>
+                <form method="GET" action="{{ route('officer.queries.index') }}" id="status-filter-form" class="inline">
+                    <div class="relative">
+                        <input type="hidden" name="status" id="filter_status_id" value="{{ request('status') ?? '' }}">
+                        <button type="button" 
+                                id="filter_status_select_trigger" 
+                                class="kt-input text-left flex items-center justify-between cursor-pointer">
+                            <span id="filter_status_select_text">{{ request('status') ? (request('status') === 'PENDING_RESPONSE' ? 'Pending Response' : (request('status') === 'PENDING_REVIEW' ? 'Pending Review' : (request('status') === 'ACCEPTED' ? 'Accepted' : (request('status') === 'DISAPPROVAL' ? 'Disapproval' : (request('status') === 'REJECTED' ? 'Rejected' : 'All Status'))))) : 'All Status' }}</span>
+                            <i class="ki-filled ki-down text-gray-400"></i>
+                        </button>
+                        <div id="filter_status_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                            <!-- Search Box -->
+                            <div class="p-3 border-b border-input">
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="filter_status_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search status..."
+                                           autocomplete="off">
+                                </div>
+                            </div>
+                            <!-- Options Container -->
+                            <div id="filter_status_options" class="max-h-60 overflow-y-auto">
+                                <!-- Options will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -130,5 +148,132 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Status options
+    const statusOptions = [
+        {id: '', name: 'All Status'},
+        {id: 'PENDING_RESPONSE', name: 'Pending Response'},
+        {id: 'PENDING_REVIEW', name: 'Pending Review'},
+        {id: 'ACCEPTED', name: 'Accepted'},
+        {id: 'DISAPPROVAL', name: 'Disapproval'},
+        {id: 'REJECTED', name: 'Rejected'}
+    ];
+
+    // Reusable function to create searchable select
+    function createSearchableSelect(config) {
+        const {
+            triggerId,
+            hiddenInputId,
+            dropdownId,
+            searchInputId,
+            optionsContainerId,
+            displayTextId,
+            options,
+            displayFn,
+            onSelect,
+            placeholder = 'Select...',
+            searchPlaceholder = 'Search...'
+        } = config;
+
+        const trigger = document.getElementById(triggerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const dropdown = document.getElementById(dropdownId);
+        const searchInput = document.getElementById(searchInputId);
+        const optionsContainer = document.getElementById(optionsContainerId);
+        const displayText = document.getElementById(displayTextId);
+
+        let selectedOption = null;
+        let filteredOptions = [...options];
+
+        // Render options
+        function renderOptions(opts) {
+            if (opts.length === 0) {
+                optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                return;
+            }
+
+            optionsContainer.innerHTML = opts.map(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+                const value = opt.id || opt.value || '';
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    selectedOption = options.find(o => (o.id || o.value || '') == id);
+                    
+                    if (selectedOption || id === '') {
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filteredOptions = [...options];
+                        renderOptions(filteredOptions);
+                        
+                        if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                    }
+                });
+            });
+        }
+
+        // Initial render
+        renderOptions(filteredOptions);
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filteredOptions = options.filter(opt => {
+                const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+                return display.toLowerCase().includes(searchTerm);
+            });
+            renderOptions(filteredOptions);
+        });
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Initialize status filter select
+    document.addEventListener('DOMContentLoaded', function() {
+        createSearchableSelect({
+            triggerId: 'filter_status_select_trigger',
+            hiddenInputId: 'filter_status_id',
+            dropdownId: 'filter_status_dropdown',
+            searchInputId: 'filter_status_search_input',
+            optionsContainerId: 'filter_status_options',
+            displayTextId: 'filter_status_select_text',
+            options: statusOptions,
+            placeholder: 'All Status',
+            searchPlaceholder: 'Search status...',
+            onSelect: function() {
+                // Auto-submit form on selection
+                document.getElementById('status-filter-form').submit();
+            }
+        });
+    });
+</script>
 @endsection
 

@@ -65,14 +65,33 @@
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">
                             Zone <span class="text-danger">*</span>
                         </label>
-                        <select name="zone_id" id="zone_id" class="kt-input w-full" required onchange="loadCommands()" {{ isset($zoneReadOnly) && $zoneReadOnly ? 'disabled' : '' }}>
-                            <option value="">Select Zone</option>
-                            @foreach($zones as $zone)
-                                <option value="{{ $zone->id }}" {{ (isset($selected_zone_id) && $selected_zone_id == $zone->id) ? 'selected' : '' }}>
-                                    {{ $zone->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="zone_id" id="zone_id" value="{{ isset($selected_zone_id) ? $selected_zone_id : '' }}" required>
+                            <button type="button" 
+                                    id="zone_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ isset($zoneReadOnly) && $zoneReadOnly ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    {{ isset($zoneReadOnly) && $zoneReadOnly ? 'disabled' : '' }}>
+                                <span id="zone_select_text">{{ isset($selected_zone_id) && $zones->firstWhere('id', $selected_zone_id) ? $zones->firstWhere('id', $selected_zone_id)->name : 'Select Zone' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="zone_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="zone_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search zones..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="zone_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                         @if(isset($zoneReadOnly) && $zoneReadOnly)
                             <input type="hidden" name="zone_id" value="{{ $selected_zone_id }}">
                         @endif
@@ -83,56 +102,126 @@
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">
                             Command <span class="text-danger">*</span>
                         </label>
-                        <select name="command_id" id="command_id" class="kt-input w-full" required {{ (!isset($selected_zone_id) || empty($selected_zone_id)) && (!isset($zoneReadOnly) || !$zoneReadOnly) ? 'disabled' : '' }}>
-                            <option value="">Select Command</option>
-                            @foreach($commands as $command)
-                                <option value="{{ $command->id }}" {{ (isset($selected_command_id) && $selected_command_id == $command->id) ? 'selected' : '' }}>
-                                    {{ $command->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="command_id" id="command_id" value="{{ isset($selected_command_id) ? $selected_command_id : '' }}" required>
+                            <button type="button" 
+                                    id="command_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ (!isset($selected_zone_id) || empty($selected_zone_id)) && (!isset($zoneReadOnly) || !$zoneReadOnly) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    {{ (!isset($selected_zone_id) || empty($selected_zone_id)) && (!isset($zoneReadOnly) || !$zoneReadOnly) ? 'disabled' : '' }}>
+                                <span id="command_select_text">{{ isset($selected_command_id) && $commands->firstWhere('id', $selected_command_id) ? $commands->firstWhere('id', $selected_command_id)->name : 'Select Command' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="command_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="command_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search commands..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="command_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Rank (Optional) -->
                     <div>
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Rank</label>
-                        <select name="rank" class="kt-input w-full">
-                            <option value="">All Ranks</option>
-                            @foreach($ranks as $rank)
-                                <option value="{{ $rank }}" {{ (isset($selected_rank) && $selected_rank == $rank) ? 'selected' : '' }}>
-                                    {{ $rank }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="rank" id="rank_id" value="{{ isset($selected_rank) ? $selected_rank : '' }}">
+                            <button type="button" 
+                                    id="rank_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="rank_select_text">{{ isset($selected_rank) ? $selected_rank : 'All Ranks' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="rank_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="rank_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search ranks..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="rank_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Sex (Optional) -->
                     <div>
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Sex</label>
-                        <select name="sex" class="kt-input w-full">
-                            <option value="Any" {{ (!isset($selected_sex) || $selected_sex == 'Any') ? 'selected' : '' }}>Any</option>
-                            <option value="Male" {{ (isset($selected_sex) && $selected_sex == 'Male') ? 'selected' : '' }}>Male</option>
-                            <option value="Female" {{ (isset($selected_sex) && $selected_sex == 'Female') ? 'selected' : '' }}>Female</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="sex" id="sex_id" value="{{ isset($selected_sex) && $selected_sex != 'Any' ? $selected_sex : 'Any' }}">
+                            <button type="button" 
+                                    id="sex_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="sex_select_text">{{ isset($selected_sex) ? $selected_sex : 'Any' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="sex_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="sex_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="sex_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Command Duration (Optional) -->
                     <div>
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Duration in Command</label>
-                        <select name="duration_years" class="kt-input w-full">
-                            <option value="">All Durations</option>
-                            <option value="0" {{ (isset($selected_duration) && $selected_duration == '0') ? 'selected' : '' }}>0 Years</option>
-                            <option value="1" {{ (isset($selected_duration) && $selected_duration == '1') ? 'selected' : '' }}>1 Year</option>
-                            <option value="2" {{ (isset($selected_duration) && $selected_duration == '2') ? 'selected' : '' }}>2 Years</option>
-                            <option value="3" {{ (isset($selected_duration) && $selected_duration == '3') ? 'selected' : '' }}>3 Years</option>
-                            <option value="4" {{ (isset($selected_duration) && $selected_duration == '4') ? 'selected' : '' }}>4 Years</option>
-                            <option value="5" {{ (isset($selected_duration) && $selected_duration == '5') ? 'selected' : '' }}>5 Years</option>
-                            <option value="6" {{ (isset($selected_duration) && $selected_duration == '6') ? 'selected' : '' }}>6 Years</option>
-                            <option value="7" {{ (isset($selected_duration) && $selected_duration == '7') ? 'selected' : '' }}>7 Years</option>
-                            <option value="8" {{ (isset($selected_duration) && $selected_duration == '8') ? 'selected' : '' }}>8 Years</option>
-                            <option value="9" {{ (isset($selected_duration) && $selected_duration == '9') ? 'selected' : '' }}>9 Years</option>
-                            <option value="10" {{ (isset($selected_duration) && $selected_duration == '10') ? 'selected' : '' }}>10+ Years</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="duration_years" id="duration_years_id" value="{{ isset($selected_duration) ? $selected_duration : '' }}">
+                            <button type="button" 
+                                    id="duration_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="duration_select_text">{{ isset($selected_duration) ? ($selected_duration == '10' ? '10+ Years' : $selected_duration . ' Year' . ($selected_duration != '1' ? 's' : '')) : 'All Durations' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="duration_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <!-- Search Box -->
+                                <div class="p-3 border-b border-input">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="duration_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search durations..."
+                                               autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Options Container -->
+                                <div id="duration_options" class="max-h-60 overflow-y-auto">
+                                    <!-- Options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -209,8 +298,8 @@
                                             <div class="flex items-center gap-2">
                                                 @if($officer->current_status === 'Active')
                                                     <span class="kt-badge kt-badge-success kt-badge-sm">{{ $officer->current_status }}</span>
-                                                @elseif($officer->current_status === 'Under Investigation' || $officer->current_status === 'Awaiting Release' || $officer->current_status === 'Awaiting Documentation')
-                                                    <span class="kt-badge kt-badge-warning kt-badge-sm" title="{{ $officer->current_status === 'Awaiting Release' ? 'Officer has pending posting awaiting release letter' : ($officer->current_status === 'Awaiting Documentation' ? 'Officer has pending posting awaiting documentation' : '') }}">{{ $officer->current_status }}</span>
+                                                @elseif($officer->current_status === 'Under Investigation')
+                                                    <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $officer->current_status }}</span>
                                                 @else
                                                     <span class="kt-badge kt-badge-danger kt-badge-sm">{{ $officer->current_status }}</span>
                                                 @endif
@@ -247,8 +336,8 @@
                                                 <div class="flex items-center gap-2">
                                                     @if($officer->current_status === 'Active')
                                                         <span class="kt-badge kt-badge-success kt-badge-sm">{{ $officer->current_status }}</span>
-                                                    @elseif($officer->current_status === 'Under Investigation' || $officer->current_status === 'Awaiting Release' || $officer->current_status === 'Awaiting Documentation')
-                                                        <span class="kt-badge kt-badge-warning kt-badge-sm" title="{{ $officer->current_status === 'Awaiting Release' ? 'Officer has pending posting awaiting release letter' : ($officer->current_status === 'Awaiting Documentation' ? 'Officer has pending posting awaiting documentation' : '') }}">{{ $officer->current_status }}</span>
+                                                    @elseif($officer->current_status === 'Under Investigation')
+                                                        <span class="kt-badge kt-badge-warning kt-badge-sm">{{ $officer->current_status }}</span>
                                                     @else
                                                         <span class="kt-badge kt-badge-danger kt-badge-sm">{{ $officer->current_status }}</span>
                                                     @endif
@@ -328,18 +417,158 @@
 <script>
 const routePrefix = '{{ $routePrefix }}';
 
+// Data for searchable selects
+@php
+    $zonesData = $zones->map(function($zone) {
+        return ['id' => $zone->id, 'name' => $zone->name];
+    })->values();
+    $commandsData = $commands->map(function($command) {
+        return ['id' => $command->id, 'name' => $command->name];
+    })->values();
+    $ranksData = collect($ranks)->map(function($rank) {
+        return ['id' => $rank, 'name' => $rank];
+    })->values();
+    $sexOptions = [
+        ['id' => 'Any', 'name' => 'Any'],
+        ['id' => 'Male', 'name' => 'Male'],
+        ['id' => 'Female', 'name' => 'Female']
+    ];
+    $durationOptions = [
+        ['id' => '', 'name' => 'All Durations'],
+        ['id' => '0', 'name' => '0 Years'],
+        ['id' => '1', 'name' => '1 Year'],
+        ['id' => '2', 'name' => '2 Years'],
+        ['id' => '3', 'name' => '3 Years'],
+        ['id' => '4', 'name' => '4 Years'],
+        ['id' => '5', 'name' => '5 Years'],
+        ['id' => '6', 'name' => '6 Years'],
+        ['id' => '7', 'name' => '7 Years'],
+        ['id' => '8', 'name' => '8 Years'],
+        ['id' => '9', 'name' => '9 Years'],
+        ['id' => '10', 'name' => '10+ Years']
+    ];
+@endphp
+let zonesData = @json($zonesData);
+let commandsData = @json($commandsData);
+let ranksData = @json($ranksData);
+let sexOptions = @json($sexOptions);
+let durationOptions = @json($durationOptions);
+
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id);
+            const value = opt.id || opt.value || '';
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => (o.id || o.value || '') == id);
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || '');
+            return display.toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        if (this.disabled) return;
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
 function loadCommands() {
     const zoneId = document.getElementById('zone_id').value;
-    const commandSelect = document.getElementById('command_id');
+    const commandHiddenInput = document.getElementById('command_id');
+    const commandTrigger = document.getElementById('command_select_trigger');
+    const commandDisplayText = document.getElementById('command_select_text');
+    const commandOptionsContainer = document.getElementById('command_options');
     
     if (!zoneId) {
-        commandSelect.disabled = true;
-        commandSelect.innerHTML = '<option value="">Select Command</option>';
+        commandTrigger.disabled = true;
+        commandTrigger.classList.add('opacity-50', 'cursor-not-allowed');
+        commandDisplayText.textContent = 'Select Command';
+        commandHiddenInput.value = '';
+        commandOptionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Select zone first</div>';
         return;
     }
     
     // Preserve currently selected command (if any)
-    const currentSelectedCommand = commandSelect.value;
+    const currentSelectedCommand = commandHiddenInput.value;
     
     // Load commands via AJAX
     const indexRoute = routePrefix === 'zone-coordinator' 
@@ -355,20 +584,44 @@ function loadCommands() {
     })
     .then(response => response.json())
     .then(data => {
-        commandSelect.innerHTML = '<option value="">Select Command</option>';
         if (data.commands && data.commands.length > 0) {
-            data.commands.forEach(cmd => {
-                const option = document.createElement('option');
-                option.value = cmd.id;
-                option.textContent = cmd.name;
-                // Preserve selection if the command still exists
-                if (currentSelectedCommand && cmd.id == currentSelectedCommand) {
-                    option.selected = true;
+            commandsData = data.commands.map(cmd => ({id: cmd.id, name: cmd.name}));
+            
+            // Re-render command options
+            const commandOptions = [{id: '', name: 'Select Command'}, ...commandsData];
+            commandOptionsContainer.innerHTML = commandOptions.map(cmd => {
+                const display = cmd.name;
+                const value = cmd.id || '';
+                const isSelected = currentSelectedCommand && cmd.id == currentSelectedCommand;
+                if (isSelected) {
+                    commandHiddenInput.value = value;
+                    commandDisplayText.textContent = display;
                 }
-                commandSelect.appendChild(option);
+                return `
+                    <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                         data-id="${value}" 
+                         data-name="${display}">
+                        <div class="text-sm text-foreground">${display}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Re-add click handlers
+            commandOptionsContainer.querySelectorAll('.select-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    commandHiddenInput.value = id;
+                    commandDisplayText.textContent = name;
+                    document.getElementById('command_dropdown').classList.add('hidden');
+                    document.getElementById('command_search_input').value = '';
+                });
             });
+        } else {
+            commandOptionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No commands found</div>';
         }
-        commandSelect.disabled = false;
+        commandTrigger.disabled = false;
+        commandTrigger.classList.remove('opacity-50', 'cursor-not-allowed');
     })
     .catch(error => {
         console.error('Error loading commands:', error);
@@ -379,11 +632,27 @@ function loadCommands() {
 
 function resetForm() {
     document.getElementById('search-form').reset();
-    document.getElementById('command_id').disabled = true;
-    document.getElementById('command_id').innerHTML = '<option value="">Select Command</option>';
+    const commandTrigger = document.getElementById('command_select_trigger');
+    const commandDisplayText = document.getElementById('command_select_text');
+    const commandHiddenInput = document.getElementById('command_id');
+    commandTrigger.disabled = true;
+    commandTrigger.classList.add('opacity-50', 'cursor-not-allowed');
+    commandDisplayText.textContent = 'Select Command';
+    commandHiddenInput.value = '';
+    document.getElementById('command_options').innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">Select zone first</div>';
+    
+    // Reset other selects
+    document.getElementById('rank_id').value = '';
+    document.getElementById('rank_select_text').textContent = 'All Ranks';
+    document.getElementById('sex_id').value = 'Any';
+    document.getElementById('sex_select_text').textContent = 'Any';
+    document.getElementById('duration_years_id').value = '';
+    document.getElementById('duration_select_text').textContent = 'All Durations';
+    
     // If zone is read-only, restore the pre-selected zone
     @if(isset($zoneReadOnly) && $zoneReadOnly && isset($selected_zone_id))
         document.getElementById('zone_id').value = '{{ $selected_zone_id }}';
+        document.getElementById('zone_select_text').textContent = '{{ $zones->firstWhere("id", $selected_zone_id)->name ?? "Select Zone" }}';
         loadCommands();
     @endif
 }
@@ -461,17 +730,86 @@ function printResults() {
     window.open(`${printRoute}?${params.toString()}`, '_blank');
 }
 
-// Load commands automatically on page load if zone is pre-selected
+// Initialize all searchable selects
 document.addEventListener('DOMContentLoaded', function() {
+    // Zone Select
+    createSearchableSelect({
+        triggerId: 'zone_select_trigger',
+        hiddenInputId: 'zone_id',
+        dropdownId: 'zone_dropdown',
+        searchInputId: 'zone_search_input',
+        optionsContainerId: 'zone_options',
+        displayTextId: 'zone_select_text',
+        options: zonesData,
+        placeholder: 'Select Zone',
+        searchPlaceholder: 'Search zones...',
+        onSelect: function(selected) {
+            loadCommands();
+        }
+    });
+
+    // Command Select (will be populated by loadCommands)
+    createSearchableSelect({
+        triggerId: 'command_select_trigger',
+        hiddenInputId: 'command_id',
+        dropdownId: 'command_dropdown',
+        searchInputId: 'command_search_input',
+        optionsContainerId: 'command_options',
+        displayTextId: 'command_select_text',
+        options: commandsData.length > 0 ? [{id: '', name: 'Select Command'}, ...commandsData] : [{id: '', name: 'Select Command'}],
+        placeholder: 'Select Command',
+        searchPlaceholder: 'Search commands...'
+    });
+
+    // Rank Select
+    createSearchableSelect({
+        triggerId: 'rank_select_trigger',
+        hiddenInputId: 'rank_id',
+        dropdownId: 'rank_dropdown',
+        searchInputId: 'rank_search_input',
+        optionsContainerId: 'rank_options',
+        displayTextId: 'rank_select_text',
+        options: [{id: '', name: 'All Ranks'}, ...ranksData],
+        placeholder: 'All Ranks',
+        searchPlaceholder: 'Search ranks...'
+    });
+
+    // Sex Select
+    createSearchableSelect({
+        triggerId: 'sex_select_trigger',
+        hiddenInputId: 'sex_id',
+        dropdownId: 'sex_dropdown',
+        searchInputId: 'sex_search_input',
+        optionsContainerId: 'sex_options',
+        displayTextId: 'sex_select_text',
+        options: sexOptions,
+        placeholder: 'Any',
+        searchPlaceholder: 'Search...'
+    });
+
+    // Duration Select
+    createSearchableSelect({
+        triggerId: 'duration_select_trigger',
+        hiddenInputId: 'duration_years_id',
+        dropdownId: 'duration_dropdown',
+        searchInputId: 'duration_search_input',
+        optionsContainerId: 'duration_options',
+        displayTextId: 'duration_select_text',
+        options: durationOptions,
+        placeholder: 'All Durations',
+        searchPlaceholder: 'Search durations...'
+    });
+
+    // Load commands automatically on page load if zone is pre-selected
     const zoneId = document.getElementById('zone_id').value;
-    const commandSelect = document.getElementById('command_id');
     const zoneField = document.getElementById('zone_id');
+    const commandTrigger = document.getElementById('command_select_trigger');
     
     // Always load commands via AJAX if zone is selected
     // This ensures fresh data and consistency, especially for Zone Coordinators
     if (zoneId) {
         // If zone is read-only (Zone Coordinator) or commands aren't loaded, fetch them
-        if (zoneField.disabled || commandSelect.options.length <= 1) {
+        if (zoneField.hasAttribute('readonly') || commandTrigger.disabled) {
             loadCommands();
         }
     }

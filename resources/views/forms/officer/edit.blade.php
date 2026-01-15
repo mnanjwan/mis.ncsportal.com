@@ -54,11 +54,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Sex <span class="text-danger">*</span></label>
-                        <select name="sex" class="kt-input" required>
-                            <option value="">Select...</option>
-                            <option value="M" {{ old('sex', $officer->sex) == 'M' ? 'selected' : '' }}>Male</option>
-                            <option value="F" {{ old('sex', $officer->sex) == 'F' ? 'selected' : '' }}>Female</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="sex" id="sex_id" value="{{ old('sex', $officer->sex) ?? '' }}" required>
+                            <button type="button" 
+                                    id="sex_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="sex_select_text">{{ old('sex', $officer->sex) ? (old('sex', $officer->sex) === 'M' ? 'Male' : 'Female') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="sex_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="sex_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="sex_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date of Birth <span class="text-danger">*</span></label>
@@ -66,12 +81,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">State of Origin <span class="text-danger">*</span></label>
-                        <select name="state_of_origin" class="kt-input" id="state-select" required>
-                            <option value="">Select State...</option>
-                            @foreach($nigerianStates as $state)
-                            <option value="{{ $state }}" {{ old('state_of_origin', $officer->state_of_origin) == $state ? 'selected' : '' }}>{{ $state }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="state_of_origin" id="state_of_origin_id" value="{{ old('state_of_origin', $officer->state_of_origin) ?? '' }}" required>
+                            <button type="button" 
+                                    id="state_of_origin_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="state_of_origin_select_text">{{ old('state_of_origin', $officer->state_of_origin) ? old('state_of_origin', $officer->state_of_origin) : 'Select State...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="state_of_origin_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="state_of_origin_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search state..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="state_of_origin_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">LGA <span class="text-danger">*</span></label>
@@ -104,22 +133,49 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
-                        <select name="geopolitical_zone" class="kt-input" required>
-                            <option value="">Select Zone...</option>
-                            @foreach($geopoliticalZones as $zone)
-                            <option value="{{ $zone }}" {{ old('geopolitical_zone', $officer->geopolitical_zone) == $zone ? 'selected' : '' }}>{{ $zone }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="geopolitical_zone" id="geopolitical_zone_id" value="{{ old('geopolitical_zone', $officer->geopolitical_zone) ?? '' }}" required>
+                            <button type="button" 
+                                    id="geopolitical_zone_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="geopolitical_zone_select_text">{{ old('geopolitical_zone', $officer->geopolitical_zone) ? old('geopolitical_zone', $officer->geopolitical_zone) : 'Select Zone...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="geopolitical_zone_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="geopolitical_zone_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search zone..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="geopolitical_zone_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Marital Status <span class="text-danger">*</span></label>
-                        <select name="marital_status" class="kt-input" required>
-                            <option value="">Select...</option>
-                            <option value="Single" {{ old('marital_status', $officer->marital_status) == 'Single' ? 'selected' : '' }}>Single</option>
-                            <option value="Married" {{ old('marital_status', $officer->marital_status) == 'Married' ? 'selected' : '' }}>Married</option>
-                            <option value="Divorced" {{ old('marital_status', $officer->marital_status) == 'Divorced' ? 'selected' : '' }}>Divorced</option>
-                            <option value="Widowed" {{ old('marital_status', $officer->marital_status) == 'Widowed' ? 'selected' : '' }}>Widowed</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="marital_status" id="marital_status_id" value="{{ old('marital_status', $officer->marital_status) ?? '' }}" required>
+                            <button type="button" 
+                                    id="marital_status_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="marital_status_select_text">{{ old('marital_status', $officer->marital_status) ? old('marital_status', $officer->marital_status) : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="marital_status_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="marital_status_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="marital_status_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Phone Number <span class="text-danger">*</span></label>
@@ -158,30 +214,72 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
-                        <select name="substantive_rank" id="substantive_rank" class="kt-input" required>
-                            <option value="">Select Rank...</option>
-                            @foreach($ranks as $rank)
-                            <option value="{{ $rank }}" {{ old('substantive_rank', $officer->substantive_rank) == $rank ? 'selected' : '' }}>{{ $rank }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="substantive_rank" id="substantive_rank" value="{{ old('substantive_rank', $officer->substantive_rank) ?? '' }}" required>
+                            <button type="button" 
+                                    id="substantive_rank_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="substantive_rank_select_text">{{ old('substantive_rank', $officer->substantive_rank) ? old('substantive_rank', $officer->substantive_rank) : 'Select Rank...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="substantive_rank_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="substantive_rank_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search rank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="substantive_rank_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Salary Grade Level <span class="text-danger">*</span></label>
-                        <select name="salary_grade_level" id="salary_grade_level" class="kt-input" required>
-                            <option value="">Select Grade Level...</option>
-                            @foreach($gradeLevels as $grade)
-                            <option value="{{ $grade }}" {{ old('salary_grade_level', $officer->salary_grade_level) == $grade ? 'selected' : '' }}>{{ $grade }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="salary_grade_level" id="salary_grade_level" value="{{ old('salary_grade_level', $officer->salary_grade_level) ?? '' }}" required>
+                            <button type="button" 
+                                    id="salary_grade_level_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="salary_grade_level_select_text">{{ old('salary_grade_level', $officer->salary_grade_level) ? old('salary_grade_level', $officer->salary_grade_level) : 'Select Grade Level...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="salary_grade_level_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="salary_grade_level_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search grade level..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="salary_grade_level_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Zone <span class="text-danger">*</span></label>
-                        <select name="zone_id" id="zone_id" class="kt-input" required>
-                            <option value="">Select Zone...</option>
-                            @foreach($zones as $zone)
-                            <option value="{{ $zone->id }}" {{ old('zone_id', $officer->presentStation?->zone_id) == $zone->id ? 'selected' : '' }}>{{ $zone->name }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="zone_id" id="zone_id" value="{{ old('zone_id', $officer->presentStation?->zone_id) ?? '' }}" required>
+                            <button type="button" 
+                                    id="zone_id_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="zone_id_select_text">{{ old('zone_id', $officer->presentStation?->zone_id) ? ($zones->firstWhere('id', old('zone_id', $officer->presentStation?->zone_id))->name ?? 'Select Zone...') : 'Select Zone...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="zone_id_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="zone_id_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search zone..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="zone_id_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Command/Present Station <span class="text-danger">*</span></label>
@@ -218,11 +316,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Unit</label>
-                        <select name="unit" class="kt-input">
-                            <option value="">Select Unit...</option>
-                            <option value="General Duty (GD)" {{ old('unit', $officer->unit) == 'General Duty (GD)' ? 'selected' : '' }}>General Duty (GD)</option>
-                            <option value="Support Staff (SS)" {{ old('unit', $officer->unit) == 'Support Staff (SS)' ? 'selected' : '' }}>Support Staff (SS)</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="unit" id="unit_id" value="{{ old('unit', $officer->unit) ?? '' }}">
+                            <button type="button" 
+                                    id="unit_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="unit_select_text">{{ old('unit', $officer->unit) ? old('unit', $officer->unit) : 'Select Unit...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="unit_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="unit_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search unit..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -392,6 +505,66 @@ const disciplines = [
 
 let educationEntryCount = 0;
 
+// State to Geopolitical Zone mapping
+const stateToZoneMap = {
+    // North Central
+    'Benue': 'North Central',
+    'Kogi': 'North Central',
+    'Kwara': 'North Central',
+    'Nasarawa': 'North Central',
+    'Niger': 'North Central',
+    'Plateau': 'North Central',
+    'FCT': 'North Central',
+    // North East
+    'Adamawa': 'North East',
+    'Bauchi': 'North East',
+    'Borno': 'North East',
+    'Gombe': 'North East',
+    'Taraba': 'North East',
+    'Yobe': 'North East',
+    // North West
+    'Kaduna': 'North West',
+    'Kano': 'North West',
+    'Katsina': 'North West',
+    'Kebbi': 'North West',
+    'Jigawa': 'North West',
+    'Sokoto': 'North West',
+    'Zamfara': 'North West',
+    // South East
+    'Abia': 'South East',
+    'Anambra': 'South East',
+    'Ebonyi': 'South East',
+    'Enugu': 'South East',
+    'Imo': 'South East',
+    // South South
+    'Akwa Ibom': 'South South',
+    'Bayelsa': 'South South',
+    'Cross River': 'South South',
+    'Delta': 'South South',
+    'Edo': 'South South',
+    'Rivers': 'South South',
+    // South West
+    'Ekiti': 'South West',
+    'Lagos': 'South West',
+    'Ogun': 'South West',
+    'Ondo': 'South West',
+    'Osun': 'South West',
+    'Oyo': 'South West'
+};
+
+// Function to set geopolitical zone based on state
+function setGeopoliticalZoneFromState(state) {
+    const zone = stateToZoneMap[state];
+    if (zone) {
+        const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
+        const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
+        if (zoneHiddenInput && zoneDisplayText) {
+            zoneHiddenInput.value = zone;
+            zoneDisplayText.textContent = zone;
+        }
+    }
+}
+
 // Rank to Grade Level mapping
 const rankToGradeLevel = {
     'CGC': 'GL 17',
@@ -412,7 +585,318 @@ const rankToGradeLevel = {
     'CA III': 'GL 03',
 };
 
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+function initializeSearchableSelects() {
+    // Sex options
+    const sexOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'M', name: 'Male'},
+        {id: 'F', name: 'Female'}
+    ];
+
+    // State options
+    const stateOptions = [
+        {id: '', name: 'Select State...'},
+        @foreach($nigerianStates as $state)
+        {id: '{{ $state }}', name: '{{ $state }}'},
+        @endforeach
+    ];
+
+    // Geopolitical zone options
+    const zoneOptions = [
+        {id: '', name: 'Select Zone...'},
+        @foreach($geopoliticalZones as $zone)
+        {id: '{{ $zone }}', name: '{{ $zone }}'},
+        @endforeach
+    ];
+
+    // Marital status options
+    const maritalStatusOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'Single', name: 'Single'},
+        {id: 'Married', name: 'Married'},
+        {id: 'Divorced', name: 'Divorced'},
+        {id: 'Widowed', name: 'Widowed'}
+    ];
+
+    // Rank options
+    const rankOptions = [
+        {id: '', name: 'Select Rank...'},
+        @foreach($ranks as $rank)
+        {id: '{{ $rank }}', name: '{{ $rank }}'},
+        @endforeach
+    ];
+
+    // Grade level options
+    const gradeLevelOptions = [
+        {id: '', name: 'Select Grade Level...'},
+        @foreach($gradeLevels as $grade)
+        {id: '{{ $grade }}', name: '{{ $grade }}'},
+        @endforeach
+    ];
+
+    // Zone options
+    const zoneIdOptions = [
+        {id: '', name: 'Select Zone...'},
+        @foreach($zones as $zone)
+        {id: '{{ $zone->id }}', name: '{{ $zone->name }}'},
+        @endforeach
+    ];
+
+    // Unit options
+    const unitOptions = [
+        {id: '', name: 'Select Unit...'},
+        {id: 'General Duty (GD)', name: 'General Duty (GD)'},
+        {id: 'Support Staff (SS)', name: 'Support Staff (SS)'}
+    ];
+
+    // Initialize sex select
+    createSearchableSelect({
+        triggerId: 'sex_select_trigger',
+        hiddenInputId: 'sex_id',
+        dropdownId: 'sex_dropdown',
+        searchInputId: 'sex_search_input',
+        optionsContainerId: 'sex_options',
+        displayTextId: 'sex_select_text',
+        options: sexOptions,
+        placeholder: 'Select...',
+        searchPlaceholder: 'Search...'
+    });
+
+    // Initialize state of origin select
+    createSearchableSelect({
+        triggerId: 'state_of_origin_select_trigger',
+        hiddenInputId: 'state_of_origin_id',
+        dropdownId: 'state_of_origin_dropdown',
+        searchInputId: 'state_of_origin_search_input',
+        optionsContainerId: 'state_of_origin_options',
+        displayTextId: 'state_of_origin_select_text',
+        options: stateOptions,
+        placeholder: 'Select State...',
+        searchPlaceholder: 'Search state...',
+        onSelect: function(option) {
+            // Load LGAs when state is selected
+            if (option.id) {
+                loadLGAsForState(option.id);
+                // Automatically set geopolitical zone based on state
+                setGeopoliticalZoneFromState(option.id);
+            } else {
+                clearLgaSelection();
+                // Clear zone if state is cleared
+                const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
+                const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
+                if (zoneHiddenInput && zoneDisplayText) {
+                    zoneHiddenInput.value = '';
+                    zoneDisplayText.textContent = 'Select Zone...';
+                }
+            }
+        }
+    });
+
+    // Initialize geopolitical zone select
+    createSearchableSelect({
+        triggerId: 'geopolitical_zone_select_trigger',
+        hiddenInputId: 'geopolitical_zone_id',
+        dropdownId: 'geopolitical_zone_dropdown',
+        searchInputId: 'geopolitical_zone_search_input',
+        optionsContainerId: 'geopolitical_zone_options',
+        displayTextId: 'geopolitical_zone_select_text',
+        options: zoneOptions,
+        placeholder: 'Select Zone...',
+        searchPlaceholder: 'Search zone...'
+    });
+
+    // Initialize marital status select
+    createSearchableSelect({
+        triggerId: 'marital_status_select_trigger',
+        hiddenInputId: 'marital_status_id',
+        dropdownId: 'marital_status_dropdown',
+        searchInputId: 'marital_status_search_input',
+        optionsContainerId: 'marital_status_options',
+        displayTextId: 'marital_status_select_text',
+        options: maritalStatusOptions,
+        placeholder: 'Select...',
+        searchPlaceholder: 'Search...'
+    });
+
+    // Initialize substantive rank select
+    createSearchableSelect({
+        triggerId: 'substantive_rank_select_trigger',
+        hiddenInputId: 'substantive_rank',
+        dropdownId: 'substantive_rank_dropdown',
+        searchInputId: 'substantive_rank_search_input',
+        optionsContainerId: 'substantive_rank_options',
+        displayTextId: 'substantive_rank_select_text',
+        options: rankOptions,
+        placeholder: 'Select Rank...',
+        searchPlaceholder: 'Search rank...',
+        onSelect: function(option) {
+            // Auto-select grade level when rank is selected
+            if (option.id && rankToGradeLevel[option.id]) {
+                const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+                const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
+                if (gradeLevelHiddenInput && gradeLevelDisplayText) {
+                    gradeLevelHiddenInput.value = rankToGradeLevel[option.id];
+                    gradeLevelDisplayText.textContent = rankToGradeLevel[option.id];
+                }
+            }
+        }
+    });
+
+    // Initialize salary grade level select
+    createSearchableSelect({
+        triggerId: 'salary_grade_level_select_trigger',
+        hiddenInputId: 'salary_grade_level',
+        dropdownId: 'salary_grade_level_dropdown',
+        searchInputId: 'salary_grade_level_search_input',
+        optionsContainerId: 'salary_grade_level_options',
+        displayTextId: 'salary_grade_level_select_text',
+        options: gradeLevelOptions,
+        placeholder: 'Select Grade Level...',
+        searchPlaceholder: 'Search grade level...'
+    });
+
+    // Initialize zone select
+    createSearchableSelect({
+        triggerId: 'zone_id_select_trigger',
+        hiddenInputId: 'zone_id',
+        dropdownId: 'zone_id_dropdown',
+        searchInputId: 'zone_id_search_input',
+        optionsContainerId: 'zone_id_options',
+        displayTextId: 'zone_id_select_text',
+        options: zoneIdOptions,
+        placeholder: 'Select Zone...',
+        searchPlaceholder: 'Search zone...',
+        onSelect: function(option) {
+            // Load commands when zone is selected
+            if (option.id) {
+                loadCommandsForZone(option.id);
+            } else {
+                clearCommandSelection();
+            }
+        }
+    });
+
+    // Initialize unit select
+    createSearchableSelect({
+        triggerId: 'unit_select_trigger',
+        hiddenInputId: 'unit_id',
+        dropdownId: 'unit_dropdown',
+        searchInputId: 'unit_search_input',
+        optionsContainerId: 'unit_options',
+        displayTextId: 'unit_select_text',
+        options: unitOptions,
+        placeholder: 'Select Unit...',
+        searchPlaceholder: 'Search unit...'
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize searchable selects
+    initializeSearchableSelects();
+    
     // Initialize LGA dropdown
     initializeLGASection();
     
@@ -451,22 +935,57 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // LGA Functions
 function initializeLGASection() {
-    const stateSelect = document.getElementById('state-select');
+    const stateHiddenInput = document.getElementById('state_of_origin_id');
     const savedState = '{{ old('state_of_origin', $officer->state_of_origin) }}';
     const savedLga = '{{ old('lga', $officer->lga) }}';
     
     if (savedState) {
         loadLGAsForState(savedState, savedLga);
+        setGeopoliticalZoneFromState(savedState);
     }
     
-    stateSelect.addEventListener('change', function() {
-        const selectedState = this.value;
-        if (selectedState) {
-            loadLGAsForState(selectedState);
-        } else {
-            clearLgaSelection();
-        }
-    });
+    // Listen for changes on the state hidden input
+    if (stateHiddenInput) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                    const selectedState = stateHiddenInput.value;
+                    if (selectedState) {
+                        loadLGAsForState(selectedState);
+                        setGeopoliticalZoneFromState(selectedState);
+                    } else {
+                        clearLgaSelection();
+                        // Clear zone if state is cleared
+                        const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
+                        const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
+                        if (zoneHiddenInput && zoneDisplayText) {
+                            zoneHiddenInput.value = '';
+                            zoneDisplayText.textContent = 'Select Zone...';
+                        }
+                    }
+                }
+            });
+        });
+        observer.observe(stateHiddenInput, { attributes: true, attributeFilter: ['value'] });
+
+        // Also listen for direct value changes
+        stateHiddenInput.addEventListener('input', function() {
+            const selectedState = this.value;
+            if (selectedState) {
+                loadLGAsForState(selectedState);
+                setGeopoliticalZoneFromState(selectedState);
+            } else {
+                clearLgaSelection();
+                // Clear zone if state is cleared
+                const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
+                const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
+                if (zoneHiddenInput && zoneDisplayText) {
+                    zoneHiddenInput.value = '';
+                    zoneDisplayText.textContent = 'Select Zone...';
+                }
+            }
+        });
+    }
 }
 
 function loadLGAsForState(state, savedLga = '') {
@@ -591,15 +1110,33 @@ async function initializeZoneCommandSection() {
                 }, 100);
             }
             
-            const zoneSelect = document.getElementById('zone_id');
-            zoneSelect.addEventListener('change', function() {
-                const selectedZoneId = this.value;
-                if (selectedZoneId) {
-                    loadCommandsForZone(selectedZoneId);
-                } else {
-                    clearCommandSelection();
-                }
-            });
+            const zoneHiddenInput = document.getElementById('zone_id');
+            if (zoneHiddenInput) {
+                // Listen for changes on the zone hidden input
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                            const selectedZoneId = zoneHiddenInput.value;
+                            if (selectedZoneId) {
+                                loadCommandsForZone(selectedZoneId);
+                            } else {
+                                clearCommandSelection();
+                            }
+                        }
+                    });
+                });
+                observer.observe(zoneHiddenInput, { attributes: true, attributeFilter: ['value'] });
+
+                // Also listen for direct value changes
+                zoneHiddenInput.addEventListener('input', function() {
+                    const selectedZoneId = this.value;
+                    if (selectedZoneId) {
+                        loadCommandsForZone(selectedZoneId);
+                    } else {
+                        clearCommandSelection();
+                    }
+                });
+            }
         }
     } catch (error) {
         console.error('Error loading zones/commands:', error);
@@ -758,32 +1295,55 @@ function addEducationEntry(data = null) {
             </div>
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Entry Qualification <span class="text-danger">*</span></label>
-                <select name="education[${entryId}][qualification]" class="kt-input education-qualification" required>
-                    <option value="">-- Select Qualification --</option>
-                    ${qualifications.map(qual => 
-                        `<option value="${qual}" ${savedQualification == qual ? 'selected' : ''}>${qual}</option>`
-                    ).join('')}
-                </select>
+                <div class="relative">
+                    <input type="hidden" name="education[${entryId}][qualification]" id="education_qualification_${entryId}_id" value="${savedQualification}" required>
+                    <button type="button" 
+                            id="education_qualification_${entryId}_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="education_qualification_${entryId}_select_text">${savedQualification ? savedQualification : '-- Select Qualification --'}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="education_qualification_${entryId}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="education_qualification_${entryId}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search qualification..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="education_qualification_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
             </div>
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Discipline <span class="text-muted">(Optional)</span></label>
-                <select id="discipline_select_${entryId}" class="kt-input flex-1 education-discipline-select" onchange="handleDisciplineChange(${entryId})">
-                    <option value="">-- Select Discipline --</option>
-                    ${disciplines.map(disc => 
-                        `<option value="${disc}" ${savedDiscipline == disc ? 'selected' : ''}>${disc}</option>`
-                    ).join('')}
-                    <option value="__CUSTOM__" ${isCustomDiscipline ? 'selected' : ''}>-- Custom (Enter below) --</option>
-                </select>
+                <div class="relative">
+                    <input type="hidden" id="discipline_final_${entryId}" name="education[${entryId}][discipline]" value="${savedDiscipline}">
+                    <button type="button" 
+                            id="discipline_select_${entryId}_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="discipline_select_${entryId}_text">${savedDiscipline ? (isCustomDiscipline ? '-- Custom (Enter below) --' : savedDiscipline) : '-- Select Discipline --'}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="discipline_select_${entryId}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="discipline_select_${entryId}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search discipline..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="discipline_select_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
                 <input type="text" 
                        id="discipline_custom_${entryId}"
                        class="kt-input mt-2 education-discipline-custom ${isCustomDiscipline ? '' : 'hidden'}" 
                        value="${isCustomDiscipline ? savedDiscipline : ''}"
                        placeholder="Enter custom discipline..."
                        oninput="handleCustomDiscipline(${entryId})">
-                <input type="hidden" 
-                       id="discipline_final_${entryId}"
-                       name="education[${entryId}][discipline]"
-                       value="${savedDiscipline}">
             </div>
         </div>
         <div class="flex items-center justify-end mt-3">
@@ -812,6 +1372,46 @@ function addEducationEntry(data = null) {
     }
     
     initializeUniversitySearch(entryId);
+    
+    // Initialize qualification searchable select
+    const qualificationOptions = [
+        {id: '', name: '-- Select Qualification --'},
+        ...qualifications.map(qual => ({id: qual, name: qual}))
+    ];
+    
+    createSearchableSelect({
+        triggerId: `education_qualification_${entryId}_select_trigger`,
+        hiddenInputId: `education_qualification_${entryId}_id`,
+        dropdownId: `education_qualification_${entryId}_dropdown`,
+        searchInputId: `education_qualification_${entryId}_search_input`,
+        optionsContainerId: `education_qualification_${entryId}_options`,
+        displayTextId: `education_qualification_${entryId}_select_text`,
+        options: qualificationOptions,
+        placeholder: '-- Select Qualification --',
+        searchPlaceholder: 'Search qualification...'
+    });
+    
+    // Initialize discipline searchable select
+    const disciplineOptions = [
+        {id: '', name: '-- Select Discipline --'},
+        ...disciplines.map(disc => ({id: disc, name: disc})),
+        {id: '__CUSTOM__', name: '-- Custom (Enter below) --'}
+    ];
+    
+    createSearchableSelect({
+        triggerId: `discipline_select_${entryId}_trigger`,
+        hiddenInputId: `discipline_final_${entryId}`,
+        dropdownId: `discipline_select_${entryId}_dropdown`,
+        searchInputId: `discipline_select_${entryId}_search_input`,
+        optionsContainerId: `discipline_select_${entryId}_options`,
+        displayTextId: `discipline_select_${entryId}_text`,
+        options: disciplineOptions,
+        placeholder: '-- Select Discipline --',
+        searchPlaceholder: 'Search discipline...',
+        onSelect: function(option) {
+            handleDisciplineChange(entryId, option.id);
+        }
+    });
     
     if (isCustomDiscipline) {
         document.getElementById(`discipline_custom_${entryId}`).classList.remove('hidden');
@@ -878,26 +1478,38 @@ function initializeUniversitySearch(entryId) {
     });
 }
 
-function handleDisciplineChange(entryId) {
-    const disciplineSelect = document.getElementById(`discipline_select_${entryId}`);
+function handleDisciplineChange(entryId, selectedValue = null) {
     const disciplineCustom = document.getElementById(`discipline_custom_${entryId}`);
     const disciplineFinal = document.getElementById(`discipline_final_${entryId}`);
+    const disciplineDisplayText = document.getElementById(`discipline_select_${entryId}_text`);
     
-    if (!disciplineSelect || !disciplineCustom || !disciplineFinal) return;
+    if (!disciplineCustom || !disciplineFinal) return;
     
-    const selectedValue = disciplineSelect.value;
+    // If selectedValue is not provided, get it from the hidden input
+    if (selectedValue === null) {
+        selectedValue = disciplineFinal.value;
+    }
     
     if (selectedValue === '__CUSTOM__') {
         disciplineCustom.classList.remove('hidden');
         disciplineCustom.focus();
+        if (disciplineDisplayText) {
+            disciplineDisplayText.textContent = '-- Custom (Enter below) --';
+        }
     } else if (selectedValue) {
         disciplineCustom.classList.add('hidden');
         disciplineCustom.value = '';
         disciplineFinal.value = selectedValue;
+        if (disciplineDisplayText) {
+            disciplineDisplayText.textContent = selectedValue;
+        }
     } else {
         disciplineCustom.classList.add('hidden');
         disciplineCustom.value = '';
         disciplineFinal.value = '';
+        if (disciplineDisplayText) {
+            disciplineDisplayText.textContent = '-- Select Discipline --';
+        }
     }
 }
 
@@ -912,27 +1524,41 @@ function handleCustomDiscipline(entryId) {
 
 // Rank to Grade Level Functions
 function initializeRankToGradeLevel() {
-    const rankSelect = document.getElementById('substantive_rank');
-    const gradeLevelSelect = document.getElementById('salary_grade_level');
+    const rankHiddenInput = document.getElementById('substantive_rank');
+    const gradeLevelHiddenInput = document.getElementById('salary_grade_level');
+    const gradeLevelDisplayText = document.getElementById('salary_grade_level_select_text');
     
-    if (!rankSelect || !gradeLevelSelect) return;
+    if (!rankHiddenInput || !gradeLevelHiddenInput) return;
     
     // Set initial grade level if rank is already selected
-    const currentRank = rankSelect.value;
+    const currentRank = rankHiddenInput.value;
     if (currentRank && rankToGradeLevel[currentRank]) {
-        gradeLevelSelect.value = rankToGradeLevel[currentRank];
+        gradeLevelHiddenInput.value = rankToGradeLevel[currentRank];
+        if (gradeLevelDisplayText) {
+            gradeLevelDisplayText.textContent = rankToGradeLevel[currentRank];
+        }
     }
     
-    // Listen for rank changes
-    rankSelect.addEventListener('change', function() {
-        const selectedRank = this.value;
-        if (selectedRank && rankToGradeLevel[selectedRank]) {
-            gradeLevelSelect.value = rankToGradeLevel[selectedRank];
-        } else {
-            // If rank is cleared or doesn't have a mapping, clear grade level
-            gradeLevelSelect.value = '';
-        }
+    // Listen for rank changes (already handled in onSelect callback, but keeping for compatibility)
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                const selectedRank = rankHiddenInput.value;
+                if (selectedRank && rankToGradeLevel[selectedRank]) {
+                    gradeLevelHiddenInput.value = rankToGradeLevel[selectedRank];
+                    if (gradeLevelDisplayText) {
+                        gradeLevelDisplayText.textContent = rankToGradeLevel[selectedRank];
+                    }
+                } else {
+                    gradeLevelHiddenInput.value = '';
+                    if (gradeLevelDisplayText) {
+                        gradeLevelDisplayText.textContent = 'Select Grade Level...';
+                    }
+                }
+            }
+        });
     });
+    observer.observe(rankHiddenInput, { attributes: true, attributeFilter: ['value'] });
 }
 
 </script>

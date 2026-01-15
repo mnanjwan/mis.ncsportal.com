@@ -91,11 +91,26 @@
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(d) Is the most effective use being made of your capabilities in your present job?</label>
-                        <select name="effective_use_capabilities" class="kt-input">
-                            <option value="">Select...</option>
-                            <option value="YES" {{ old('effective_use_capabilities', $formData['effective_use_capabilities'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
-                            <option value="NO" {{ old('effective_use_capabilities', $formData['effective_use_capabilities'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="effective_use_capabilities" id="effective_use_capabilities_id" value="{{ old('effective_use_capabilities', $formData['effective_use_capabilities'] ?? '') }}">
+                            <button type="button" 
+                                    id="effective_use_capabilities_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="effective_use_capabilities_select_text">{{ old('effective_use_capabilities', $formData['effective_use_capabilities'] ?? '') ? old('effective_use_capabilities', $formData['effective_use_capabilities'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="effective_use_capabilities_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="effective_use_capabilities_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="effective_use_capabilities_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(e) Do you think that your abilities could be better used in your present job or in another kind of job?</label>
@@ -104,11 +119,26 @@
                     <div class="flex flex-col gap-2">
                         <label class="kt-form-label mb-1">(f) During the period of this report did you have job satisfaction, If no, what were the causes?</label>
                         <div class="flex flex-col gap-2">
-                            <select name="job_satisfaction" class="kt-input">
-                                <option value="">Select...</option>
-                                <option value="YES" {{ old('job_satisfaction', $formData['job_satisfaction'] ?? '') == 'YES' ? 'selected' : '' }}>YES</option>
-                                <option value="NO" {{ old('job_satisfaction', $formData['job_satisfaction'] ?? '') == 'NO' ? 'selected' : '' }}>NO</option>
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="job_satisfaction" id="job_satisfaction_id" value="{{ old('job_satisfaction', $formData['job_satisfaction'] ?? '') }}">
+                                <button type="button" 
+                                        id="job_satisfaction_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="job_satisfaction_select_text">{{ old('job_satisfaction', $formData['job_satisfaction'] ?? '') ? old('job_satisfaction', $formData['job_satisfaction'] ?? '') : 'Select...' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="job_satisfaction_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-input">
+                                        <input type="text" 
+                                               id="job_satisfaction_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="job_satisfaction_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
                             <textarea name="job_satisfaction_causes" class="kt-input" rows="2" placeholder="If NO, state causes">{{ old('job_satisfaction_causes', $formData['job_satisfaction_causes'] ?? '') }}</textarea>
                         </div>
                     </div>

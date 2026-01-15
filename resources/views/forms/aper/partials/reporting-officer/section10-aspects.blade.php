@@ -162,11 +162,26 @@
                 </div>
                 <div class="flex flex-col gap-3 p-4 bg-warning/5 rounded-lg border border-warning/10">
                     <label class="kt-form-label mb-0 font-medium">Has any disciplinary action been taken against the officer during the period covered by this report?</label>
-                    <select name="disciplinary_action" class="kt-input max-w-xs">
-                        <option value="">-- Select YES or NO --</option>
-                        <option value="YES" {{ old('disciplinary_action', $form->disciplinary_action) == 'YES' ? 'selected' : '' }}>YES</option>
-                        <option value="NO" {{ old('disciplinary_action', $form->disciplinary_action) == 'NO' ? 'selected' : '' }}>NO</option>
-                    </select>
+                    <div class="relative max-w-xs">
+                        <input type="hidden" name="disciplinary_action" id="disciplinary_action_id" value="{{ old('disciplinary_action', $form->disciplinary_action) ?? '' }}">
+                        <button type="button" 
+                                id="disciplinary_action_select_trigger" 
+                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                            <span id="disciplinary_action_select_text">{{ old('disciplinary_action', $form->disciplinary_action) ? old('disciplinary_action', $form->disciplinary_action) : '-- Select YES or NO --' }}</span>
+                            <i class="ki-filled ki-down text-gray-400"></i>
+                        </button>
+                        <div id="disciplinary_action_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                            <div class="p-3 border-b border-input">
+                                <input type="text" 
+                                       id="disciplinary_action_search_input" 
+                                       class="kt-input w-full pl-10" 
+                                       placeholder="Search..."
+                                       autocomplete="off">
+                            </div>
+                            <div id="disciplinary_action_options" class="max-h-60 overflow-y-auto"></div>
+                        </div>
+                    </div>
                     <textarea name="disciplinary_action_details" class="kt-input" rows="3" placeholder="If YES, provide details of sanctions...">{{ old('disciplinary_action_details', $form->disciplinary_action_details) }}</textarea>
                 </div>
             </div>
@@ -178,11 +193,26 @@
                 </div>
                 <div class="flex flex-col gap-3 p-4 bg-success/5 rounded-lg border border-success/10">
                     <label class="kt-form-label mb-0 font-medium">Has the officer received any special commendation (WRITTEN) during the year for outstanding performance?</label>
-                    <select name="special_commendation" class="kt-input max-w-xs">
-                        <option value="">-- Select YES or NO --</option>
-                        <option value="YES" {{ old('special_commendation', $form->special_commendation) == 'YES' ? 'selected' : '' }}>YES</option>
-                        <option value="NO" {{ old('special_commendation', $form->special_commendation) == 'NO' ? 'selected' : '' }}>NO</option>
-                    </select>
+                    <div class="relative max-w-xs">
+                        <input type="hidden" name="special_commendation" id="special_commendation_id" value="{{ old('special_commendation', $form->special_commendation) ?? '' }}">
+                        <button type="button" 
+                                id="special_commendation_select_trigger" 
+                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                            <span id="special_commendation_select_text">{{ old('special_commendation', $form->special_commendation) ? old('special_commendation', $form->special_commendation) : '-- Select YES or NO --' }}</span>
+                            <i class="ki-filled ki-down text-gray-400"></i>
+                        </button>
+                        <div id="special_commendation_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                            <div class="p-3 border-b border-input">
+                                <input type="text" 
+                                       id="special_commendation_search_input" 
+                                       class="kt-input w-full pl-10" 
+                                       placeholder="Search..."
+                                       autocomplete="off">
+                            </div>
+                            <div id="special_commendation_options" class="max-h-60 overflow-y-auto"></div>
+                        </div>
+                    </div>
                     <textarea name="special_commendation_details" class="kt-input" rows="3" placeholder="If YES, provide details...">{{ old('special_commendation_details', $form->special_commendation_details) }}</textarea>
                 </div>
             </div>

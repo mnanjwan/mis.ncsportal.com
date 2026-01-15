@@ -48,27 +48,51 @@
                         <!-- Zone Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Zone</label>
-                            <select name="zone_id" id="zone_id" class="kt-input w-full">
-                                <option value="">All Zones</option>
-                                @foreach($zones as $zone)
-                                    <option value="{{ $zone->id }}" {{ (string)$selectedZoneId === (string)$zone->id ? 'selected' : '' }}>
-                                        {{ $zone->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="zone_id" id="zone_id" value="{{ $selectedZoneId ?? '' }}">
+                                <button type="button" 
+                                        id="zone_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="zone_select_text">{{ $selectedZoneId ? ($zones->firstWhere('id', $selectedZoneId) ? $zones->firstWhere('id', $selectedZoneId)->name : 'All Zones') : 'All Zones' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="zone_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-input">
+                                        <input type="text" 
+                                               id="zone_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search zone..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="zone_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Command Select -->
                         <div class="w-full md:w-48">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Command</label>
-                            <select name="command_id" id="command_id" class="kt-input w-full">
-                                <option value="">All Commands</option>
-                                @foreach($commands as $command)
-                                    <option value="{{ $command->id }}" {{ (string)$selectedCommandId === (string)$command->id ? 'selected' : '' }}>
-                                        {{ $command->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <input type="hidden" name="command_id" id="command_id" value="{{ $selectedCommandId ?? '' }}">
+                                <button type="button" 
+                                        id="command_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="command_select_text">{{ $selectedCommandId ? ($commands->firstWhere('id', $selectedCommandId) ? $commands->firstWhere('id', $selectedCommandId)->name : 'All Commands') : 'All Commands' }}</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="command_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-input">
+                                        <input type="text" 
+                                               id="command_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search command..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="command_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Search Input -->
@@ -226,29 +250,171 @@
         </div>
     </div>
 
+    @push('scripts')
     <script>
+        // Reusable function to create searchable select
+        function createSearchableSelect(config) {
+            const {
+                triggerId,
+                hiddenInputId,
+                dropdownId,
+                searchInputId,
+                optionsContainerId,
+                displayTextId,
+                options,
+                displayFn,
+                onSelect,
+                placeholder = 'Select...',
+                searchPlaceholder = 'Search...'
+            } = config;
+
+            const trigger = document.getElementById(triggerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const dropdown = document.getElementById(dropdownId);
+            const searchInput = document.getElementById(searchInputId);
+            const optionsContainer = document.getElementById(optionsContainerId);
+            const displayText = document.getElementById(displayTextId);
+
+            if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+                return;
+            }
+
+            let selectedOption = null;
+            let filteredOptions = [...options];
+
+            // Render options
+            function renderOptions(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                    return;
+                }
+
+                optionsContainer.innerHTML = opts.map(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                    const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${value}" 
+                             data-name="${display}">
+                            <div class="text-sm text-foreground">${display}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        selectedOption = options.find(o => {
+                            const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                            return String(optValue) === String(id);
+                        });
+                        
+                        if (selectedOption || id === '') {
+                            hiddenInput.value = id;
+                            displayText.textContent = name;
+                            dropdown.classList.add('hidden');
+                            searchInput.value = '';
+                            filteredOptions = [...options];
+                            renderOptions(filteredOptions);
+                            
+                            if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                        }
+                    });
+                });
+            }
+
+            // Initial render
+            renderOptions(filteredOptions);
+
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredOptions = options.filter(opt => {
+                    const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+                    return String(display).toLowerCase().includes(searchTerm);
+                });
+                renderOptions(filteredOptions);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    setTimeout(() => searchInput.focus(), 100);
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            const zoneSelect = document.getElementById('zone_id');
-            const commandSelect = document.getElementById('command_id');
             const form = document.getElementById('filterForm');
             
-            // Handle zone change - update commands and submit form
-            zoneSelect.addEventListener('change', function() {
-                const zoneId = this.value;
-                
-                // Clear command selection when zone changes
-                commandSelect.value = '';
-                
-                // Clear search when zone changes
-                const searchInput = form.querySelector('input[name="search"]');
-                if (searchInput) {
-                    searchInput.value = '';
+            // Zone options
+            const zoneOptions = [
+                {id: '', name: 'All Zones'},
+                @foreach($zones as $zone)
+                {id: '{{ $zone->id }}', name: '{{ $zone->name }}'},
+                @endforeach
+            ];
+
+            // Command options
+            const commandOptions = [
+                {id: '', name: 'All Commands'},
+                @foreach($commands as $command)
+                {id: '{{ $command->id }}', name: '{{ $command->name }}'},
+                @endforeach
+            ];
+
+            // Initialize zone select
+            createSearchableSelect({
+                triggerId: 'zone_select_trigger',
+                hiddenInputId: 'zone_id',
+                dropdownId: 'zone_dropdown',
+                searchInputId: 'zone_search_input',
+                optionsContainerId: 'zone_options',
+                displayTextId: 'zone_select_text',
+                options: zoneOptions,
+                placeholder: 'All Zones',
+                searchPlaceholder: 'Search zone...',
+                onSelect: function() {
+                    // Clear command selection when zone changes
+                    document.getElementById('command_id').value = '';
+                    document.getElementById('command_select_text').textContent = 'All Commands';
+                    
+                    // Clear search when zone changes
+                    const searchInput = form.querySelector('input[name="search"]');
+                    if (searchInput) {
+                        searchInput.value = '';
+                    }
+                    
+                    // Submit form to reload with commands for selected zone
+                    form.submit();
                 }
-                
-                // Submit form to reload with commands for selected zone
-                form.submit();
+            });
+
+            // Initialize command select
+            createSearchableSelect({
+                triggerId: 'command_select_trigger',
+                hiddenInputId: 'command_id',
+                dropdownId: 'command_dropdown',
+                searchInputId: 'command_search_input',
+                optionsContainerId: 'command_options',
+                displayTextId: 'command_select_text',
+                options: commandOptions,
+                placeholder: 'All Commands',
+                searchPlaceholder: 'Search command...'
             });
         });
     </script>
+    @endpush
 @endsection
 

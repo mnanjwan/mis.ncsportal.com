@@ -78,11 +78,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Sex <span class="text-danger">*</span></label>
-                        <select name="gender" class="kt-input" required>
-                            <option value="">Select...</option>
-                            <option value="Male" {{ old('gender', $savedData['gender'] ?? '') == 'Male' ? 'selected' : '' }}>Male</option>
-                            <option value="Female" {{ old('gender', $savedData['gender'] ?? '') == 'Female' ? 'selected' : '' }}>Female</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="gender" id="gender_id" value="{{ old('gender', $savedData['gender'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="gender_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="gender_select_text">{{ old('gender', $savedData['gender'] ?? '') ? old('gender', $savedData['gender'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="gender_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="gender_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="gender_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -92,9 +107,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">State of Origin <span class="text-danger">*</span></label>
-                        <select name="state_of_origin" class="kt-input" id="state-select" required>
-                            <option value="">Select State...</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="state_of_origin" id="state-select" value="{{ old('state_of_origin', $savedData['state_of_origin'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="state_of_origin_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="state_of_origin_select_text">{{ old('state_of_origin', $savedData['state_of_origin'] ?? '') ? old('state_of_origin', $savedData['state_of_origin'] ?? '') : 'Select State...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="state_of_origin_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="state_of_origin_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search state..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="state_of_origin_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -130,26 +162,50 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
-                        <select name="geopolitical_zone" class="kt-input" required>
-                            <option value="">Select Zone...</option>
-                            <option value="North Central" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') == 'North Central' ? 'selected' : '' }}>North Central</option>
-                            <option value="North East" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') == 'North East' ? 'selected' : '' }}>North East</option>
-                            <option value="North West" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') == 'North West' ? 'selected' : '' }}>North West</option>
-                            <option value="South East" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') == 'South East' ? 'selected' : '' }}>South East</option>
-                            <option value="South South" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') == 'South South' ? 'selected' : '' }}>South South</option>
-                            <option value="South West" {{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') == 'South West' ? 'selected' : '' }}>South West</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="geopolitical_zone" id="geopolitical_zone_id" value="{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="geopolitical_zone_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="geopolitical_zone_select_text">{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') ? old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') : 'Select Zone...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="geopolitical_zone_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="geopolitical_zone_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search zone..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="geopolitical_zone_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Marital Status <span class="text-danger">*</span></label>
-                        <select name="marital_status" class="kt-input" required>
-                            <option value="">Select...</option>
-                            <option value="Single" {{ old('marital_status', $savedData['marital_status'] ?? '') == 'Single' ? 'selected' : '' }}>Single</option>
-                            <option value="Married" {{ old('marital_status', $savedData['marital_status'] ?? '') == 'Married' ? 'selected' : '' }}>Married</option>
-                            <option value="Divorced" {{ old('marital_status', $savedData['marital_status'] ?? '') == 'Divorced' ? 'selected' : '' }}>Divorced</option>
-                            <option value="Widowed" {{ old('marital_status', $savedData['marital_status'] ?? '') == 'Widowed' ? 'selected' : '' }}>Widowed</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="marital_status" id="marital_status_id" value="{{ old('marital_status', $savedData['marital_status'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="marital_status_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="marital_status_select_text">{{ old('marital_status', $savedData['marital_status'] ?? '') ? old('marital_status', $savedData['marital_status'] ?? '') : 'Select...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="marital_status_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="marital_status_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="marital_status_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -240,38 +296,290 @@ const nigerianStatesLGAs = {
     'Zamfara': ['Anka', 'Bakura', 'Birnin Magaji/Kiyaw', 'Bukkuyum', 'Bungudu', 'Gummi', 'Kaura Namoda', 'Maradun', 'Maru', 'Shinkafi', 'Talata Mafara', 'Chafe', 'Zurmi']
 };
 
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+// State to Geopolitical Zone mapping
+const stateToZoneMap = {
+    // North Central
+    'Benue': 'North Central',
+    'Kogi': 'North Central',
+    'Kwara': 'North Central',
+    'Nasarawa': 'North Central',
+    'Niger': 'North Central',
+    'Plateau': 'North Central',
+    'FCT': 'North Central',
+    // North East
+    'Adamawa': 'North East',
+    'Bauchi': 'North East',
+    'Borno': 'North East',
+    'Gombe': 'North East',
+    'Taraba': 'North East',
+    'Yobe': 'North East',
+    // North West
+    'Kaduna': 'North West',
+    'Kano': 'North West',
+    'Katsina': 'North West',
+    'Kebbi': 'North West',
+    'Jigawa': 'North West',
+    'Sokoto': 'North West',
+    'Zamfara': 'North West',
+    // South East
+    'Abia': 'South East',
+    'Anambra': 'South East',
+    'Ebonyi': 'South East',
+    'Enugu': 'South East',
+    'Imo': 'South East',
+    // South South
+    'Akwa Ibom': 'South South',
+    'Bayelsa': 'South South',
+    'Cross River': 'South South',
+    'Delta': 'South South',
+    'Edo': 'South South',
+    'Rivers': 'South South',
+    // South West
+    'Ekiti': 'South West',
+    'Lagos': 'South West',
+    'Ogun': 'South West',
+    'Ondo': 'South West',
+    'Osun': 'South West',
+    'Oyo': 'South West'
+};
+
+// Function to set geopolitical zone based on state
+function setGeopoliticalZoneFromState(state) {
+    const zone = stateToZoneMap[state];
+    if (zone) {
+        const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
+        const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
+        if (zoneHiddenInput && zoneDisplayText) {
+            zoneHiddenInput.value = zone;
+            zoneDisplayText.textContent = zone;
+        }
+    }
+}
+
 // Load Nigerian states
 document.addEventListener('DOMContentLoaded', () => {
     const states = Object.keys(nigerianStatesLGAs);
-    
-    const stateSelect = document.getElementById('state-select');
     const savedState = '{{ old('state_of_origin', $savedData['state_of_origin'] ?? '') }}';
     const savedLga = '{{ old('lga', $savedData['lga'] ?? '') }}';
     
-    states.forEach(state => {
-        const option = document.createElement('option');
-        option.value = state;
-        option.textContent = state;
-        if (state === savedState) {
-            option.selected = true;
-        }
-        stateSelect.appendChild(option);
-    });
+    // Gender options
+    const genderOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'Male', name: 'Male'},
+        {id: 'Female', name: 'Female'}
+    ];
     
-    // If state is already selected, load LGAs
-    if (savedState) {
-        loadLGAsForState(savedState, savedLga);
+    // State options
+    const stateOptions = [
+        {id: '', name: 'Select State...'},
+        ...states.map(state => ({id: state, name: state}))
+    ];
+    
+    // Geopolitical zone options
+    const zoneOptions = [
+        {id: '', name: 'Select Zone...'},
+        {id: 'North Central', name: 'North Central'},
+        {id: 'North East', name: 'North East'},
+        {id: 'North West', name: 'North West'},
+        {id: 'South East', name: 'South East'},
+        {id: 'South South', name: 'South South'},
+        {id: 'South West', name: 'South West'}
+    ];
+    
+    // Marital status options
+    const maritalStatusOptions = [
+        {id: '', name: 'Select...'},
+        {id: 'Single', name: 'Single'},
+        {id: 'Married', name: 'Married'},
+        {id: 'Divorced', name: 'Divorced'},
+        {id: 'Widowed', name: 'Widowed'}
+    ];
+    
+    // Initialize gender select
+    if (document.getElementById('gender_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'gender_select_trigger',
+            hiddenInputId: 'gender_id',
+            dropdownId: 'gender_dropdown',
+            searchInputId: 'gender_search_input',
+            optionsContainerId: 'gender_options',
+            displayTextId: 'gender_select_text',
+            options: genderOptions,
+            placeholder: 'Select...',
+            searchPlaceholder: 'Search...'
+        });
     }
     
-    // Handle state change
-    stateSelect.addEventListener('change', function() {
-        const selectedState = this.value;
-        if (selectedState) {
-            loadLGAsForState(selectedState);
-        } else {
-            clearLgaSelection();
-        }
-    });
+    // Initialize state of origin select
+    if (document.getElementById('state_of_origin_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'state_of_origin_select_trigger',
+            hiddenInputId: 'state-select',
+            dropdownId: 'state_of_origin_dropdown',
+            searchInputId: 'state_of_origin_search_input',
+            optionsContainerId: 'state_of_origin_options',
+            displayTextId: 'state_of_origin_select_text',
+            options: stateOptions,
+            placeholder: 'Select State...',
+            searchPlaceholder: 'Search state...',
+            onSelect: function(option) {
+                // Load LGAs when state is selected
+                if (option.id) {
+                    loadLGAsForState(option.id);
+                    // Automatically set geopolitical zone based on state
+                    setGeopoliticalZoneFromState(option.id);
+                } else {
+                    clearLgaSelection();
+                    // Clear zone if state is cleared
+                    const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
+                    const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
+                    if (zoneHiddenInput && zoneDisplayText) {
+                        zoneHiddenInput.value = '';
+                        zoneDisplayText.textContent = 'Select Zone...';
+                    }
+                }
+            }
+        });
+    }
+    
+    // Initialize geopolitical zone select
+    if (document.getElementById('geopolitical_zone_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'geopolitical_zone_select_trigger',
+            hiddenInputId: 'geopolitical_zone_id',
+            dropdownId: 'geopolitical_zone_dropdown',
+            searchInputId: 'geopolitical_zone_search_input',
+            optionsContainerId: 'geopolitical_zone_options',
+            displayTextId: 'geopolitical_zone_select_text',
+            options: zoneOptions,
+            placeholder: 'Select Zone...',
+            searchPlaceholder: 'Search zone...'
+        });
+    }
+    
+    // Initialize marital status select
+    if (document.getElementById('marital_status_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'marital_status_select_trigger',
+            hiddenInputId: 'marital_status_id',
+            dropdownId: 'marital_status_dropdown',
+            searchInputId: 'marital_status_search_input',
+            optionsContainerId: 'marital_status_options',
+            displayTextId: 'marital_status_select_text',
+            options: maritalStatusOptions,
+            placeholder: 'Select...',
+            searchPlaceholder: 'Search...'
+        });
+    }
+    
+    // If state is already selected, load LGAs and set zone
+    if (savedState) {
+        loadLGAsForState(savedState, savedLga);
+        setGeopoliticalZoneFromState(savedState);
+    }
 });
 
 function loadLGAsForState(state, savedLga = '') {

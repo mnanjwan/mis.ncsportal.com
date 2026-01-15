@@ -178,12 +178,8 @@
                         
                         <div id="officer_results" class="mb-4 hidden">
                             <label class="kt-form-label">Select Officer <span class="text-danger">*</span></label>
-                            <select name="reporting_officer_id" id="reporting_officer_id" class="kt-input hidden">
-                                <option value="">-- Select Reporting Officer --</option>
-                            </select>
-                            <select name="countersigning_officer_id" id="countersigning_officer_id" class="kt-input hidden">
-                                <option value="">-- Select Countersigning Officer --</option>
-                            </select>
+                            <input type="hidden" name="reporting_officer_id" id="reporting_officer_id" value="">
+                            <input type="hidden" name="countersigning_officer_id" id="countersigning_officer_id" value="">
                             <div id="officer_list" class="border border-border rounded-lg max-h-60 overflow-y-auto"></div>
                         </div>
 
@@ -216,25 +212,21 @@
             const form = document.getElementById('reassign-form');
             const title = document.getElementById('reassign-modal-title');
             const searchInput = document.getElementById('officer_search');
-            const reportingSelect = document.getElementById('reporting_officer_id');
-            const countersigningSelect = document.getElementById('countersigning_officer_id');
+            const reportingInput = document.getElementById('reporting_officer_id');
+            const countersigningInput = document.getElementById('countersigning_officer_id');
             const submitBtn = document.getElementById('reassign-submit-btn');
             
             // Set form action based on type
             if (type === 'reporting') {
                 form.action = `/staff-officer/aper-forms/${formId}/reassign-reporting-officer`;
                 title.textContent = 'Reassign Reporting Officer';
-                reportingSelect.classList.remove('hidden');
-                countersigningSelect.classList.add('hidden');
-                countersigningSelect.removeAttribute('name');
-                reportingSelect.setAttribute('name', 'reporting_officer_id');
+                reportingInput.setAttribute('name', 'reporting_officer_id');
+                countersigningInput.removeAttribute('name');
             } else {
                 form.action = `/staff-officer/aper-forms/${formId}/reassign-countersigning-officer`;
                 title.textContent = 'Reassign Countersigning Officer';
-                countersigningSelect.classList.remove('hidden');
-                reportingSelect.classList.add('hidden');
-                reportingSelect.removeAttribute('name');
-                countersigningSelect.setAttribute('name', 'countersigning_officer_id');
+                countersigningInput.setAttribute('name', 'countersigning_officer_id');
+                reportingInput.removeAttribute('name');
             }
             
             // Reset form

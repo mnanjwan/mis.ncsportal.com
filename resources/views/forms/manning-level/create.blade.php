@@ -87,11 +87,26 @@
                 
                 <div class="flex flex-col gap-1">
                     <label class="kt-form-label font-normal text-mono">Request Type <span class="text-danger">*</span></label>
-                    <select name="type" id="request_type" class="kt-input" required>
-                        <option value="">Select Request Type</option>
-                        <option value="GENERAL">General Manning Level (HRD) - All Ranks</option>
-                        <option value="ZONE">Zone Manning Level (Zone Coordinator) - GL 7 and Below Only</option>
-                    </select>
+                    <div class="relative">
+                        <input type="hidden" name="type" id="request_type" value="{{ old('type') ?? '' }}" required>
+                        <button type="button" 
+                                id="request_type_select_trigger" 
+                                class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                            <span id="request_type_select_text">{{ old('type') ? (old('type') === 'GENERAL' ? 'General Manning Level (HRD) - All Ranks' : 'Zone Manning Level (Zone Coordinator) - GL 7 and Below Only') : 'Select Request Type' }}</span>
+                            <i class="ki-filled ki-down text-gray-400"></i>
+                        </button>
+                        <div id="request_type_dropdown" 
+                             class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                            <div class="p-3 border-b border-input">
+                                <input type="text" 
+                                       id="request_type_search_input" 
+                                       class="kt-input w-full pl-10" 
+                                       placeholder="Search request type..."
+                                       autocomplete="off">
+                            </div>
+                            <div id="request_type_options" class="max-h-60 overflow-y-auto"></div>
+                        </div>
+                    </div>
                     <p class="text-xs text-secondary-foreground mt-1">
                         <strong>General:</strong> For all ranks, processed by HRD<br>
                         <strong>Zone:</strong> For GL 7 and below only, processed by Zone Coordinator
@@ -162,6 +177,109 @@
 
 @push('scripts')
 <script>
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
 let itemCount = 0;
 const ranks = @json($ranks ?? []);
 const qualifications = @json($qualifications ?? []);
@@ -178,28 +296,87 @@ function getAvailableRanks(type) {
 // Update rank selects based on request type
 function updateRankSelects(type) {
     const availableRanks = getAvailableRanks(type);
-    const rankSelects = document.querySelectorAll('select[name*="[rank]"]');
+    const rankSelects = document.querySelectorAll('[id^="item_rank_"][id$="_id"]');
     
-    rankSelects.forEach(select => {
-        const currentValue = select.value;
-        // Clear existing options except the default
-        select.innerHTML = '<option value="">Select Rank</option>';
+    rankSelects.forEach(hiddenInput => {
+        const match = hiddenInput.id.match(/item_rank_(\d+)_id/);
+        if (!match) return;
+        const index = match[1];
+        const displayText = document.getElementById(`item_rank_${index}_select_text`);
+        const optionsContainer = document.getElementById(`item_rank_${index}_options`);
         
-        // Add available ranks (reversed for LIFO)
+        if (!displayText || !optionsContainer) return;
+        
+        const currentValue = hiddenInput.value;
+        
+        // Rebuild options (reversed for LIFO)
         const reversedRanks = [...availableRanks].reverse();
-        reversedRanks.forEach(rank => {
-            const option = document.createElement('option');
-            option.value = rank;
-            option.textContent = rank;
-            if (currentValue === rank && availableRanks.includes(rank)) {
-                option.selected = true;
-            }
-            select.appendChild(option);
+        const rankOptions = [
+            {id: '', name: 'Select Rank'},
+            ...reversedRanks.map(rank => ({id: rank, name: rank}))
+        ];
+        
+        // Update options container
+        optionsContainer.innerHTML = rankOptions.map(opt => {
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${opt.id}" 
+                     data-name="${opt.name}">
+                    <div class="text-sm text-foreground">${opt.name}</div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                hiddenInput.value = id;
+                displayText.textContent = name;
+                document.getElementById(`item_rank_${index}_dropdown`).classList.add('hidden');
+                document.getElementById(`item_rank_${index}_search_input`).value = '';
+            });
         });
+        
+        // Update search functionality
+        const searchInput = document.getElementById(`item_rank_${index}_search_input`);
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const filtered = rankOptions.filter(opt => {
+                    return String(opt.name).toLowerCase().includes(searchTerm);
+                });
+                optionsContainer.innerHTML = filtered.map(opt => {
+                    return `
+                        <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                             data-id="${opt.id}" 
+                             data-name="${opt.name}">
+                            <div class="text-sm text-foreground">${opt.name}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Re-add click handlers
+                optionsContainer.querySelectorAll('.select-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const name = this.dataset.name;
+                        hiddenInput.value = id;
+                        displayText.textContent = name;
+                        document.getElementById(`item_rank_${index}_dropdown`).classList.add('hidden');
+                        searchInput.value = '';
+                    });
+                });
+            });
+        }
         
         // If current value is not available, clear it
         if (currentValue && !availableRanks.includes(currentValue)) {
-            select.value = '';
+            hiddenInput.value = '';
+            displayText.textContent = 'Select Rank';
+        } else if (currentValue && availableRanks.includes(currentValue)) {
+            displayText.textContent = currentValue;
         }
     });
 }
@@ -226,10 +403,26 @@ function createItemTemplate(index) {
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Rank <span class="text-danger">*</span></label>
-                        <select class="kt-input" name="items[${index}][rank]" required>
-                            <option value="">Select Rank</option>
-                            ${ranksHtml}
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="items[${index}][rank]" id="item_rank_${index}_id" value="" required>
+                            <button type="button" 
+                                    id="item_rank_${index}_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="item_rank_${index}_select_text">Select Rank</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="item_rank_${index}_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="item_rank_${index}_search_input" 
+                                           class="kt-input w-full pl-10 text-sm" 
+                                           placeholder="Search rank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="item_rank_${index}_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Quantity Needed <span class="text-danger">*</span></label>
@@ -239,18 +432,49 @@ function createItemTemplate(index) {
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Gender Requirement</label>
-                        <select class="kt-input" name="items[${index}][sex_requirement]">
-                            <option value="ANY">Any</option>
-                            <option value="M">Male</option>
-                            <option value="F">Female</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="items[${index}][sex_requirement]" id="item_sex_${index}_id" value="ANY">
+                            <button type="button" 
+                                    id="item_sex_${index}_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="item_sex_${index}_select_text">Any</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="item_sex_${index}_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="item_sex_${index}_search_input" 
+                                           class="kt-input w-full pl-10 text-sm" 
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="item_sex_${index}_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono text-xs">Qualification Requirement</label>
-                        <select class="kt-input" name="items[${index}][qualification_requirement]" id="qual-select-${index}">
-                            <option value="">Any Qualification</option>
-                            ${qualsHtml}
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="items[${index}][qualification_requirement]" id="qual-select-${index}" value="">
+                            <button type="button" 
+                                    id="item_qual_${index}_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="item_qual_${index}_select_text">Any Qualification</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="item_qual_${index}_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="item_qual_${index}_search_input" 
+                                           class="kt-input w-full pl-10 text-sm" 
+                                           placeholder="Search qualification..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="item_qual_${index}_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <input type="text" class="kt-input mt-1" name="items[${index}][qualification_custom]" placeholder="Enter custom qualification" style="display: none;" id="qual-custom-${index}"/>
                         <button type="button" class="kt-btn kt-btn-sm kt-btn-ghost mt-1" onclick="toggleCustomQual(${index})" id="qual-toggle-${index}">
                             <i class="ki-filled ki-plus"></i> Custom
@@ -268,12 +492,82 @@ function addItem() {
     // Insert new item at the top - it will become Item #1, pushing all others down
     const itemHtml = createItemTemplate(itemCount);
     container.insertAdjacentHTML('afterbegin', itemHtml);
+    
+    // Initialize searchable selects for the new item
+    initializeItemSelects(itemCount);
+    
     itemCount++;
     
     // Renumber all items: new item becomes #1, existing items get pushed down (#1->#2, #2->#3, etc.)
     updateItemNumbers();
     
     // No scrolling - items will push down naturally
+}
+
+// Initialize searchable selects for an item
+function initializeItemSelects(index) {
+    // Get request type to determine available ranks
+    const requestType = document.getElementById('request_type')?.value || 'GENERAL';
+    const availableRanks = getAvailableRanks(requestType);
+    const reversedRanks = [...availableRanks].reverse();
+    
+    // Rank options
+    const rankOptions = [
+        {id: '', name: 'Select Rank'},
+        ...reversedRanks.map(rank => ({id: rank, name: rank}))
+    ];
+    
+    // Sex options
+    const sexOptions = [
+        {id: 'ANY', name: 'Any'},
+        {id: 'M', name: 'Male'},
+        {id: 'F', name: 'Female'}
+    ];
+    
+    // Qualification options
+    const qualOptions = [
+        {id: '', name: 'Any Qualification'},
+        ...qualifications.map(qual => ({id: qual, name: qual}))
+    ];
+    
+    // Initialize rank select
+    createSearchableSelect({
+        triggerId: `item_rank_${index}_select_trigger`,
+        hiddenInputId: `item_rank_${index}_id`,
+        dropdownId: `item_rank_${index}_dropdown`,
+        searchInputId: `item_rank_${index}_search_input`,
+        optionsContainerId: `item_rank_${index}_options`,
+        displayTextId: `item_rank_${index}_select_text`,
+        options: rankOptions,
+        placeholder: 'Select Rank',
+        searchPlaceholder: 'Search rank...'
+    });
+    
+    // Initialize sex select
+    createSearchableSelect({
+        triggerId: `item_sex_${index}_select_trigger`,
+        hiddenInputId: `item_sex_${index}_id`,
+        dropdownId: `item_sex_${index}_dropdown`,
+        searchInputId: `item_sex_${index}_search_input`,
+        optionsContainerId: `item_sex_${index}_options`,
+        displayTextId: `item_sex_${index}_select_text`,
+        options: sexOptions,
+        placeholder: 'Any',
+        searchPlaceholder: 'Search...'
+    });
+    
+    // Initialize qualification select
+    createSearchableSelect({
+        triggerId: `item_qual_${index}_select_trigger`,
+        hiddenInputId: `qual-select-${index}`,
+        dropdownId: `item_qual_${index}_dropdown`,
+        searchInputId: `item_qual_${index}_search_input`,
+        optionsContainerId: `item_qual_${index}_options`,
+        displayTextId: `item_qual_${index}_select_text`,
+        options: qualOptions,
+        placeholder: 'Any Qualification',
+        searchPlaceholder: 'Search qualification...'
+    });
 }
 
 // Remove item
@@ -288,52 +582,88 @@ function removeItem(index) {
 // Update item numbers
 function updateItemNumbers() {
     const items = document.querySelectorAll('[data-item-index]');
-    items.forEach((item, index) => {
-        const indexAttr = item.getAttribute('data-item-index');
+    items.forEach((item, newIndex) => {
+        const oldIndex = item.getAttribute('data-item-index');
         const title = item.querySelector('.text-mono');
         if (title) {
-            title.textContent = `Item #${index + 1}`;
+            title.textContent = `Item #${newIndex + 1}`;
         }
-        // Update all inputs and selects
-        item.querySelectorAll('input, select').forEach(input => {
+        
+        // Update all inputs and hidden inputs (searchable selects use hidden inputs)
+        item.querySelectorAll('input[type="hidden"], input[type="text"], input[type="number"]').forEach(input => {
             const name = input.getAttribute('name');
-            if (name) {
-                const newName = name.replace(/items\[\d+\]/, `items[${index}]`);
+            if (name && name.includes('items[')) {
+                const newName = name.replace(/items\[\d+\]/, `items[${newIndex}]`);
                 input.setAttribute('name', newName);
             }
-            // Update IDs that contain the index (e.g., qual-select-0 -> qual-select-1)
+            // Update IDs that contain the index
             const id = input.getAttribute('id');
-            if (id && id.match(/-\d+$/)) {
-                const newId = id.replace(/-\d+$/, `-${index}`);
-                input.setAttribute('id', newId);
-            } else if (id && id.match(/\d+$/)) {
-                // Fallback for IDs without hyphen
-                const newId = id.replace(/\d+$/, index);
-                input.setAttribute('id', newId);
+            if (id) {
+                // Handle patterns like item_rank_0_id, qual-select-0, qual-custom-0
+                if (id.match(/item_(rank|sex)_\d+_id/)) {
+                    const newId = id.replace(/item_(rank|sex)_\d+_id/, `item_$1_${newIndex}_id`);
+                    input.setAttribute('id', newId);
+                } else if (id.match(/qual-(select|custom)-\d+/)) {
+                    const newId = id.replace(/qual-(select|custom)-\d+/, `qual-$1-${newIndex}`);
+                    input.setAttribute('id', newId);
+                }
             }
         });
-        // Update button IDs and onclick handlers
+        
+        // Update searchable select elements (triggers, dropdowns, etc.)
+        const selectPatterns = [
+            {prefix: 'item_rank_', suffix: '_id'},
+            {prefix: 'item_rank_', suffix: '_select_trigger'},
+            {prefix: 'item_rank_', suffix: '_select_text'},
+            {prefix: 'item_rank_', suffix: '_dropdown'},
+            {prefix: 'item_rank_', suffix: '_search_input'},
+            {prefix: 'item_rank_', suffix: '_options'},
+            {prefix: 'item_sex_', suffix: '_id'},
+            {prefix: 'item_sex_', suffix: '_select_trigger'},
+            {prefix: 'item_sex_', suffix: '_select_text'},
+            {prefix: 'item_sex_', suffix: '_dropdown'},
+            {prefix: 'item_sex_', suffix: '_search_input'},
+            {prefix: 'item_sex_', suffix: '_options'},
+            {prefix: 'item_qual_', suffix: '_select_trigger'},
+            {prefix: 'item_qual_', suffix: '_select_text'},
+            {prefix: 'item_qual_', suffix: '_dropdown'},
+            {prefix: 'item_qual_', suffix: '_search_input'},
+            {prefix: 'item_qual_', suffix: '_options'}
+        ];
+        
+        selectPatterns.forEach(pattern => {
+            const oldId = `${pattern.prefix}${oldIndex}${pattern.suffix}`;
+            const newId = `${pattern.prefix}${newIndex}${pattern.suffix}`;
+            const element = document.getElementById(oldId);
+            if (element) {
+                element.id = newId;
+            }
+        });
+        
+        // Update button IDs
         item.querySelectorAll('button').forEach(button => {
             const id = button.getAttribute('id');
-            if (id && id.match(/-\d+$/)) {
-                // IDs with hyphen pattern (e.g., qual-toggle-0 -> qual-toggle-1)
-                const newId = id.replace(/-\d+$/, `-${index}`);
-                button.setAttribute('id', newId);
-            } else if (id && id.match(/\d+$/)) {
-                // Fallback for IDs without hyphen
-                const newId = id.replace(/\d+$/, index);
-                button.setAttribute('id', newId);
+            if (id) {
+                if (id.match(/qual-toggle-\d+/)) {
+                    button.setAttribute('id', `qual-toggle-${newIndex}`);
+                } else if (id.match(/qual-toggle-\d+/)) {
+                    button.setAttribute('id', id.replace(/-\d+$/, `-${newIndex}`));
+                }
             }
             const onclick = button.getAttribute('onclick');
             if (onclick && onclick.includes('toggleCustomQual')) {
-                button.setAttribute('onclick', `toggleCustomQual(${index})`);
+                button.setAttribute('onclick', `toggleCustomQual(${newIndex})`);
             }
             // Update remove button data-index
             if (button.classList.contains('remove-item-btn')) {
-                button.setAttribute('data-index', index);
+                button.setAttribute('data-index', newIndex);
             }
         });
-        item.setAttribute('data-item-index', index);
+        
+        item.setAttribute('data-item-index', newIndex);
+        
+        // Reinitialize the searchable selects with new IDs
+        initializeItemSelects(newIndex);
     });
     itemCount = items.length;
     updateRemoveButtons();
@@ -357,20 +687,21 @@ function updateRemoveButtons() {
 
 // Toggle custom qualification
 function toggleCustomQual(index) {
-    const select = document.getElementById(`qual-select-${index}`);
+    const qualSelectContainer = document.getElementById(`item_qual_${index}_select_trigger`)?.parentElement;
     const custom = document.getElementById(`qual-custom-${index}`);
     const toggle = document.getElementById(`qual-toggle-${index}`);
     
-    if (select && custom && toggle) {
-        if (select.style.display === 'none') {
-            select.style.display = 'block';
+    if (qualSelectContainer && custom && toggle) {
+        if (qualSelectContainer.style.display === 'none') {
+            qualSelectContainer.style.display = 'block';
             custom.style.display = 'none';
             custom.value = '';
             toggle.innerHTML = '<i class="ki-filled ki-plus"></i> Custom';
         } else {
-            select.style.display = 'none';
+            qualSelectContainer.style.display = 'none';
             custom.style.display = 'block';
-            select.value = '';
+            document.getElementById(`qual-select-${index}`).value = '';
+            document.getElementById(`item_qual_${index}_select_text`).textContent = 'Any Qualification';
             toggle.innerHTML = '<i class="ki-filled ki-cross"></i> Use List';
         }
     }
@@ -383,17 +714,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add item button
     document.getElementById('add-item-btn').addEventListener('click', addItem);
     
-    // Handle request type change
-    const requestTypeSelect = document.getElementById('request_type');
-    if (requestTypeSelect) {
-        requestTypeSelect.addEventListener('change', function() {
-            const type = this.value;
-            if (type === 'ZONE') {
-                // Filter ranks to only show GL 7 and below
-                updateRankSelects('ZONE');
-            } else if (type === 'GENERAL') {
-                // Show all ranks
-                updateRankSelects('GENERAL');
+    // Initialize request type select
+    const requestTypeOptions = [
+        {id: '', name: 'Select Request Type'},
+        {id: 'GENERAL', name: 'General Manning Level (HRD) - All Ranks'},
+        {id: 'ZONE', name: 'Zone Manning Level (Zone Coordinator) - GL 7 and Below Only'}
+    ];
+    
+    if (document.getElementById('request_type_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'request_type_select_trigger',
+            hiddenInputId: 'request_type',
+            dropdownId: 'request_type_dropdown',
+            searchInputId: 'request_type_search_input',
+            optionsContainerId: 'request_type_options',
+            displayTextId: 'request_type_select_text',
+            options: requestTypeOptions,
+            placeholder: 'Select Request Type',
+            searchPlaceholder: 'Search request type...',
+            onSelect: function(option) {
+                const type = option.id;
+                if (type === 'ZONE') {
+                    // Filter ranks to only show GL 7 and below
+                    updateRankSelects('ZONE');
+                } else if (type === 'GENERAL') {
+                    // Show all ranks
+                    updateRankSelects('GENERAL');
+                }
             }
         });
     }
@@ -407,10 +754,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // First pass: identify valid items
         itemContainers.forEach((container) => {
-            const rankSelect = container.querySelector('select[name*="[rank]"]');
+            const rankHiddenInput = container.querySelector('input[type="hidden"][name*="[rank]"]');
             const quantityInput = container.querySelector('input[name*="[quantity_needed]"]');
             
-            if (rankSelect && rankSelect.value && quantityInput && quantityInput.value && parseInt(quantityInput.value) > 0) {
+            if (rankHiddenInput && rankHiddenInput.value && quantityInput && quantityInput.value && parseInt(quantityInput.value) > 0) {
                 validIndices.push(container.getAttribute('data-item-index'));
                 validCount++;
             }
@@ -426,15 +773,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let newIndex = 0;
         itemContainers.forEach((container) => {
             const oldIndex = container.getAttribute('data-item-index');
-            const rankSelect = container.querySelector('select[name*="[rank]"]');
+            const rankHiddenInput = container.querySelector('input[type="hidden"][name*="[rank]"]');
             const quantityInput = container.querySelector('input[name*="[quantity_needed]"]');
             
-            if (rankSelect && rankSelect.value && quantityInput && quantityInput.value && parseInt(quantityInput.value) > 0) {
+            if (rankHiddenInput && rankHiddenInput.value && quantityInput && quantityInput.value && parseInt(quantityInput.value) > 0) {
                 // Valid item - re-index it
                 container.setAttribute('data-item-index', newIndex);
                 
                 // Update all inputs in this container
-                container.querySelectorAll('input, select').forEach(input => {
+                container.querySelectorAll('input[type="hidden"], input[type="text"], input[type="number"]').forEach(input => {
                     const name = input.getAttribute('name');
                     if (name && name.includes('items[')) {
                         const match = name.match(/items\[(\d+)\]\[(.+)\]/);
