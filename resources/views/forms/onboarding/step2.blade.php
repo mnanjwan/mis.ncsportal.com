@@ -630,25 +630,55 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Clear errors on input
             form.querySelectorAll('input, select').forEach(input => {
                 input.addEventListener('input', function() {
-                    clearError(this.name);
-                    // Clear education field errors
-                    const errorSpan = this.parentElement?.querySelector('.error-message');
-                    if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
-                        errorSpan.textContent = '';
-                        errorSpan.classList.add('hidden');
-                        this.classList.remove('border-danger');
-                    }
-                });
-                input.addEventListener('change', function() {
-                    clearError(this.name);
-                    // Clear education field errors
-                    const errorSpan = this.parentElement?.querySelector('.error-message');
-                    if (errorSpan && (this.classList.contains('education-university') || this.classList.contains('education-qualification') || this.classList.contains('education-year-obtained'))) {
-                        errorSpan.textContent = '';
-                        errorSpan.classList.add('hidden');
-                        this.classList.remove('border-danger');
-                    }
-                });
+        clearError(this.name);
+        // Clear education field errors
+        const errorSpan = this.parentElement?.querySelector('.error-message');
+        if (errorSpan && (this.classList.contains('education-year-obtained'))) {
+            errorSpan.textContent = '';
+            errorSpan.classList.add('hidden');
+            this.classList.remove('border-danger');
+        }
+        // Clear errors for education selects (they use hidden inputs)
+        if (this.name && this.name.includes('education[') && (this.name.includes('[university]') || this.name.includes('[qualification]') || this.name.includes('[discipline]'))) {
+            const entryIdMatch = this.name.match(/education\[(\d+)\]/);
+            if (entryIdMatch) {
+                const entryId = entryIdMatch[1];
+                const fieldType = this.name.includes('[university]') ? 'university' : (this.name.includes('[qualification]') ? 'qualification' : 'discipline');
+                const trigger = document.getElementById(`education_${fieldType}_${entryId}_select_trigger`);
+                const errorSpan = trigger?.parentElement?.querySelector('.error-message');
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.classList.add('hidden');
+                    trigger?.classList.remove('border-danger');
+                }
+            }
+        }
+    });
+    input.addEventListener('change', function() {
+        clearError(this.name);
+        // Clear education field errors
+        const errorSpan = this.parentElement?.querySelector('.error-message');
+        if (errorSpan && (this.classList.contains('education-year-obtained'))) {
+            errorSpan.textContent = '';
+            errorSpan.classList.add('hidden');
+            this.classList.remove('border-danger');
+        }
+        // Clear errors for education selects (they use hidden inputs)
+        if (this.name && this.name.includes('education[') && (this.name.includes('[university]') || this.name.includes('[qualification]') || this.name.includes('[discipline]'))) {
+            const entryIdMatch = this.name.match(/education\[(\d+)\]/);
+            if (entryIdMatch) {
+                const entryId = entryIdMatch[1];
+                const fieldType = this.name.includes('[university]') ? 'university' : (this.name.includes('[qualification]') ? 'qualification' : 'discipline');
+                const trigger = document.getElementById(`education_${fieldType}_${entryId}_select_trigger`);
+                const errorSpan = trigger?.parentElement?.querySelector('.error-message');
+                if (errorSpan) {
+                    errorSpan.textContent = '';
+                    errorSpan.classList.add('hidden');
+                    trigger?.classList.remove('border-danger');
+                }
+            }
+        }
+    });
             });
         }
     } catch (error) {
@@ -985,20 +1015,23 @@ function addEducationEntry(data = null) {
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Institution <span class="text-danger">*</span></label>
                 <div class="relative">
-                    <input type="text" 
-                           name="education[${entryId}][university]" 
-                           id="university_search_${entryId}"
-                           class="kt-input w-full education-university" 
-                           value="${savedUniversity}"
-                           placeholder="Search or type institution name..."
-                           autocomplete="off"
-                           required>
-                    <input type="hidden" 
-                           id="university_hidden_${entryId}"
-                           value="${savedUniversity}">
-                    <div id="university_dropdown_${entryId}" 
-                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
-                        <!-- Options will be populated by JavaScript -->
+                    <input type="hidden" name="education[${entryId}][university]" id="education_university_${entryId}_id" value="${savedUniversity}" required>
+                    <button type="button" 
+                            id="education_university_${entryId}_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="education_university_${entryId}_select_text">${savedUniversity ? savedUniversity : '-- Select Institution --'}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="education_university_${entryId}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="education_university_${entryId}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search institution..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="education_university_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
                     </div>
                 </div>
                 <span class="error-message text-danger text-sm hidden"></span>
@@ -1042,19 +1075,23 @@ function addEducationEntry(data = null) {
             <div class="flex flex-col gap-1">
                 <label class="kt-form-label">Discipline <span class="text-muted">(Optional)</span></label>
                 <div class="relative">
-                    <input type="text" 
-                           id="discipline_search_${entryId}"
-                           class="kt-input w-full education-discipline-search" 
-                           value="${savedDiscipline}"
-                           placeholder="Search or type discipline..."
-                           autocomplete="off">
-                    <input type="hidden" 
-                           id="discipline_hidden_${entryId}"
-                           name="education[${entryId}][discipline]"
-                           value="${savedDiscipline}">
-                    <div id="discipline_dropdown_${entryId}" 
-                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
-                        <!-- Options will be populated by JavaScript -->
+                    <input type="hidden" name="education[${entryId}][discipline]" id="education_discipline_${entryId}_id" value="${savedDiscipline}">
+                    <button type="button" 
+                            id="education_discipline_${entryId}_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="education_discipline_${entryId}_select_text">${savedDiscipline ? savedDiscipline : '-- Select Discipline --'}</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="education_discipline_${entryId}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-input">
+                            <input type="text" 
+                                   id="education_discipline_${entryId}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search discipline..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="education_discipline_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
                     </div>
                 </div>
                 <span class="error-message text-danger text-sm hidden"></span>
@@ -1069,14 +1106,27 @@ function addEducationEntry(data = null) {
     
     entriesContainer.appendChild(entryDiv);
     
-    // Initialize university search for this entry
-    initializeUniversitySearch(entryId);
-    
-    // Initialize discipline search for this entry
-    initializeDisciplineSearch(entryId);
-    
-    // Initialize qualification searchable select
+    // Initialize all education selects using createSearchableSelect
     if (typeof createSearchableSelect === 'function') {
+        // Initialize Institution select
+        const institutionOptions = [
+            {id: '', name: '-- Select Institution --'},
+            ...nigerianUniversities.map(uni => ({id: uni, name: uni}))
+        ];
+        
+        createSearchableSelect({
+            triggerId: `education_university_${entryId}_select_trigger`,
+            hiddenInputId: `education_university_${entryId}_id`,
+            dropdownId: `education_university_${entryId}_dropdown`,
+            searchInputId: `education_university_${entryId}_search_input`,
+            optionsContainerId: `education_university_${entryId}_options`,
+            displayTextId: `education_university_${entryId}_select_text`,
+            options: institutionOptions,
+            placeholder: '-- Select Institution --',
+            searchPlaceholder: 'Search institution...'
+        });
+        
+        // Initialize Entry Qualification select
         const qualificationOptions = [
             {id: '', name: '-- Select Qualification --'},
             ...qualifications.map(qual => ({id: qual, name: qual}))
@@ -1092,6 +1142,24 @@ function addEducationEntry(data = null) {
             options: qualificationOptions,
             placeholder: '-- Select Qualification --',
             searchPlaceholder: 'Search qualification...'
+        });
+        
+        // Initialize Discipline select
+        const disciplineOptions = [
+            {id: '', name: '-- Select Discipline --'},
+            ...disciplines.map(disc => ({id: disc, name: disc}))
+        ];
+        
+        createSearchableSelect({
+            triggerId: `education_discipline_${entryId}_select_trigger`,
+            hiddenInputId: `education_discipline_${entryId}_id`,
+            dropdownId: `education_discipline_${entryId}_dropdown`,
+            searchInputId: `education_discipline_${entryId}_search_input`,
+            optionsContainerId: `education_discipline_${entryId}_options`,
+            displayTextId: `education_discipline_${entryId}_select_text`,
+            options: disciplineOptions,
+            placeholder: '-- Select Discipline --',
+            searchPlaceholder: 'Search discipline...'
         });
     }
 }
@@ -1340,8 +1408,8 @@ function validateStep2() {
     
     educationCards.forEach((card, index) => {
         const entryId = card.dataset.entryId;
-        const university = card.querySelector('.education-university');
-        const qualification = card.querySelector('.education-qualification');
+        const university = document.getElementById(`education_university_${entryId}_id`);
+        const qualification = document.getElementById(`education_qualification_${entryId}_id`);
         const yearObtained = card.querySelector('.education-year-obtained');
         
         if (!university || !university.value.trim()) {
@@ -1349,7 +1417,8 @@ function validateStep2() {
             if (errorSpan) {
                 errorSpan.textContent = 'Institution is required';
                 errorSpan.classList.remove('hidden');
-                university?.classList.add('border-danger');
+                const trigger = document.getElementById(`education_university_${entryId}_select_trigger`);
+                trigger?.classList.add('border-danger');
             }
             isValid = false;
             hasEducationError = true;
@@ -1360,7 +1429,8 @@ function validateStep2() {
             if (errorSpan) {
                 errorSpan.textContent = 'Entry Qualification is required';
                 errorSpan.classList.remove('hidden');
-                qualification?.classList.add('border-danger');
+                const trigger = document.getElementById(`education_qualification_${entryId}_select_trigger`);
+                trigger?.classList.add('border-danger');
             }
             isValid = false;
             hasEducationError = true;
