@@ -706,7 +706,7 @@ function validateStep4() {
     nokCards.forEach((card, index) => {
         const entryId = card.dataset.entryId;
         const name = card.querySelector(`.nok-name`);
-        const relationship = card.querySelector(`.nok-relationship`);
+        const relationship = document.getElementById(`nok_relationship_${entryId}_id`);
         const phone = card.querySelector(`.nok-phone`);
         const address = card.querySelector(`.nok-address`);
         const email = card.querySelector(`.nok-email`);
@@ -722,13 +722,14 @@ function validateStep4() {
             isValid = false;
         }
         
-        // Validate relationship
+        // Validate relationship (now uses hidden input)
         if (!relationship || !relationship.value.trim()) {
             const errorSpan = relationship?.parentElement?.querySelector('.error-message');
             if (errorSpan) {
                 errorSpan.textContent = 'Relationship is required';
                 errorSpan.classList.remove('hidden');
-                relationship?.classList.add('border-danger');
+                const trigger = document.getElementById(`nok_relationship_${entryId}_select_trigger`);
+                trigger?.classList.add('border-danger');
             }
             isValid = false;
         }
@@ -801,6 +802,62 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeNOKSection();
     initializeProfilePictureUpload();
     loadSavedDocuments();
+    
+    // Form submission handler (must be inside DOMContentLoaded)
+    const form = document.getElementById('onboarding-step4-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!validateStep4()) {
+                const firstError = document.querySelector('.error-message:not(.hidden)');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (!document.getElementById('accept_disclaimer').checked) {
+                    document.getElementById('accept_disclaimer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+            
+            // Check if SweetAlert2 is available
+            if (typeof Swal !== 'undefined') {
+                // Show confirmation dialog using SweetAlert2
+                Swal.fire({
+                    title: 'Confirm Submission',
+                    text: 'Are you sure you want to submit your onboarding information? Please review all your details before proceeding. You will be able to review everything on the next page before final submission.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Continue',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#068b57',
+                    cancelButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const submitBtn = document.getElementById('submit-btn');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '⏳ Submitting...';
+                        }
+                        
+                        // Submit the form
+                        form.submit();
+                    }
+                });
+            } else {
+                // Fallback if SweetAlert2 is not available - use browser confirm
+                if (confirm('Are you sure you want to submit your onboarding information? Please review all your details before proceeding.')) {
+                    const submitBtn = document.getElementById('submit-btn');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '⏳ Submitting...';
+                    }
+                    
+                    // Submit the form
+                    form.submit();
+                }
+            }
+        });
+    }
 });
 
 // Profile Picture Upload Functionality
@@ -1004,42 +1061,6 @@ function initializeProfilePictureUpload() {
         });
     }
 }
-
-// Form submission handler
-document.getElementById('onboarding-step4-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if (!validateStep4()) {
-        const firstError = document.querySelector('.error-message:not(.hidden)');
-        if (firstError) {
-            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (!document.getElementById('accept_disclaimer').checked) {
-            document.getElementById('accept_disclaimer').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return false;
-    }
-    
-    // Show confirmation dialog using SweetAlert2
-    Swal.fire({
-        title: 'Confirm Submission',
-        text: 'Are you sure you want to submit your onboarding information? Please review all your details before proceeding. You will be able to review everything on the next page before final submission.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Continue',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#068b57',
-        cancelButtonColor: '#6c757d'
-    }).then((result) => {
-        if (result.isConfirmed) {
-    const submitBtn = document.getElementById('submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '⏳ Submitting...';
-    
-            // Submit the form
-            document.getElementById('onboarding-step4-form').submit();
-        }
-    });
-});
 
 // Clear errors on input - use event delegation for dynamically added fields
 document.getElementById('onboarding-step4-form').addEventListener('input', function(e) {

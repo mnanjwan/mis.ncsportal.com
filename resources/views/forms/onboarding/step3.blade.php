@@ -54,34 +54,26 @@
                 <div class="grid lg:grid-cols-2 gap-5">
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Bank Name <span class="text-danger">*</span></label>
-                        <select name="bank_name" class="kt-input" required>
-                            <option value="">Select Bank...</option>
-                            <option value="Access Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Access Bank Limited' ? 'selected' : '' }}>Access Bank Limited</option>
-                            <option value="Citibank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Citibank Nigeria Limited' ? 'selected' : '' }}>Citibank Nigeria Limited</option>
-                            <option value="Ecobank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Ecobank Nigeria Limited' ? 'selected' : '' }}>Ecobank Nigeria Limited</option>
-                            <option value="Fidelity Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Fidelity Bank Plc' ? 'selected' : '' }}>Fidelity Bank Plc</option>
-                            <option value="First Bank of Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'First Bank of Nigeria Limited' ? 'selected' : '' }}>First Bank of Nigeria Limited</option>
-                            <option value="First City Monument Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'First City Monument Bank Limited' ? 'selected' : '' }}>First City Monument Bank Limited (FCMB)</option>
-                            <option value="Globus Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Globus Bank Limited' ? 'selected' : '' }}>Globus Bank Limited</option>
-                            <option value="Guaranty Trust Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Guaranty Trust Bank Limited' ? 'selected' : '' }}>Guaranty Trust Bank Limited (GTBank)</option>
-                            <option value="Heritage Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Heritage Bank Plc' ? 'selected' : '' }}>Heritage Bank Plc</option>
-                            <option value="Keystone Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Keystone Bank Limited' ? 'selected' : '' }}>Keystone Bank Limited</option>
-                            <option value="Optimus Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Optimus Bank Limited' ? 'selected' : '' }}>Optimus Bank Limited</option>
-                            <option value="Parallex Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Parallex Bank Limited' ? 'selected' : '' }}>Parallex Bank Limited</option>
-                            <option value="Polaris Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Polaris Bank Limited' ? 'selected' : '' }}>Polaris Bank Limited</option>
-                            <option value="Premium Trust Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Premium Trust Bank Limited' ? 'selected' : '' }}>Premium Trust Bank Limited</option>
-                            <option value="Providus Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Providus Bank Limited' ? 'selected' : '' }}>Providus Bank Limited</option>
-                            <option value="Stanbic IBTC Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Stanbic IBTC Bank Limited' ? 'selected' : '' }}>Stanbic IBTC Bank Limited</option>
-                            <option value="Standard Chartered Bank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Standard Chartered Bank Nigeria Limited' ? 'selected' : '' }}>Standard Chartered Bank Nigeria Limited</option>
-                            <option value="Sterling Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Sterling Bank Limited' ? 'selected' : '' }}>Sterling Bank Limited</option>
-                            <option value="SunTrust Bank Nigeria Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'SunTrust Bank Nigeria Limited' ? 'selected' : '' }}>SunTrust Bank Nigeria Limited</option>
-                            <option value="Titan Trust Bank Limited" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Titan Trust Bank Limited' ? 'selected' : '' }}>Titan Trust Bank Limited</option>
-                            <option value="Union Bank of Nigeria Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Union Bank of Nigeria Plc' ? 'selected' : '' }}>Union Bank of Nigeria Plc</option>
-                            <option value="United Bank for Africa Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'United Bank for Africa Plc' ? 'selected' : '' }}>United Bank for Africa Plc (UBA)</option>
-                            <option value="Unity Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Unity Bank Plc' ? 'selected' : '' }}>Unity Bank Plc</option>
-                            <option value="Wema Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Wema Bank Plc' ? 'selected' : '' }}>Wema Bank Plc</option>
-                            <option value="Zenith Bank Plc" {{ old('bank_name', $savedData['bank_name'] ?? '') == 'Zenith Bank Plc' ? 'selected' : '' }}>Zenith Bank Plc</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="bank_name" id="bank_name" value="{{ old('bank_name', $savedData['bank_name'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="bank_name_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="bank_name_select_text">{{ old('bank_name', $savedData['bank_name'] ?? '') ? old('bank_name', $savedData['bank_name'] ?? '') : 'Select Bank...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="bank_name_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="bank_name_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search bank..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="bank_name_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -95,30 +87,26 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Name of PFA (Pension Fund Administrator) <span class="text-danger">*</span></label>
-                        <select name="pfa_name" class="kt-input" required>
-                            <option value="">Select PFA...</option>
-                            <option value="Access Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Access Pensions' ? 'selected' : '' }}>Access Pensions</option>
-                            <option value="ARM Pension" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'ARM Pension' ? 'selected' : '' }}>ARM Pension</option>
-                            <option value="AXA Mansard Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'AXA Mansard Pensions' ? 'selected' : '' }}>AXA Mansard Pensions</option>
-                            <option value="Crusader Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Crusader Pensions' ? 'selected' : '' }}>Crusader Pensions</option>
-                            <option value="Fidelity Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Fidelity Pensions' ? 'selected' : '' }}>Fidelity Pensions</option>
-                            <option value="First Guarantee Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'First Guarantee Pensions' ? 'selected' : '' }}>First Guarantee Pensions</option>
-                            <option value="Future Unity Glanvills Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Future Unity Glanvills Pensions' ? 'selected' : '' }}>Future Unity Glanvills Pensions</option>
-                            <option value="IEI-Anchor Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'IEI-Anchor Pensions' ? 'selected' : '' }}>IEI-Anchor Pensions</option>
-                            <option value="Leadway Pensure PFA" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Leadway Pensure PFA' ? 'selected' : '' }}>Leadway Pensure PFA</option>
-                            <option value="Nigerian University Pension" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Nigerian University Pension' ? 'selected' : '' }}>Nigerian University Pension</option>
-                            <option value="NLPC Pension Fund Administrators" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'NLPC Pension Fund Administrators' ? 'selected' : '' }}>NLPC Pension Fund Administrators</option>
-                            <option value="Oak Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Oak Pensions' ? 'selected' : '' }}>Oak Pensions</option>
-                            <option value="PAL Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'PAL Pensions' ? 'selected' : '' }}>PAL Pensions</option>
-                            <option value="Pension Alliance Limited" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Pension Alliance Limited' ? 'selected' : '' }}>Pension Alliance Limited</option>
-                            <option value="Premium Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Premium Pensions' ? 'selected' : '' }}>Premium Pensions</option>
-                            <option value="Radix Pension Managers" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Radix Pension Managers' ? 'selected' : '' }}>Radix Pension Managers</option>
-                            <option value="Sigma Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Sigma Pensions' ? 'selected' : '' }}>Sigma Pensions</option>
-                            <option value="Stanbic IBTC Pension Managers" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Stanbic IBTC Pension Managers' ? 'selected' : '' }}>Stanbic IBTC Pension Managers</option>
-                            <option value="Tangerine Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Tangerine Pensions' ? 'selected' : '' }}>Tangerine Pensions</option>
-                            <option value="Trustfund Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Trustfund Pensions' ? 'selected' : '' }}>Trustfund Pensions</option>
-                            <option value="Veritas Glanvills Pensions" {{ old('pfa_name', $savedData['pfa_name'] ?? '') == 'Veritas Glanvills Pensions' ? 'selected' : '' }}>Veritas Glanvills Pensions</option>
-                        </select>
+                        <div class="relative">
+                            <input type="hidden" name="pfa_name" id="pfa_name" value="{{ old('pfa_name', $savedData['pfa_name'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="pfa_name_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="pfa_name_select_text">{{ old('pfa_name', $savedData['pfa_name'] ?? '') ? old('pfa_name', $savedData['pfa_name'] ?? '') : 'Select PFA...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="pfa_name_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="pfa_name_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search PFA..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="pfa_name_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -152,24 +140,155 @@
 
 @push('scripts')
 <script>
+// Reusable function to create searchable select
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                selectedOption = options.find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                
+                if (selectedOption || id === '') {
+                    hiddenInput.value = id;
+                    displayText.textContent = name;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    filteredOptions = [...options];
+                    renderOptions(filteredOptions);
+                    
+                    if (onSelect) onSelect(selectedOption || {id: id, name: name});
+                }
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
 // Validation functions
 function showError(field, message) {
     const input = document.querySelector(`[name="${field}"]`);
-    const errorSpan = input?.parentElement?.querySelector('.error-message');
-    if (errorSpan) {
-        errorSpan.textContent = message;
-        errorSpan.classList.remove('hidden');
-        input?.classList.add('border-danger');
+    if (!input) return;
+    
+    // For select fields (bank_name, pfa_name), show error on the trigger button
+    if (field === 'bank_name' || field === 'pfa_name') {
+        const triggerId = field === 'bank_name' ? 'bank_name_select_trigger' : 'pfa_name_select_trigger';
+        const trigger = document.getElementById(triggerId);
+        const errorSpan = trigger?.parentElement?.querySelector('.error-message');
+        if (errorSpan) {
+            errorSpan.textContent = message;
+            errorSpan.classList.remove('hidden');
+            trigger?.classList.add('border-danger');
+        }
+    } else {
+        const errorSpan = input?.parentElement?.querySelector('.error-message');
+        if (errorSpan) {
+            errorSpan.textContent = message;
+            errorSpan.classList.remove('hidden');
+            input?.classList.add('border-danger');
+        }
     }
 }
 
 function clearError(field) {
     const input = document.querySelector(`[name="${field}"]`);
-    const errorSpan = input?.parentElement?.querySelector('.error-message');
-    if (errorSpan) {
-        errorSpan.textContent = '';
-        errorSpan.classList.add('hidden');
-        input?.classList.remove('border-danger');
+    if (!input) return;
+    
+    // For select fields (bank_name, pfa_name), clear error on the trigger button
+    if (field === 'bank_name' || field === 'pfa_name') {
+        const triggerId = field === 'bank_name' ? 'bank_name_select_trigger' : 'pfa_name_select_trigger';
+        const trigger = document.getElementById(triggerId);
+        const errorSpan = trigger?.parentElement?.querySelector('.error-message');
+        if (errorSpan) {
+            errorSpan.textContent = '';
+            errorSpan.classList.add('hidden');
+            trigger?.classList.remove('border-danger');
+        }
+    } else {
+        const errorSpan = input?.parentElement?.querySelector('.error-message');
+        if (errorSpan) {
+            errorSpan.textContent = '';
+            errorSpan.classList.add('hidden');
+            input?.classList.remove('border-danger');
+        }
     }
 }
 
@@ -214,6 +333,113 @@ function validateStep3() {
     return isValid;
 }
 
+// Initialize selects on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Bank names list
+    const banks = [
+        'Access Bank Limited',
+        'Citibank Nigeria Limited',
+        'Ecobank Nigeria Limited',
+        'Fidelity Bank Plc',
+        'First Bank of Nigeria Limited',
+        'First City Monument Bank Limited',
+        'Globus Bank Limited',
+        'Guaranty Trust Bank Limited',
+        'Heritage Bank Plc',
+        'Keystone Bank Limited',
+        'Optimus Bank Limited',
+        'Parallex Bank Limited',
+        'Polaris Bank Limited',
+        'Premium Trust Bank Limited',
+        'Providus Bank Limited',
+        'Stanbic IBTC Bank Limited',
+        'Standard Chartered Bank Nigeria Limited',
+        'Sterling Bank Limited',
+        'SunTrust Bank Nigeria Limited',
+        'Titan Trust Bank Limited',
+        'Union Bank of Nigeria Plc',
+        'United Bank for Africa Plc',
+        'Unity Bank Plc',
+        'Wema Bank Plc',
+        'Zenith Bank Plc'
+    ];
+    
+    // PFA names list
+    const pfas = [
+        'Access Pensions',
+        'ARM Pension',
+        'AXA Mansard Pensions',
+        'Crusader Pensions',
+        'Fidelity Pensions',
+        'First Guarantee Pensions',
+        'Future Unity Glanvills Pensions',
+        'IEI-Anchor Pensions',
+        'Leadway Pensure PFA',
+        'Nigerian University Pension',
+        'NLPC Pension Fund Administrators',
+        'Oak Pensions',
+        'PAL Pensions',
+        'Pension Alliance Limited',
+        'Premium Pensions',
+        'Radix Pension Managers',
+        'Sigma Pensions',
+        'Stanbic IBTC Pension Managers',
+        'Tangerine Pensions',
+        'Trustfund Pensions',
+        'Veritas Glanvills Pensions'
+    ];
+    
+    // Initialize Bank Name select
+    const bankOptions = [
+        {id: '', name: 'Select Bank...'},
+        ...banks.map(bank => ({id: bank, name: bank}))
+    ];
+    
+    createSearchableSelect({
+        triggerId: 'bank_name_select_trigger',
+        hiddenInputId: 'bank_name',
+        dropdownId: 'bank_name_dropdown',
+        searchInputId: 'bank_name_search_input',
+        optionsContainerId: 'bank_name_options',
+        displayTextId: 'bank_name_select_text',
+        options: bankOptions,
+        placeholder: 'Select Bank...',
+        searchPlaceholder: 'Search bank...'
+    });
+    
+    // Set initial value if saved
+    const savedBankName = '{{ old('bank_name', $savedData['bank_name'] ?? '') }}';
+    if (savedBankName) {
+        document.getElementById('bank_name').value = savedBankName;
+        document.getElementById('bank_name_select_text').textContent = savedBankName;
+    }
+    
+    // Initialize PFA Name select
+    const pfaOptions = [
+        {id: '', name: 'Select PFA...'},
+        ...pfas.map(pfa => ({id: pfa, name: pfa}))
+    ];
+    
+    createSearchableSelect({
+        triggerId: 'pfa_name_select_trigger',
+        hiddenInputId: 'pfa_name',
+        dropdownId: 'pfa_name_dropdown',
+        searchInputId: 'pfa_name_search_input',
+        optionsContainerId: 'pfa_name_options',
+        displayTextId: 'pfa_name_select_text',
+        options: pfaOptions,
+        placeholder: 'Select PFA...',
+        searchPlaceholder: 'Search PFA...'
+    });
+    
+    // Set initial value if saved
+    const savedPfaName = '{{ old('pfa_name', $savedData['pfa_name'] ?? '') }}';
+    if (savedPfaName) {
+        document.getElementById('pfa_name').value = savedPfaName;
+        document.getElementById('pfa_name_select_text').textContent = savedPfaName;
+    }
+});
+
 // Form submission handler
 document.getElementById('onboarding-step3-form').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -229,13 +455,35 @@ document.getElementById('onboarding-step3-form').addEventListener('submit', func
     this.submit();
 });
 
-// Clear errors on input
-document.querySelectorAll('#onboarding-step3-form input, #onboarding-step3-form select').forEach(input => {
+// Clear errors on input - handle both regular inputs and hidden inputs for selects
+document.querySelectorAll('#onboarding-step3-form input').forEach(input => {
     input.addEventListener('input', function() {
         clearError(this.name);
+        // If this is a hidden input for a select, also clear error on the trigger button
+        if (this.type === 'hidden' && (this.name === 'bank_name' || this.name === 'pfa_name')) {
+            const triggerId = this.name === 'bank_name' ? 'bank_name_select_trigger' : 'pfa_name_select_trigger';
+            const trigger = document.getElementById(triggerId);
+            const errorSpan = trigger?.parentElement?.querySelector('.error-message');
+            if (errorSpan) {
+                errorSpan.textContent = '';
+                errorSpan.classList.add('hidden');
+                trigger?.classList.remove('border-danger');
+            }
+        }
     });
     input.addEventListener('change', function() {
         clearError(this.name);
+        // If this is a hidden input for a select, also clear error on the trigger button
+        if (this.type === 'hidden' && (this.name === 'bank_name' || this.name === 'pfa_name')) {
+            const triggerId = this.name === 'bank_name' ? 'bank_name_select_trigger' : 'pfa_name_select_trigger';
+            const trigger = document.getElementById(triggerId);
+            const errorSpan = trigger?.parentElement?.querySelector('.error-message');
+            if (errorSpan) {
+                errorSpan.textContent = '';
+                errorSpan.classList.add('hidden');
+                trigger?.classList.remove('border-danger');
+            }
+        }
     });
 });
 </script>
