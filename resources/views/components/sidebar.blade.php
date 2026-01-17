@@ -104,7 +104,6 @@
             ],
             ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
             ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
-            ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
             [
                 'title' => 'APER Forms',
                 'icon' => 'ki-filled ki-document',
@@ -114,9 +113,10 @@
                 ]
             ],
             [
-                'title' => 'Settings',
-                'icon' => 'ki-filled ki-setting-2',
+                'title' => 'Manage Account',
+                'icon' => 'ki-filled ki-profile-circle',
                 'submenu' => [
+                    ['title' => 'My Profile', 'href' => route('officer.profile')],
                     ['title' => 'Change Password', 'href' => route('officer.settings')],
                 ]
             ],
@@ -153,7 +153,6 @@
                     ],
                     ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
                     ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('officer.course-nominations')],
-                    ['icon' => 'ki-filled ki-profile-circle', 'title' => 'My Profile', 'href' => route('officer.profile')],
                     [
                         'title' => 'APER Forms',
                         'icon' => 'ki-filled ki-document',
@@ -163,9 +162,10 @@
                         ]
                     ],
                     [
-                        'title' => 'Settings',
-                        'icon' => 'ki-filled ki-setting-2',
+                        'title' => 'Manage Account',
+                        'icon' => 'ki-filled ki-profile-circle',
                         'submenu' => [
+                            ['title' => 'My Profile', 'href' => route('officer.profile')],
                             ['title' => 'Change Password', 'href' => route('officer.settings')],
                         ]
                     ],
