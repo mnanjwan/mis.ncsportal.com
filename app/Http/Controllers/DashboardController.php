@@ -814,31 +814,35 @@ class DashboardController extends Controller
                 ->where('is_active', true)
                 ->count();
             
-            // Get all distinct units with officer counts
-            $units = Officer::where('present_station', $command->id)
-                ->where('is_active', true)
+            // Get all distinct units from approved/active rosters only
+            $units = DutyRoster::where('command_id', $command->id)
+                ->where('status', 'APPROVED')
+                ->where('roster_period_start', '<=', now())
+                ->where('roster_period_end', '>=', now())
                 ->whereNotNull('unit')
                 ->where('unit', '!=', '')
-                ->selectRaw('unit, COUNT(*) as officers_count')
+                ->selectRaw('unit, COUNT(DISTINCT id) as rosters_count')
                 ->groupBy('unit')
                 ->orderBy('unit')
                 ->get();
             
+            // Count distinct units from rosters
             $unitsCount = $units->count();
             
-            // For each unit, get officers organized by role (OIC, 2IC, Members)
-            $units = $units->map(function ($unit) use ($command) {
-                $unitName = $unit->unit;
+            // For each unit, get officers organized by role (OIC, 2IC, Members) from rosters
+            $units = $units->map(function ($unitData) use ($command) {
+                $unitName = $unitData->unit;
                 
-                // Get active duty roster for this unit
+                // Get the most recent active duty roster for this unit
                 $activeRoster = DutyRoster::where('command_id', $command->id)
                     ->where('unit', $unitName)
                     ->where('status', 'APPROVED')
                     ->where('roster_period_start', '<=', now())
                     ->where('roster_period_end', '>=', now())
+                    ->orderBy('created_at', 'desc')
                     ->first();
                 
-                // Get OIC officer
+                // Get OIC officer from roster
                 $oicOfficer = null;
                 if ($activeRoster && $activeRoster->oic_officer_id) {
                     $oicOfficer = Officer::with('user')
@@ -847,7 +851,7 @@ class DashboardController extends Controller
                         ->first();
                 }
                 
-                // Get 2IC officer
+                // Get 2IC officer from roster
                 $secondIcOfficer = null;
                 if ($activeRoster && $activeRoster->second_in_command_officer_id) {
                     $secondIcOfficer = Officer::with('user')
@@ -856,21 +860,34 @@ class DashboardController extends Controller
                         ->first();
                 }
                 
-                // Get member officers (all officers in unit excluding OIC and 2IC)
-                $memberOfficerIds = [$oicOfficer?->id, $secondIcOfficer?->id];
-                $memberOfficerIds = array_filter($memberOfficerIds);
+                // Get member officers from roster assignments (excluding OIC and 2IC)
+                $memberOfficerIds = array_filter([$oicOfficer?->id, $secondIcOfficer?->id]);
                 
-                $memberOfficers = Officer::with('user')
-                    ->where('present_station', $command->id)
-                    ->where('unit', $unitName)
-                    ->where('is_active', true)
-                    ->whereNotIn('id', $memberOfficerIds)
-                    ->orderBy('surname')
-                    ->get();
+                $memberOfficers = collect();
+                if ($activeRoster) {
+                    $rosterAssignmentOfficerIds = $activeRoster->assignments()
+                        ->whereNotNull('officer_id')
+                        ->pluck('officer_id')
+                        ->unique()
+                        ->toArray();
+                    
+                    $memberOfficerIds = array_merge($memberOfficerIds, $rosterAssignmentOfficerIds);
+                    $memberOfficerIds = array_unique($memberOfficerIds);
+                    
+                    $memberOfficers = Officer::with('user')
+                        ->whereIn('id', $rosterAssignmentOfficerIds)
+                        ->where('is_active', true)
+                        ->whereNotIn('id', array_filter([$oicOfficer?->id, $secondIcOfficer?->id]))
+                        ->orderBy('surname')
+                        ->get();
+                }
+                
+                // Count total officers in unit (OIC + 2IC + members)
+                $officersCount = ($oicOfficer ? 1 : 0) + ($secondIcOfficer ? 1 : 0) + $memberOfficers->count();
                 
                 return [
                     'name' => $unitName,
-                    'officers_count' => $unit->officers_count,
+                    'officers_count' => $officersCount,
                     'oic' => $oicOfficer,
                     'second_ic' => $secondIcOfficer,
                     'members' => $memberOfficers,
