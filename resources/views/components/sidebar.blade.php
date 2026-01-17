@@ -180,56 +180,86 @@
         case 'HRD':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('hrd.dashboard')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('hrd.officers')],
-                ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('hrd.officers.delete.index')],
-                ['icon' => 'ki-filled ki-user', 'title' => 'Officer Onboarding', 'href' => route('hrd.onboarding')],
                 [
-                    'title' => 'User Management',
-                    'icon' => 'ki-filled ki-user',
-                    'submenu' => [
-                        ['title' => 'Role Assignments', 'href' => route('hrd.role-assignments')],
+                    'group' => 'Personnel Management',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('hrd.officers')],
+                        ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('hrd.officers.delete.index')],
+                        ['icon' => 'ki-filled ki-user', 'title' => 'Officer Onboarding', 'href' => route('hrd.onboarding')],
+                        [
+                            'title' => 'User Management',
+                            'icon' => 'ki-filled ki-user',
+                            'submenu' => [
+                                ['title' => 'Role Assignments', 'href' => route('hrd.role-assignments')],
+                            ]
+                        ],
                     ]
                 ],
                 [
-                    'title' => 'Postings',
-                    'icon' => 'ki-filled ki-file-up',
-                    'submenu' => [
-                        ['title' => 'Staff Orders', 'href' => route('hrd.staff-orders')],
-                        ['title' => 'Movement Orders', 'href' => route('hrd.movement-orders')],
-                        ['title' => 'Command Duration', 'href' => route('hrd.command-duration.index')],
+                    'group' => 'Leave & Pass',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
                     ]
                 ],
                 [
-                    'title' => 'Timelines',
-                    'icon' => 'ki-filled ki-calendar-2',
-                    'submenu' => [
-                        ['title' => 'Emolument Timeline', 'href' => route('hrd.emolument-timeline')],
-                        ['title' => 'APER Timeline', 'href' => route('hrd.aper-timeline')],
+                    'group' => 'Manning Requests',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('hrd.manning-requests')],
                     ]
                 ],
-                ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('hrd.aper-forms')],
-                ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
-                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('hrd.queries.index')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('hrd.manning-requests')],
-                ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('hrd.courses')],
                 [
-                    'title' => 'Promotions & Retirement',
-                    'icon' => 'ki-filled ki-arrow-up',
-                    'submenu' => [
-                        ['title' => 'Promotion Criteria', 'href' => route('hrd.promotion-criteria')],
-                        ['title' => 'Promotion Eligibility', 'href' => route('hrd.promotion-eligibility')],
-                        ['title' => 'Retirement List', 'href' => route('hrd.retirement-list')],
+                    'group' => 'Operations',
+                    'items' => [
+                        [
+                            'title' => 'Postings',
+                            'icon' => 'ki-filled ki-file-up',
+                            'submenu' => [
+                                ['title' => 'Staff Orders', 'href' => route('hrd.staff-orders')],
+                                ['title' => 'Movement Orders', 'href' => route('hrd.movement-orders')],
+                                ['title' => 'Command Duration', 'href' => route('hrd.command-duration.index')],
+                            ]
+                        ],
+                        ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('hrd.courses')],
                     ]
                 ],
-                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Reports', 'href' => route('hrd.reports')],
                 [
-                    'title' => 'Settings',
-                    'icon' => 'ki-filled ki-setting-2',
-                    'submenu' => [
-                        ['title' => 'Zones', 'href' => route('hrd.zones.index')],
-                        ['title' => 'Commands', 'href' => route('hrd.commands.index')],
-                        ['title' => 'Courses', 'href' => route('hrd.course-management.index')],
-                        ['title' => 'System Settings', 'href' => route('hrd.system-settings')],
+                    'group' => 'Emoluments',
+                    'items' => [
+                        [
+                            'title' => 'Timelines',
+                            'icon' => 'ki-filled ki-calendar-2',
+                            'submenu' => [
+                                ['title' => 'Emolument Timeline', 'href' => route('hrd.emolument-timeline')],
+                                ['title' => 'APER Timeline', 'href' => route('hrd.aper-timeline')],
+                            ]
+                        ],
+                    ]
+                ],
+                [
+                    'group' => 'Other',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-document', 'title' => 'APER Forms', 'href' => route('hrd.aper-forms')],
+                        ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('hrd.queries.index')],
+                        [
+                            'title' => 'Promotions & Retirement',
+                            'icon' => 'ki-filled ki-arrow-up',
+                            'submenu' => [
+                                ['title' => 'Promotion Criteria', 'href' => route('hrd.promotion-criteria')],
+                                ['title' => 'Promotion Eligibility', 'href' => route('hrd.promotion-eligibility')],
+                                ['title' => 'Retirement List', 'href' => route('hrd.retirement-list')],
+                            ]
+                        ],
+                        ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Reports', 'href' => route('hrd.reports')],
+                        [
+                            'title' => 'Settings',
+                            'icon' => 'ki-filled ki-setting-2',
+                            'submenu' => [
+                                ['title' => 'Zones', 'href' => route('hrd.zones.index')],
+                                ['title' => 'Commands', 'href' => route('hrd.commands.index')],
+                                ['title' => 'Courses', 'href' => route('hrd.course-management.index')],
+                                ['title' => 'System Settings', 'href' => route('hrd.system-settings')],
+                            ]
+                        ],
                     ]
                 ],
             ];
@@ -266,29 +296,64 @@
         case 'Staff Officer':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('staff-officer.dashboard')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
                 [
-                    'title' => 'Postings',
-                    'icon' => 'ki-filled ki-file-up',
-                    'submenu' => [
-                        ['title' => 'Pending Release Letters', 'href' => route('staff-officer.postings.pending-release-letters')],
-                        ['title' => 'Pending Arrivals', 'href' => route('staff-officer.postings.pending-arrivals')],
+                    'group' => 'Personnel Management',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
                     ]
                 ],
-                ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('staff-officer.leave-pass')],
-                ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
-                ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('staff-officer.internal-staff-orders.index')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
-                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('staff-officer.queries.index')],
                 [
-                    'title' => 'APER Forms',
-                    'icon' => 'ki-filled ki-document',
-                    'submenu' => [
-                        ['title' => 'Search/Countersign', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
-                        ['title' => 'Review Rejected Forms', 'href' => route('staff-officer.aper-forms.review')],
+                    'group' => 'Leave & Pass',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('staff-officer.leave-pass')],
                     ]
                 ],
-                ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
+                [
+                    'group' => 'Manning Requests',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Manning Level', 'href' => route('staff-officer.manning-level')],
+                    ]
+                ],
+                [
+                    'group' => 'Operations',
+                    'items' => [
+                        [
+                            'title' => 'Postings',
+                            'icon' => 'ki-filled ki-file-up',
+                            'submenu' => [
+                                ['title' => 'Pending Release Letters', 'href' => route('staff-officer.postings.pending-release-letters')],
+                                ['title' => 'Pending Arrivals', 'href' => route('staff-officer.postings.pending-arrivals')],
+                            ]
+                        ],
+                        ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('staff-officer.internal-staff-orders.index')],
+                    ]
+                ],
+                [
+                    'group' => 'Duty Rosters',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Roster', 'href' => route('staff-officer.roster')],
+                    ]
+                ],
+                [
+                    'group' => 'Report Deceased',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('staff-officer.deceased-officers.create')],
+                    ]
+                ],
+                [
+                    'group' => 'Other',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('staff-officer.queries.index')],
+                        [
+                            'title' => 'APER Forms',
+                            'icon' => 'ki-filled ki-document',
+                            'submenu' => [
+                                ['title' => 'Search/Countersign', 'href' => route('staff-officer.aper-forms.reporting-officer.search')],
+                                ['title' => 'Review Rejected Forms', 'href' => route('staff-officer.aper-forms.review')],
+                            ]
+                        ],
+                    ]
+                ],
             ];
             break;
         case 'Assessor':
@@ -312,21 +377,71 @@
         case 'Area Controller':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('area-controller.dashboard')],
-                ['icon' => 'ki-filled ki-wallet', 'title' => 'Emoluments', 'href' => route('area-controller.emoluments')],
-                ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('area-controller.leave-pass')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('area-controller.manning-level')],
-                ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('area-controller.roster')],
-                ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('area-controller.deceased-officers.create')],
-                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('area-controller.queries.index')],
+                [
+                    'group' => 'Finance',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-wallet', 'title' => 'Emoluments', 'href' => route('area-controller.emoluments')],
+                    ]
+                ],
+                [
+                    'group' => 'Leave & Pass',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('area-controller.leave-pass')],
+                    ]
+                ],
+                [
+                    'group' => 'Manning Requests',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Manning Requests', 'href' => route('area-controller.manning-level')],
+                    ]
+                ],
+                [
+                    'group' => 'Duty Rosters',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('area-controller.roster')],
+                    ]
+                ],
+                [
+                    'group' => 'Report Deceased',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-heart', 'title' => 'Report Deceased', 'href' => route('area-controller.deceased-officers.create')],
+                    ]
+                ],
+                [
+                    'group' => 'Other',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('area-controller.queries.index')],
+                    ]
+                ],
             ];
             break;
         case 'DC Admin':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('dc-admin.dashboard')],
-                ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('dc-admin.leave-pass')],
-                ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('dc-admin.roster')],
-                ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('dc-admin.internal-staff-orders')],
-                ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('dc-admin.queries.index')],
+                [
+                    'group' => 'Leave & Pass',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave & Pass', 'href' => route('dc-admin.leave-pass')],
+                    ]
+                ],
+                [
+                    'group' => 'Operations',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-file-up', 'title' => 'Internal Staff Orders', 'href' => route('dc-admin.internal-staff-orders')],
+                    ]
+                ],
+                [
+                    'group' => 'Duty Rosters',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Duty Rosters', 'href' => route('dc-admin.roster')],
+                    ]
+                ],
+                [
+                    'group' => 'Other',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('dc-admin.queries.index')],
+                    ]
+                ],
             ];
             break;
         case 'Admin':
@@ -504,7 +619,70 @@
                 <div class="kt-menu flex flex-col w-full gap-1.5 px-3.5" data-kt-menu="true"
                     data-kt-menu-accordion-expand-all="false" id="sidebar_primary_menu">
                     @foreach($menuItems as $item)
-                        @if(isset($item['submenu']))
+                        @if(isset($item['group']))
+                            {{-- Grouped Menu Items --}}
+                            <div class="mt-4 mb-2">
+                                <h4 class="text-xs font-semibold text-muted-foreground uppercase ps-2 mb-2">
+                                    {{ $item['group'] }}
+                                </h4>
+                                @foreach($item['items'] as $groupItem)
+                                    @if(isset($groupItem['submenu']))
+                                        @php
+                                            $hasActiveChild = collect($groupItem['submenu'])->contains(function ($subItem) {
+                                                return request()->url() === url($subItem['href']);
+                                            });
+                                        @endphp
+                                        <div class="kt-menu-item {{ $hasActiveChild ? 'here show' : '' }}" data-kt-menu-trigger="click"
+                                            onclick="this.classList.toggle('show'); this.classList.toggle('here');">
+                                            <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md" href="javascript:void(0)">
+                                                <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
+                                                    <i class="{{ $groupItem['icon'] ?? 'ki-filled ki-menu' }}"></i>
+                                                </span>
+                                                <span class="kt-menu-title text-sm text-foreground font-medium">
+                                                    {{ $groupItem['title'] }}
+                                                </span>
+                                                <span class="kt-menu-arrow">
+                                                    <i class="ki-filled ki-down text-2xs"></i>
+                                                </span>
+                                            </a>
+                                            <div class="kt-menu-accordion" onclick="event.stopPropagation()">
+                                                @foreach($groupItem['submenu'] as $subItem)
+                                                    @php
+                                                        $isSubActive = request()->url() === url($subItem['href']);
+                                                    @endphp
+                                                    <div class="kt-menu-item">
+                                                        <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isSubActive ? 'kt-menu-item-active' : '' }}"
+                                                            href="{{ $subItem['href'] }}">
+                                                            <span class="kt-menu-bullet">
+                                                                <span class="bullet bullet-dot"></span>
+                                                            </span>
+                                                            <span class="kt-menu-title text-sm text-foreground font-medium">
+                                                                - {{ $subItem['title'] }}
+                                                            </span>
+                                                        </a>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @else
+                                        @php
+                                            $isActive = request()->url() === url($groupItem['href']);
+                                        @endphp
+                                        <div class="kt-menu-item">
+                                            <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isActive ? 'kt-menu-item-active' : '' }}"
+                                                href="{{ $groupItem['href'] }}">
+                                                <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
+                                                    <i class="{{ $groupItem['icon'] ?? 'ki-filled ki-menu' }}"></i>
+                                                </span>
+                                                <span class="kt-menu-title text-sm text-foreground font-medium">
+                                                    {{ $groupItem['title'] }}
+                                                </span>
+                                            </a>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @elseif(isset($item['submenu']))
                             @php
                                 $hasActiveChild = collect($item['submenu'])->contains(function ($subItem) {
                                     return request()->url() === url($subItem['href']);
