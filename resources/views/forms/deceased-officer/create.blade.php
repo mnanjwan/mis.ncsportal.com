@@ -124,6 +124,10 @@
                                    class="kt-input w-full" 
                                    required
                                    max="{{ date('Y-m-d') }}">
+                            <p class="text-xs text-secondary-foreground mt-1">Date cannot be in the future</p>
+                            @error('date_of_death')
+                                <p class="text-danger text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Death Certificate -->
@@ -191,6 +195,25 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Set max date to today for date of death field
+        const dateOfDeathInput = document.getElementById('date_of_death');
+        if (dateOfDeathInput) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const maxDate = today.toISOString().split('T')[0];
+            dateOfDeathInput.setAttribute('max', maxDate);
+            
+            // Validate on input change
+            dateOfDeathInput.addEventListener('change', function() {
+                validateDateOfDeath(this);
+            });
+            
+            // Validate on blur
+            dateOfDeathInput.addEventListener('blur', function() {
+                validateDateOfDeath(this);
+            });
+        }
+        
         // Officers data
         @php
             $officersData = $officers->map(function($officer) {
@@ -310,6 +333,51 @@
                 officerSelectText.textContent = displayText;
             }
         @endif
+        
+        // Form submission validation
+        const reportForm = document.getElementById('reportForm');
+        if (reportForm) {
+            reportForm.addEventListener('submit', function(e) {
+                const dateInput = document.getElementById('date_of_death');
+                if (!validateDateOfDeath(dateInput)) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
     });
+    
+    // Validate date of death - cannot be in the future
+    function validateDateOfDeath(input) {
+        if (!input || !input.value) {
+            return true; // Let required validation handle empty fields
+        }
+        
+        const selectedDate = new Date(input.value);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        // Remove any existing error styling
+        input.classList.remove('border-danger');
+        
+        // Remove existing error message if any
+        let errorMsg = input.parentElement.querySelector('.date-error-msg');
+        if (errorMsg) {
+            errorMsg.remove();
+        }
+        
+        if (selectedDate > today) {
+            input.classList.add('border-danger');
+            const errorDiv = document.createElement('p');
+            errorDiv.className = 'text-danger text-sm mt-1 date-error-msg';
+            errorDiv.textContent = 'Date of death cannot be in the future. Please select a date up to today.';
+            input.parentElement.appendChild(errorDiv);
+            input.setCustomValidity('Date of death cannot be in the future');
+            return false;
+        } else {
+            input.setCustomValidity('');
+            return true;
+        }
+    }
 </script>
 @endpush

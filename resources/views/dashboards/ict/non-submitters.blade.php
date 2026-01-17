@@ -37,12 +37,14 @@
                         <div class="lg:col-span-2">
                             <label class="block text-sm font-medium text-secondary-foreground mb-1">Search</label>
                             <div class="relative">
-                                <i class="ki-filled ki-magnifier absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
                                 <input type="text" 
                                        name="search" 
+                                       id="search-input"
                                        value="{{ request('search') }}" 
                                        placeholder="Search Service No or Name..." 
-                                       class="kt-input w-full pl-10">
+                                       class="kt-input w-full pl-3"
+                                       autocomplete="off">
+                                <div id="search-autocomplete" class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
 
@@ -444,7 +446,7 @@
             });
         }
 
-        // Initialize filter selects
+        // Initialize filter selects and autocomplete
         document.addEventListener('DOMContentLoaded', function() {
             createSearchableSelect({
                 triggerId: 'filter_year_select_trigger',
@@ -481,6 +483,83 @@
                 placeholder: 'All Commands',
                 searchPlaceholder: 'Search commands...'
             });
+
+            // Initialize autocomplete for search input
+            const searchInput = document.getElementById('search-input');
+            const autocompleteDiv = document.getElementById('search-autocomplete');
+            let searchTimeout = null;
+
+            if (searchInput && autocompleteDiv) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim();
+                    
+                    // Clear previous timeout
+                    if (searchTimeout) {
+                        clearTimeout(searchTimeout);
+                    }
+
+                    // Hide autocomplete if query is too short
+                    if (query.length < 2) {
+                        autocompleteDiv.classList.add('hidden');
+                        autocompleteDiv.innerHTML = '';
+                        return;
+                    }
+
+                    // Debounce search requests
+                    searchTimeout = setTimeout(() => {
+                        // Build search URL - use hrd.officers.search as it's accessible to ICT role
+                        const searchUrl = `{{ route('hrd.officers.search') }}?q=${encodeURIComponent(query)}`;
+                        
+                        fetch(searchUrl)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!autocompleteDiv) return;
+                                
+                                autocompleteDiv.innerHTML = '';
+                                
+                                if (data.length === 0) {
+                                    autocompleteDiv.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found</div>';
+                                } else {
+                                    data.forEach(officer => {
+                                        const div = document.createElement('div');
+                                        div.className = 'p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 autocomplete-option';
+                                        div.innerHTML = `
+                                            <div class="text-sm font-medium text-foreground">${officer.initials} ${officer.surname}</div>
+                                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank}</div>
+                                        `;
+                                        div.addEventListener('click', () => {
+                                            // Set search input value to service number or name
+                                            searchInput.value = officer.service_number || `${officer.initials} ${officer.surname}`;
+                                            autocompleteDiv.classList.add('hidden');
+                                            autocompleteDiv.innerHTML = '';
+                                        });
+                                        autocompleteDiv.appendChild(div);
+                                    });
+                                }
+                                autocompleteDiv.classList.remove('hidden');
+                            })
+                            .catch(error => {
+                                console.error('Autocomplete search error:', error);
+                                autocompleteDiv.classList.add('hidden');
+                            });
+                    }, 300); // 300ms debounce
+                });
+
+                // Close autocomplete when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+                        autocompleteDiv.classList.add('hidden');
+                    }
+                });
+
+                // Close autocomplete on form submit
+                const filterForm = document.getElementById('filter-form');
+                if (filterForm) {
+                    filterForm.addEventListener('submit', function() {
+                        autocompleteDiv.classList.add('hidden');
+                    });
+                }
+            }
         });
 
         function printReport() {
