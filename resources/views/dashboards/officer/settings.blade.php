@@ -105,6 +105,73 @@
                 </form>
             </div>
         </div>
+
+        <!-- Two-Factor Authentication Section -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Two-Factor Authentication</h3>
+                <p class="text-sm text-muted mt-1">Add an extra layer of security to your account with two-factor authentication.</p>
+            </div>
+            <div class="kt-card-content">
+                <div class="flex flex-col gap-4">
+                    @if($user->hasTwoFactorEnabled())
+                        <div class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <i class="ki-filled ki-check-circle text-green-600 text-2xl"></i>
+                                <div>
+                                    <p class="font-semibold text-green-900">Two-Factor Authentication is Enabled</p>
+                                    <p class="text-sm text-green-700">Your account is protected with an additional security layer.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="{{ route('two-factor.recovery-codes') }}" class="kt-btn kt-btn-secondary text-sm">
+                                    View Recovery Codes
+                                </a>
+                            </div>
+                        </div>
+                    @else
+                        <div class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <i class="ki-filled ki-shield-tick text-yellow-600 text-2xl"></i>
+                                <div>
+                                    <p class="font-semibold text-yellow-900">Two-Factor Authentication is Disabled</p>
+                                    <p class="text-sm text-yellow-700">Enable two-factor authentication to better protect your account.</p>
+                                </div>
+                            </div>
+                            <a href="{{ route('two-factor.setup') }}" class="kt-btn text-white text-sm" style="background-color: #068b57; border-color: #068b57;">
+                                Enable 2FA
+                            </a>
+                        </div>
+                    @endif
+
+                    @if($user->hasTwoFactorEnabled())
+                        <div class="border-t border-input pt-4">
+                            <form method="POST" action="{{ route('two-factor.disable') }}" id="disable-2fa-form" class="flex flex-col gap-3">
+                                @csrf
+                                <p class="text-sm text-muted mb-2">To disable two-factor authentication, please confirm your password:</p>
+                                <div class="grid lg:grid-cols-2 gap-3">
+                                    <div class="flex flex-col gap-1">
+                                        <label class="kt-form-label">Confirm Password <span class="text-danger">*</span></label>
+                                        <input type="password" 
+                                               name="password" 
+                                               id="disable_password"
+                                               class="kt-input" 
+                                               required
+                                               autocomplete="current-password">
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-end gap-3 pt-3">
+                                    <button type="button" onclick="document.getElementById('disable-2fa-form').reset()" class="kt-btn kt-btn-secondary text-sm">Cancel</button>
+                                    <button type="submit" class="kt-btn text-white text-sm" style="background-color: #dc3545; border-color: #dc3545;">
+                                        <i class="ki-filled ki-cross-circle"></i> Disable 2FA
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
     </div>
 
     @push('scripts')

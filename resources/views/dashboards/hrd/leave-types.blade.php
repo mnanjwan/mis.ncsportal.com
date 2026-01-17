@@ -254,11 +254,7 @@
             </div>
 
             <!-- Pagination -->
-                @if($leaveTypes->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border">
-                        {{ $leaveTypes->withQueryString()->links() }}
-                    </div>
-                @endif
+            <x-pagination :paginator="$leaveTypes->withQueryString()" item-name="leave types" />
         </div>
     </div>
 </div>

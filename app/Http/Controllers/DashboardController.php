@@ -763,6 +763,20 @@ class DashboardController extends Controller
     // Area Controller Dashboard
     public function areaController()
     {
+        $user = auth()->user();
+        
+        // Get Area Controller's command from their role
+        $areaControllerRole = $user->roles()
+            ->where('name', 'Area Controller')
+            ->wherePivot('is_active', true)
+            ->first();
+        
+        $commandId = $areaControllerRole?->pivot->command_id ?? null;
+        $command = $commandId ? Command::with('zone')->find($commandId) : null;
+        
+        // Get officer's rank
+        $officerRank = $user->officer?->substantive_rank ?? 'N/A';
+        
         // Get statistics for Area Controller (no command restrictions - Area Controller oversees multiple units)
         $pendingManningRequests = ManningRequest::where('status', 'SUBMITTED')->count();
         $pendingRosters = DutyRoster::where('status', 'SUBMITTED')->count();
@@ -786,12 +800,96 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Get operational summary data
+        $officersCount = 0;
+        $unitsCount = 0;
+        $areaName = 'N/A';
+        $units = collect();
+        
+        if ($command) {
+            $areaName = $command->name;
+            
+            // Count officers in the Area Controller's command
+            $officersCount = Officer::where('present_station', $command->id)
+                ->where('is_active', true)
+                ->count();
+            
+            // Get all distinct units with officer counts
+            $units = Officer::where('present_station', $command->id)
+                ->where('is_active', true)
+                ->whereNotNull('unit')
+                ->where('unit', '!=', '')
+                ->selectRaw('unit, COUNT(*) as officers_count')
+                ->groupBy('unit')
+                ->orderBy('unit')
+                ->get();
+            
+            $unitsCount = $units->count();
+            
+            // For each unit, get officers organized by role (OIC, 2IC, Members)
+            $units = $units->map(function ($unit) use ($command) {
+                $unitName = $unit->unit;
+                
+                // Get active duty roster for this unit
+                $activeRoster = DutyRoster::where('command_id', $command->id)
+                    ->where('unit', $unitName)
+                    ->where('status', 'APPROVED')
+                    ->where('roster_period_start', '<=', now())
+                    ->where('roster_period_end', '>=', now())
+                    ->first();
+                
+                // Get OIC officer
+                $oicOfficer = null;
+                if ($activeRoster && $activeRoster->oic_officer_id) {
+                    $oicOfficer = Officer::with('user')
+                        ->where('id', $activeRoster->oic_officer_id)
+                        ->where('is_active', true)
+                        ->first();
+                }
+                
+                // Get 2IC officer
+                $secondIcOfficer = null;
+                if ($activeRoster && $activeRoster->second_in_command_officer_id) {
+                    $secondIcOfficer = Officer::with('user')
+                        ->where('id', $activeRoster->second_in_command_officer_id)
+                        ->where('is_active', true)
+                        ->first();
+                }
+                
+                // Get member officers (all officers in unit excluding OIC and 2IC)
+                $memberOfficerIds = [$oicOfficer?->id, $secondIcOfficer?->id];
+                $memberOfficerIds = array_filter($memberOfficerIds);
+                
+                $memberOfficers = Officer::with('user')
+                    ->where('present_station', $command->id)
+                    ->where('unit', $unitName)
+                    ->where('is_active', true)
+                    ->whereNotIn('id', $memberOfficerIds)
+                    ->orderBy('surname')
+                    ->get();
+                
+                return [
+                    'name' => $unitName,
+                    'officers_count' => $unit->officers_count,
+                    'oic' => $oicOfficer,
+                    'second_ic' => $secondIcOfficer,
+                    'members' => $memberOfficers,
+                ];
+            });
+        }
+
         return view('dashboards.area-controller.dashboard', compact(
             'pendingManningRequests',
             'pendingRosters',
             'pendingEmoluments',
             'recentManningRequests',
-            'recentRosters'
+            'recentRosters',
+            'command',
+            'areaName',
+            'officersCount',
+            'unitsCount',
+            'officerRank',
+            'units'
         ));
     }
 

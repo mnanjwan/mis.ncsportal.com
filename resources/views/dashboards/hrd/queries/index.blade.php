@@ -148,9 +148,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="px-4 md:px-5 py-4 border-t border-border">
-                    {{ $queries->links() }}
-                </div>
+                <x-pagination :paginator="$queries" item-name="queries" />
             @else
                 <div class="text-center py-12">
                     <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>

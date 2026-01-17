@@ -166,11 +166,7 @@
             </div>
 
             <!-- Pagination -->
-            @if($criteria->hasPages())
-                <div class="mt-6 pt-4 border-t border-border">
-                    {{ $criteria->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$criteria" item-name="criteria" />
         </div>
     </div>
 </div>

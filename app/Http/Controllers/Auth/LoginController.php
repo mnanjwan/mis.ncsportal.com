@@ -85,7 +85,17 @@ class LoginController extends Controller
         // Update last login
         $user->update(['last_login' => now()]);
 
-        // Login user
+        // Check if 2FA is enabled
+        if ($user->hasTwoFactorEnabled()) {
+            // Store login data in session for 2FA verification
+            $request->session()->put('login.id', $user->id);
+            $request->session()->put('login.remember', $request->boolean('remember'));
+            
+            // Redirect to 2FA verification
+            return redirect()->route('two-factor.verify');
+        }
+
+        // Login user (2FA not enabled)
         Auth::login($user, $request->boolean('remember'));
 
         $request->session()->regenerate();

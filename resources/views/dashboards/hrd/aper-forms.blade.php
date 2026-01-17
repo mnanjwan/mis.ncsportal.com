@@ -264,11 +264,7 @@
                 </div>
 
                 <!-- Pagination -->
-                @if($forms->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border">
-                        {{ $forms->links() }}
-                    </div>
-                @endif
+                <x-pagination :paginator="$forms" item-name="forms" />
             @else
                 <div class="text-center py-12">
                     <i class="ki-filled ki-document text-4xl text-muted-foreground mb-4"></i>

@@ -154,11 +154,7 @@
                 </div>
 
                 <!-- Pagination -->
-                @if($orders->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border px-4">
-                        {{ $orders->withQueryString()->links() }}
-                    </div>
-                @endif
+                <x-pagination :paginator="$orders->withQueryString()" item-name="orders" />
             </div>
         </div>
     </div>

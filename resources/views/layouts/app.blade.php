@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{{-- <!DOCTYPE html>
 <html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
 
 <head>
@@ -152,4 +152,209 @@
     @stack('scripts')
 </body>
 
+</html> --}}
+
+<!DOCTYPE html>
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+
+<head>
+    <title>@yield('title', 'NCS Employee Portal')</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
+
+    <link href="{{ asset('logo.jpg') }}" rel="icon" type="image/jpeg" />
+    <link href="{{ asset('logo.jpg') }}" rel="shortcut icon" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="{{ asset('ncs-employee-portal/dist/assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />
+    <link href="{{ asset('ncs-employee-portal/dist/assets/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet" />
+    <link href="{{ asset('ncs-employee-portal/dist/assets/css/styles.css') }}" rel="stylesheet" />
+    <link href="{{ asset('css/custom.css') }}" rel="stylesheet" />
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        .error-message:not(.hidden) {
+            color: #dc3545 !important;
+        }
+
+        .kt-alert-danger,
+        .kt-alert-danger strong,
+        .kt-alert-danger li,
+        .kt-alert-danger p {
+            color: #dc3545 !important;
+        }
+    </style>
+
+    @stack('styles')
+</head>
+
+<body
+    class="antialiased flex h-full text-base text-foreground bg-background
+           [--header-height:60px] [--sidebar-width:270px]
+           lg:overflow-hidden bg-mono dark:bg-background">
+
+    <!-- Theme Mode -->
+    <script>
+        const defaultThemeMode = 'light';
+        let themeMode;
+
+        if (document.documentElement) {
+            if (localStorage.getItem('kt-theme')) {
+                themeMode = localStorage.getItem('kt-theme');
+            } else if (document.documentElement.hasAttribute('data-kt-theme-mode')) {
+                themeMode = document.documentElement.getAttribute('data-kt-theme-mode');
+            } else {
+                themeMode = defaultThemeMode;
+            }
+
+            if (themeMode === 'system') {
+                themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            document.documentElement.classList.add(themeMode);
+        }
+    </script>
+    <!-- End Theme Mode -->
+
+    <!-- PAGE -->
+    <div class="flex grow">
+
+        <!-- MOBILE HEADER -->
+        <header
+            class="flex lg:hidden items-center fixed z-10 top-0 start-0 end-0 shrink-0
+                   bg-mono dark:bg-background h-(--header-height)"
+            id="header">
+            <div class="kt-container-fixed flex items-center justify-between gap-3">
+                <a href="{{ route('dashboard') }}">
+                    <img class="size-[34px]" src="{{ asset('logo.jpg') }}" />
+                </a>
+                <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white"
+                        data-kt-drawer-toggle="#sidebar">
+                    <i class="ki-filled ki-menu"></i>
+                </button>
+            </div>
+        </header>
+        <!-- END MOBILE HEADER -->
+
+        <!-- WRAPPER -->
+        <div class="flex flex-col lg:flex-row grow pt-(--header-height) lg:pt-0">
+
+            <!-- SIDEBAR -->
+            @include('components.sidebar')
+            <!-- END SIDEBAR -->
+
+            <!-- MAIN CONTAINER -->
+            <div
+                class="flex flex-col grow lg:rounded-l-xl bg-background
+                       border border-input lg:ms-(--sidebar-width)"
+                id="sidebar-container">
+
+                <!-- SCROLLABLE CONTENT -->
+                <div
+                    id="scrollable_content"
+                    class="flex flex-col grow min-h-full kt-scrollable-y-auto
+                           lg:[--kt-scrollbar-width:auto] pt-5">
+
+                    <!-- FLEX COLUMN: MAIN + FOOTER -->
+                    <div class="flex flex-col grow">
+
+                        <!-- MAIN CONTENT -->
+                        <main class="grow" role="content">
+
+                            <!-- TOOLBAR -->
+                            <div class="pb-5">
+                                <div class="kt-container-fixed flex items-center justify-between gap-3">
+                                    <div class="flex flex-col gap-1">
+                                        <h1 class="font-medium text-lg text-mono">
+                                            @yield('page-title', 'Dashboard')
+                                        </h1>
+                                        <div class="flex items-center gap-1 text-sm">
+                                            <a class="text-secondary-foreground hover:text-primary"
+                                               href="{{ route('dashboard') }}">
+                                                Home
+                                            </a>
+                                            @hasSection('breadcrumbs')
+                                                <span>/</span>
+                                                @yield('breadcrumbs')
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- END TOOLBAR -->
+
+                            <!-- PAGE CONTENT -->
+                            <div class="kt-container-fixed pb-5">
+                                @yield('content')
+                            </div>
+                            <!-- END PAGE CONTENT -->
+
+                        </main>
+
+                        <!-- FOOTER -->
+                        @php
+                            $user = auth()->user();
+                            $role = $user?->roles->first()?->name ?? null;
+                            
+                            // Set role-specific descriptions
+                            $description = match($role) {
+                                'Area Controller' => 'As an Area Controller, you oversee critical administrative functions including emolument validation, manning request approvals, duty roster management, and leave/pass applications. This dashboard provides real-time visibility into pending items requiring your attention and decision-making.',
+                                'Admin' => 'As an Admin, you manage role assignments for officers within your assigned command. This dashboard provides oversight of all role assignments and allows you to assign Staff Officer, Area Controller, and DC Admin roles to qualified personnel.',
+                                default => null,
+                            };
+                        @endphp
+                        <div class="px-5 pb-5">
+                            <x-footer :role="$role" :description="$description" />
+                        </div>
+                        <!-- END FOOTER -->
+
+                    </div>
+                    <!-- END FLEX COLUMN -->
+
+                </div>
+                <!-- END SCROLLABLE CONTENT -->
+
+            </div>
+            <!-- END MAIN CONTAINER -->
+
+        </div>
+        <!-- END WRAPPER -->
+
+    </div>
+    <!-- END PAGE -->
+
+    <!-- NOTIFICATIONS DRAWER -->
+    @include('components.notifications-drawer')
+
+    <!-- SCRIPTS -->
+    <script src="{{ asset('ncs-employee-portal/dist/assets/js/core.bundle.js') }}"></script>
+    <script src="{{ asset('ncs-employee-portal/dist/assets/vendors/ktui/ktui.min.js') }}"></script>
+    <script src="{{ asset('ncs-employee-portal/dist/assets/vendors/apexcharts/apexcharts.min.js') }}"></script>
+
+    <script>
+        window.API_CONFIG = {
+            baseURL: '{{ url('/api/v1') }}',
+            token: '{{ auth()->check() ? auth()->user()->createToken('web')->plainTextToken : '' }}'
+        };
+    </script>
+
+    <script src="{{ asset('ncs-employee-portal/config/api.js') }}"></script>
+    <script src="{{ asset('ncs-employee-portal/js/auth.js') }}"></script>
+    <script src="{{ asset('ncs-employee-portal/js/utils.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.kt-modal.hidden').forEach(function (modal) {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            });
+        });
+    </script>
+
+    @stack('scripts')
+
+</body>
 </html>

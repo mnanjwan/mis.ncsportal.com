@@ -141,54 +141,52 @@
                     </table>
             </div>
 
-            <!-- Pagination -->
-            @if($lists->hasPages())
-                <div class="mt-6 pt-4 border-t border-border px-4">
-                <div class="flex flex-col gap-4">
-                    @forelse($lists as $list)
-                        <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input hover:bg-muted transition-colors">
-                            <div class="flex items-center gap-4">
-                                <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
-                                    <i class="ki-filled ki-calendar text-warning text-xl"></i>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-semibold text-foreground">
-                                        Retirement Year: {{ $list->year ?? 'N/A' }}
-                                    </span>
-                                    <span class="text-xs text-secondary-foreground">
-                                        {{ $list->officers_count ?? 0 }} officers
-                                    </span>
-                                    <span class="text-xs text-secondary-foreground">
-                                        Generated: {{ $list->created_at->format('d/m/Y') }}
-                                    </span>
-                                </div>
+            <div class="flex flex-col gap-4">
+                @forelse($lists as $list)
+                    <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input hover:bg-muted transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                                <i class="ki-filled ki-calendar text-warning text-xl"></i>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <a href="{{ route('hrd.retirement-list.show', $list->id) }}" 
-                                   class="kt-btn kt-btn-sm kt-btn-ghost">
-                                    View
-                                </a>
-                                @if(($list->officers_count ?? 0) == 0)
-                                    <button type="button" 
-                                            data-kt-modal-toggle="#delete-modal-{{ $list->id }}"
-                                            class="kt-btn kt-btn-sm kt-btn-danger">
-                                        <i class="ki-filled ki-trash"></i>
-                                    </button>
-                                @endif
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-semibold text-foreground">
+                                    Retirement Year: {{ $list->year ?? 'N/A' }}
+                                </span>
+                                <span class="text-xs text-secondary-foreground">
+                                    {{ $list->officers_count ?? 0 }} officers
+                                </span>
+                                <span class="text-xs text-secondary-foreground">
+                                    Generated: {{ $list->created_at->format('d/m/Y') }}
+                                </span>
                             </div>
                         </div>
-                    @empty
-                        <div class="text-center py-12">
-                            <i class="ki-filled ki-calendar text-4xl text-muted-foreground mb-4"></i>
-                            <p class="text-secondary-foreground mb-4">No retirement lists found</p>
-                            <a href="{{ route('hrd.retirement-list.generate') }}" class="kt-btn kt-btn-primary">
-                                Generate First List
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route('hrd.retirement-list.show', $list->id) }}" 
+                               class="kt-btn kt-btn-sm kt-btn-ghost">
+                                View
                             </a>
+                            @if(($list->officers_count ?? 0) == 0)
+                                <button type="button" 
+                                        data-kt-modal-toggle="#delete-modal-{{ $list->id }}"
+                                        class="kt-btn kt-btn-sm kt-btn-danger">
+                                    <i class="ki-filled ki-trash"></i>
+                                </button>
+                            @endif
                         </div>
-                    @endforelse
-                    {{ $lists->withQueryString()->links() }}
-                </div>
-            @endif
+                    </div>
+                @empty
+                    <div class="text-center py-12">
+                        <i class="ki-filled ki-calendar text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground mb-4">No retirement lists found</p>
+                        <a href="{{ route('hrd.retirement-list.generate') }}" class="kt-btn kt-btn-primary">
+                            Generate First List
+                        </a>
+                    </div>
+                @endforelse
+            </div>
+
+            <!-- Pagination -->
+            <x-pagination :paginator="$lists->withQueryString()" item-name="lists" />
         </div>
     </div>
 </div>

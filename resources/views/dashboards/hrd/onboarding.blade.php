@@ -371,11 +371,7 @@
             </div>
 
             <!-- Pagination -->
-            @if($onboardingOfficers->hasPages())
-                <div class="mt-6 pt-4 border-t border-border">
-                    {{ $onboardingOfficers->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$onboardingOfficers" item-name="officers" />
         </div>
     </div>
 </div>

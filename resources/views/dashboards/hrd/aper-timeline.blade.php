@@ -159,11 +159,7 @@
             </div>
 
             <!-- Pagination -->
-            @if($timelines->hasPages())
-                <div class="mt-6 pt-4 border-t border-border">
-                    {{ $timelines->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$timelines" item-name="timelines" />
         </div>
     </div>
 </div>

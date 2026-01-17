@@ -240,11 +240,7 @@
                 </div>
 
                 <!-- Pagination -->
-                @if($commands->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border px-4">
-                        {{ $commands->withQueryString()->links() }}
-                    </div>
-                @endif
+                <x-pagination :paginator="$commands->withQueryString()" item-name="commands" />
             </div>
         </div>
     </div>

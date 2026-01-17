@@ -371,11 +371,7 @@
                 </div>
 
                 <!-- Pagination -->
-                @if($users->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border px-4">
-                        {{ $users->withQueryString()->links() }}
-                    </div>
-                @endif
+                <x-pagination :paginator="$users->withQueryString()" item-name="users" />
             </div>
         </div>
     </div>

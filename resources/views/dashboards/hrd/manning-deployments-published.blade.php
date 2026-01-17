@@ -82,9 +82,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-4">
-                    {{ $deployments->links() }}
-                </div>
+                <x-pagination :paginator="$deployments" item-name="deployments" />
             @else
                 <div class="text-center py-12">
                     <i class="ki-filled ki-information text-4xl text-muted-foreground mb-4"></i>

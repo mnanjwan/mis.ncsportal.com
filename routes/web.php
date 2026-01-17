@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountChangeRequestController;
 use App\Http\Controllers\NextOfKinChangeRequestController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeceasedOfficerController;
 use App\Http\Controllers\DutyRosterController;
@@ -65,6 +66,10 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink
 Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
 
+// Two-Factor Authentication Routes (public - during login)
+Route::get('/two-factor/verify', [TwoFactorController::class, 'showVerification'])->name('two-factor.verify');
+Route::post('/two-factor/verify', [TwoFactorController::class, 'verify'])->name('two-factor.verify');
+
 // Public Recruit Onboarding Routes (Token-based, no auth required)
 Route::prefix('recruit/onboarding')->name('recruit.onboarding.')->group(function () {
     Route::get('/step1', [RecruitOnboardingController::class, 'step1'])->name('step1');
@@ -82,6 +87,15 @@ Route::prefix('recruit/onboarding')->name('recruit.onboarding.')->group(function
 
 // Protected Routes
 Route::middleware('auth')->group(function () {
+    // Two-Factor Authentication Routes (protected)
+    Route::prefix('two-factor')->name('two-factor.')->group(function () {
+        Route::get('/setup', [TwoFactorController::class, 'showSetup'])->name('setup');
+        Route::post('/enable', [TwoFactorController::class, 'enable'])->name('enable');
+        Route::get('/recovery-codes', [TwoFactorController::class, 'showRecoveryCodes'])->name('recovery-codes');
+        Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
+        Route::post('/disable', [TwoFactorController::class, 'disable'])->name('disable');
+    });
+
     // Dashboard Routes (with onboarding check)
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('onboarding.complete');
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('onboarding.complete');

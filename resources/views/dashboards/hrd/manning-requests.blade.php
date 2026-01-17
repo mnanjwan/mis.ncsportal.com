@@ -334,11 +334,7 @@
             </div>
 
             <!-- Pagination -->
-            @if($requests->hasPages())
-                <div class="mt-6 pt-4 border-t border-border">
-                    {{ $requests->withQueryString()->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$requests->withQueryString()" item-name="requests" />
         </div>
     </div>
 </div>

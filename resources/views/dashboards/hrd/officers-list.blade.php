@@ -259,11 +259,7 @@
                     </div>
 
                 <!-- Pagination -->
-                @if($officers->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border px-4">
-                        {{ $officers->withQueryString()->links() }}
-                    </div>
-                @endif
+                <x-pagination :paginator="$officers->withQueryString()" item-name="officers" />
             </div>
         </div>
     </div>

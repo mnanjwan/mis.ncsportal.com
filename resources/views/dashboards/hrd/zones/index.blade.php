@@ -215,11 +215,7 @@
                 </div>
 
                 <!-- Pagination -->
-                @if($zones->hasPages())
-                    <div class="mt-6 pt-4 border-t border-border">
-                        {{ $zones->withQueryString()->links() }}
-                    </div>
-                @endif
+                <x-pagination :paginator="$zones->withQueryString()" item-name="zones" />
             </div>
         </div>
     </div>

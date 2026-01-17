@@ -183,11 +183,7 @@
             </div>
 
             <!-- Pagination -->
-            @if($lists->hasPages())
-                <div class="mt-6 pt-4 border-t border-border">
-                    {{ $lists->withQueryString()->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$lists->withQueryString()" item-name="lists" />
         </div>
     </div>
 </div>

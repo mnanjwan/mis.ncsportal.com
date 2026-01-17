@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use PragmaRX\Google2FA\Google2FA;
 
 class User extends Authenticatable
 {
@@ -19,6 +20,9 @@ class User extends Authenticatable
         'last_login',
         'current_session_id',
         'created_by',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
@@ -33,6 +37,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'last_login' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_recovery_codes' => 'array',
         ];
     }
 
@@ -168,5 +174,78 @@ class User extends Authenticatable
     public function canAccessAnyRoleFeatures(array $roleNames): bool
     {
         return $this->hasAnyRole($roleNames);
+    }
+
+    /**
+     * Check if 2FA is enabled for the user
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+    }
+
+    /**
+     * Generate a new 2FA secret
+     */
+    public function generateTwoFactorSecret(): string
+    {
+        $google2fa = new Google2FA();
+        return $google2fa->generateSecretKey();
+    }
+
+    /**
+     * Generate QR code data URL for 2FA setup
+     */
+    public function getTwoFactorQrCodeUrl(): string
+    {
+        $google2fa = new Google2FA();
+        $companyName = config('app.name', 'NCS Employee Portal');
+        $companyEmail = $this->email;
+        
+        return $google2fa->getQRCodeUrl(
+            $companyName,
+            $companyEmail,
+            $this->two_factor_secret
+        );
+    }
+
+    /**
+     * Verify a 2FA code
+     */
+    public function verifyTwoFactorCode(string $code): bool
+    {
+        if (!$this->two_factor_secret) {
+            return false;
+        }
+
+        $google2fa = new Google2FA();
+        return $google2fa->verifyKey($this->two_factor_secret, $code);
+    }
+
+    /**
+     * Generate recovery codes
+     */
+    public function generateRecoveryCodes(): array
+    {
+        return collect(range(1, 8))->map(function () {
+            return str()->random(10);
+        })->all();
+    }
+
+    /**
+     * Check if a recovery code is valid and remove it
+     */
+    public function useRecoveryCode(string $code): bool
+    {
+        $recoveryCodes = $this->two_factor_recovery_codes ?? [];
+        
+        if (!in_array($code, $recoveryCodes)) {
+            return false;
+        }
+
+        $recoveryCodes = array_values(array_diff($recoveryCodes, [$code]));
+        $this->update(['two_factor_recovery_codes' => $recoveryCodes]);
+
+        return true;
     }
 }

@@ -118,11 +118,7 @@
             </div>
 
             <!-- Pagination -->
-            @if($courses->hasPages())
-                <div class="mt-6 pt-4 border-t border-border">
-                    {{ $courses->withQueryString()->links() }}
-                </div>
-            @endif
+            <x-pagination :paginator="$courses->withQueryString()" item-name="courses" />
         </div>
     </div>
 </div>
