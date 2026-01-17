@@ -667,14 +667,16 @@
                                     @else
                                         @php
                                             $isActive = request()->url() === url($groupItem['href']);
+                                            $isReportDeceased = $groupItem['title'] === 'Report Deceased';
+                                            $redStyle = $isReportDeceased ? 'style="color: red !important;"' : '';
                                         @endphp
                                         <div class="kt-menu-item">
                                             <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isActive ? 'kt-menu-item-active' : '' }}"
                                                 href="{{ $groupItem['href'] }}">
-                                                <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
-                                                    <i class="{{ $groupItem['icon'] ?? 'ki-filled ki-menu' }}"></i>
+                                                <span class="kt-menu-icon items-start text-lg text-secondary-foreground" {!! $redStyle !!}>
+                                                    <i class="{{ $groupItem['icon'] ?? 'ki-filled ki-menu' }}" {!! $redStyle !!}></i>
                                                 </span>
-                                                <span class="kt-menu-title text-sm text-foreground font-medium">
+                                                <span class="kt-menu-title text-sm text-foreground font-medium" {!! $redStyle !!}>
                                                     {{ $groupItem['title'] }}
                                                 </span>
                                             </a>
