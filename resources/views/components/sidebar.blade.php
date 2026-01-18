@@ -460,14 +460,34 @@
         case 'Accounts':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('accounts.dashboard')],
-                ['icon' => 'ki-filled ki-bank', 'title' => 'Banks', 'href' => route('accounts.banks.index')],
-                ['icon' => 'ki-filled ki-security-user', 'title' => 'PFAs', 'href' => route('accounts.pfas.index')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
-                ['icon' => 'ki-filled ki-file-check', 'title' => 'Processed History', 'href' => route('accounts.processed-history')],
-                ['icon' => 'ki-filled ki-printer', 'title' => 'Print Emoluments', 'href' => route('accounts.emoluments.print')],
-                ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Account Change Requests', 'href' => route('accounts.account-change.pending')],
-                ['icon' => 'ki-filled ki-people', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
-                ['icon' => 'ki-filled ki-shield-cross', 'title' => 'Interdicted Officers', 'href' => route('accounts.interdicted-officers')],
+                [
+                    'group' => 'Master Data',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-bank', 'title' => 'Banks', 'href' => route('accounts.banks.index')],
+                        ['icon' => 'ki-filled ki-security-user', 'title' => 'PFAs', 'href' => route('accounts.pfas.index')],
+                    ]
+                ],
+                [
+                    'group' => 'Emoluments Processing',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
+                        ['icon' => 'ki-filled ki-document', 'title' => 'Processed History', 'href' => route('accounts.processed-history')],
+                        ['icon' => 'ki-filled ki-printer', 'title' => 'Print Emoluments', 'href' => route('accounts.emoluments.print')],
+                    ]
+                ],
+                [
+                    'group' => 'Requests',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Account Change Requests', 'href' => route('accounts.account-change.pending')],
+                    ]
+                ],
+                [
+                    'group' => 'Other',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-people', 'title' => 'Deceased Officers', 'href' => route('accounts.deceased-officers')],
+                        ['icon' => 'ki-filled ki-shield-cross', 'title' => 'Interdicted Officers', 'href' => route('accounts.interdicted-officers')],
+                    ]
+                ],
             ];
             break;
         case 'Board':
@@ -669,8 +689,8 @@
                                     @else
                                         @php
                                             $isActive = request()->url() === url($groupItem['href']);
-                                            $isReportDeceased = $groupItem['title'] === 'Report Deceased';
-                                            $redStyle = $isReportDeceased ? 'style="color: red !important;"' : '';
+                                    $isRedItem = in_array($groupItem['title'], ['Report Deceased', 'Deceased Officers'], true);
+                                    $redStyle = $isRedItem ? 'style="color: red !important;"' : '';
                                         @endphp
                                         <div class="kt-menu-item">
                                             <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isActive ? 'kt-menu-item-active' : '' }}"
@@ -727,14 +747,16 @@
                         @else
                             @php
                                 $isActive = request()->url() === url($item['href']);
+                                $isRedItem = in_array($item['title'], ['Report Deceased', 'Deceased Officers'], true);
+                                $redStyle = $isRedItem ? 'style="color: red !important;"' : '';
                             @endphp
                             <div class="kt-menu-item">
                                 <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isActive ? 'kt-menu-item-active' : '' }}"
                                     href="{{ $item['href'] }}">
-                                    <span class="kt-menu-icon items-start text-lg text-secondary-foreground">
-                                        <i class="{{ $item['icon'] ?? 'ki-filled ki-menu' }}"></i>
+                                    <span class="kt-menu-icon items-start text-lg text-secondary-foreground" {!! $redStyle !!}>
+                                        <i class="{{ $item['icon'] ?? 'ki-filled ki-menu' }}" {!! $redStyle !!}></i>
                                     </span>
-                                    <span class="kt-menu-title text-sm text-foreground font-medium">
+                                    <span class="kt-menu-title text-sm text-foreground font-medium" {!! $redStyle !!}>
                                         {{ $item['title'] }}
                                     </span>
                                 </a>
