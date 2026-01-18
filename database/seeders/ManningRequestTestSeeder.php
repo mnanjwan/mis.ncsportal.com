@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Command;
+use App\Models\Bank;
 use App\Models\Officer;
+use App\Models\Pfa;
 use App\Models\User;
 use App\Models\Zone;
 use Carbon\Carbon;
@@ -85,8 +87,26 @@ class ManningRequestTestSeeder extends Seeder
         $zones = ['North Central', 'North East', 'North West', 'South East', 'South South', 'South West'];
         $maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
         $qualifications = ['B.Sc', 'B.A', 'B.Eng', 'M.Sc', 'M.A', 'HND', 'ND', 'NCE'];
-        $banks = ['First Bank', 'GTBank', 'Access Bank', 'Zenith Bank', 'UBA', 'Union Bank'];
-        $pfas = ['PENCOM', 'NLPC', 'ARM Pension', 'Stanbic IBTC Pension'];
+        $bankRecords = Bank::query()->where('is_active', true)->get(['name', 'account_number_digits']);
+        if ($bankRecords->isEmpty()) {
+            $bankRecords = collect(['First Bank', 'GTBank', 'Access Bank', 'Zenith Bank', 'UBA', 'Union Bank'])
+                ->map(fn ($name) => (object) ['name' => $name, 'account_number_digits' => 10]);
+        }
+
+        $pfaRecords = Pfa::query()->where('is_active', true)->get(['name', 'rsa_prefix', 'rsa_digits']);
+        if ($pfaRecords->isEmpty()) {
+            $pfaRecords = collect(['PENCOM', 'NLPC', 'ARM Pension', 'Stanbic IBTC Pension'])
+                ->map(fn ($name) => (object) ['name' => $name, 'rsa_prefix' => 'PEN', 'rsa_digits' => 12]);
+        }
+
+        $randomDigits = function (int $length): string {
+            $length = max(1, $length);
+            $out = '';
+            for ($i = 0; $i < $length; $i++) {
+                $out .= (string) random_int(0, 9);
+            }
+            return $out;
+        };
 
         $totalOfficers = 0;
         $officerCounter = 1;
@@ -146,6 +166,8 @@ class ManningRequestTestSeeder extends Seeder
                     $datePostedToStation = Carbon::now()->subMonths(rand(1, 60));
 
                     // Create officer
+                    $bank = $bankRecords->random();
+                    $pfa = $pfaRecords->random();
                     $officer = Officer::create([
                         'user_id' => $user->id,
                         'service_number' => $serviceNumberBase, // Mutator will add NCS prefix
@@ -174,11 +196,11 @@ class ManningRequestTestSeeder extends Seeder
                         'personal_email' => strtolower($firstName . '.' . $lastName . $officerCounter . '@gmail.com'),
                         'customs_email' => $email,
                         'email_status' => 'VERIFIED',
-                        'bank_name' => $banks[array_rand($banks)],
-                        'bank_account_number' => str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT),
+                        'bank_name' => $bank->name,
+                        'bank_account_number' => $randomDigits((int) ($bank->account_number_digits ?? 10)),
                         'sort_code' => str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT),
-                        'pfa_name' => $pfas[array_rand($pfas)],
-                        'rsa_number' => 'PEN' . str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT),
+                        'pfa_name' => $pfa->name,
+                        'rsa_number' => strtoupper((string) ($pfa->rsa_prefix ?? 'PEN')) . $randomDigits((int) ($pfa->rsa_digits ?? 12)),
                         'interdicted' => false,
                         'suspended' => false,
                         'ongoing_investigation' => false,

@@ -7,11 +7,24 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class RsaPin implements ValidationRule
 {
+    private string $prefix;
+    private int $digits;
+
+    public function __construct(?string $prefix = 'PEN', ?int $digits = 12)
+    {
+        $this->prefix = strtoupper((string)($prefix ?? 'PEN'));
+        $this->digits = (int)($digits ?? 12);
+    }
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        // RSA PIN: Usually 12 digits with PEN prefix
-        if (!preg_match('/^PEN\d{12}$/', $value)) {
-            $fail('The :attribute must be 12 digits with PEN prefix (e.g., PEN123456789012).');
+        $digits = max(1, $this->digits);
+        $prefix = $this->prefix !== '' ? $this->prefix : 'PEN';
+
+        $pattern = '/^' . preg_quote($prefix, '/') . '\d{' . $digits . '}$/';
+        if (!preg_match($pattern, (string)$value)) {
+            $example = $prefix . str_repeat('0', $digits);
+            $fail("The :attribute must be {$prefix} followed by {$digits} digits (e.g., {$example}).");
         }
     }
 }

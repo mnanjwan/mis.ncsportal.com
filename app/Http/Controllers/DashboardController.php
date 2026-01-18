@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use App\Models\User;
 use App\Models\Emolument;
 use App\Models\Command;
@@ -25,6 +26,8 @@ use App\Models\NextOfKinChangeRequest;
 use App\Models\MovementOrder;
 use App\Models\DeceasedOfficer;
 use App\Models\Query;
+use App\Models\Bank;
+use App\Models\Pfa;
 
 class DashboardController extends Controller
 {
@@ -1684,17 +1687,84 @@ class DashboardController extends Controller
             return redirect()->route('onboarding.step1')->with('error', 'Please complete previous steps first.');
         }
         $savedData = session('onboarding_step3', []);
-        return view('forms.onboarding.step3', compact('savedData'));
+
+        $banks = Bank::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['name', 'account_number_digits']);
+
+        $pfas = Pfa::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['name', 'rsa_prefix', 'rsa_digits']);
+
+        return view('forms.onboarding.step3', compact('savedData', 'banks', 'pfas'));
     }
 
     public function saveOnboardingStep3(Request $request)
     {
         $validated = $request->validate([
-            'bank_name' => 'required|string|max:255',
-            'bank_account_number' => 'required|string|max:20',
+            'bank_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::exists('banks', 'name')->where('is_active', true),
+            ],
+            'bank_account_number' => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    $bank = Bank::query()
+                        ->where('name', $request->input('bank_name'))
+                        ->where('is_active', true)
+                        ->first();
+
+                    // If bank_name fails validation, skip this derived validation.
+                    if (!$bank) {
+                        return;
+                    }
+
+                    $digits = (int) $bank->account_number_digits;
+                    $digits = max(1, $digits);
+
+                    if (!preg_match('/^\d{' . $digits . '}$/', (string) $value)) {
+                        $fail("Bank Account Number must be exactly {$digits} digits.");
+                    }
+                },
+            ],
             'sort_code' => 'nullable|string|max:20',
-            'pfa_name' => 'required|string|max:255',
-            'rsa_number' => 'required|string|regex:/^PEN[0-9]{12}$/',
+            'pfa_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::exists('pfas', 'name')->where('is_active', true),
+            ],
+            'rsa_number' => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    $pfa = Pfa::query()
+                        ->where('name', $request->input('pfa_name'))
+                        ->where('is_active', true)
+                        ->first();
+
+                    // If pfa_name fails validation, skip this derived validation.
+                    if (!$pfa) {
+                        return;
+                    }
+
+                    $prefix = strtoupper((string) $pfa->rsa_prefix);
+                    $digits = max(1, (int) $pfa->rsa_digits);
+                    $pattern = '/^' . preg_quote($prefix, '/') . '\d{' . $digits . '}$/';
+
+                    if (!preg_match($pattern, (string) $value)) {
+                        $example = $prefix . str_repeat('0', $digits);
+                        $fail("RSA Number must be {$prefix} followed by {$digits} digits (e.g., {$example}).");
+                    }
+                },
+            ],
         ]);
 
         session(['onboarding_step3' => $validated]);

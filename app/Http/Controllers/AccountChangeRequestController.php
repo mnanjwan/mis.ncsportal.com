@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccountChangeRequest;
+use App\Models\Bank;
 use App\Models\Officer;
+use App\Models\Pfa;
 use App\Rules\RsaPin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use App\Services\NotificationService;
 
 class AccountChangeRequestController extends Controller
@@ -38,13 +41,25 @@ class AccountChangeRequestController extends Controller
         $currentSortCode = $officer->sort_code;
         $currentPfaName = $officer->pfa_name;
 
+        $banks = Bank::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['name', 'account_number_digits']);
+
+        $pfas = Pfa::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['name', 'rsa_prefix', 'rsa_digits']);
+
         return view('forms.account-change.create', compact(
             'officer',
             'currentAccountNumber',
             'currentRsaPin',
             'currentBankName',
             'currentSortCode',
-            'currentPfaName'
+            'currentPfaName',
+            'banks',
+            'pfas'
         ));
     }
 
@@ -90,15 +105,70 @@ class AccountChangeRequestController extends Controller
         $messages = [];
 
         if ($changeAccount) {
-            $rules['new_account_number'] = 'required|string|max:50|different:current_account_number';
+            $rules['new_account_number'] = [
+                'required',
+                'string',
+                'max:50',
+                'different:current_account_number',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request, $officer) {
+                    $effectiveBankName = $request->input('new_bank_name') ?: $officer->bank_name;
+                    if (!$effectiveBankName) {
+                        $fail('Please select a bank name first.');
+                        return;
+                    }
+
+                    $bank = Bank::query()->where('name', $effectiveBankName)->first();
+                    if (!$bank) {
+                        $fail('Selected bank is not configured in the system.');
+                        return;
+                    }
+
+                    $digits = max(1, (int) $bank->account_number_digits);
+                    if (!preg_match('/^\d{' . $digits . '}$/', (string) $value)) {
+                        $fail("Account Number must be exactly {$digits} digits for {$effectiveBankName}.");
+                    }
+                },
+            ];
         }
 
         if ($changeRsaPin) {
-            $rules['new_rsa_pin'] = ['required', 'string', new RsaPin(), 'different:current_rsa_pin'];
+            $rules['new_rsa_pin'] = [
+                'required',
+                'string',
+                'max:50',
+                'different:current_rsa_pin',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request, $officer) {
+                    $effectivePfaName = $request->input('new_pfa_name') ?: $officer->pfa_name;
+                    if (!$effectivePfaName) {
+                        $fail('Please select a PFA name first.');
+                        return;
+                    }
+
+                    $pfa = Pfa::query()->where('name', $effectivePfaName)->first();
+                    if (!$pfa) {
+                        $fail('Selected PFA is not configured in the system.');
+                        return;
+                    }
+
+                    $prefix = strtoupper((string) $pfa->rsa_prefix);
+                    $digits = max(1, (int) $pfa->rsa_digits);
+                    $pattern = '/^' . preg_quote($prefix, '/') . '\d{' . $digits . '}$/';
+                    if (!preg_match($pattern, (string) $value)) {
+                        $example = $prefix . str_repeat('0', $digits);
+                        $fail("RSA PIN must be {$prefix} followed by {$digits} digits (e.g., {$example}).");
+                    }
+                },
+            ];
         }
 
         if ($changeBankName) {
-            $rules['new_bank_name'] = 'required|string|max:255|different:current_bank_name';
+            $rules['new_bank_name'] = [
+                'required',
+                'string',
+                'max:255',
+                'different:current_bank_name',
+                Rule::exists('banks', 'name')->where('is_active', true),
+            ];
         }
 
         if ($changeSortCode) {
@@ -106,7 +176,13 @@ class AccountChangeRequestController extends Controller
         }
 
         if ($changePfaName) {
-            $rules['new_pfa_name'] = 'required|string|max:255|different:current_pfa_name';
+            $rules['new_pfa_name'] = [
+                'required',
+                'string',
+                'max:255',
+                'different:current_pfa_name',
+                Rule::exists('pfas', 'name')->where('is_active', true),
+            ];
         }
 
         $rules['reason'] = 'nullable|string|max:500';

@@ -460,6 +460,8 @@
         case 'Accounts':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('accounts.dashboard')],
+                ['icon' => 'ki-filled ki-bank', 'title' => 'Banks', 'href' => route('accounts.banks.index')],
+                ['icon' => 'ki-filled ki-security-user', 'title' => 'PFAs', 'href' => route('accounts.pfas.index')],
                 ['icon' => 'ki-filled ki-people', 'title' => 'Validated Officers', 'href' => route('accounts.validated-officers')],
                 ['icon' => 'ki-filled ki-file-check', 'title' => 'Processed History', 'href' => route('accounts.processed-history')],
                 ['icon' => 'ki-filled ki-printer', 'title' => 'Print Emoluments', 'href' => route('accounts.emoluments.print')],

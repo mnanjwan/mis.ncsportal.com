@@ -28,6 +28,8 @@ use App\Models\ManningRequestItem;
 use App\Models\MovementOrder;
 use App\Models\NextOfKin;
 use App\Models\Officer;
+use App\Models\Bank;
+use App\Models\Pfa;
 use App\Models\OfficerCourse;
 use App\Models\OfficerPosting;
 use App\Models\OfficerQuarter;
@@ -331,8 +333,26 @@ class CompleteSystemSeeder extends Seeder
         $states = ['Lagos', 'Abuja', 'Kano', 'Rivers', 'Ogun', 'Kaduna', 'Delta', 'Enugu', 'Plateau', 'Oyo'];
         $lgas = ['Ikeja', 'Mushin', 'Surulere', 'Victoria Island', 'Garki', 'Wuse', 'Kaduna North', 'Port Harcourt', 'Abeokuta', 'Ibadan'];
         $disciplines = ['Accounting', 'Law', 'Computer Science', 'Economics', 'Business Administration', 'Public Administration'];
-        $banks = ['Zenith Bank', 'GTBank', 'First Bank', 'UBA', 'Access Bank'];
-        $pfas = ['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension', 'Leadway Pension'];
+        $bankRecords = Bank::query()->where('is_active', true)->get(['name', 'account_number_digits']);
+        if ($bankRecords->isEmpty()) {
+            $bankRecords = collect(['Zenith Bank', 'GTBank', 'First Bank', 'UBA', 'Access Bank'])
+                ->map(fn ($name) => (object) ['name' => $name, 'account_number_digits' => 10]);
+        }
+
+        $pfaRecords = Pfa::query()->where('is_active', true)->get(['name', 'rsa_prefix', 'rsa_digits']);
+        if ($pfaRecords->isEmpty()) {
+            $pfaRecords = collect(['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension', 'Leadway Pension'])
+                ->map(fn ($name) => (object) ['name' => $name, 'rsa_prefix' => 'PEN', 'rsa_digits' => 12]);
+        }
+
+        $randomDigits = function (int $length): string {
+            $length = max(1, $length);
+            $out = '';
+            for ($i = 0; $i < $length; $i++) {
+                $out .= (string) random_int(0, 9);
+            }
+            return $out;
+        };
         $sexes = ['M', 'F'];
         $letters = range('A', 'Z');
         $relationships = ['Spouse', 'Father', 'Mother', 'Brother', 'Sister', 'Son', 'Daughter'];
@@ -395,6 +415,9 @@ class CompleteSystemSeeder extends Seeder
                     $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
                 }
 
+                $bank = $bankRecords->random();
+                $pfa = $pfaRecords->random();
+
                 $officer = Officer::create([
                     'user_id' => $user->id,
                     'service_number' => $serviceNumber,
@@ -419,11 +442,11 @@ class CompleteSystemSeeder extends Seeder
                     'date_posted_to_station' => $datePostedToStation,
                     'phone_number' => '080' . rand(10000000, 99999999),
                     'email' => $user->email,
-                    'bank_name' => $banks[array_rand($banks)],
-                    'bank_account_number' => str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT),
+                    'bank_name' => $bank->name,
+                    'bank_account_number' => $randomDigits((int) ($bank->account_number_digits ?? 10)),
                     'sort_code' => str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT),
-                    'pfa_name' => $pfas[array_rand($pfas)],
-                    'rsa_number' => 'PEN' . str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT),
+                    'pfa_name' => $pfa->name,
+                    'rsa_number' => strtoupper((string) ($pfa->rsa_prefix ?? 'PEN')) . $randomDigits((int) ($pfa->rsa_digits ?? 12)),
                     'unit' => 'Unit ' . rand(1, 10),
                     'interdicted' => false,
                     'suspended' => false,

@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Api\V1\Officer;
 
-use App\Rules\RsaPin;
+use App\Models\Bank;
+use App\Models\Pfa;
 use App\Rules\ServiceNumber;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class OnboardingRequest extends FormRequest
 {
@@ -38,11 +40,64 @@ class OnboardingRequest extends FormRequest
             'permanent_home_address' => 'required|string',
             'phone_number' => 'required|string|max:20',
             'email' => 'required|email|unique:officers,email|unique:users,email',
-            'bank_name' => 'required|string|max:255',
-            'bank_account_number' => 'required|string|max:50',
+            'bank_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::exists('banks', 'name')->where('is_active', true),
+            ],
+            'bank_account_number' => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $bankName = $this->input('bank_name');
+                    $bank = Bank::query()
+                        ->where('name', $bankName)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if (!$bank) {
+                        return;
+                    }
+
+                    $digits = max(1, (int) $bank->account_number_digits);
+                    if (!preg_match('/^\d{' . $digits . '}$/', (string) $value)) {
+                        $fail("Bank Account Number must be exactly {$digits} digits.");
+                    }
+                },
+            ],
             'sort_code' => 'nullable|string|max:20',
-            'pfa_name' => 'required|string|max:255',
-            'rsa_number' => ['required', 'string', new RsaPin()],
+            'pfa_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::exists('pfas', 'name')->where('is_active', true),
+            ],
+            'rsa_number' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $pfaName = $this->input('pfa_name');
+                    $pfa = Pfa::query()
+                        ->where('name', $pfaName)
+                        ->where('is_active', true)
+                        ->first();
+
+                    if (!$pfa) {
+                        return;
+                    }
+
+                    $prefix = strtoupper((string) $pfa->rsa_prefix);
+                    $digits = max(1, (int) $pfa->rsa_digits);
+                    $pattern = '/^' . preg_quote($prefix, '/') . '\d{' . $digits . '}$/';
+
+                    if (!preg_match($pattern, (string) $value)) {
+                        $example = $prefix . str_repeat('0', $digits);
+                        $fail("RSA number must be {$prefix} followed by {$digits} digits (e.g., {$example}).");
+                    }
+                },
+            ],
             'unit' => 'nullable|string|max:255',
             'next_of_kin' => 'required|array|min:1',
             'next_of_kin.*.name' => 'required|string|max:255',
@@ -61,7 +116,8 @@ class OnboardingRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'rsa_number.regex' => 'RSA number must be 12 digits with PEN prefix (e.g., PEN123456789012)',
+            'bank_name.exists' => 'Selected bank is not configured.',
+            'pfa_name.exists' => 'Selected PFA is not configured.',
             'email.unique' => 'This email is already registered',
             'service_number.unique' => 'This service number is already in use',
             'service_number.regex' => 'Service number must start with NCS (e.g., NCS50001)',

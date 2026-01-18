@@ -13,9 +13,11 @@ use App\Models\LeaveType;
 use App\Models\ManningRequest;
 use App\Models\ManningRequestItem;
 use App\Models\MovementOrder;
+use App\Models\Bank;
 use App\Models\Officer;
 use App\Models\OfficerPosting;
 use App\Models\PassApplication;
+use App\Models\Pfa;
 use App\Models\PromotionEligibilityList;
 use App\Models\RetirementList;
 use App\Models\Role;
@@ -161,8 +163,26 @@ class TestDataSeeder extends Seeder
         
         $initials = ['RD', 'AB', 'CD', 'EF', 'GH', 'IJ', 'KL', 'MN', 'OP', 'QR', 'ST', 'UV', 'WX', 'YZ'];
         $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
-        $banks = ['Zenith Bank', 'GTBank', 'First Bank', 'UBA', 'Access Bank', 'Fidelity Bank'];
-        $pfas = ['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension', 'Leadway Pension'];
+        $bankRecords = Bank::query()->where('is_active', true)->get(['name', 'account_number_digits']);
+        if ($bankRecords->isEmpty()) {
+            $bankRecords = collect(['Zenith Bank', 'GTBank', 'First Bank', 'UBA', 'Access Bank', 'Fidelity Bank'])
+                ->map(fn ($name) => (object) ['name' => $name, 'account_number_digits' => 10]);
+        }
+
+        $pfaRecords = Pfa::query()->where('is_active', true)->get(['name', 'rsa_prefix', 'rsa_digits']);
+        if ($pfaRecords->isEmpty()) {
+            $pfaRecords = collect(['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension', 'Leadway Pension'])
+                ->map(fn ($name) => (object) ['name' => $name, 'rsa_prefix' => 'PEN', 'rsa_digits' => 12]);
+        }
+
+        $randomDigits = function (int $length): string {
+            $length = max(1, $length);
+            $out = '';
+            for ($i = 0; $i < $length; $i++) {
+                $out .= (string) random_int(0, 9);
+            }
+            return $out;
+        };
         
         $officers = [];
         for ($i = 1; $i <= 100; $i++) {
@@ -182,6 +202,8 @@ class TestDataSeeder extends Seeder
             $user->roles()->attach($roles['OFFICER']->id, ['is_active' => true, 'assigned_at' => now()]);
             
             // Create Officer
+            $bank = $bankRecords->random();
+            $pfa = $pfaRecords->random();
             $officer = Officer::create([
                 'user_id' => $user->id,
                 'service_number' => $serviceNumber,
@@ -205,10 +227,10 @@ class TestDataSeeder extends Seeder
                 'date_posted_to_station' => Carbon::now()->subMonths(rand(1, 36)),
                 'phone_number' => '080' . str_pad($i, 8, '0', STR_PAD_LEFT),
                 'email' => $user->email,
-                'bank_name' => $banks[array_rand($banks)],
-                'bank_account_number' => str_pad($i, 10, '0', STR_PAD_LEFT),
-                'pfa_name' => $pfas[array_rand($pfas)],
-                'rsa_number' => 'PEN' . str_pad($i, 12, '0', STR_PAD_LEFT),
+                'bank_name' => $bank->name,
+                'bank_account_number' => $randomDigits((int) ($bank->account_number_digits ?? 10)),
+                'pfa_name' => $pfa->name,
+                'rsa_number' => strtoupper((string) ($pfa->rsa_prefix ?? 'PEN')) . $randomDigits((int) ($pfa->rsa_digits ?? 12)),
                 'is_active' => true,
                 'profile_picture_url' => 'officers/default.png', // Set placeholder to mark onboarding as complete
                 'onboarding_status' => 'completed',

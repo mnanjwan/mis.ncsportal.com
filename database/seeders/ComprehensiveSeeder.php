@@ -6,6 +6,7 @@ use App\Models\ChatRoom;
 use App\Models\ChatRoomMember;
 use App\Models\Command;
 use App\Models\Zone;
+use App\Models\Bank;
 use App\Models\DeceasedOfficer;
 use App\Models\DutyRoster;
 use App\Models\Emolument;
@@ -24,6 +25,7 @@ use App\Models\OfficerCourse;
 use App\Models\OfficerPosting;
 use App\Models\PassApplication;
 use App\Models\PassApproval;
+use App\Models\Pfa;
 use App\Models\Quarter;
 use App\Models\OfficerQuarter;
 use App\Models\Role;
@@ -107,8 +109,26 @@ class ComprehensiveSeeder extends Seeder
         $states = ['Lagos', 'Abuja', 'Kano', 'Rivers', 'Ogun', 'Kaduna', 'Delta', 'Enugu', 'Plateau', 'Oyo'];
         $lgas = ['Ikeja', 'Mushin', 'Surulere', 'Victoria Island', 'Garki', 'Wuse', 'Kaduna North', 'Port Harcourt', 'Abeokuta', 'Ibadan'];
         $disciplines = ['Accounting', 'Law', 'Computer Science', 'Economics'];
-        $banks = ['Zenith Bank', 'GTBank', 'First Bank', 'UBA'];
-        $pfas = ['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension'];
+        $bankRecords = Bank::query()->where('is_active', true)->get(['name', 'account_number_digits']);
+        if ($bankRecords->isEmpty()) {
+            $bankRecords = collect(['Zenith Bank', 'GTBank', 'First Bank', 'UBA'])
+                ->map(fn ($name) => (object) ['name' => $name, 'account_number_digits' => 10]);
+        }
+
+        $pfaRecords = Pfa::query()->where('is_active', true)->get(['name', 'rsa_prefix', 'rsa_digits']);
+        if ($pfaRecords->isEmpty()) {
+            $pfaRecords = collect(['Stanbic IBTC Pension', 'ARM Pension', 'Premium Pension'])
+                ->map(fn ($name) => (object) ['name' => $name, 'rsa_prefix' => 'PEN', 'rsa_digits' => 12]);
+        }
+
+        $randomDigits = function (int $length): string {
+            $length = max(1, $length);
+            $out = '';
+            for ($i = 0; $i < $length; $i++) {
+                $out .= (string) random_int(0, 9);
+            }
+            return $out;
+        };
         $zones = ['North-Central', 'North-East', 'North-West', 'South-East', 'South-South', 'South-West'];
         $maritalStatuses = ['Single', 'Married'];
         $sexes = ['M', 'F'];
@@ -161,11 +181,13 @@ class ComprehensiveSeeder extends Seeder
             $address = $state . ' State, ' . $lga . ' LGA';
             $datePostedToStation = Carbon::now()->subYears(rand(0, 2))->subDays(rand(0, 365));
             $phoneNumber = '080' . rand(10000000, 99999999);
-            $bankName = $banks[array_rand($banks)];
-            $bankAccountNumber = str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT);
+            $bank = $bankRecords->random();
+            $bankName = $bank->name;
+            $bankAccountNumber = $randomDigits((int) ($bank->account_number_digits ?? 10));
             $sortCode = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
-            $pfaName = $pfas[array_rand($pfas)];
-            $rsaNumber = 'PEN' . str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
+            $pfa = $pfaRecords->random();
+            $pfaName = $pfa->name;
+            $rsaNumber = strtoupper((string) ($pfa->rsa_prefix ?? 'PEN')) . $randomDigits((int) ($pfa->rsa_digits ?? 12));
             $unit = 'Unit ' . rand(1, 10);
             
             // Additional qualification (optional, set for some officers)

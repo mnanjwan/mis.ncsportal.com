@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bank;
+use App\Models\Pfa;
 use App\Models\Officer;
 use App\Models\User;
 use App\Models\Zone;
@@ -11,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class RecruitOnboardingController extends Controller
 {
@@ -397,7 +400,18 @@ class RecruitOnboardingController extends Controller
         }
 
         $savedData = session('recruit_onboarding_step3', []);
-        return view('forms.establishment.recruit-step3', compact('savedData'));
+
+        $banks = Bank::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['name', 'account_number_digits']);
+
+        $pfas = Pfa::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['name', 'rsa_prefix', 'rsa_digits']);
+
+        return view('forms.establishment.recruit-step3', compact('savedData', 'banks', 'pfas'));
     }
 
     /**
@@ -423,11 +437,63 @@ class RecruitOnboardingController extends Controller
         }
 
         $validated = $request->validate([
-            'bank_name' => 'required|string|max:255',
-            'bank_account_number' => 'required|string|max:10|regex:/^\d{10}$/',
+            'bank_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::exists('banks', 'name')->where('is_active', true),
+            ],
+            'bank_account_number' => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    $bank = Bank::query()
+                        ->where('name', $request->input('bank_name'))
+                        ->where('is_active', true)
+                        ->first();
+
+                    if (!$bank) {
+                        return;
+                    }
+
+                    $digits = max(1, (int) $bank->account_number_digits);
+                    if (!preg_match('/^\d{' . $digits . '}$/', (string) $value)) {
+                        $fail("Bank Account Number must be exactly {$digits} digits.");
+                    }
+                },
+            ],
             'sort_code' => 'nullable|string|max:20',
-            'pfa_name' => 'required|string|max:255',
-            'rsa_number' => 'required|string|max:50|regex:/^PEN\d{12}$/',
+            'pfa_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::exists('pfas', 'name')->where('is_active', true),
+            ],
+            'rsa_number' => [
+                'required',
+                'string',
+                'max:50',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    $pfa = Pfa::query()
+                        ->where('name', $request->input('pfa_name'))
+                        ->where('is_active', true)
+                        ->first();
+
+                    if (!$pfa) {
+                        return;
+                    }
+
+                    $prefix = strtoupper((string) $pfa->rsa_prefix);
+                    $digits = max(1, (int) $pfa->rsa_digits);
+                    $pattern = '/^' . preg_quote($prefix, '/') . '\d{' . $digits . '}$/';
+
+                    if (!preg_match($pattern, (string) $value)) {
+                        $example = $prefix . str_repeat('0', $digits);
+                        $fail("RSA Number must be {$prefix} followed by {$digits} digits (e.g., {$example}).");
+                    }
+                },
+            ],
         ]);
 
         session(['recruit_onboarding_step3' => $validated]);

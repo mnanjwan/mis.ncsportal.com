@@ -20,6 +20,8 @@ use App\Models\RetirementListItem;
 use App\Models\LeaveType;
 use App\Models\OfficerCourse;
 use App\Models\SystemSetting;
+use App\Models\Bank;
+use App\Models\Pfa;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -117,6 +119,25 @@ class HRDTestDataSeeder extends Seeder
     {
         $commands = Command::all();
         $ranks = ['CGC', 'DCG', 'ACG', 'CC', 'DC', 'AC', 'CSC', 'SC', 'DSC', 'ASC I', 'ASC II', 'IC', 'AIC', 'CA I', 'CA II', 'CA III'];
+
+        $bankRecords = Bank::query()->where('is_active', true)->get(['name', 'account_number_digits']);
+        if ($bankRecords->isEmpty()) {
+            $bankRecords = collect(['Test Bank'])->map(fn ($name) => (object) ['name' => $name, 'account_number_digits' => 10]);
+        }
+
+        $pfaRecords = Pfa::query()->where('is_active', true)->get(['name', 'rsa_prefix', 'rsa_digits']);
+        if ($pfaRecords->isEmpty()) {
+            $pfaRecords = collect(['Test PFA'])->map(fn ($name) => (object) ['name' => $name, 'rsa_prefix' => 'PEN', 'rsa_digits' => 12]);
+        }
+
+        $randomDigits = function (int $length): string {
+            $length = max(1, $length);
+            $out = '';
+            for ($i = 0; $i < $length; $i++) {
+                $out .= (string) random_int(0, 9);
+            }
+            return $out;
+        };
         
         // Create officers with various statuses for testing
         for ($i = 1; $i <= 50; $i++) {
@@ -124,6 +145,9 @@ class HRDTestDataSeeder extends Seeder
             $rank = $ranks[array_rand($ranks)];
             $birthYear = 1965 + rand(0, 30);
             $appointmentYear = 2000 + rand(0, 20);
+
+            $bank = $bankRecords->random();
+            $pfa = $pfaRecords->random();
             
             $officer = Officer::firstOrCreate(
                 ['service_number' => 'NCS' . str_pad($i, 5, '0', STR_PAD_LEFT)],
@@ -148,10 +172,10 @@ class HRDTestDataSeeder extends Seeder
                     'permanent_home_address' => 'Test Home Address ' . $i,
                     'phone_number' => '080' . str_pad($i, 8, '0', STR_PAD_LEFT),
                     'email' => 'officer' . $i . '@test.ncs.gov.ng',
-                    'bank_name' => 'Test Bank',
-                    'bank_account_number' => '123456789' . $i,
-                    'pfa_name' => 'Test PFA',
-                    'rsa_number' => 'PEN' . str_pad($i, 9, '0', STR_PAD_LEFT),
+                    'bank_name' => $bank->name,
+                    'bank_account_number' => $randomDigits((int) ($bank->account_number_digits ?? 10)),
+                    'pfa_name' => $pfa->name,
+                    'rsa_number' => strtoupper((string) ($pfa->rsa_prefix ?? 'PEN')) . $randomDigits((int) ($pfa->rsa_digits ?? 12)),
                     'is_active' => true,
                     'interdicted' => $i % 10 == 0, // Every 10th officer is interdicted
                     'suspended' => $i % 15 == 0, // Every 15th officer is suspended

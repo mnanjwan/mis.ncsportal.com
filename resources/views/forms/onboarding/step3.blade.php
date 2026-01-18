@@ -78,7 +78,8 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Bank Account Number <span class="text-danger">*</span></label>
-                        <input type="text" name="bank_account_number" class="kt-input" value="{{ old('bank_account_number', $savedData['bank_account_number'] ?? '') }}" maxlength="10" required/>
+                        <input type="text" id="bank_account_number" name="bank_account_number" class="kt-input" value="{{ old('bank_account_number', $savedData['bank_account_number'] ?? '') }}" maxlength="50" required/>
+                        <small id="bank_account_help" class="text-muted">Select a bank to see the required account number digits.</small>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -111,8 +112,8 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">RSA Number <span class="text-danger">*</span></label>
-                        <input type="text" name="rsa_number" class="kt-input" value="{{ old('rsa_number', $savedData['rsa_number'] ?? '') }}" pattern="PEN[0-9]{12}" placeholder="PEN123456789012" required/>
-                        <small class="text-muted">Format: PEN followed by 12 digits</small>
+                        <input type="text" id="rsa_number" name="rsa_number" class="kt-input" value="{{ old('rsa_number', $savedData['rsa_number'] ?? '') }}" maxlength="50" placeholder="" required/>
+                        <small id="rsa_help" class="text-muted">Select a PFA to see the required RSA format.</small>
                         <span class="error-message text-danger text-sm hidden"></span>
                     </div>
                 </div>
@@ -140,6 +141,13 @@
 
 @push('scripts')
 <script>
+const BANKS_FROM_SERVER = @json($banks ?? []);
+const PFAS_FROM_SERVER = @json($pfas ?? []);
+
+function escapeRegExp(str) {
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Reusable function to create searchable select
 function createSearchableSelect(config) {
     const {
@@ -316,17 +324,25 @@ function validateStep3() {
         }
     });
 
-    // Validate bank account number (should be 10 digits)
+    // Validate bank account number (digits depend on selected bank)
+    const bankName = document.querySelector('[name="bank_name"]')?.value?.trim();
     const accountNumber = document.querySelector('[name="bank_account_number"]')?.value?.trim();
-    if (accountNumber && (!/^\d{10}$/.test(accountNumber))) {
-        showError('bank_account_number', 'Bank Account Number must be exactly 10 digits');
+    const bank = (BANKS_FROM_SERVER || []).find(b => b.name === bankName);
+    const bankDigits = Number(bank?.account_number_digits) || 10;
+    if (accountNumber && !(new RegExp(`^\\d{${bankDigits}}$`).test(accountNumber))) {
+        showError('bank_account_number', `Bank Account Number must be exactly ${bankDigits} digits`);
         isValid = false;
     }
 
-    // Validate RSA number format (PEN followed by 12 digits)
+    // Validate RSA number format (depends on selected PFA)
+    const pfaName = document.querySelector('[name="pfa_name"]')?.value?.trim();
     const rsaNumber = document.querySelector('[name="rsa_number"]')?.value?.trim();
-    if (rsaNumber && !/^PEN\d{12}$/.test(rsaNumber)) {
-        showError('rsa_number', 'RSA Number must be in format PEN followed by 12 digits (e.g., PEN123456789012)');
+    const pfa = (PFAS_FROM_SERVER || []).find(p => p.name === pfaName);
+    const prefix = String((pfa?.rsa_prefix || 'PEN')).toUpperCase();
+    const rsaDigits = Number(pfa?.rsa_digits) || 12;
+    const rsaRegex = new RegExp(`^${escapeRegExp(prefix)}\\d{${rsaDigits}}$`);
+    if (rsaNumber && !rsaRegex.test(rsaNumber)) {
+        showError('rsa_number', `RSA Number must be in format ${prefix} followed by ${rsaDigits} digits (e.g., ${prefix}${'0'.repeat(rsaDigits)})`);
         isValid = false;
     }
 
@@ -335,64 +351,39 @@ function validateStep3() {
 
 // Initialize selects on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Bank names list
-    const banks = [
-        'Access Bank Limited',
-        'Citibank Nigeria Limited',
-        'Ecobank Nigeria Limited',
-        'Fidelity Bank Plc',
-        'First Bank of Nigeria Limited',
-        'First City Monument Bank Limited',
-        'Globus Bank Limited',
-        'Guaranty Trust Bank Limited',
-        'Heritage Bank Plc',
-        'Keystone Bank Limited',
-        'Optimus Bank Limited',
-        'Parallex Bank Limited',
-        'Polaris Bank Limited',
-        'Premium Trust Bank Limited',
-        'Providus Bank Limited',
-        'Stanbic IBTC Bank Limited',
-        'Standard Chartered Bank Nigeria Limited',
-        'Sterling Bank Limited',
-        'SunTrust Bank Nigeria Limited',
-        'Titan Trust Bank Limited',
-        'Union Bank of Nigeria Plc',
-        'United Bank for Africa Plc',
-        'Unity Bank Plc',
-        'Wema Bank Plc',
-        'Zenith Bank Plc'
-    ];
-    
-    // PFA names list
-    const pfas = [
-        'Access Pensions',
-        'ARM Pension',
-        'AXA Mansard Pensions',
-        'Crusader Pensions',
-        'Fidelity Pensions',
-        'First Guarantee Pensions',
-        'Future Unity Glanvills Pensions',
-        'IEI-Anchor Pensions',
-        'Leadway Pensure PFA',
-        'Nigerian University Pension',
-        'NLPC Pension Fund Administrators',
-        'Oak Pensions',
-        'PAL Pensions',
-        'Pension Alliance Limited',
-        'Premium Pensions',
-        'Radix Pension Managers',
-        'Sigma Pensions',
-        'Stanbic IBTC Pension Managers',
-        'Tangerine Pensions',
-        'Trustfund Pensions',
-        'Veritas Glanvills Pensions'
-    ];
+    const banksFromServer = BANKS_FROM_SERVER || [];
+    const pfasFromServer = PFAS_FROM_SERVER || [];
+
+    const bankAccountInput = document.getElementById('bank_account_number');
+    const rsaInput = document.getElementById('rsa_number');
+    const bankHelp = document.getElementById('bank_account_help');
+    const rsaHelp = document.getElementById('rsa_help');
+
+    function applyBankDigits(digits) {
+        const n = Number(digits) || 10;
+        if (bankAccountInput) bankAccountInput.maxLength = n;
+        if (bankHelp) bankHelp.textContent = `Account number must be exactly ${n} digits for the selected bank.`;
+    }
+
+    function applyRsaFormat(prefix, digits) {
+        const p = String(prefix || 'PEN').toUpperCase();
+        const n = Number(digits) || 12;
+        const maxLen = p.length + n;
+        if (rsaInput) {
+            rsaInput.maxLength = maxLen;
+            rsaInput.placeholder = `${p}${'0'.repeat(n)}`;
+        }
+        if (rsaHelp) rsaHelp.textContent = `RSA must be ${p} followed by ${n} digits (e.g., ${p}${'0'.repeat(n)}).`;
+    }
     
     // Initialize Bank Name select
     const bankOptions = [
         {id: '', name: 'Select Bank...'},
-        ...banks.map(bank => ({id: bank, name: bank}))
+        ...banksFromServer.map(bank => ({
+            id: bank.name,
+            name: bank.name,
+            account_number_digits: bank.account_number_digits,
+        }))
     ];
     
     createSearchableSelect({
@@ -404,7 +395,8 @@ document.addEventListener('DOMContentLoaded', function() {
         displayTextId: 'bank_name_select_text',
         options: bankOptions,
         placeholder: 'Select Bank...',
-        searchPlaceholder: 'Search bank...'
+        searchPlaceholder: 'Search bank...',
+        onSelect: (bank) => applyBankDigits(bank?.account_number_digits),
     });
     
     // Set initial value if saved
@@ -412,12 +404,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedBankName) {
         document.getElementById('bank_name').value = savedBankName;
         document.getElementById('bank_name_select_text').textContent = savedBankName;
+        const bank = bankOptions.find(b => b.id === savedBankName);
+        applyBankDigits(bank?.account_number_digits);
+    } else {
+        applyBankDigits(10);
     }
     
     // Initialize PFA Name select
     const pfaOptions = [
         {id: '', name: 'Select PFA...'},
-        ...pfas.map(pfa => ({id: pfa, name: pfa}))
+        ...pfasFromServer.map(pfa => ({
+            id: pfa.name,
+            name: pfa.name,
+            rsa_prefix: pfa.rsa_prefix,
+            rsa_digits: pfa.rsa_digits,
+        }))
     ];
     
     createSearchableSelect({
@@ -429,7 +430,8 @@ document.addEventListener('DOMContentLoaded', function() {
         displayTextId: 'pfa_name_select_text',
         options: pfaOptions,
         placeholder: 'Select PFA...',
-        searchPlaceholder: 'Search PFA...'
+        searchPlaceholder: 'Search PFA...',
+        onSelect: (pfa) => applyRsaFormat(pfa?.rsa_prefix, pfa?.rsa_digits),
     });
     
     // Set initial value if saved
@@ -437,6 +439,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedPfaName) {
         document.getElementById('pfa_name').value = savedPfaName;
         document.getElementById('pfa_name_select_text').textContent = savedPfaName;
+        const pfa = pfaOptions.find(p => p.id === savedPfaName);
+        applyRsaFormat(pfa?.rsa_prefix, pfa?.rsa_digits);
+    } else {
+        applyRsaFormat('PEN', 12);
     }
 });
 

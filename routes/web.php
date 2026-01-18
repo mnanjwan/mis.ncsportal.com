@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AccountChangeRequestController;
+use App\Http\Controllers\Accounts\BankController as AccountsBankController;
+use App\Http\Controllers\Accounts\PfaController as AccountsPfaController;
 use App\Http\Controllers\NextOfKinChangeRequestController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -606,6 +608,24 @@ Route::middleware('auth')->group(function () {
     // Accounts Routes
     Route::prefix('accounts')->name('accounts.')->middleware('role:Accounts')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'accounts'])->name('dashboard');
+        Route::resource('banks', AccountsBankController::class)->names([
+            'index' => 'banks.index',
+            'create' => 'banks.create',
+            'store' => 'banks.store',
+            'show' => 'banks.show',
+            'edit' => 'banks.edit',
+            'update' => 'banks.update',
+            'destroy' => 'banks.destroy',
+        ]);
+        Route::resource('pfas', AccountsPfaController::class)->names([
+            'index' => 'pfas.index',
+            'create' => 'pfas.create',
+            'store' => 'pfas.store',
+            'show' => 'pfas.show',
+            'edit' => 'pfas.edit',
+            'update' => 'pfas.update',
+            'destroy' => 'pfas.destroy',
+        ]);
         Route::get('/validated-officers', [EmolumentController::class, 'validated'])->name('validated-officers');
         Route::get('/processed-history', [EmolumentController::class, 'processedHistory'])->name('processed-history');
         Route::get('/processed-history/export', [EmolumentController::class, 'exportProcessedReport'])->name('processed-history.export');

@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             LeaveTypeSeeder::class,
             ZoneAndCommandSeeder::class, // Zones and all commands
+            BankSeeder::class,
+            PfaSeeder::class,
         ]);
         
         // Step 2: Create system users (CGC, TRADOC, ICT, Admin users)

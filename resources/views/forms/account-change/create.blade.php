@@ -110,13 +110,15 @@
                             <label for="new_bank_name" class="block text-sm font-medium text-foreground mb-2">
                                 New Bank Name
                             </label>
-                            <input type="text" 
-                                   id="new_bank_name" 
-                                   name="new_bank_name" 
-                                   value="{{ old('new_bank_name') }}"
-                                   class="kt-input w-full" 
-                                   placeholder="Enter new bank name"
-                                   maxlength="255">
+                            <select id="new_bank_name" name="new_bank_name" class="kt-input w-full">
+                                <option value="">-- Select Bank (optional) --</option>
+                                @foreach(($banks ?? []) as $bank)
+                                    @php($bankName = data_get($bank, 'name'))
+                                    <option value="{{ $bankName }}" {{ old('new_bank_name') === $bankName ? 'selected' : '' }}>
+                                        {{ $bankName }}
+                                    </option>
+                                @endforeach
+                            </select>
                             <p class="text-xs text-secondary-foreground mt-1">
                                 Leave blank if you don't want to change bank name
                             </p>
@@ -161,13 +163,15 @@
                             <label for="new_pfa_name" class="block text-sm font-medium text-foreground mb-2">
                                 New PFA Name
                             </label>
-                            <input type="text" 
-                                   id="new_pfa_name" 
-                                   name="new_pfa_name" 
-                                   value="{{ old('new_pfa_name') }}"
-                                   class="kt-input w-full" 
-                                   placeholder="Enter new PFA name"
-                                   maxlength="255">
+                            <select id="new_pfa_name" name="new_pfa_name" class="kt-input w-full">
+                                <option value="">-- Select PFA (optional) --</option>
+                                @foreach(($pfas ?? []) as $pfa)
+                                    @php($pfaName = data_get($pfa, 'name'))
+                                    <option value="{{ $pfaName }}" {{ old('new_pfa_name') === $pfaName ? 'selected' : '' }}>
+                                        {{ $pfaName }}
+                                    </option>
+                                @endforeach
+                            </select>
                             <p class="text-xs text-secondary-foreground mt-1">
                                 Leave blank if you don't want to change PFA name
                             </p>
@@ -183,11 +187,10 @@
                                    name="new_rsa_pin" 
                                    value="{{ old('new_rsa_pin') }}"
                                    class="kt-input w-full" 
-                                   placeholder="PEN123456789012"
-                                   maxlength="15"
-                                   pattern="PEN\d{12}">
+                                   placeholder="Enter new RSA (depends on PFA)"
+                                   maxlength="50">
                             <p class="text-xs text-secondary-foreground mt-1">
-                                RSA PIN must have prefix PEN followed by 12 digits (e.g., PEN123456789012)
+                                RSA format depends on the selected PFA (prefix + configured digits).
                             </p>
                             <p class="text-xs text-secondary-foreground mt-1">
                                 Leave blank if you don't want to change RSA PIN

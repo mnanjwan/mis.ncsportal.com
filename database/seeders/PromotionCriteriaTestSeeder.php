@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Command;
+use App\Models\Bank;
 use App\Models\Officer;
+use App\Models\Pfa;
 use App\Models\Role;
 use App\Models\User;
 use Carbon\Carbon;
@@ -27,6 +29,25 @@ class PromotionCriteriaTestSeeder extends Seeder
             $this->command->error('No commands found. Please run ZoneAndCommandSeeder first.');
             return;
         }
+
+        $bankRecords = Bank::query()->where('is_active', true)->get(['name', 'account_number_digits']);
+        if ($bankRecords->isEmpty()) {
+            $bankRecords = collect(['Zenith Bank'])->map(fn ($name) => (object) ['name' => $name, 'account_number_digits' => 10]);
+        }
+
+        $pfaRecords = Pfa::query()->where('is_active', true)->get(['name', 'rsa_prefix', 'rsa_digits']);
+        if ($pfaRecords->isEmpty()) {
+            $pfaRecords = collect(['Stanbic IBTC Pension'])->map(fn ($name) => (object) ['name' => $name, 'rsa_prefix' => 'PEN', 'rsa_digits' => 12]);
+        }
+
+        $randomDigits = function (int $length): string {
+            $length = max(1, $length);
+            $out = '';
+            for ($i = 0; $i < $length; $i++) {
+                $out .= (string) random_int(0, 9);
+            }
+            return $out;
+        };
 
         // Get HRD user for created_by field
         $hrdUser = User::where('email', 'hrd@ncs.gov.ng')->first();
@@ -114,6 +135,8 @@ class PromotionCriteriaTestSeeder extends Seeder
             $user->roles()->attach($officerRole->id, ['is_active' => true, 'assigned_at' => now()]);
 
             // Create Officer Profile
+            $bank = $bankRecords->random();
+            $pfa = $pfaRecords->random();
             $officer = Officer::create([
                 'user_id' => $user->id,
                 'service_number' => $serviceNumber, // Mutator will add NCS prefix
@@ -138,11 +161,11 @@ class PromotionCriteriaTestSeeder extends Seeder
                 'date_posted_to_station' => $dateOfPresentAppointment->copy()->subMonths(rand(0, 6)),
                 'phone_number' => '080' . rand(10000000, 99999999),
                 'email' => $user->email,
-                'bank_name' => 'Zenith Bank',
-                'bank_account_number' => str_pad(rand(0, 9999999999), 10, '0', STR_PAD_LEFT),
+                'bank_name' => $bank->name,
+                'bank_account_number' => $randomDigits((int) ($bank->account_number_digits ?? 10)),
                 'sort_code' => str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT),
-                'pfa_name' => 'Stanbic IBTC Pension',
-                'rsa_number' => 'PEN' . str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT),
+                'pfa_name' => $pfa->name,
+                'rsa_number' => strtoupper((string) ($pfa->rsa_prefix ?? 'PEN')) . $randomDigits((int) ($pfa->rsa_digits ?? 12)),
                 'unit' => 'Unit 1',
                 'interdicted' => false,
                 'suspended' => false,
