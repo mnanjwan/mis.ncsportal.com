@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Emolument;
 use App\Models\EmolumentTimeline;
 use App\Models\LeaveApplication;
@@ -1183,6 +1184,95 @@ class OfficerController extends Controller
 
         return redirect()->route('officer.settings')
             ->with('success', 'Password changed successfully. A notification has been sent to your email.');
+    }
+
+    public function contactDetails()
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
+        }
+
+        return view('dashboards.officer.contact-details', compact('officer'));
+    }
+
+    public function updateContactDetails(Request $request)
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $validated = $request->validate([
+            'phone_number' => 'required|string|max:20',
+            'residential_address' => 'required|string|max:500',
+            'permanent_home_address' => 'required|string|max:500',
+        ]);
+
+        $oldValues = [
+            'phone_number' => $officer->phone_number,
+            'residential_address' => $officer->residential_address,
+            'permanent_home_address' => $officer->permanent_home_address,
+        ];
+
+        $officer->update($validated);
+        $officer->refresh();
+
+        $newValues = [
+            'phone_number' => $officer->phone_number,
+            'residential_address' => $officer->residential_address,
+            'permanent_home_address' => $officer->permanent_home_address,
+        ];
+
+        $auditLog = new AuditLog([
+            'user_id' => $user->id,
+            'action' => 'officer_contact_updated',
+            'entity_type' => 'Officer',
+            'entity_id' => $officer->id,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+        $auditLog->created_at = now();
+        $auditLog->save();
+
+        // Notify Staff Officer(s) assigned to the officer's command (in-app + email)
+        $commandId = $officer->present_station;
+        if (!empty($commandId)) {
+            $staffOfficers = \App\Models\User::query()
+                ->where('is_active', true)
+                ->whereHas('roles', function ($query) use ($commandId) {
+                    $query->where('name', 'Staff Officer')
+                        ->where('user_roles.is_active', true)
+                        ->where('user_roles.command_id', $commandId);
+                })
+                ->get();
+
+            if ($staffOfficers->isNotEmpty()) {
+                $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+                $serviceNumber = $officer->service_number ?? 'N/A';
+
+                $notificationService = app(\App\Services\NotificationService::class);
+                $notificationService->notifyMany(
+                    $staffOfficers,
+                    'officer_contact_updated',
+                    'Officer Contact Details Updated',
+                    "Officer {$officerName} ({$serviceNumber}) updated their phone number and/or address details.",
+                    'officer',
+                    $officer->id,
+                    true
+                );
+            }
+        }
+
+        return redirect()
+            ->route('officer.settings.contact-details')
+            ->with('success', 'Contact details updated successfully.');
     }
 
     public function emoluments(Request $request)

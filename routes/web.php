@@ -109,6 +109,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/profile/update-picture', [OfficerController::class, 'updateProfilePicture'])->name('profile.update-picture');
         Route::get('/settings', [OfficerController::class, 'settings'])->name('settings');
         Route::post('/settings/change-password', [OfficerController::class, 'changePassword'])->name('settings.change-password');
+        Route::get('/settings/contact-details', [OfficerController::class, 'contactDetails'])->name('settings.contact-details');
+        Route::post('/settings/contact-details', [OfficerController::class, 'updateContactDetails'])->name('settings.contact-details.update');
         Route::get('/emoluments', [EmolumentController::class, 'index'])->name('emoluments');
         Route::get('/emoluments/{id}', [EmolumentController::class, 'show'])->name('emoluments.show');
         Route::get('/account-change', [AccountChangeRequestController::class, 'index'])->name('account-change.index');

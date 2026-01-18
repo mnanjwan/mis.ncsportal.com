@@ -117,6 +117,7 @@
                 'icon' => 'ki-filled ki-profile-circle',
                 'submenu' => [
                     ['title' => 'My Profile', 'href' => route('officer.profile')],
+                    ['title' => 'Contact Details', 'href' => route('officer.settings.contact-details')],
                     ['title' => 'Change Password', 'href' => route('officer.settings')],
                 ]
             ],
@@ -166,6 +167,7 @@
                         'icon' => 'ki-filled ki-profile-circle',
                         'submenu' => [
                             ['title' => 'My Profile', 'href' => route('officer.profile')],
+                            ['title' => 'Contact Details', 'href' => route('officer.settings.contact-details')],
                             ['title' => 'Change Password', 'href' => route('officer.settings')],
                         ]
                     ],

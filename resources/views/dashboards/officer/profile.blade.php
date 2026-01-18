@@ -161,6 +161,9 @@
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Contact Information</h3>
+                    <a href="{{ route('officer.settings.contact-details') }}" class="kt-btn kt-btn-secondary kt-btn-sm">
+                        Update
+                    </a>
                 </div>
                 <div class="kt-card-content">
                     <div class="flex flex-col gap-4">
