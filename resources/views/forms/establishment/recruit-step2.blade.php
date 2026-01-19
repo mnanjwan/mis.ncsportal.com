@@ -534,8 +534,8 @@ function addEducationEntry(data = null) {
         // Initialize Institution select
         const institutionOptions = [
             {id: '', name: '-- Select Institution --'},
-            ...institutionMasterList.map(name => ({id: name, name: name})),
-            {id: ADD_NEW_VALUE, name: '-- Add New Institution (type below) --'}
+            {id: ADD_NEW_VALUE, name: '-- Add New Institution (type below) --'},
+            ...institutionMasterList.map(name => ({id: name, name: name}))
         ];
         
         createSearchableSelect({
@@ -597,8 +597,8 @@ function addEducationEntry(data = null) {
         // Initialize Discipline select
         const disciplineOptions = [
             {id: '', name: '-- Select Discipline --'},
-            ...disciplineMasterList.map(name => ({id: name, name: name})),
-            {id: ADD_NEW_VALUE, name: '-- Add New Discipline (type below) --'}
+            {id: ADD_NEW_VALUE, name: '-- Add New Discipline (type below) --'},
+            ...disciplineMasterList.map(name => ({id: name, name: name}))
         ];
         
         createSearchableSelect({
