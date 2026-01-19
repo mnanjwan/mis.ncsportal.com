@@ -28,6 +28,9 @@ use App\Models\DeceasedOfficer;
 use App\Models\Query;
 use App\Models\Bank;
 use App\Models\Pfa;
+use App\Models\Institution;
+use App\Models\Discipline;
+use App\Services\EducationMasterDataSync;
 
 class DashboardController extends Controller
 {
@@ -1624,6 +1627,19 @@ class DashboardController extends Controller
         // Load zones for the view
         $zones = \App\Models\Zone::orderBy('name')->get();
 
+        // Institution/Discipline master lists (for dropdown + add-new)
+        $institutions = Institution::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $disciplines = Discipline::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
         // Get ranks and grade levels
         $ranks = [
             'CGC',
@@ -1650,7 +1666,7 @@ class DashboardController extends Controller
             'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17',
         ];
 
-        return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels'));
+        return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels', 'institutions', 'disciplines'));
     }
 
     public function saveOnboardingStep2(Request $request)
@@ -1670,6 +1686,9 @@ class DashboardController extends Controller
             'education.*.year_obtained' => 'required|integer|min:1950|max:' . date('Y'),
             'education.*.discipline' => 'nullable|string|max:255',
         ]);
+
+        // Upsert into shared master lists for future selection
+        app(EducationMasterDataSync::class)->syncFromEducationArray($validated['education']);
 
         session(['onboarding_step2' => $validated]);
         return redirect()->route('onboarding.step3');

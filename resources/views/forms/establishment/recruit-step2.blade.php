@@ -326,116 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSavedDocuments();
 });
 
-// Nigerian Institutions List (Universities and other institutions)
-const nigerianUniversities = [
-    'University of Lagos (UNILAG)',
-    'University of Ibadan (UI)',
-    'Ahmadu Bello University (ABU)',
-    'University of Nigeria, Nsukka (UNN)',
-    'Obafemi Awolowo University (OAU)',
-    'University of Benin (UNIBEN)',
-    'University of Ilorin (UNILORIN)',
-    'University of Port Harcourt (UNIPORT)',
-    'University of Calabar (UNICAL)',
-    'University of Jos (UNIJOS)',
-    'University of Maiduguri (UNIMAID)',
-    'University of Uyo (UNIUYO)',
-    'Nnamdi Azikiwe University (UNIZIK)',
-    'Federal University of Technology, Akure (FUTA)',
-    'Federal University of Technology, Minna (FUTMINNA)',
-    'Federal University of Technology, Owerri (FUTO)',
-    'Federal University of Agriculture, Abeokuta (FUNAAB)',
-    'Federal University of Agriculture, Makurdi (FUAM)',
-    'Federal University of Petroleum Resources, Effurun (FUPRE)',
-    'Lagos State University (LASU)',
-    'Rivers State University (RSU)',
-    'Delta State University (DELSU)',
-    'Enugu State University of Science and Technology (ESUT)',
-    'Abia State University (ABSU)',
-    'Imo State University (IMSU)',
-    'Anambra State University (ANSU)',
-    'Bayelsa Medical University (BMU)',
-    'Benue State University (BSU)',
-    'Cross River University of Technology (CRUTECH)',
-    'Ebonyi State University (EBSU)',
-    'Ekiti State University (EKSU)',
-    'Kaduna State University (KASU)',
-    'Kano University of Science and Technology (KUST)',
-    'Kebbi State University of Science and Technology (KSUSTA)',
-    'Kwara State University (KWASU)',
-    'Nasarawa State University (NSUK)',
-    'Ondo State University of Science and Technology (OSUSTECH)',
-    'Osun State University (UNIOSUN)',
-    'Plateau State University (PLASU)',
-    'Sokoto State University (SSU)',
-    'Taraba State University (TSU)',
-    'Yobe State University (YSU)',
-    'Zamfara State University (ZASU)',
-    'Covenant University',
-    'Babcock University',
-    'Afe Babalola University (ABUAD)',
-    'American University of Nigeria (AUN)',
-    'Bells University of Technology',
-    'Benson Idahosa University',
-    'Bingham University',
-    'Bowen University',
-    'Caleb University',
-    'Caritas University',
-    'Crawford University',
-    'Crescent University',
-    'Edwin Clark University',
-    'Elizade University',
-    'Evangel University',
-    'Fountain University',
-    'Godfrey Okoye University',
-    'Gregory University',
-    'Hallmark University',
-    'Hezekiah University',
-    'Igbinedion University',
-    'Joseph Ayo Babalola University',
-    'Kings University',
-    'Kwararafa University',
-    'Landmark University',
-    'Lead City University',
-    'Madonna University',
-    'McPherson University',
-    'Michael Okpara University of Agriculture, Umudike',
-    'Nile University of Nigeria',
-    'Novena University',
-    'Obong University',
-    'Oduduwa University',
-    'Pan-Atlantic University',
-    'Paul University',
-    'Redeemer\'s University',
-    'Rhema University',
-    'Ritman University',
-    'Salem University',
-    'Samuel Adegboyega University',
-    'Southwestern University',
-    'Summit University',
-    'Tansian University',
-    'University of Mkar',
-    'Veritas University',
-    'Wesley University',
-    'Western Delta University',
-    // Benin Republic Universities
-    'University of Abomey-Calavi (UAC)',
-    'University of Parakou',
-    'National University of Sciences, Technologies, Engineering, and Mathematics (UNSTIM)',
-    'National University of Agriculture (UNA)',
-    'African School of Economics (ASE)',
-    'ESAE University (École Supérieure d\'Administration, d\'Économie, de Journalisme et des Métiers de l\'Audiovisuel)',
-    'ESCAE-University, Benin',
-    'ISFOP Benin University',
-    'Houdegbe North American University Benin (HNAUB)',
-    'Université Catholique de l\'Afrique de l\'Ouest (UCAO)',
-    'Université des Sciences et Technologies du Bénin',
-    'Université Africaine de Technologie et de Management',
-    'Université Protestante de l\'Afrique de l\'Ouest',
-    'Université Polytechnique Internationale du Bénin',
-    'Université des Sciences Appliquées et du Management',
-    'Other'
-];
+// Institution master list (from DB)
+const institutionMasterList = @json($institutions ?? []);
 
 // Qualifications List - Entry Qualifications prioritized
 const qualifications = [
@@ -481,129 +373,10 @@ const qualifications = [
     'Other'
 ];
 
-// Comprehensive Disciplines List
-const disciplines = [
-    'Accounting',
-    'Actuarial Science',
-    'Agricultural Economics',
-    'Agricultural Engineering',
-    'Agricultural Extension',
-    'Agriculture',
-    'Anatomy',
-    'Animal Science',
-    'Architecture',
-    'Banking and Finance',
-    'Biochemistry',
-    'Biology',
-    'Biomedical Engineering',
-    'Botany',
-    'Business Administration',
-    'Chemical Engineering',
-    'Chemistry',
-    'Civil Engineering',
-    'Computer Engineering',
-    'Computer Science',
-    'Criminology',
-    'Crop Science',
-    'Dentistry',
-    'Economics',
-    'Education',
-    'Electrical Engineering',
-    'English Language',
-    'Environmental Science',
-    'Estate Management',
-    'Finance',
-    'Fisheries',
-    'Food Science and Technology',
-    'Forestry',
-    'Geography',
-    'Geology',
-    'History',
-    'Human Resource Management',
-    'Industrial Chemistry',
-    'Information Technology',
-    'Law',
-    'Library Science',
-    'Linguistics',
-    'Marine Engineering',
-    'Marketing',
-    'Mass Communication',
-    'Mathematics',
-    'Mechanical Engineering',
-    'Medicine and Surgery',
-    'Microbiology',
-    'Nursing',
-    'Petroleum Engineering',
-    'Pharmacy',
-    'Philosophy',
-    'Physics',
-    'Political Science',
-    'Psychology',
-    'Public Administration',
-    'Quantity Surveying',
-    'Sociology',
-    'Soil Science',
-    'Statistics',
-    'Surveying and Geoinformatics',
-    'Veterinary Medicine',
-    'Zoology',
-    'Agricultural Science',
-    'Animal Husbandry',
-    'Building Technology',
-    'Business Management',
-    'Chemical Science',
-    'Communication Arts',
-    'Computer Education',
-    'Crop Production',
-    'Economics and Statistics',
-    'Educational Administration',
-    'Educational Psychology',
-    'Electronics Engineering',
-    'Environmental Management',
-    'Food Technology',
-    'Geophysics',
-    'Guidance and Counseling',
-    'Health Education',
-    'Home Economics',
-    'Human Kinetics',
-    'Industrial Mathematics',
-    'Insurance',
-    'International Relations',
-    'Journalism',
-    'Laboratory Technology',
-    'Land Surveying',
-    'Management',
-    'Marine Science',
-    'Materials Science',
-    'Mechanical Engineering Technology',
-    'Medical Laboratory Science',
-    'Metallurgical Engineering',
-    'Nutrition and Dietetics',
-    'Office Technology and Management',
-    'Operations Research',
-    'Optometry',
-    'Peace and Conflict Studies',
-    'Petroleum and Gas Engineering',
-    'Physics with Electronics',
-    'Plant Science',
-    'Project Management',
-    'Public Health',
-    'Pure and Applied Mathematics',
-    'Radiography',
-    'Real Estate Management',
-    'Religious Studies',
-    'Science Education',
-    'Social Work',
-    'Software Engineering',
-    'Soil Science and Land Management',
-    'Statistics and Computer Science',
-    'Telecommunications Engineering',
-    'Textile Technology',
-    'Transport Management',
-    'Urban and Regional Planning',
-    'Water Resources Engineering',
-    'Wildlife Management'
-];
+// Discipline master list (from DB)
+const disciplineMasterList = @json($disciplines ?? []);
+
+const ADD_NEW_VALUE = '__ADD_NEW__';
 
 let educationEntryCount = 0;
 
@@ -673,6 +446,11 @@ function addEducationEntry(data = null) {
                         </div>
                         <div id="education_university_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
                     </div>
+                    <input type="text"
+                           id="education_university_${entryId}_custom"
+                           class="kt-input mt-2 hidden"
+                           placeholder="Type institution name..."
+                           autocomplete="off">
                 </div>
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
@@ -733,6 +511,11 @@ function addEducationEntry(data = null) {
                         </div>
                         <div id="education_discipline_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
                     </div>
+                    <input type="text"
+                           id="education_discipline_${entryId}_custom"
+                           class="kt-input mt-2 hidden"
+                           placeholder="Type discipline (optional)..."
+                           autocomplete="off">
                 </div>
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
@@ -751,7 +534,8 @@ function addEducationEntry(data = null) {
         // Initialize Institution select
         const institutionOptions = [
             {id: '', name: '-- Select Institution --'},
-            ...nigerianUniversities.map(uni => ({id: uni, name: uni}))
+            ...institutionMasterList.map(name => ({id: name, name: name})),
+            {id: ADD_NEW_VALUE, name: '-- Add New Institution (type below) --'}
         ];
         
         createSearchableSelect({
@@ -763,8 +547,34 @@ function addEducationEntry(data = null) {
             displayTextId: `education_university_${entryId}_select_text`,
             options: institutionOptions,
             placeholder: '-- Select Institution --',
-            searchPlaceholder: 'Search institution...'
+            searchPlaceholder: 'Search institution...',
+            onSelect: function(option) {
+                const hidden = document.getElementById(`education_university_${entryId}_id`);
+                const customInput = document.getElementById(`education_university_${entryId}_custom`);
+                const displayText = document.getElementById(`education_university_${entryId}_select_text`);
+
+                if (!hidden || !customInput || !displayText) return;
+
+                if (option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
+                    hidden.value = customInput.value.trim();
+                    displayText.textContent = '-- Add New Institution (type below) --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                }
+            }
         });
+
+        const institutionCustomInput = document.getElementById(`education_university_${entryId}_custom`);
+        const institutionHidden = document.getElementById(`education_university_${entryId}_id`);
+        if (institutionCustomInput && institutionHidden) {
+            institutionCustomInput.addEventListener('input', function() {
+                institutionHidden.value = this.value.trim();
+            });
+        }
         
         // Initialize Entry Qualification select
         const qualificationOptions = [
@@ -787,7 +597,8 @@ function addEducationEntry(data = null) {
         // Initialize Discipline select
         const disciplineOptions = [
             {id: '', name: '-- Select Discipline --'},
-            ...disciplines.map(disc => ({id: disc, name: disc}))
+            ...disciplineMasterList.map(name => ({id: name, name: name})),
+            {id: ADD_NEW_VALUE, name: '-- Add New Discipline (type below) --'}
         ];
         
         createSearchableSelect({
@@ -799,8 +610,34 @@ function addEducationEntry(data = null) {
             displayTextId: `education_discipline_${entryId}_select_text`,
             options: disciplineOptions,
             placeholder: '-- Select Discipline --',
-            searchPlaceholder: 'Search discipline...'
+            searchPlaceholder: 'Search discipline...',
+            onSelect: function(option) {
+                const hidden = document.getElementById(`education_discipline_${entryId}_id`);
+                const customInput = document.getElementById(`education_discipline_${entryId}_custom`);
+                const displayText = document.getElementById(`education_discipline_${entryId}_select_text`);
+
+                if (!hidden || !customInput || !displayText) return;
+
+                if (option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
+                    hidden.value = customInput.value.trim();
+                    displayText.textContent = '-- Add New Discipline (type below) --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                }
+            }
         });
+
+        const disciplineCustomInput = document.getElementById(`education_discipline_${entryId}_custom`);
+        const disciplineHidden = document.getElementById(`education_discipline_${entryId}_id`);
+        if (disciplineCustomInput && disciplineHidden) {
+            disciplineCustomInput.addEventListener('input', function() {
+                disciplineHidden.value = this.value.trim();
+            });
+        }
     }
 }
 
@@ -832,8 +669,8 @@ function initializeUniversitySearch(entryId) {
             return;
         }
         
-        const filtered = nigerianUniversities.filter(uni => 
-            uni.toLowerCase().includes(searchTerm)
+        const filtered = institutionMasterList.filter(uni =>
+            String(uni).toLowerCase().includes(searchTerm)
         );
         
         if (filtered.length > 0) {
@@ -893,8 +730,8 @@ function initializeDisciplineSearch(entryId) {
             return;
         }
         
-        const filtered = disciplines.filter(disc => 
-            disc.toLowerCase().includes(searchTerm)
+        const filtered = disciplineMasterList.filter(disc =>
+            String(disc).toLowerCase().includes(searchTerm)
         );
         
         if (filtered.length > 0) {

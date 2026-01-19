@@ -8,7 +8,10 @@ use App\Models\Officer;
 use App\Models\User;
 use App\Models\Zone;
 use App\Models\Command;
+use App\Models\Discipline;
+use App\Models\Institution;
 use App\Services\NotificationService;
+use App\Services\EducationMasterDataSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -264,6 +267,19 @@ class RecruitOnboardingController extends Controller
         $savedData = session('recruit_onboarding_step2', []);
         $zones = Zone::orderBy('name')->get();
         $commands = Command::with('zone')->orderBy('name')->get();
+
+        // Institution/Discipline master lists (for dropdown + add-new)
+        $institutions = Institution::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $disciplines = Discipline::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
         
         // Find TRADOC command and set defaults
         $tradocCommand = Command::where(function($query) {
@@ -300,7 +316,7 @@ class RecruitOnboardingController extends Controller
             $savedData['command_id'] = $tradocCommand->id;
         }
         
-        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'recruit', 'zones', 'commands'));
+        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'recruit', 'zones', 'commands', 'institutions', 'disciplines'));
     }
 
     /**
@@ -381,6 +397,9 @@ class RecruitOnboardingController extends Controller
         if (empty($validated['documents']) || count($validated['documents']) < 1) {
             return back()->withErrors(['documents' => 'At least one document is required.'])->withInput();
         }
+
+        // Upsert into shared master lists for future selection
+        app(EducationMasterDataSync::class)->syncFromEducationArray($validated['education']);
 
         session(['recruit_onboarding_step2' => $validated]);
         return redirect()->route('recruit.onboarding.step3', ['token' => $token]);

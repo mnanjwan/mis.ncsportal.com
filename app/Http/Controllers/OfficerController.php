@@ -11,7 +11,10 @@ use App\Models\OfficerQuarter;
 use App\Models\OfficerCourse;
 use App\Models\Query;
 use App\Models\APERForm;
+use App\Models\Institution;
+use App\Models\Discipline;
 use App\Services\NotificationService;
+use App\Services\EducationMasterDataSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -688,7 +691,19 @@ class OfficerController extends Controller
             ];
         }
 
-        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData'));
+        $institutions = Institution::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $disciplines = Discipline::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData', 'institutions', 'disciplines'));
     }
 
     public function update(Request $request, $id)
@@ -738,6 +753,10 @@ class OfficerController extends Controller
 
         // Process education data
         $education = $validated['education'];
+
+        // Upsert into shared master lists for future selection
+        app(EducationMasterDataSync::class)->syncFromEducationArray($education);
+
         $validated['entry_qualification'] = isset($education[0]) ? $education[0]['qualification'] : null;
         $validated['discipline'] = isset($education[0]) ? ($education[0]['discipline'] ?? null) : null;
         $validated['additional_qualification'] = count($education) > 0 ? json_encode($education) : null; // Store ALL entries including first one

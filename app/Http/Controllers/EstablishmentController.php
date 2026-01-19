@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\EducationMasterDataSync;
 use App\Helpers\AppointmentNumberHelper;
 use App\Helpers\ServiceNumberHelper;
 use App\Jobs\SendRecruitOnboardingLinkJob;
@@ -426,6 +427,9 @@ class EstablishmentController extends Controller
             'education.*.year_obtained' => 'required|integer|min:1950|max:' . date('Y'),
             'education.*.discipline' => 'nullable|string|max:255',
         ]);
+
+        // Upsert into shared master lists for future selection
+        app(EducationMasterDataSync::class)->syncFromEducationArray($validated['education']);
 
         session(['recruit_step2' => $validated]);
         return redirect()->route('establishment.new-recruits.step3');
