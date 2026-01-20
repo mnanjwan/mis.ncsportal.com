@@ -50,7 +50,7 @@
                     <div class="kt-alert kt-alert-warning mb-5">
                         <i class="ki-filled ki-information"></i>
                         <div>
-                            <strong>Address Locked:</strong> You cannot change your address while you are quartered. You can still update your phone number.
+                            <strong>Quartered Address:</strong> Your residential address is managed automatically from your allocated quarter. You can still update your phone number and permanent home address.
                         </div>
                     </div>
                 @endif
@@ -98,8 +98,7 @@
                                 class="kt-input @error('permanent_home_address') border-danger @enderror"
                                 rows="4"
                                 required
-                                @if($officer->quartered) readonly @endif
-                                style="@if($officer->quartered) background-color: rgba(0,0,0,0.03); cursor: not-allowed; @endif @error('permanent_home_address') border-color: #dc3545 !important; @enderror"
+                                style="@error('permanent_home_address') border-color: #dc3545 !important; @enderror"
                             >{{ old('permanent_home_address', $officer->permanent_home_address) }}</textarea>
                             @error('permanent_home_address')
                                 <span class="text-sm" style="color: #dc3545 !important; font-weight: 500; display: block; margin-top: 4px;">{{ $message }}</span>

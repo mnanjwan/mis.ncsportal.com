@@ -14,7 +14,7 @@ class OfficerQuarteredAddressRestrictionTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function quartered_officer_cannot_change_addresses_but_can_change_phone_number(): void
+    public function quartered_officer_cannot_change_residential_address_but_can_change_phone_and_permanent_home_address(): void
     {
         $this->seed(\Database\Seeders\RoleSeeder::class);
 
@@ -51,41 +51,41 @@ class OfficerQuarteredAddressRestrictionTest extends TestCase
             'discipline' => 'Computer Science',
             'present_station' => $command->id,
             'phone_number' => '08000000000',
-            'residential_address' => 'Old Residential Address',
+            'residential_address' => 'Q-001 - Type A',
             'permanent_home_address' => 'Old Permanent Address',
             'is_active' => true,
             'profile_picture_url' => 'officers/default.png', // satisfies onboarding.complete middleware
             'quartered' => true,
         ]);
 
-        // Attempt to change address while quartered -> should fail and not change addresses.
+        // Attempt to change residential while quartered -> should fail.
         $response = $this->actingAs($user)->post(route('officer.settings.contact-details.update'), [
             'phone_number' => '08000000001',
             'residential_address' => 'New Residential Address',
-            'permanent_home_address' => 'New Permanent Address',
+            'permanent_home_address' => 'New Permanent Address', // should not be applied because request is rejected
         ]);
 
         $response->assertStatus(302);
-        $response->assertSessionHasErrors(['residential_address', 'permanent_home_address']);
+        $response->assertSessionHasErrors(['residential_address']);
 
         $officer->refresh();
-        $this->assertSame('Old Residential Address', $officer->residential_address);
+        $this->assertSame('Q-001 - Type A', $officer->residential_address);
         $this->assertSame('Old Permanent Address', $officer->permanent_home_address);
         $this->assertSame('08000000000', $officer->phone_number, 'Phone number should not update when request is rejected.');
 
-        // Try again without changing addresses -> phone number should update.
+        // Try again without changing residential -> phone + permanent home should update.
         $response2 = $this->actingAs($user)->post(route('officer.settings.contact-details.update'), [
             'phone_number' => '08000000002',
-            'residential_address' => 'Old Residential Address',
-            'permanent_home_address' => 'Old Permanent Address',
+            'residential_address' => 'Q-001 - Type A',
+            'permanent_home_address' => 'New Permanent Address',
         ]);
 
         $response2->assertStatus(302);
         $response2->assertSessionHasNoErrors();
 
         $officer->refresh();
-        $this->assertSame('Old Residential Address', $officer->residential_address);
-        $this->assertSame('Old Permanent Address', $officer->permanent_home_address);
+        $this->assertSame('Q-001 - Type A', $officer->residential_address);
+        $this->assertSame('New Permanent Address', $officer->permanent_home_address);
         $this->assertSame('08000000002', $officer->phone_number);
     }
 

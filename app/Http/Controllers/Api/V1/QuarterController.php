@@ -7,6 +7,7 @@ use App\Models\OfficerQuarter;
 use App\Models\Quarter;
 use App\Models\QuarterRequest;
 use App\Services\NotificationService;
+use App\Services\QuarterAddressFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -417,7 +418,7 @@ class QuarterController extends BaseController
 
         $allocation->update([
             'is_current' => false,
-            'deallocation_date' => now(),
+            'deallocated_date' => now(),
         ]);
 
         // Mark quarter as available
@@ -426,7 +427,21 @@ class QuarterController extends BaseController
         // Update officer's quartered status
         $officer = $allocation->officer;
         $quarter = $allocation->quarter;
-        $officer->update(['quartered' => false]);
+        // If officer still has another accepted current allocation, keep them quartered and sync address.
+        $otherAccepted = OfficerQuarter::where('officer_id', $officer->id)
+            ->where('is_current', true)
+            ->where('status', 'ACCEPTED')
+            ->with('quarter')
+            ->first();
+
+        if ($otherAccepted && $otherAccepted->quarter) {
+            $officer->update([
+                'quartered' => true,
+                'residential_address' => QuarterAddressFormatter::format($otherAccepted->quarter),
+            ]);
+        } else {
+            $officer->update(['quartered' => false]);
+        }
 
         // Notify officer about quarter deallocation
         $notificationService = app(NotificationService::class);
@@ -916,7 +931,11 @@ class QuarterController extends BaseController
             $allocation->quarter->update(['is_occupied' => true]);
 
             // Update officer's quartered status
-            $officer->update(['quartered' => true]);
+            $officer->update([
+                'quartered' => true,
+                // Quartered address auto-sync
+                'residential_address' => QuarterAddressFormatter::format($allocation->quarter),
+            ]);
 
             // Find and deactivate old accepted allocation if any
             $oldAllocation = OfficerQuarter::where('officer_id', $officer->id)
@@ -932,7 +951,7 @@ class QuarterController extends BaseController
                 // Mark old allocation as no longer current
                 $oldAllocation->update([
                     'is_current' => false,
-                    'deallocation_date' => now(),
+                    'deallocated_date' => now(),
                 ]);
             }
 

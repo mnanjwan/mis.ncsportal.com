@@ -229,6 +229,7 @@ class BuildingUnitFunctionalityTest extends TestCase
         // Step 6: Verify officer IS now quartered
         $officer->refresh();
         $this->assertTrue($officer->quartered, 'Officer SHOULD be quartered after accepting allocation');
+        $this->assertSame('Q-001 - Type A', $officer->residential_address, 'Officer residential address should be auto-synced to the accepted quarter');
 
         // Step 7: Verify quarter is marked as occupied
         $quarter->refresh();

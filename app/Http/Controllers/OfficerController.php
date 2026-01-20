@@ -16,6 +16,7 @@ use App\Models\Discipline;
 use App\Models\Qualification;
 use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
+use App\Services\QuarterAddressFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -1247,8 +1248,10 @@ class OfficerController extends Controller
             'permanent_home_address' => 'required|string|max:500',
         ]);
 
-        // Officers can only change address when NOT quartered.
-        // Phone number updates are still allowed while quartered.
+        // While quartered:
+        // - residential_address is the "quartered address" and is auto-synced from the accepted quarter allocation
+        // - permanent_home_address remains editable
+        // - phone_number remains editable
         if ($officer->quartered) {
             $normalizeAddress = static function ($value): string {
                 $v = (string) $value;
@@ -1257,23 +1260,25 @@ class OfficerController extends Controller
             };
 
             $incomingResidential = $normalizeAddress($validated['residential_address'] ?? '');
-            $incomingPermanent = $normalizeAddress($validated['permanent_home_address'] ?? '');
             $currentResidential = $normalizeAddress($officer->residential_address ?? '');
-            $currentPermanent = $normalizeAddress($officer->permanent_home_address ?? '');
 
-            $errors = [];
-            if ($incomingResidential !== $currentResidential) {
-                $errors['residential_address'] = 'You cannot change your residential address while you are quartered.';
-            }
-            if ($incomingPermanent !== $currentPermanent) {
-                $errors['permanent_home_address'] = 'You cannot change your permanent home address while you are quartered.';
-            }
+            // If we can determine the accepted current quarter, always force residential_address to it.
+            $currentAcceptedAllocation = OfficerQuarter::where('officer_id', $officer->id)
+                ->where('is_current', true)
+                ->where('status', 'ACCEPTED')
+                ->with('quarter')
+                ->first();
 
-            if (!empty($errors)) {
-                // Keep the user's phone number input, but do not keep attempted address changes.
+            $expectedQuarteredAddress = QuarterAddressFormatter::format($currentAcceptedAllocation?->quarter);
+            if ($expectedQuarteredAddress !== '') {
+                $validated['residential_address'] = $expectedQuarteredAddress;
+            } elseif ($incomingResidential !== $currentResidential) {
+                // Fallback: if we can't resolve a quarter address, still prevent changing residential while quartered.
                 return redirect()->back()
-                    ->withErrors($errors)
-                    ->withInput($request->except(['residential_address', 'permanent_home_address']));
+                    ->withErrors([
+                        'residential_address' => 'Your residential address is locked while you are quartered.',
+                    ])
+                    ->withInput($request->except(['residential_address']));
             }
         }
 

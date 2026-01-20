@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Api\V1\QuarterController as ApiQuarterController;
 use App\Models\OfficerQuarter;
+use App\Services\QuarterAddressFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -122,13 +123,39 @@ class QuarterController extends Controller
                 $allocation->update([
                     'status' => 'ACCEPTED',
                     'accepted_at' => now(),
+                    'is_current' => true,
                 ]);
 
                 // Mark quarter as occupied
                 $allocation->quarter->update(['is_occupied' => true]);
 
                 // Update officer's quartered status
-                $officer->update(['quartered' => true]);
+                $officer->update([
+                    'quartered' => true,
+                    // Quartered address auto-sync
+                    'residential_address' => QuarterAddressFormatter::format($allocation->quarter),
+                ]);
+
+                // Find and deactivate old accepted allocation if any (keep current allocation consistent)
+                $oldAllocation = OfficerQuarter::where('officer_id', $officer->id)
+                    ->where('id', '!=', $allocation->id)
+                    ->where('is_current', true)
+                    ->where('status', 'ACCEPTED')
+                    ->with('quarter')
+                    ->first();
+
+                if ($oldAllocation) {
+                    // Free the old quarter
+                    if ($oldAllocation->quarter) {
+                        $oldAllocation->quarter->update(['is_occupied' => false]);
+                    }
+
+                    // Mark old allocation as no longer current
+                    $oldAllocation->update([
+                        'is_current' => false,
+                        'deallocated_date' => now(),
+                    ]);
+                }
 
                 // Reject any other pending allocations for this officer
                 OfficerQuarter::where('officer_id', $officer->id)
