@@ -256,6 +256,38 @@
                     </div>
                 </a>
 
+                <!-- Education Requests Pending Review -->
+                <a href="{{ route('hrd.education-requests.pending') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
+                                    <i class="ki-filled ki-graduation-cap text-xl text-success"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-sm">Education Requests</h4>
+                                    <p class="text-xs text-secondary-foreground">Pending HRD Approval</p>
+                                </div>
+                            </div>
+                            <span class="kt-badge kt-badge-success kt-badge-sm">{{ $pendingEducationRequestsCount ?? 0 }}</span>
+                        </div>
+                        @if(($pendingEducationRequestsCount ?? 0) > 0)
+                            <div class="text-xs text-secondary-foreground space-y-1">
+                                @foreach(($pendingEducationRequests ?? collect())->take(3) as $req)
+                                    <div class="truncate">
+                                        {{ $req->officer->initials ?? '' }} {{ $req->officer->surname ?? '' }} - {{ $req->qualification }}
+                                    </div>
+                                @endforeach
+                                @if(($pendingEducationRequestsCount ?? 0) > 3)
+                                    <div class="text-success font-medium">+{{ ($pendingEducationRequestsCount ?? 0) - 3 }} more</div>
+                                @endif
+                            </div>
+                        @else
+                            <p class="text-xs text-secondary-foreground">No pending requests</p>
+                        @endif
+                    </div>
+                </a>
+
                 <!-- Draft Movement Orders -->
                 <a href="{{ route('hrd.movement-orders') }}?status=DRAFT" class="kt-card hover:shadow-lg transition-shadow">
                     <div class="kt-card-content p-5">

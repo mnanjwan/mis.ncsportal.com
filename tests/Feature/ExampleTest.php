@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        // Root route is protected by auth/onboarding, so unauthenticated users are redirected.
+        $response->assertStatus(302);
     }
 }

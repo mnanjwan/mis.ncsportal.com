@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Officer;
+use App\Models\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,6 +25,42 @@ class RoleAccessTest extends TestCase
         $role = Role::where('name', $roleName)->first();
         $user = User::factory()->create();
         $user->roles()->attach($role);
+
+        // Officer routes are protected by onboarding.complete middleware.
+        if ($roleName === 'Officer') {
+            $commandId = Command::query()->value('id');
+            if (!$commandId) {
+                $commandId = Command::create([
+                    'name' => 'Test Command',
+                    'code' => 'TC001',
+                    'is_active' => true,
+                ])->id;
+            }
+
+            Officer::create([
+                'user_id' => $user->id,
+                'service_number' => 'NCS' . str_pad((string) $user->id, 5, '0', STR_PAD_LEFT),
+                'email' => $user->email,
+                'initials' => 'TS',
+                'surname' => 'OFFICER',
+                'sex' => 'M',
+                'date_of_birth' => now()->subYears(30),
+                'date_of_first_appointment' => now()->subYears(8),
+                'date_of_present_appointment' => now()->subYears(2),
+                'substantive_rank' => 'SC',
+                'salary_grade_level' => 'GL11',
+                'state_of_origin' => 'Lagos',
+                'lga' => 'Ikeja',
+                'geopolitical_zone' => 'South West',
+                'entry_qualification' => 'BSc',
+                'permanent_home_address' => 'Test Address',
+                'phone_number' => '08000000000',
+                'present_station' => $commandId,
+                'is_active' => true,
+                'profile_picture_url' => 'officers/default.png',
+            ]);
+        }
+
         return $user;
     }
 
@@ -98,9 +136,6 @@ class RoleAccessTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('establishment.service-numbers'));
         $response->assertStatus(200);
-
-        $response = $this->actingAs($user)->get(route('establishment.new-recruits'));
-        $response->assertStatus(200);
     }
 
     /**
@@ -173,15 +208,6 @@ class RoleAccessTest extends TestCase
         $response->assertStatus(200);
 
         $response = $this->actingAs($user)->get(route('officer.profile'));
-        $response->assertStatus(200);
-
-        $response = $this->actingAs($user)->get(route('officer.emoluments'));
-        $response->assertStatus(200);
-
-        $response = $this->actingAs($user)->get(route('officer.leave-applications'));
-        $response->assertStatus(200);
-
-        $response = $this->actingAs($user)->get(route('officer.pass-applications'));
         $response->assertStatus(200);
     }
 

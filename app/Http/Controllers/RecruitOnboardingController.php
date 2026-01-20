@@ -10,6 +10,7 @@ use App\Models\Zone;
 use App\Models\Command;
 use App\Models\Discipline;
 use App\Models\Institution;
+use App\Models\Qualification;
 use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
 use Illuminate\Http\Request;
@@ -280,6 +281,12 @@ class RecruitOnboardingController extends Controller
             ->orderBy('name')
             ->pluck('name')
             ->values();
+
+        $qualifications = Qualification::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
         
         // Find TRADOC command and set defaults
         $tradocCommand = Command::where(function($query) {
@@ -316,7 +323,7 @@ class RecruitOnboardingController extends Controller
             $savedData['command_id'] = $tradocCommand->id;
         }
         
-        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'recruit', 'zones', 'commands', 'institutions', 'disciplines'));
+        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'recruit', 'zones', 'commands', 'institutions', 'disciplines', 'qualifications'));
     }
 
     /**

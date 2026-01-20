@@ -82,6 +82,43 @@ class RoleSeeder extends Seeder
                 'description' => 'DC Admin - Operational Approver',
                 'access_level' => 'command_level',
             ],
+            // Transport & Logistics (Fleet)
+            [
+                'name' => 'CC T&L',
+                'code' => 'FLEET_CC_TL',
+                'description' => 'Chief Comptroller Transport & Logistics',
+                'access_level' => 'system_wide',
+            ],
+            [
+                'name' => 'DCG FATS',
+                'code' => 'FLEET_DCG_FATS',
+                'description' => 'Deputy Comptroller General (Finance & Admin Technical Services)',
+                'access_level' => 'system_wide',
+            ],
+            [
+                'name' => 'ACG TS',
+                'code' => 'FLEET_ACG_TS',
+                'description' => 'Assistant Comptroller General (Technical Services)',
+                'access_level' => 'system_wide',
+            ],
+            [
+                'name' => 'CD',
+                'code' => 'FLEET_CD',
+                'description' => 'Command Dispatcher',
+                'access_level' => 'command_level',
+            ],
+            [
+                'name' => 'O/C T&L',
+                'code' => 'FLEET_OC_TL',
+                'description' => 'Officer-in-Charge Transport & Logistics (Command)',
+                'access_level' => 'command_level',
+            ],
+            [
+                'name' => 'Transport Store/Receiver',
+                'code' => 'FLEET_STORE_RECEIVER',
+                'description' => 'Transport Store / Receiver (Command)',
+                'access_level' => 'command_level',
+            ],
             [
                 'name' => 'Welfare',
                 'code' => 'WELFARE',

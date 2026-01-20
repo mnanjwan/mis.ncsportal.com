@@ -20,37 +20,68 @@ class BuildingUnitFunctionalityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed();
     }
 
     /** @test */
     public function building_unit_can_access_dashboard()
     {
-        $user = User::where('email', 'building.unit@ncs.gov.ng')->first();
-        
-        if (!$user) {
-            $this->markTestSkipped('Building Unit user not found in seeded data');
-        }
+        $command = Command::create([
+            'name' => 'Test Command',
+            'code' => 'TEST',
+            'is_active' => true,
+        ]);
+
+        $buildingUnitRole = Role::firstOrCreate(
+            ['name' => 'Building Unit'],
+            ['code' => 'BUILDING_UNIT', 'description' => 'Building Unit - Accommodation Manager', 'access_level' => 'command_level']
+        );
+
+        $user = User::create([
+            'email' => 'building.unit@test.ncs.gov.ng',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $user->roles()->attach($buildingUnitRole->id, [
+            'command_id' => $command->id,
+            'is_active' => true,
+            'assigned_at' => now(),
+        ]);
 
         $response = $this->actingAs($user)->get(route('building.dashboard'));
 
-        // Allow both 200 and 302 (redirect) status codes
-        $this->assertContains($response->status(), [200, 302]);
+        $response->assertStatus(200);
     }
 
     /** @test */
     public function building_unit_can_view_quarters()
     {
-        $user = User::where('email', 'building.unit@ncs.gov.ng')->first();
-        
-        if (!$user) {
-            $this->markTestSkipped('Building Unit user not found in seeded data');
-        }
+        $command = Command::create([
+            'name' => 'Test Command',
+            'code' => 'TEST',
+            'is_active' => true,
+        ]);
 
-        $response = $this->actingAs($user)->get(route('building.dashboard'));
+        $buildingUnitRole = Role::firstOrCreate(
+            ['name' => 'Building Unit'],
+            ['code' => 'BUILDING_UNIT', 'description' => 'Building Unit - Accommodation Manager', 'access_level' => 'command_level']
+        );
 
-        // Allow both 200 and 302 (redirect) status codes
-        $this->assertContains($response->status(), [200, 302]);
+        $user = User::create([
+            'email' => 'building.unit2@test.ncs.gov.ng',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $user->roles()->attach($buildingUnitRole->id, [
+            'command_id' => $command->id,
+            'is_active' => true,
+            'assigned_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('building.quarters'));
+
+        $response->assertStatus(200);
     }
 
     /** @test */
@@ -62,7 +93,6 @@ class BuildingUnitFunctionalityTest extends TestCase
             $command = Command::create([
                 'name' => 'Test Command',
                 'code' => 'TEST',
-                'zone_id' => 1,
                 'is_active' => true,
             ]);
         }
@@ -73,6 +103,7 @@ class BuildingUnitFunctionalityTest extends TestCase
         ], [
             'code' => 'BUILDING_UNIT',
             'description' => 'Building Unit - Accommodation Manager',
+            'access_level' => 'command_level',
         ]);
 
         // Create Building Unit user with command assignment
@@ -233,15 +264,15 @@ class BuildingUnitFunctionalityTest extends TestCase
             $command = Command::create([
                 'name' => 'Test Command 2',
                 'code' => 'TEST2',
-                'zone_id' => 1,
                 'is_active' => true,
             ]);
         }
 
         // Get or create Building Unit role
-        $buildingUnitRole = Role::firstOrCreate([
-            'name' => 'Building Unit',
-        ]);
+        $buildingUnitRole = Role::firstOrCreate(
+            ['name' => 'Building Unit'],
+            ['code' => 'BUILDING_UNIT', 'description' => 'Building Unit - Accommodation Manager', 'access_level' => 'command_level']
+        );
 
         // Create Building Unit user with command assignment
         $buildingUnitUser = User::create([

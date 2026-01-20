@@ -121,6 +121,13 @@ class RoleMiddleware
             'CGC' => 'cgc.dashboard',
             'Board' => 'board.dashboard',
             'Accounts' => 'accounts.dashboard',
+            // Transport & Logistics (Fleet)
+            'CC T&L' => 'fleet.cc-tl.dashboard',
+            'DCG FATS' => 'fleet.dcg-fats.dashboard',
+            'ACG TS' => 'fleet.acg-ts.dashboard',
+            'CD' => 'fleet.cd.dashboard',
+            'O/C T&L' => 'fleet.oc-tl.dashboard',
+            'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
             'Welfare' => 'welfare.dashboard',
             'Establishment' => 'establishment.dashboard',
             'Building Unit' => 'building.dashboard',

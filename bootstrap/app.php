@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'onboarding.complete' => \App\Http\Middleware\EnsureOnboardingComplete::class,
+            'profile_picture.post_promotion' => \App\Http\Middleware\EnsureProfilePictureUpdatedAfterPromotion::class,
             'single.session' => \App\Http\Middleware\EnsureSingleSession::class,
             'session.timeout' => \App\Http\Middleware\CheckSessionTimeout::class,
         ]);

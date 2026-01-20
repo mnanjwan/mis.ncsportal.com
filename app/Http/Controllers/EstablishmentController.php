@@ -17,6 +17,9 @@ use App\Helpers\AppointmentNumberHelper;
 use App\Helpers\ServiceNumberHelper;
 use App\Jobs\SendRecruitOnboardingLinkJob;
 use App\Jobs\SendBulkRecruitOnboardingLinksJob;
+use App\Models\Institution;
+use App\Models\Discipline;
+use App\Models\Qualification;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -399,7 +402,26 @@ class EstablishmentController extends Controller
 
         extract($this->getRanksAndGradeLevels());
         $savedData = session('recruit_step2', []);
-        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData'));
+
+        $institutions = Institution::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $disciplines = Discipline::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $qualifications = Qualification::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'institutions', 'disciplines', 'qualifications'));
     }
 
     /**

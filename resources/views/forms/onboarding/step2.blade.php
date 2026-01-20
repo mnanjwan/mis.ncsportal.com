@@ -689,49 +689,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Institution master list (from DB)
 const institutionMasterList = @json($institutions ?? []);
 
-// Qualifications List - Entry Qualifications prioritized
-const qualifications = [
-    'WAEC',
-    'NECO',
-    'NABTEB',
-    'HND',
-    'OND',
-    'PhD',
-    'MBBS',
-    'MSc',
-    'MPhil',
-    'MA',
-    'B TECH',
-    'BA',
-    'BSc',
-    'TRADE TEST',
-    'DSc',
-    'DPharm',
-    'D Litt',
-    'DDS',
-    'DA',
-    'MMed',
-    'MEng',
-    'BArch',
-    'LLM',
-    'LLB',
-    'MBA',
-    'BEd',
-    'BPharm',
-    'BVSc',
-    'DVM',
-    'BDS',
-    'BEng',
-    'BTech',
-    'BBA',
-    'BCom',
-    'BFA',
-    'BPE',
-    'BSc (Ed)',
-    'PGD',
-    'PGDE',
-    'Other'
-];
+// Qualification master list (from DB)
+const qualificationMasterList = @json($qualifications ?? []);
 
 // Discipline master list (from DB)
 const disciplineMasterList = @json($disciplines ?? []);
@@ -835,6 +794,11 @@ function addEducationEntry(data = null) {
                         </div>
                         <div id="education_qualification_${entryId}_options" class="max-h-60 overflow-y-auto"></div>
                     </div>
+                    <input type="text"
+                           id="education_qualification_${entryId}_custom"
+                           class="kt-input mt-2 hidden"
+                           placeholder="Type qualification..."
+                           autocomplete="off">
                 </div>
                 <span class="error-message text-danger text-sm hidden"></span>
             </div>
@@ -940,7 +904,8 @@ function addEducationEntry(data = null) {
         // Initialize Entry Qualification select
         const qualificationOptions = [
             {id: '', name: '-- Select Qualification --'},
-            ...qualifications.map(qual => ({id: qual, name: qual}))
+            {id: ADD_NEW_VALUE, name: '-- Add New Qualification (type below) --'},
+            ...qualificationMasterList.map(name => ({id: name, name: name}))
         ];
         
         createSearchableSelect({
@@ -952,8 +917,34 @@ function addEducationEntry(data = null) {
             displayTextId: `education_qualification_${entryId}_select_text`,
             options: qualificationOptions,
             placeholder: '-- Select Qualification --',
-            searchPlaceholder: 'Search qualification...'
+            searchPlaceholder: 'Search qualification...',
+            onSelect: function(option) {
+                const hidden = document.getElementById(`education_qualification_${entryId}_id`);
+                const customInput = document.getElementById(`education_qualification_${entryId}_custom`);
+                const displayText = document.getElementById(`education_qualification_${entryId}_select_text`);
+
+                if (!hidden || !customInput || !displayText) return;
+
+                if (option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
+                    hidden.value = customInput.value.trim();
+                    displayText.textContent = '-- Add New Qualification (type below) --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                }
+            }
         });
+
+        const qualificationCustomInput = document.getElementById(`education_qualification_${entryId}_custom`);
+        const qualificationHidden = document.getElementById(`education_qualification_${entryId}_id`);
+        if (qualificationCustomInput && qualificationHidden) {
+            qualificationCustomInput.addEventListener('input', function() {
+                qualificationHidden.value = this.value.trim();
+            });
+        }
         
         // Initialize Discipline select
         const disciplineOptions = [

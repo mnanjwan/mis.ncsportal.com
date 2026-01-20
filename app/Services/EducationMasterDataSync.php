@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\Models\Discipline;
 use App\Models\Institution;
+use App\Models\Qualification;
 
 class EducationMasterDataSync
 {
     /**
-     * Upsert institution/discipline values from an education array payload.
+     * Upsert institution/discipline/qualification values from an education array payload.
      *
      * Expected item shape (best-effort):
      * - ['university' => string, 'discipline' => string]
@@ -22,6 +23,8 @@ class EducationMasterDataSync
         $institutions = [];
         /** @var array<string, string> $disciplines */
         $disciplines = [];
+        /** @var array<string, string> $qualifications */
+        $qualifications = [];
 
         foreach ($education as $entry) {
             if (!is_array($entry)) {
@@ -30,6 +33,7 @@ class EducationMasterDataSync
 
             $institution = $entry['university'] ?? $entry['institution'] ?? null;
             $discipline = $entry['discipline'] ?? null;
+            $qualification = $entry['qualification'] ?? null;
 
             if (is_string($institution)) {
                 $name = trim($institution);
@@ -42,6 +46,13 @@ class EducationMasterDataSync
                 $name = trim($discipline);
                 if ($name !== '') {
                     $disciplines[Discipline::normalizeName($name)] = $name;
+                }
+            }
+
+            if (is_string($qualification)) {
+                $name = trim($qualification);
+                if ($name !== '') {
+                    $qualifications[Qualification::normalizeName($name)] = $name;
                 }
             }
         }
@@ -78,6 +89,25 @@ class EducationMasterDataSync
             }
 
             Discipline::query()->upsert(
+                $rows,
+                uniqueBy: ['name_normalized'],
+                update: ['name', 'is_active', 'updated_at']
+            );
+        }
+
+        if (!empty($qualifications)) {
+            $rows = [];
+            foreach ($qualifications as $normalized => $name) {
+                $rows[] = [
+                    'name' => $name,
+                    'name_normalized' => $normalized,
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            Qualification::query()->upsert(
                 $rows,
                 uniqueBy: ['name_normalized'],
                 update: ['name', 'is_active', 'updated_at']

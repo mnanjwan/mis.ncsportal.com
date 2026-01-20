@@ -436,12 +436,8 @@ const nigerianStatesLGAs = {
 // Institutions (master list from DB)
 const nigerianUniversities = @json($institutions ?? []);
 
-// Qualifications List
-const qualifications = [
-    'PhD', 'MBBS', 'MSc', 'MPhil', 'MA', 'B TECH', 'BA', 'BSc', 'HND', 'OND', 'WAEC', 'NECO', 'TRADE TEST',
-    'DSc', 'DPharm', 'D Litt', 'DDS', 'DA', 'MMed', 'MEng', 'BArch', 'LLM', 'LLB', 'MBA', 'BEd', 'BPharm',
-    'BVSc', 'DVM', 'BDS', 'BEng', 'BTech', 'BBA', 'BCom', 'BFA', 'BPE', 'BSc (Ed)', 'PGD', 'PGDE', 'Other'
-];
+// Qualifications (master list from DB)
+const qualifications = @json($qualifications ?? []);
 
 // Disciplines (master list from DB)
 const disciplines = @json($disciplines ?? []);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountChangeRequestController;
 use App\Http\Controllers\Accounts\BankController as AccountsBankController;
 use App\Http\Controllers\Accounts\PfaController as AccountsPfaController;
+use App\Http\Controllers\EducationChangeRequestController;
 use App\Http\Controllers\NextOfKinChangeRequestController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -44,6 +45,13 @@ use App\Http\Controllers\PrintController;
 use App\Http\Controllers\InternalStaffOrderController;
 use App\Http\Controllers\OfficerDeletionController;
 use App\Http\Controllers\CommandDurationController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Fleet\FleetAssignmentController;
+use App\Http\Controllers\Fleet\FleetDashboardController;
+use App\Http\Controllers\Fleet\FleetIssuanceController;
+use App\Http\Controllers\Fleet\FleetReportsController;
+use App\Http\Controllers\Fleet\FleetRequestController;
+use App\Http\Controllers\Fleet\FleetVehicleController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -102,6 +110,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard')->middleware('onboarding.complete');
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('onboarding.complete');
 
+    // Notification deep-links (used by notifications drawer + email)
+    Route::get('/notifications/{id}', [NotificationController::class, 'show'])->name('notifications.show');
+
     // Officer Routes
     Route::prefix('officer')->name('officer.')->middleware('onboarding.complete')->group(function () {
         Route::get('/dashboard', [OfficerController::class, 'dashboard'])->name('dashboard');
@@ -129,6 +140,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/next-of-kin/{id}/edit', [NextOfKinChangeRequestController::class, 'edit'])->name('next-of-kin.edit');
         Route::put('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'update'])->name('next-of-kin.update');
         Route::delete('/next-of-kin/{id}', [NextOfKinChangeRequestController::class, 'destroy'])->name('next-of-kin.destroy');
+
+        // Education Qualification Requests (HRD approval)
+        Route::get('/education-requests', [EducationChangeRequestController::class, 'index'])->name('education-requests.index');
+        Route::get('/education-requests/create', [EducationChangeRequestController::class, 'create'])->name('education-requests.create');
+        Route::post('/education-requests', [EducationChangeRequestController::class, 'store'])->name('education-requests.store');
         Route::get('/retirement', [RetirementController::class, 'myRetirement'])->name('retirement');
 
         // Query Routes
@@ -188,6 +204,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers/{id}', [OfficerController::class, 'show'])->name('officers.show');
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
         Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');
+
+        // Education Qualification Requests
+        Route::get('/education-requests', [EducationChangeRequestController::class, 'pending'])->name('education-requests.pending');
+        Route::post('/education-requests/{id}/approve', [EducationChangeRequestController::class, 'approve'])->name('education-requests.approve');
+        Route::post('/education-requests/{id}/reject', [EducationChangeRequestController::class, 'reject'])->name('education-requests.reject');
 
         // Query Management Routes
         Route::prefix('queries')->name('queries.')->group(function () {
@@ -670,6 +691,48 @@ Route::middleware('auth')->group(function () {
         Route::get('/rejected-allocations', [QuarterController::class, 'rejectedAllocations'])->name('rejected-allocations');
     });
 
+    // Transport & Logistics (Fleet) Routes
+    Route::prefix('fleet')->name('fleet.')->group(function () {
+        // Dashboards
+        Route::get('/dashboard/cc-tl', [FleetDashboardController::class, 'ccTl'])->middleware('role:CC T&L')->name('cc-tl.dashboard');
+        Route::get('/dashboard/dcg-fats', [FleetDashboardController::class, 'dcgFats'])->middleware('role:DCG FATS')->name('dcg-fats.dashboard');
+        Route::get('/dashboard/acg-ts', [FleetDashboardController::class, 'acgTs'])->middleware('role:ACG TS')->name('acg-ts.dashboard');
+        Route::get('/dashboard/cd', [FleetDashboardController::class, 'cd'])->middleware('role:CD')->name('cd.dashboard');
+        Route::get('/dashboard/oc-tl', [FleetDashboardController::class, 'ocTl'])->middleware('role:O/C T&L')->name('oc-tl.dashboard');
+        Route::get('/dashboard/store-receiver', [FleetDashboardController::class, 'storeReceiver'])->middleware('role:Transport Store/Receiver')->name('store-receiver.dashboard');
+
+        // Vehicles
+        Route::get('/vehicles', [FleetVehicleController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.index');
+        Route::get('/vehicles/intake', [FleetVehicleController::class, 'createIntake'])->middleware('role:Transport Store/Receiver')->name('vehicles.intake.create');
+        Route::post('/vehicles/intake', [FleetVehicleController::class, 'storeIntake'])->middleware('role:Transport Store/Receiver')->name('vehicles.intake.store');
+        Route::get('/vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.show');
+        Route::get('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'editIdentifiers'])->middleware('role:CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.edit');
+        Route::put('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'updateIdentifiers'])->middleware('role:CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.update');
+        Route::put('/vehicles/{vehicle}/service-status', [FleetVehicleController::class, 'updateServiceStatus'])->middleware('role:CD')->name('vehicles.service-status.update');
+
+        // Issuance / Return (CD)
+        Route::get('/vehicles/{vehicle}/issue', [FleetIssuanceController::class, 'createIssue'])->middleware('role:CD')->name('vehicles.issue.create');
+        Route::post('/vehicles/{vehicle}/issue', [FleetIssuanceController::class, 'storeIssue'])->middleware('role:CD')->name('vehicles.issue.store');
+        Route::get('/vehicles/{vehicle}/return', [FleetIssuanceController::class, 'createReturn'])->middleware('role:CD')->name('vehicles.return.create');
+        Route::post('/vehicles/{vehicle}/return', [FleetIssuanceController::class, 'storeReturn'])->middleware('role:CD')->name('vehicles.return.store');
+
+        // Area Controller receipt acknowledgement
+        Route::post('/assignments/{assignment}/receive', [FleetAssignmentController::class, 'receive'])->middleware('role:Area Controller')->name('assignments.receive');
+
+        // Requests
+        Route::get('/requests', [FleetRequestController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('requests.index');
+        Route::get('/requests/create', [FleetRequestController::class, 'create'])->middleware('role:CD')->name('requests.create');
+        Route::post('/requests', [FleetRequestController::class, 'store'])->middleware('role:CD')->name('requests.store');
+        Route::get('/requests/{fleetRequest}', [FleetRequestController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('requests.show');
+        Route::post('/requests/{fleetRequest}/submit', [FleetRequestController::class, 'submit'])->middleware('role:CD')->name('requests.submit');
+        Route::post('/requests/{fleetRequest}/act', [FleetRequestController::class, 'act'])->middleware('role:O/C T&L|Transport Store/Receiver|ACG TS|DCG FATS')->name('requests.act');
+        Route::post('/requests/{fleetRequest}/cc-tl/propose', [FleetRequestController::class, 'ccTlPropose'])->middleware('role:CC T&L')->name('requests.cc-tl.propose');
+        Route::post('/requests/{fleetRequest}/cc-tl/release', [FleetRequestController::class, 'ccTlRelease'])->middleware('role:CC T&L')->name('requests.cc-tl.release');
+
+        // Reports
+        Route::get('/reports/returns', [FleetReportsController::class, 'returnsReport'])->middleware('role:CC T&L|CD')->name('reports.returns');
+    });
+
     // Establishment Routes
     Route::prefix('establishment')->name('establishment.')->middleware('role:Establishment')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'establishment'])->name('dashboard');
@@ -757,6 +820,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/welfare/next-of-kin-requests/{id}', [NextOfKinChangeRequestController::class, 'show'])->name('welfare.next-of-kin.show');
     });
 
+    // Education Qualification Request Show - accessible by both HRD and Officers (controller handles authorization)
+    Route::middleware('role:HRD|Officer')->group(function () {
+        Route::get('/hrd/education-requests/{id}', [EducationChangeRequestController::class, 'show'])->name('hrd.education-requests.show');
+    });
+
     // Investigation Unit Routes
     Route::prefix('investigation')->name('investigation.')->middleware('role:Investigation Unit')->group(function () {
         Route::get('/dashboard', [InvestigationController::class, 'index'])->name('dashboard');
@@ -779,8 +847,12 @@ Route::middleware('auth')->group(function () {
 
     // Form Routes (Public within auth)
     Route::middleware('onboarding.complete')->group(function () {
-        Route::get('/emolument/raise', [EmolumentController::class, 'create'])->name('emolument.raise');
-        Route::post('/emolument/raise', [EmolumentController::class, 'store'])->name('emolument.store');
+        Route::get('/emolument/raise', [EmolumentController::class, 'create'])
+            ->middleware('profile_picture.post_promotion')
+            ->name('emolument.raise');
+        Route::post('/emolument/raise', [EmolumentController::class, 'store'])
+            ->middleware('profile_picture.post_promotion')
+            ->name('emolument.store');
         Route::post('/emolument/{id}/resubmit', [EmolumentController::class, 'resubmit'])->name('emolument.resubmit');
         Route::get('/leave/apply', [LeaveApplicationController::class, 'create'])->name('leave.apply');
         Route::post('/leave/apply', [LeaveApplicationController::class, 'store'])->name('leave.store');

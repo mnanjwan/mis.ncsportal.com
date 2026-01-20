@@ -67,6 +67,25 @@
             </div>
         </div>
 
+        <!-- Profile Picture Update Required (Post-Promotion) -->
+        @if(isset($officer) && $officer && method_exists($officer, 'needsProfilePictureUpdateAfterPromotion') && $officer->needsProfilePictureUpdateAfterPromotion())
+            <div class="kt-card" style="background-color: #fee2e2; border: 2px solid #dc3545;">
+                <div class="kt-card-content p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="ki-filled ki-information text-xl" style="color: #dc3545;"></i>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold mb-1" style="color: #b91c1c;">
+                                Action Required: Update your profile picture
+                            </p>
+                            <p class="text-sm" style="color: #dc2626;">
+                                Change Profile Picture hasn’t been done yet. You will be unable to raise emolument until you update your profile picture.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Profile Details -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5 lg:gap-7.5">
             <!-- Personal Information -->
@@ -247,6 +266,12 @@
                                         <span class="text-sm text-secondary-foreground">Qualification</span>
                                         <span class="text-sm font-semibold text-mono">{{ $edu['qualification'] ?? 'N/A' }}</span>
                                     </div>
+                                    @if(!empty($edu['year_obtained']))
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm text-secondary-foreground">Year Obtained</span>
+                                        <span class="text-sm font-semibold text-mono">{{ $edu['year_obtained'] }}</span>
+                                    </div>
+                                    @endif
                                     @if(!empty($edu['discipline']))
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm text-secondary-foreground">Discipline</span>

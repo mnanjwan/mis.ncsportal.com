@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             PfaSeeder::class,
             InstitutionSeeder::class,
             DisciplineSeeder::class,
+            QualificationSeeder::class,
         ]);
         
         // Step 2: Create system users (CGC, TRADOC, ICT, Admin users)

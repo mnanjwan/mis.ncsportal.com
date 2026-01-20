@@ -46,6 +46,15 @@
                 <p class="text-sm text-muted mt-1">Update your phone number and addresses.</p>
             </div>
             <div class="kt-card-content">
+                @if($officer->quartered)
+                    <div class="kt-alert kt-alert-warning mb-5">
+                        <i class="ki-filled ki-information"></i>
+                        <div>
+                            <strong>Address Locked:</strong> You cannot change your address while you are quartered. You can still update your phone number.
+                        </div>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('officer.settings.contact-details.update') }}" class="flex flex-col gap-5">
                     @csrf
 
@@ -74,7 +83,8 @@
                                 class="kt-input @error('residential_address') border-danger @enderror"
                                 rows="4"
                                 required
-                                style="@error('residential_address') border-color: #dc3545 !important; @enderror"
+                                @if($officer->quartered) readonly @endif
+                                style="@if($officer->quartered) background-color: rgba(0,0,0,0.03); cursor: not-allowed; @endif @error('residential_address') border-color: #dc3545 !important; @enderror"
                             >{{ old('residential_address', $officer->residential_address) }}</textarea>
                             @error('residential_address')
                                 <span class="text-sm" style="color: #dc3545 !important; font-weight: 500; display: block; margin-top: 4px;">{{ $message }}</span>
@@ -88,7 +98,8 @@
                                 class="kt-input @error('permanent_home_address') border-danger @enderror"
                                 rows="4"
                                 required
-                                style="@error('permanent_home_address') border-color: #dc3545 !important; @enderror"
+                                @if($officer->quartered) readonly @endif
+                                style="@if($officer->quartered) background-color: rgba(0,0,0,0.03); cursor: not-allowed; @endif @error('permanent_home_address') border-color: #dc3545 !important; @enderror"
                             >{{ old('permanent_home_address', $officer->permanent_home_address) }}</textarea>
                             @error('permanent_home_address')
                                 <span class="text-sm" style="color: #dc3545 !important; font-weight: 500; display: block; margin-top: 4px;">{{ $message }}</span>

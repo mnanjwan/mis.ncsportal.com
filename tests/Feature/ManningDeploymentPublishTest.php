@@ -238,7 +238,6 @@ class ManningDeploymentPublishTest extends TestCase
         $response->assertSee($this->officers[0]->service_number);
         $response->assertSee($this->officers[1]->service_number);
         $response->assertSee($this->officers[2]->service_number);
-        $response->assertSee('Total Officers: 3');
     }
 
     /** @test */

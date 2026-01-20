@@ -21,6 +21,28 @@
         </div>
     @endif
 
+    <!-- Profile Picture Update Required (Post-Promotion) -->
+    @if(isset($officer) && $officer && method_exists($officer, 'needsProfilePictureUpdateAfterPromotion') && $officer->needsProfilePictureUpdateAfterPromotion())
+        <div class="kt-card mb-5" style="background-color: #fee2e2; border: 2px solid #dc3545;">
+            <div class="kt-card-content p-4">
+                <div class="flex items-start gap-3">
+                    <i class="ki-filled ki-information text-xl" style="color: #dc3545;"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold mb-1" style="color: #b91c1c;">
+                            Action Required: Update your profile picture
+                        </p>
+                        <p class="text-sm" style="color: #dc2626;">
+                            Change Profile Picture hasn’t been done yet. You will be unable to raise emolument until you update your profile picture.
+                        </p>
+                        <a href="{{ route('officer.profile') }}" class="kt-btn kt-btn-sm mt-3" style="background-color: #dc3545; border-color: #dc3545; color: #ffffff;">
+                            <i class="ki-filled ki-profile-circle"></i> Go to My Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Pending Queries Alert -->
     @if(isset($pendingQueries) && $pendingQueries->count() > 0)
         <div class="kt-card mb-5" style="background-color: #fee2e2; border: 2px solid #dc3545;">
@@ -83,22 +105,6 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
-        <!-- Roster Role Notice -->
-        @if(isset($rosterRole) && $rosterRole)
-            <div class="kt-card bg-info/10 border border-info/20">
-                <div class="kt-card-content p-4">
-                    <div class="flex items-center gap-3">
-                        <i class="ki-filled ki-check-circle text-info text-xl"></i>
-                        <p class="text-sm font-medium text-info">Your Roster Role: <strong>{{ $rosterRole }}</strong> 
-                            @if($currentRosterTitle)
-                                - {{ $currentRosterTitle }}
-                            @endif
-                        </p>
-                    </div>
-                </div>
-            </div>
-        @endif
-
         <!-- Quick Actions Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
             <div class="kt-card">
@@ -245,10 +251,10 @@
 
             <div class="kt-card">
                 <div class="kt-card-header">
-                    <h3 class="kt-card-title">Service Information</h3>
+                    <h3 class="kt-card-title">Roster</h3>
                 </div>
                 <div class="kt-card-content">
-                    <div class="flex flex-col gap-4" id="service-info">
+                    <div class="flex flex-col gap-4" id="roster-info">
                         @if($officer)
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-secondary-foreground">Service Number</span>
@@ -259,15 +265,25 @@
                                 <span class="text-sm font-semibold text-mono">{{ $officer->substantive_rank ?? 'N/A' }}</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-sm text-secondary-foreground">Present Station</span>
+                                <span class="text-sm text-secondary-foreground">Zone</span>
+                                <span class="text-sm font-semibold text-mono">{{ $officer->presentStation->zone->name ?? 'N/A' }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Command</span>
                                 <span class="text-sm font-semibold text-mono">{{ $officer->presentStation->name ?? 'N/A' }}</span>
                             </div>
-                            @if(isset($currentRosterTitle) && $currentRosterTitle)
                             <div class="flex items-center justify-between">
-                                <span class="text-sm text-secondary-foreground">Roster Assignment</span>
-                                <span class="text-sm font-semibold text-mono">{{ $currentRosterTitle }}</span>
+                                <span class="text-sm text-secondary-foreground">Unit</span>
+                                <span class="text-sm font-semibold text-mono">{{ $officer->unit ?? 'N/A' }}</span>
                             </div>
-                            @endif
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Roster Role</span>
+                                <span class="text-sm font-semibold text-mono">{{ $rosterRole ?? 'N/A' }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-secondary-foreground">Roster Unit/Title</span>
+                                <span class="text-sm font-semibold text-mono">{{ $currentRosterTitle ?? 'N/A' }}</span>
+                            </div>
                         @else
                             <p class="text-secondary-foreground text-center py-4">Officer profile not found</p>
                         @endif

@@ -57,7 +57,7 @@ class TrainingResultSeeder extends Seeder
         $this->command->info("✅ Fixed {$fixedByAppointment} training results by appointment number");
         
         // Delete training results that still have numeric ranks (orphaned data)
-        $numericRanks = TrainingResult::whereRaw('CAST(rank AS UNSIGNED) > 0')
+        $numericRanks = TrainingResult::whereRaw('CAST(`rank` AS UNSIGNED) > 0')
             ->whereNotIn('rank', ['CA III', 'CA II', 'CA I', 'AIC', 'IC', 'ASC II', 'ASC I', 'DSC', 'SC', 'CSC', 'AC', 'DC', 'CC', 'ACG', 'DCG', 'CGC'])
             ->delete();
         

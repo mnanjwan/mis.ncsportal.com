@@ -89,7 +89,8 @@ class DutyRosterUnitTest extends TestCase
             'roster_period_end' => date('Y-m-t'),
         ]);
 
-        $response->assertRedirect(route('staff-officer.roster'));
+        $roster = DutyRoster::latest('id')->first();
+        $response->assertRedirect(route('staff-officer.roster.show', $roster->id));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('duty_rosters', [
@@ -116,7 +117,8 @@ class DutyRosterUnitTest extends TestCase
             'roster_period_end' => date('Y-m-t'),
         ]);
 
-        $response->assertRedirect(route('staff-officer.roster'));
+        $roster = DutyRoster::latest('id')->first();
+        $response->assertRedirect(route('staff-officer.roster.show', $roster->id));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('duty_rosters', [
@@ -151,10 +153,10 @@ class DutyRosterUnitTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewIs('forms.roster.create');
         
-        // Check that custom units are passed to view
+        // Custom units are merged into the overall unit list
         $viewData = $response->original->getData();
-        $this->assertArrayHasKey('customUnits', $viewData);
-        $this->assertContains($customUnit, $viewData['customUnits']);
+        $this->assertArrayHasKey('allUnits', $viewData);
+        $this->assertContains($customUnit, $viewData['allUnits']);
     }
 
     /**
@@ -302,8 +304,8 @@ class DutyRosterUnitTest extends TestCase
         
         // Check that the new custom unit appears in the dropdown
         $viewData = $response->original->getData();
-        $this->assertArrayHasKey('customUnits', $viewData);
-        $this->assertContains($newCustomUnit, $viewData['customUnits']);
+        $this->assertArrayHasKey('allUnits', $viewData);
+        $this->assertContains($newCustomUnit, $viewData['allUnits']);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Discipline;
 use App\Models\Institution;
+use App\Models\Qualification;
 use App\Models\Officer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -36,26 +37,34 @@ class BackfillEducationMasterData extends Command
         $invalidEducationJson = 0;
         $institutionsSeen = 0;
         $disciplinesSeen = 0;
+        $qualificationsSeen = 0;
         $institutionsUpserted = 0;
         $disciplinesUpserted = 0;
+        $qualificationsUpserted = 0;
 
         /** @var array<string, string> $institutionBuffer */
         $institutionBuffer = [];
         /** @var array<string, string> $disciplineBuffer */
         $disciplineBuffer = [];
+        /** @var array<string, string> $qualificationBuffer */
+        $qualificationBuffer = [];
 
         $flushBuffers = function () use (
             &$institutionBuffer,
             &$disciplineBuffer,
+            &$qualificationBuffer,
             &$institutionsUpserted,
             &$disciplinesUpserted,
+            &$qualificationsUpserted,
             $dryRun
         ): void {
             if ($dryRun) {
                 $institutionsUpserted += count($institutionBuffer);
                 $disciplinesUpserted += count($disciplineBuffer);
+                $qualificationsUpserted += count($qualificationBuffer);
                 $institutionBuffer = [];
                 $disciplineBuffer = [];
+                $qualificationBuffer = [];
                 return;
             }
 
@@ -102,6 +111,28 @@ class BackfillEducationMasterData extends Command
                 $disciplinesUpserted += count($disciplineBuffer);
                 $disciplineBuffer = [];
             }
+
+            if (!empty($qualificationBuffer)) {
+                $rows = [];
+                foreach ($qualificationBuffer as $normalized => $name) {
+                    $rows[] = [
+                        'name' => $name,
+                        'name_normalized' => $normalized,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+
+                Qualification::query()->upsert(
+                    $rows,
+                    uniqueBy: ['name_normalized'],
+                    update: ['name', 'is_active', 'updated_at']
+                );
+
+                $qualificationsUpserted += count($qualificationBuffer);
+                $qualificationBuffer = [];
+            }
         };
 
         $addInstitution = function (?string $name) use (&$institutionBuffer, &$institutionsSeen): void {
@@ -124,6 +155,16 @@ class BackfillEducationMasterData extends Command
             $disciplinesSeen++;
         };
 
+        $addQualification = function (?string $name) use (&$qualificationBuffer, &$qualificationsSeen): void {
+            $name = trim((string) ($name ?? ''));
+            if ($name === '') {
+                return;
+            }
+            $normalized = Qualification::normalizeName($name);
+            $qualificationBuffer[$normalized] = $name;
+            $qualificationsSeen++;
+        };
+
         Officer::query()
             ->select(['id', 'discipline', 'additional_qualification'])
             ->orderBy('id')
@@ -132,6 +173,7 @@ class BackfillEducationMasterData extends Command
                 &$invalidEducationJson,
                 $addInstitution,
                 $addDiscipline,
+                $addQualification,
                 $flushBuffers
             ) {
                 foreach ($officers as $officer) {
@@ -162,9 +204,11 @@ class BackfillEducationMasterData extends Command
                         // Support both keys seen in views
                         $institution = $entry['university'] ?? $entry['institution'] ?? null;
                         $discipline = $entry['discipline'] ?? null;
+                        $qualification = $entry['qualification'] ?? null;
 
                         $addInstitution(is_string($institution) ? $institution : null);
                         $addDiscipline(is_string($discipline) ? $discipline : null);
+                        $addQualification(is_string($qualification) ? $qualification : null);
                     }
                 }
 
@@ -180,6 +224,7 @@ class BackfillEducationMasterData extends Command
         $this->line("Invalid education JSON: {$invalidEducationJson}");
         $this->line("Institutions seen: {$institutionsSeen} | Upserted: {$institutionsUpserted}");
         $this->line("Disciplines seen: {$disciplinesSeen} | Upserted: {$disciplinesUpserted}");
+        $this->line("Qualifications seen: {$qualificationsSeen} | Upserted: {$qualificationsUpserted}");
 
         return 0;
     }

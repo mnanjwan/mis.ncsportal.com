@@ -30,6 +30,8 @@ use App\Models\Bank;
 use App\Models\Pfa;
 use App\Models\Institution;
 use App\Models\Discipline;
+use App\Models\Qualification;
+use App\Models\EducationChangeRequest;
 use App\Services\EducationMasterDataSync;
 
 class DashboardController extends Controller
@@ -68,6 +70,10 @@ class DashboardController extends Controller
             'CGC',
             'Board',
             'Accounts',
+            // Transport & Logistics (Fleet)
+            'CC T&L',
+            'DCG FATS',
+            'ACG TS',
             'Welfare',
             'Establishment',
             'TRADOC',
@@ -80,6 +86,10 @@ class DashboardController extends Controller
             'Zone Coordinator',
             'Validator',
             'Assessor',
+            // Fleet command-level roles
+            'CD',
+            'O/C T&L',
+            'Transport Store/Receiver',
             'Staff Officer',
             'Officer'
         ];
@@ -192,6 +202,14 @@ class DashboardController extends Controller
             ->get();
         $pendingNokChangesCount = NextOfKinChangeRequest::where('status', 'PENDING')->count();
 
+        // 9. Education Qualification Requests pending HRD approval
+        $pendingEducationRequests = EducationChangeRequest::where('status', 'PENDING')
+            ->with(['officer'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        $pendingEducationRequestsCount = EducationChangeRequest::where('status', 'PENDING')->count();
+
         return view('dashboards.hrd.dashboard', compact(
             'servingOfficers',
             'pendingEmoluments',
@@ -215,7 +233,9 @@ class DashboardController extends Controller
             'pendingAccountChanges',
             'pendingAccountChangesCount',
             'pendingNokChanges',
-            'pendingNokChangesCount'
+            'pendingNokChangesCount',
+            'pendingEducationRequests',
+            'pendingEducationRequestsCount'
         ));
     }
 
@@ -1640,6 +1660,12 @@ class DashboardController extends Controller
             ->pluck('name')
             ->values();
 
+        $qualifications = Qualification::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
         // Get ranks and grade levels
         $ranks = [
             'CGC',
@@ -1666,7 +1692,7 @@ class DashboardController extends Controller
             'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17',
         ];
 
-        return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels', 'institutions', 'disciplines'));
+        return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels', 'institutions', 'disciplines', 'qualifications'));
     }
 
     public function saveOnboardingStep2(Request $request)
@@ -2069,6 +2095,7 @@ class DashboardController extends Controller
 
                         // Update officer with profile picture path
                         $officerData['profile_picture_url'] = $path;
+                        $officerData['profile_picture_updated_at'] = now();
                     }
                 } catch (\Exception $e) {
                     // Log error but don't fail onboarding
@@ -2183,6 +2210,13 @@ class DashboardController extends Controller
             'Investigation Unit' => 'investigation.dashboard',
             'Welfare' => 'welfare.dashboard',
             'CGC' => 'cgc.dashboard',
+            // Transport & Logistics (Fleet)
+            'CC T&L' => 'fleet.cc-tl.dashboard',
+            'DCG FATS' => 'fleet.dcg-fats.dashboard',
+            'ACG TS' => 'fleet.acg-ts.dashboard',
+            'CD' => 'fleet.cd.dashboard',
+            'O/C T&L' => 'fleet.oc-tl.dashboard',
+            'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
         ];
 
         return $routes[$role] ?? 'officer.dashboard';

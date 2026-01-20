@@ -17,6 +17,10 @@
         'CGC',
         'Board',
         'Accounts',
+        // Transport & Logistics (Fleet)
+        'CC T&L',
+        'DCG FATS',
+        'ACG TS',
         'Welfare',
         'Establishment',
         'TRADOC',
@@ -25,6 +29,10 @@
         'Building Unit',
         'Area Controller',
         'DC Admin',
+        // Fleet command-level roles
+        'CD',
+        'O/C T&L',
+        'Transport Store/Receiver',
         'Admin',
         'Zone Coordinator',
         'Validator',
@@ -150,6 +158,7 @@
                             ['title' => 'Pass Applications', 'href' => route('officer.pass-applications')],
                             ['title' => 'Account Changes', 'href' => route('officer.account-change.index')],
                             ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
+                            ['title' => 'Education Requests', 'href' => route('officer.education-requests.index')],
                         ]
                     ],
                     ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
@@ -188,6 +197,7 @@
                         ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('hrd.officers')],
                         ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('hrd.officers.delete.index')],
                         ['icon' => 'ki-filled ki-user', 'title' => 'Officer Onboarding', 'href' => route('hrd.onboarding')],
+                        ['icon' => 'ki-filled ki-graduation-cap', 'title' => 'Education Requests', 'href' => route('hrd.education-requests.pending')],
                         [
                             'title' => 'User Management',
                             'icon' => 'ki-filled ki-user',
@@ -514,6 +524,54 @@
                 ['icon' => 'ki-filled ki-people', 'title' => 'New Intakes', 'href' => route('establishment.new-recruits')],
                 ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Training Results', 'href' => route('establishment.training-results')],
                 ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('establishment.officers.delete.index')],
+            ];
+            break;
+        case 'CC T&L':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.cc-tl.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+            ];
+            break;
+        case 'DCG FATS':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.dcg-fats.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+            ];
+            break;
+        case 'ACG TS':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.acg-ts.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+            ];
+            break;
+        case 'CD':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.cd.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+            ];
+            break;
+        case 'O/C T&L':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.oc-tl.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+            ];
+            break;
+        case 'Transport Store/Receiver':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.store-receiver.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
             ];
             break;
         case 'Welfare':

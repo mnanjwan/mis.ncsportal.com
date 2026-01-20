@@ -55,6 +55,8 @@ class Officer extends Model
         'preretirement_leave_status',
         'preretirement_leave_started_at',
         'profile_picture_url',
+        'profile_picture_updated_at',
+        'profile_picture_required_after_promotion_at',
         'onboarding_status',
         'verification_status',
         'onboarding_token',
@@ -81,6 +83,8 @@ class Officer extends Model
             'is_deceased' => 'boolean',
             'is_active' => 'boolean',
             'preretirement_leave_started_at' => 'datetime',
+            'profile_picture_updated_at' => 'datetime',
+            'profile_picture_required_after_promotion_at' => 'datetime',
         ];
     }
 
@@ -116,6 +120,27 @@ class Officer extends Model
 
         // Ensure proper URL formatting
         return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
+    }
+
+    /**
+     * Returns true if the officer must update their profile picture due to a promotion.
+     *
+     * Logic:
+     * - If no requirement exists, return false.
+     * - If requirement exists but we have no updated-at timestamp, return true.
+     * - Otherwise, require an update if the last update is older than the requirement timestamp.
+     */
+    public function needsProfilePictureUpdateAfterPromotion(): bool
+    {
+        if (empty($this->profile_picture_required_after_promotion_at)) {
+            return false;
+        }
+
+        if (empty($this->profile_picture_updated_at)) {
+            return true;
+        }
+
+        return $this->profile_picture_updated_at->lt($this->profile_picture_required_after_promotion_at);
     }
 
     // Mutators - Ensure service number always starts with NCS

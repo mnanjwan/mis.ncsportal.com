@@ -13,6 +13,7 @@ use App\Models\Query;
 use App\Models\APERForm;
 use App\Models\Institution;
 use App\Models\Discipline;
+use App\Models\Qualification;
 use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
 use Illuminate\Http\Request;
@@ -703,7 +704,13 @@ class OfficerController extends Controller
             ->pluck('name')
             ->values();
 
-        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData', 'institutions', 'disciplines'));
+        $qualifications = Qualification::query()
+            ->active()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData', 'institutions', 'disciplines', 'qualifications'));
     }
 
     public function update(Request $request, $id)
@@ -848,6 +855,11 @@ class OfficerController extends Controller
                 'pendingAperAssignments' => collect([]),
             ]);
         }
+
+        // Eager-load relationships used by the dashboard view (avoids lazy-loading surprises)
+        $officer->loadMissing([
+            'presentStation.zone',
+        ]);
 
         // 1. Active Timeline
         $activeTimeline = EmolumentTimeline::where('is_active', true)->first();
@@ -1104,7 +1116,10 @@ class OfficerController extends Controller
 
             // Store new profile picture
             $path = $request->file('profile_picture')->store('profiles', 'public');
-            $officer->update(['profile_picture_url' => $path]);
+            $officer->update([
+                'profile_picture_url' => $path,
+                'profile_picture_updated_at' => now(),
+            ]);
 
             // Refresh to get updated model
             $officer->refresh();
@@ -1231,6 +1246,36 @@ class OfficerController extends Controller
             'residential_address' => 'required|string|max:500',
             'permanent_home_address' => 'required|string|max:500',
         ]);
+
+        // Officers can only change address when NOT quartered.
+        // Phone number updates are still allowed while quartered.
+        if ($officer->quartered) {
+            $normalizeAddress = static function ($value): string {
+                $v = (string) $value;
+                $v = str_replace(["\r\n", "\r"], "\n", $v);
+                return trim($v);
+            };
+
+            $incomingResidential = $normalizeAddress($validated['residential_address'] ?? '');
+            $incomingPermanent = $normalizeAddress($validated['permanent_home_address'] ?? '');
+            $currentResidential = $normalizeAddress($officer->residential_address ?? '');
+            $currentPermanent = $normalizeAddress($officer->permanent_home_address ?? '');
+
+            $errors = [];
+            if ($incomingResidential !== $currentResidential) {
+                $errors['residential_address'] = 'You cannot change your residential address while you are quartered.';
+            }
+            if ($incomingPermanent !== $currentPermanent) {
+                $errors['permanent_home_address'] = 'You cannot change your permanent home address while you are quartered.';
+            }
+
+            if (!empty($errors)) {
+                // Keep the user's phone number input, but do not keep attempted address changes.
+                return redirect()->back()
+                    ->withErrors($errors)
+                    ->withInput($request->except(['residential_address', 'permanent_home_address']));
+            }
+        }
 
         $oldValues = [
             'phone_number' => $officer->phone_number,
