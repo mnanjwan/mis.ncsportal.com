@@ -48,7 +48,7 @@
                 <h3 class="kt-card-title">Education Qualification Request</h3>
             </div>
             <div class="kt-card-content">
-                <form action="{{ route('officer.education-requests.store') }}" method="POST">
+                <form action="{{ route('officer.education-requests.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
                     <div class="flex flex-col gap-5">
@@ -158,6 +158,19 @@
                                            autocomplete="off">
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Supporting Documents (Optional) -->
+                        <div class="flex flex-col gap-1">
+                            <label class="kt-form-label">Supporting Documents <span class="text-muted">(Optional)</span></label>
+                            <input type="file"
+                                   name="documents[]"
+                                   class="kt-input"
+                                   multiple
+                                   accept=".pdf,image/*">
+                            <p class="text-xs text-secondary-foreground">
+                                You may upload multiple files. Allowed: PDF, JPG/JPEG/PNG. Max 5MB per file.
+                            </p>
                         </div>
 
                         <div class="kt-card bg-info/10 border border-info/20">

@@ -39,6 +39,11 @@ class EducationChangeRequest extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
+    public function documents()
+    {
+        return $this->hasMany(EducationChangeRequestDocument::class, 'education_change_request_id');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'PENDING');

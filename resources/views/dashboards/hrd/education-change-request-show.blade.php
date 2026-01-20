@@ -114,6 +114,42 @@
             </div>
         </div>
 
+        <!-- Supporting Documents -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Supporting Documents</h3>
+            </div>
+            <div class="kt-card-content">
+                @if(($request->documents ?? collect())->count() > 0)
+                    <div class="flex flex-col gap-3">
+                        @foreach($request->documents as $doc)
+                            <div class="flex items-center justify-between gap-3 p-3 rounded-lg border border-input bg-muted/30">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-medium text-foreground">{{ $doc->file_name }}</span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        @if($doc->file_size)
+                                            {{ number_format($doc->file_size / 1024, 1) }} KB
+                                        @else
+                                            —
+                                        @endif
+                                        @if($doc->mime_type)
+                                            • {{ $doc->mime_type }}
+                                        @endif
+                                    </span>
+                                </div>
+                                <a href="{{ route('education-requests.documents.download', ['requestId' => $request->id, 'documentId' => $doc->id]) }}"
+                                   class="kt-btn kt-btn-sm kt-btn-secondary">
+                                    <i class="ki-filled ki-download"></i> Download
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-sm text-secondary-foreground">No documents attached.</div>
+                @endif
+            </div>
+        </div>
+
         <!-- Status Information -->
         @if($request->status !== 'PENDING')
             <div class="kt-card">

@@ -4,14 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Discipline;
 use App\Models\EducationChangeRequest;
+use App\Models\EducationChangeRequestDocument;
 use App\Models\Institution;
 use App\Models\Officer;
 use App\Models\Qualification;
+use App\Models\User;
 use App\Services\EducationMasterDataSync;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class EducationChangeRequestController extends Controller
 {
@@ -92,6 +95,8 @@ class EducationChangeRequestController extends Controller
             'qualification' => 'required|string|max:255',
             'discipline' => 'nullable|string|max:255',
             'year_obtained' => 'required|integer|min:1950|max:' . date('Y'),
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
         // Prevent identical pending requests
@@ -119,6 +124,27 @@ class EducationChangeRequestController extends Controller
                 'year_obtained' => (int) $validated['year_obtained'],
                 'status' => 'PENDING',
             ]);
+
+            $files = $request->file('documents', []);
+            if (is_array($files) && !empty($files)) {
+                foreach ($files as $file) {
+                    if (!$file) {
+                        continue;
+                    }
+
+                    // Store privately on local disk (not publicly accessible)
+                    $path = $file->store("education_request_docs/{$educationRequest->id}", 'local');
+
+                    EducationChangeRequestDocument::create([
+                        'education_change_request_id' => $educationRequest->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getClientMimeType(),
+                        'uploaded_by' => $user->id,
+                    ]);
+                }
+            }
 
             DB::commit();
 
@@ -171,11 +197,11 @@ class EducationChangeRequestController extends Controller
     public function show($id)
     {
         $user = Auth::user();
-        $educationRequest = EducationChangeRequest::with(['officer.presentStation', 'verifier'])->findOrFail($id);
+        $educationRequest = EducationChangeRequest::with(['officer.presentStation', 'verifier', 'documents'])->findOrFail($id);
 
-        if ($user->hasRole('HRD')) {
+        if ($this->userHasRole($user, 'HRD')) {
             // ok
-        } elseif ($user->hasRole('Officer')) {
+        } elseif ($this->userHasRole($user, 'Officer')) {
             if (!$user->officer || $educationRequest->officer_id !== $user->officer->id) {
                 abort(403, 'Unauthorized access.');
             }
@@ -194,7 +220,7 @@ class EducationChangeRequestController extends Controller
     public function approve(Request $request, $id)
     {
         $user = Auth::user();
-        if (!$user->hasRole('HRD')) {
+        if (!$this->userHasRole($user, 'HRD')) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -274,7 +300,7 @@ class EducationChangeRequestController extends Controller
     public function reject(Request $request, $id)
     {
         $user = Auth::user();
-        if (!$user->hasRole('HRD')) {
+        if (!$this->userHasRole($user, 'HRD')) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -318,6 +344,59 @@ class EducationChangeRequestController extends Controller
             DB::rollBack();
             return back()->with('error', 'Failed to reject request. Please try again.');
         }
+    }
+
+    /**
+     * Download an education request document (HRD or the requesting Officer).
+     */
+    public function downloadDocument(Request $request, int $requestId, int $documentId)
+    {
+        $user = $request->user();
+
+        $document = EducationChangeRequestDocument::with('request')->findOrFail($documentId);
+        if ((int) $document->education_change_request_id !== (int) $requestId) {
+            abort(404);
+        }
+
+        $educationRequest = $document->request;
+        if (!$educationRequest) {
+            abort(404);
+        }
+
+        if ($this->userHasRole($user, 'HRD')) {
+            // ok
+        } elseif ($this->userHasRole($user, 'Officer')) {
+            if (!$user->officer || (int) $user->officer->id !== (int) $educationRequest->officer_id) {
+                abort(403, 'Unauthorized access.');
+            }
+        } else {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $path = ltrim((string) $document->file_path, '/');
+        if (!Storage::disk('local')->exists($path)) {
+            abort(404, 'File not found.');
+        }
+
+        $absolutePath = Storage::disk('local')->path($path);
+        return response()->download(
+            $absolutePath,
+            $document->file_name,
+            $document->mime_type ? ['Content-Type' => $document->mime_type] : []
+        );
+    }
+
+    private function userHasRole(?User $user, string $roleName): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $user->loadMissing(['roles' => function ($query) {
+            $query->wherePivot('is_active', true);
+        }]);
+
+        return in_array($roleName, $user->roles->pluck('name')->toArray(), true);
     }
 
     /**

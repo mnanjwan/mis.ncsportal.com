@@ -826,6 +826,8 @@ Route::middleware('auth')->group(function () {
     // Education Qualification Request Show - accessible by both HRD and Officers (controller handles authorization)
     Route::middleware('role:HRD|Officer')->group(function () {
         Route::get('/hrd/education-requests/{id}', [EducationChangeRequestController::class, 'show'])->name('hrd.education-requests.show');
+        Route::get('/education-requests/{requestId}/documents/{documentId}', [EducationChangeRequestController::class, 'downloadDocument'])
+            ->name('education-requests.documents.download');
     });
 
     // Investigation Unit Routes

@@ -108,6 +108,7 @@
                     ['title' => 'Pass Applications', 'href' => route('officer.pass-applications')],
                     ['title' => 'Account Changes', 'href' => route('officer.account-change.index')],
                     ['title' => 'Next of KIN', 'href' => route('officer.next-of-kin.index')],
+                    ['title' => 'Education Requests', 'href' => route('officer.education-requests.index')],
                 ]
             ],
             ['icon' => 'ki-filled ki-question', 'title' => 'Queries', 'href' => route('officer.queries.index')],
