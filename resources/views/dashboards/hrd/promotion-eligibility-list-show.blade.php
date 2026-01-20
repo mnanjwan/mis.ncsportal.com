@@ -83,6 +83,30 @@
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Eligible Officers</h3>
+                <div class="kt-card-toolbar w-full sm:w-[520px]">
+                    <div class="flex items-stretch gap-2 w-full">
+                        <label for="eligibilitySearchInput" class="sr-only">Search eligible officers</label>
+                        <input
+                            id="eligibilitySearchInput"
+                            type="text"
+                            class="kt-input w-full flex-1"
+                            placeholder="Live search (name, service number, rank, state...)"
+                            autocomplete="off"
+                        />
+                        <button
+                            id="eligibilitySearchClear"
+                            type="button"
+                            class="kt-btn kt-btn-outline whitespace-nowrap min-w-[90px] hidden"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <div class="mt-1 flex justify-end">
+                        <span id="eligibilitySearchMeta" class="text-xs text-secondary-foreground whitespace-nowrap hidden sm:inline">
+                            Showing {{ $list->items->count() ?? 0 }} of {{ $list->items->count() ?? 0 }}
+                        </span>
+                    </div>
+                </div>
             </div>
             <div class="kt-card-content">
                 @if($list->items && $list->items->count() > 0)
@@ -100,9 +124,9 @@
                                         <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">State</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="eligibilityTableBody">
                                     @foreach($list->items as $item)
-                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                        <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors eligibility-row">
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $loop->iteration }}
                                             </td>
@@ -133,6 +157,11 @@
                                             </td>
                                         </tr>
                                     @endforeach
+                                    <tr id="eligibilityNoResultsRow" class="hidden">
+                                        <td colspan="6" class="py-8 px-4 text-sm text-secondary-foreground text-center">
+                                            No officers match your search.
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -140,9 +169,9 @@
 
                     <!-- Mobile Card View -->
                     <div class="lg:hidden">
-                        <div class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-4" id="eligibilityCards">
                             @foreach($list->items as $item)
-                                <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input">
+                                <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input eligibility-card">
                                     <div class="flex items-center gap-4">
                                         <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
                                             <span class="text-sm font-semibold text-success">
@@ -171,6 +200,9 @@
                                 </div>
                             @endforeach
                         </div>
+                        <div id="eligibilityNoResultsMobile" class="hidden text-center py-10 text-sm text-secondary-foreground">
+                            No officers match your search.
+                        </div>
                     </div>
                 @else
                     <div class="text-center py-12">
@@ -181,5 +213,80 @@
             </div>
         </div>
     </div>
+
+@push('scripts')
+<script>
+(() => {
+    const input = document.getElementById('eligibilitySearchInput');
+    const clearBtn = document.getElementById('eligibilitySearchClear');
+    const meta = document.getElementById('eligibilitySearchMeta');
+
+    const rows = Array.from(document.querySelectorAll('.eligibility-row'));
+    const cards = Array.from(document.querySelectorAll('.eligibility-card'));
+    const noRow = document.getElementById('eligibilityNoResultsRow');
+    const noMobile = document.getElementById('eligibilityNoResultsMobile');
+
+    if (!input || (!rows.length && !cards.length)) return;
+
+    const normalize = (s) => (s || '')
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const rowIndex = rows.map((el) => ({ el, hay: normalize(el.textContent) }));
+    const cardIndex = cards.map((el) => ({ el, hay: normalize(el.textContent) }));
+
+    const total = Math.max(rowIndex.length, cardIndex.length);
+
+    let t;
+    const apply = () => {
+        const q = normalize(input.value);
+
+        let shown = 0;
+        rowIndex.forEach(({ el, hay }) => {
+            const match = !q || hay.includes(q);
+            el.style.display = match ? '' : 'none';
+            if (match) shown++;
+        });
+
+        cardIndex.forEach(({ el, hay }) => {
+            const match = !q || hay.includes(q);
+            el.style.display = match ? '' : 'none';
+        });
+
+        if (meta) {
+            meta.textContent = `Showing ${shown} of ${total}`;
+        }
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', !q);
+        }
+
+        if (noRow) {
+            noRow.classList.toggle('hidden', shown !== 0);
+        }
+        if (noMobile) {
+            noMobile.classList.toggle('hidden', shown !== 0);
+        }
+    };
+
+    input.addEventListener('input', () => {
+        window.clearTimeout(t);
+        t = window.setTimeout(apply, 80);
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            input.focus();
+            apply();
+        });
+    }
+
+    apply();
+})();
+</script>
+@endpush
 @endsection
 

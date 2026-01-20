@@ -110,6 +110,30 @@
     <div class="kt-card">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Eligible Officers</h3>
+            <div class="kt-card-toolbar w-full sm:w-[520px]">
+                <div class="flex items-stretch gap-2 w-full">
+                    <label for="boardEligibilitySearchInput" class="sr-only">Search eligible officers</label>
+                    <input
+                        id="boardEligibilitySearchInput"
+                        type="text"
+                        class="kt-input w-full flex-1"
+                        placeholder="Live search (name, service number, rank, state...)"
+                        autocomplete="off"
+                    />
+                    <button
+                        id="boardEligibilitySearchClear"
+                        type="button"
+                        class="kt-btn kt-btn-outline whitespace-nowrap min-w-[90px] hidden"
+                    >
+                        Clear
+                    </button>
+                </div>
+                <div class="mt-1 flex justify-end">
+                    <span id="boardEligibilitySearchMeta" class="text-xs text-secondary-foreground whitespace-nowrap hidden sm:inline">
+                        Showing {{ $list->items?->count() ?? 0 }} of {{ $list->items?->count() ?? 0 }}
+                    </span>
+                </div>
+            </div>
         </div>
         <div class="kt-card-content">
             @if($list->items && $list->items->count() > 0)
@@ -132,14 +156,14 @@
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">State</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="boardEligibilityTableBody">
                             @foreach($list->items as $item)
                                 @php
                                     $promotionService = app(\App\Services\PromotionService::class);
                                     $currentRank = $promotionService->normalizeRankToAbbreviation($item->officer?->substantive_rank ?? $item->current_rank);
                                     $nextRank = $promotionService->getNextRank($currentRank);
                                 @endphp
-                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors promotion-row">
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         <input
                                             type="checkbox"
@@ -172,6 +196,11 @@
                                     </td>
                                 </tr>
                             @endforeach
+                            <tr id="boardEligibilityNoResultsRow" class="hidden">
+                                <td colspan="8" class="py-8 px-4 text-sm text-secondary-foreground text-center">
+                                    No officers match your search.
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -192,21 +221,92 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectAll = document.getElementById('selectAllItems');
     const checkboxes = Array.from(document.querySelectorAll('.promotion-item-checkbox'));
 
+    // Live search (filters table rows only; keeps selections intact).
+    const searchInput = document.getElementById('boardEligibilitySearchInput');
+    const searchClear = document.getElementById('boardEligibilitySearchClear');
+    const searchMeta = document.getElementById('boardEligibilitySearchMeta');
+    const rows = Array.from(document.querySelectorAll('.promotion-row'));
+    const noResultsRow = document.getElementById('boardEligibilityNoResultsRow');
+
+    const normalize = (s) => (s || '')
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const rowIndex = rows.map((el) => ({ el, hay: normalize(el.textContent) }));
+    const totalRows = rowIndex.length;
+
+    const isRowVisible = (tr) => tr && tr.style.display !== 'none';
+    const getVisibleCheckboxes = () =>
+        checkboxes.filter((cb) => isRowVisible(cb.closest('tr')));
+
+    let searchTimer;
+    const applySearch = () => {
+        const q = normalize(searchInput?.value);
+        let shown = 0;
+
+        rowIndex.forEach(({ el, hay }) => {
+            const match = !q || hay.includes(q);
+            el.style.display = match ? '' : 'none';
+            if (match) shown++;
+        });
+
+        if (searchMeta) {
+            searchMeta.textContent = `Showing ${shown} of ${totalRows}`;
+        }
+
+        if (searchClear) {
+            searchClear.classList.toggle('hidden', !q);
+        }
+
+        if (noResultsRow) {
+            noResultsRow.classList.toggle('hidden', shown !== 0);
+        }
+
+        // When filtering, keep selectAll state consistent with visible rows.
+        if (selectAll) {
+            const visible = getVisibleCheckboxes();
+            const allChecked = visible.length > 0 && visible.every(x => x.checked);
+            const noneChecked = visible.every(x => !x.checked);
+            selectAll.indeterminate = !allChecked && !noneChecked;
+            selectAll.checked = allChecked;
+        }
+    };
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            window.clearTimeout(searchTimer);
+            searchTimer = window.setTimeout(applySearch, 80);
+        });
+        applySearch();
+    }
+
+    if (searchClear && searchInput) {
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchInput.focus();
+            applySearch();
+        });
+    }
+
     function getSelectedCount() {
         return checkboxes.filter(cb => cb.checked).length;
     }
 
     if (selectAll) {
         selectAll.addEventListener('change', () => {
-            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            // Select only currently visible rows (cleaner UX with live search).
+            getVisibleCheckboxes().forEach(cb => cb.checked = selectAll.checked);
         });
     }
 
     checkboxes.forEach(cb => {
         cb.addEventListener('change', () => {
             if (!selectAll) return;
-            const allChecked = checkboxes.length > 0 && checkboxes.every(x => x.checked);
-            const noneChecked = checkboxes.every(x => !x.checked);
+            const visible = getVisibleCheckboxes();
+            const allChecked = visible.length > 0 && visible.every(x => x.checked);
+            const noneChecked = visible.every(x => !x.checked);
             selectAll.indeterminate = !allChecked && !noneChecked;
             selectAll.checked = allChecked;
         });
