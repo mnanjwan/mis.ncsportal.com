@@ -263,6 +263,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/promotion-eligibility', [PromotionController::class, 'storeEligibilityList'])->name('promotion-eligibility.store');
         Route::get('/promotion-eligibility/{id}', [PromotionController::class, 'showEligibilityList'])->name('promotion-eligibility.show');
         Route::get('/promotion-eligibility/{id}/export', [PromotionController::class, 'exportEligibilityList'])->name('promotion-eligibility.export');
+        Route::post('/promotion-eligibility/{id}/finalize', [PromotionController::class, 'finalizeEligibilityList'])->name('promotion-eligibility.finalize');
+        Route::post('/promotion-eligibility/{id}/submit-to-board', [PromotionController::class, 'submitEligibilityListToBoard'])->name('promotion-eligibility.submit-to-board');
         Route::delete('/promotion-eligibility/{id}', [PromotionController::class, 'destroyEligibilityList'])->name('promotion-eligibility.destroy');
 
         Route::get('/promotion-criteria', [PromotionController::class, 'criteria'])->name('promotion-criteria');
@@ -677,6 +679,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/promotions', [PromotionController::class, 'index'])->name('promotions');
         Route::get('/promotions/{id}', [PromotionController::class, 'show'])->name('promotions.show');
         Route::get('/promotions/{id}/approve', [PromotionController::class, 'approve'])->name('promotions.approve');
+        Route::post('/promotions/{id}/bulk-approve', [PromotionController::class, 'bulkApprove'])->name('promotions.bulk-approve');
     });
 
     // Building Routes

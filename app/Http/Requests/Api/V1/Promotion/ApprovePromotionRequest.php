@@ -14,8 +14,10 @@ class ApprovePromotionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'new_rank' => 'required|string|max:100',
-            'effective_date' => 'required|date|after_or_equal:today',
+            'to_rank' => 'required|string|max:100',
+            'promotion_date' => 'required|date',
+            'board_meeting_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
         ];
     }
 }

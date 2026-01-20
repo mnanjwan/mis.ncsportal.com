@@ -84,6 +84,9 @@
                                             @endif
                                         </a>
                                     </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">
+                                        Status
+                                    </th>
                                     <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">
                                         Actions
                                     </th>
@@ -103,12 +106,38 @@
                                     <td class="py-3 px-4 text-sm text-secondary-foreground">
                                         {{ $list->created_at->format('d/m/Y') }}
                                     </td>
+                                    <td class="py-3 px-4">
+                                        @php $status = $list->status ?? 'DRAFT'; @endphp
+                                        <span class="kt-badge kt-badge-sm {{
+                                            $status === 'SUBMITTED_TO_BOARD' ? 'kt-badge-warning' :
+                                            ($status === 'FINALIZED' ? 'kt-badge-success' : 'kt-badge-secondary')
+                                        }}">
+                                            {{ $status }}
+                                        </span>
+                                    </td>
                                     <td class="py-3 px-4 text-right">
                                         <div class="flex items-center justify-end gap-2">
                                             <a href="{{ route('hrd.promotion-eligibility.show', $list->id) }}" 
                                                class="kt-btn kt-btn-sm kt-btn-ghost">
                                                 View List
                                             </a>
+                                            @if(($list->eligible_officers_count ?? 0) > 0)
+                                                @if(($list->status ?? 'DRAFT') === 'DRAFT')
+                                                    <form action="{{ route('hrd.promotion-eligibility.finalize', $list->id) }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-secondary">
+                                                            Finalize
+                                                        </button>
+                                                    </form>
+                                                @elseif(($list->status ?? '') === 'FINALIZED')
+                                                    <form action="{{ route('hrd.promotion-eligibility.submit-to-board', $list->id) }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary">
+                                                            Submit to Board
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            @endif
                                             @if(($list->eligible_officers_count ?? 0) == 0)
                                                 <button type="button" 
                                                         data-kt-modal-toggle="#delete-modal-{{ $list->id }}"
@@ -121,7 +150,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="py-12 text-center">
+                                    <td colspan="5" class="py-12 text-center">
                                         <i class="ki-filled ki-arrow-up text-4xl text-muted-foreground mb-4"></i>
                                         <p class="text-secondary-foreground mb-4">No eligibility lists found</p>
                                         <a href="{{ route('hrd.promotion-eligibility.create') }}" class="kt-btn kt-btn-primary">
@@ -152,6 +181,9 @@
                                         {{ $list->eligible_officers_count ?? 0 }} officers
                                     </span>
                                     <span class="text-xs text-secondary-foreground">
+                                        Status: {{ $list->status ?? 'DRAFT' }}
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
                                         Generated: {{ $list->created_at->format('d/m/Y') }}
                                     </span>
                                 </div>
@@ -161,6 +193,23 @@
                                    class="kt-btn kt-btn-sm kt-btn-ghost">
                                     View
                                 </a>
+                                @if(($list->eligible_officers_count ?? 0) > 0)
+                                    @if(($list->status ?? 'DRAFT') === 'DRAFT')
+                                        <form action="{{ route('hrd.promotion-eligibility.finalize', $list->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-secondary">
+                                                Finalize
+                                            </button>
+                                        </form>
+                                    @elseif(($list->status ?? '') === 'FINALIZED')
+                                        <form action="{{ route('hrd.promotion-eligibility.submit-to-board', $list->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary">
+                                                Submit
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
                                 @if(($list->officers_count ?? 0) == 0)
                                     <button type="button" 
                                             data-kt-modal-toggle="#delete-modal-{{ $list->id }}"

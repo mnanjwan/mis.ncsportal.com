@@ -6,6 +6,7 @@ use App\Models\Promotion;
 use App\Models\PromotionEligibilityList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PromotionController extends BaseController
 {
@@ -216,28 +217,50 @@ class PromotionController extends BaseController
             );
         }
 
-        $request->validate([
-            'new_rank' => 'required|string',
-            'effective_date' => 'required|date|after_or_equal:today',
+        $validated = $request->validate([
+            'to_rank' => 'required|string|max:100',
+            'promotion_date' => 'required|date',
+            'board_meeting_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
-        $promotion->update([
-            'status' => 'APPROVED',
-            'new_rank' => $request->new_rank,
-            'effective_date' => $request->effective_date,
-            'approved_at' => now(),
-            'approved_by' => $request->user()->id,
-        ]);
+        DB::beginTransaction();
+        try {
+            $promotion->loadMissing('officer');
+            $officer = $promotion->officer;
 
-        // Update officer's rank
-        $promotion->officer->update([
-            'substantive_rank' => $request->new_rank,
-        ]);
+            $fromRank = $promotion->from_rank;
+            if (empty($fromRank) && $officer) {
+                $fromRank = $officer->substantive_rank ?? '';
+            }
+
+            $promotion->update([
+                'from_rank' => $fromRank,
+                'to_rank' => $validated['to_rank'],
+                'promotion_date' => $validated['promotion_date'],
+                'board_meeting_date' => $validated['board_meeting_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'approved_by_board' => true,
+            ]);
+
+            if ($officer) {
+                $officer->update([
+                    'substantive_rank' => $validated['to_rank'],
+                    'date_of_present_appointment' => $validated['promotion_date'],
+                ]);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return $this->errorResponse('Failed to approve promotion: ' . $e->getMessage(), null, 500, 'SERVER_ERROR');
+        }
 
         return $this->successResponse([
             'id' => $promotion->id,
-            'status' => $promotion->status,
-            'new_rank' => $promotion->new_rank,
+            'approved_by_board' => $promotion->approved_by_board,
+            'to_rank' => $promotion->to_rank,
+            'promotion_date' => $promotion->promotion_date?->format('Y-m-d'),
         ], 'Promotion approved successfully');
     }
 }

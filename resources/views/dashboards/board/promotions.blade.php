@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadPromotionLists() {
     try {
         const token = window.API_CONFIG.token;
-        const res = await fetch('/api/v1/promotion-eligibility-lists?per_page=50', {
+        const res = await fetch('/api/v1/promotion-eligibility-lists?status=SUBMITTED_TO_BOARD&per_page=50', {
             headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
         });
         
@@ -36,7 +36,7 @@ async function loadPromotionLists() {
                     <div class="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-input">
                         <div class="flex items-center gap-4">
                             <div class="flex flex-col gap-1">
-                                <span class="text-sm font-semibold text-mono">${list.target_rank || 'N/A'} - ${list.officers_count || 0} officers</span>
+                                <span class="text-sm font-semibold text-mono">Year ${list.year || 'N/A'} - ${list.officers_count || 0} officers</span>
                                 <span class="text-xs text-secondary-foreground">Generated: ${new Date(list.created_at).toLocaleDateString()}</span>
                             </div>
                         </div>

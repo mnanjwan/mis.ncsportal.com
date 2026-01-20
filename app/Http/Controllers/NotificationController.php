@@ -39,6 +39,15 @@ class NotificationController extends Controller
         $entityId = (int) $notification->entity_id;
 
         switch ($entityType) {
+            case 'promotion_eligibility_list':
+                if ($user->hasRole('Board')) {
+                    return redirect()->route('board.promotions.show', $entityId);
+                }
+                if ($user->hasRole('HRD')) {
+                    return redirect()->route('hrd.promotion-eligibility.show', $entityId);
+                }
+                break;
+
             case 'education_change_request':
                 return redirect()->route('hrd.education-requests.show', $entityId);
 

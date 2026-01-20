@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\PromotionEligibilityList;
 use App\Models\PromotionEligibilityCriterion;
+use App\Models\Promotion;
+use App\Services\PromotionService;
+use App\Services\NotificationService;
 use App\Models\DutyRoster;
 use App\Models\RosterAssignment;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PromotionController extends Controller
 {
@@ -79,7 +83,20 @@ class PromotionController extends Controller
 
     public function show($id)
     {
-        return view('dashboards.board.promotion-show', compact('id'));
+        if (!auth()->user()->hasRole('Board')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $list = PromotionEligibilityList::with(['generatedBy', 'items.officer'])
+            ->findOrFail($id);
+
+        // Board should primarily review lists that have been submitted.
+        if (($list->status ?? 'DRAFT') !== 'SUBMITTED_TO_BOARD') {
+            return redirect()->route('board.promotions')
+                ->with('error', 'This promotion eligibility list has not been submitted to the Board yet.');
+        }
+
+        return view('dashboards.board.promotion-show', compact('list'));
     }
 
     public function createEligibilityList()
@@ -225,9 +242,188 @@ class PromotionController extends Controller
         return view('dashboards.hrd.promotion-eligibility-list-show', compact('list'));
     }
 
+    public function finalizeEligibilityList($id)
+    {
+        if (!auth()->user()->hasRole('HRD')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $list = PromotionEligibilityList::withCount('items')->findOrFail($id);
+
+        if ($list->items_count <= 0) {
+            return redirect()->back()->with('error', 'Cannot finalize an empty promotion eligibility list.');
+        }
+
+        if ($list->status !== 'DRAFT') {
+            return redirect()->back()->with('error', 'Only DRAFT promotion eligibility lists can be finalized.');
+        }
+
+        $list->update(['status' => 'FINALIZED']);
+
+        return redirect()->back()->with('success', 'Promotion eligibility list finalized successfully.');
+    }
+
+    public function submitEligibilityListToBoard($id)
+    {
+        if (!auth()->user()->hasRole('HRD')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $list = PromotionEligibilityList::withCount('items')->findOrFail($id);
+
+        if ($list->items_count <= 0) {
+            return redirect()->back()->with('error', 'Cannot submit an empty promotion eligibility list to Board.');
+        }
+
+        if ($list->status !== 'FINALIZED') {
+            return redirect()->back()->with('error', 'Only FINALIZED promotion eligibility lists can be submitted to Board.');
+        }
+
+        $list->update(['status' => 'SUBMITTED_TO_BOARD']);
+
+        // Notify Board users (in-app + email).
+        try {
+            $notificationService = app(NotificationService::class);
+            $notificationService->notifyByRole(
+                'Board',
+                'promotion_list_submitted',
+                'Promotion Eligibility List Submitted',
+                "A promotion eligibility list for year {$list->year} has been submitted to the Board for review and approval.",
+                'promotion_eligibility_list',
+                $list->id,
+                true
+            );
+        } catch (\Throwable $e) {
+            // Don't block submission if notifications fail.
+            \Log::warning('Failed to notify Board about promotion list submission', [
+                'list_id' => $list->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Promotion eligibility list submitted to Board successfully.');
+    }
+
     public function approve($id)
     {
         return view('forms.promotion.approve', compact('id'));
+    }
+
+    public function bulkApprove(Request $request, $id)
+    {
+        if (!auth()->user()->hasRole('Board')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'promotion_date' => 'required|date',
+            'board_meeting_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+            'selected_items' => 'required|array|min:1',
+            'selected_items.*' => 'integer',
+        ]);
+
+        $list = PromotionEligibilityList::with(['items.officer'])
+            ->findOrFail($id);
+
+        if (($list->status ?? 'DRAFT') !== 'SUBMITTED_TO_BOARD') {
+            return redirect()->back()->with('error', 'Only lists submitted to the Board can be approved.');
+        }
+
+        if (!$list->items || $list->items->isEmpty()) {
+            return redirect()->back()->with('error', 'This list has no officers to approve.');
+        }
+
+        $selectedIds = collect($validated['selected_items'])
+            ->map(fn ($v) => (int) $v)
+            ->unique()
+            ->values();
+
+        $selectedItems = $list->items->whereIn('id', $selectedIds)->values();
+        if ($selectedItems->isEmpty()) {
+            return redirect()->back()->with('error', 'No valid officers were selected for approval.');
+        }
+
+        $promotionService = app(PromotionService::class);
+
+        $promotionDate = \Carbon\Carbon::parse($validated['promotion_date'])->startOfDay();
+        $boardMeetingDate = !empty($validated['board_meeting_date'])
+            ? \Carbon\Carbon::parse($validated['board_meeting_date'])->startOfDay()
+            : null;
+
+        $notes = $validated['notes'] ?? null;
+
+        $createdOrUpdated = 0;
+        $skipped = 0;
+        $skippedReasons = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($selectedItems as $item) {
+                $officer = $item->officer;
+                if (!$officer) {
+                    $skipped++;
+                    $skippedReasons[] = 'Missing officer record for one list item.';
+                    continue;
+                }
+
+                $fromRank = $promotionService->normalizeRankToAbbreviation($officer->substantive_rank ?? $item->current_rank);
+                $toRank = $promotionService->getNextRank($fromRank);
+
+                if (empty($toRank)) {
+                    $skipped++;
+                    $skippedReasons[] = "Unable to determine next rank for officer {$officer->service_number} (current: {$fromRank}).";
+                    continue;
+                }
+
+                // Create/Update a promotion record tied to this eligibility list item.
+                $promotion = Promotion::updateOrCreate(
+                    ['eligibility_list_item_id' => $item->id],
+                    [
+                        'officer_id' => $officer->id,
+                        'from_rank' => (string) ($fromRank ?? ''),
+                        'to_rank' => $toRank,
+                        'promotion_date' => $promotionDate,
+                        'approved_by_board' => false, // flip below to trigger approval hooks
+                        'board_meeting_date' => $boardMeetingDate,
+                        'notes' => $notes,
+                    ]
+                );
+
+                if (!$promotion->approved_by_board) {
+                    $promotion->update(['approved_by_board' => true]);
+                }
+
+                // Update officer’s rank and reset date_of_present_appointment for future eligibility calculations.
+                $officer->update([
+                    'substantive_rank' => $toRank,
+                    'date_of_present_appointment' => $promotionDate,
+                ]);
+
+                $createdOrUpdated++;
+            }
+
+            // Keep list SUBMITTED_TO_BOARD until all items have an approved promotion.
+            $remaining = Promotion::whereIn('eligibility_list_item_id', $list->items->pluck('id'))
+                ->where('approved_by_board', true)
+                ->count();
+            $total = $list->items->count();
+            if ($remaining >= $total && $total > 0) {
+                $list->update(['status' => 'FINALIZED']);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Bulk approval failed: ' . $e->getMessage());
+        }
+
+        $message = "Bulk approval completed. Processed: {$createdOrUpdated}. Skipped: {$skipped}.";
+        if (!empty($skippedReasons)) {
+            $message .= ' Skips: ' . implode(' ', array_slice(array_unique($skippedReasons), 0, 3));
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function destroyEligibilityList($id)

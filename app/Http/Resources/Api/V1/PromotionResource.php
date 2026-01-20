@@ -12,16 +12,20 @@ class PromotionResource extends JsonResource
         return [
             'id' => $this->id,
             'officer' => new OfficerResource($this->whenLoaded('officer')),
-            'eligibility_list' => [
-                'id' => $this->whenLoaded('eligibilityList')?->id,
-                'year' => $this->whenLoaded('eligibilityList')?->year,
-                'rank' => $this->whenLoaded('eligibilityList')?->rank,
-            ],
-            'current_rank' => $this->current_rank,
-            'new_rank' => $this->new_rank,
-            'status' => $this->status,
-            'effective_date' => $this->effective_date?->format('Y-m-d'),
-            'approved_at' => $this->approved_at?->toIso8601String(),
+            'eligibility_list_item_id' => $this->eligibility_list_item_id,
+            'eligibility_list' => $this->whenLoaded('eligibilityListItem', function () {
+                return [
+                    'id' => $this->eligibilityListItem?->eligibilityList?->id,
+                    'year' => $this->eligibilityListItem?->eligibilityList?->year,
+                ];
+            }),
+            'from_rank' => $this->from_rank,
+            'to_rank' => $this->to_rank,
+            'promotion_date' => $this->promotion_date?->format('Y-m-d'),
+            'approved_by_board' => (bool) $this->approved_by_board,
+            'board_meeting_date' => $this->board_meeting_date?->format('Y-m-d'),
+            'notes' => $this->notes,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

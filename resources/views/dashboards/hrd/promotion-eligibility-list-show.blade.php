@@ -27,6 +27,13 @@
                     <div class="flex items-center justify-between">
                         <h2 class="text-2xl font-semibold text-mono">Promotion Eligibility List - Year {{ $list->year ?? 'N/A' }}</h2>
                         <div class="flex items-center gap-3">
+                            @php $status = $list->status ?? 'DRAFT'; @endphp
+                            <span class="kt-badge kt-badge-sm {{
+                                $status === 'SUBMITTED_TO_BOARD' ? 'kt-badge-warning' :
+                                ($status === 'FINALIZED' ? 'kt-badge-success' : 'kt-badge-secondary')
+                            }}">
+                                {{ $status }}
+                            </span>
                             <a href="{{ route('hrd.promotion-eligibility.export', $list->id) }}" 
                                class="kt-btn kt-btn-sm kt-btn-secondary">
                                 <i class="ki-filled ki-file-down"></i> Export CSV
@@ -36,6 +43,23 @@
                                target="_blank">
                                 <i class="ki-filled ki-printer"></i> Print
                             </a>
+                            @if(($list->items?->count() ?? 0) > 0)
+                                @if(($list->status ?? 'DRAFT') === 'DRAFT')
+                                    <form action="{{ route('hrd.promotion-eligibility.finalize', $list->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-secondary">
+                                            Finalize
+                                        </button>
+                                    </form>
+                                @elseif(($list->status ?? '') === 'FINALIZED')
+                                    <form action="{{ route('hrd.promotion-eligibility.submit-to-board', $list->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary">
+                                            Submit to Board
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-4 text-sm">
