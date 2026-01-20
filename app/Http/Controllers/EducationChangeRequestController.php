@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\EducationMasterDataSync;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -290,6 +291,12 @@ class EducationChangeRequestController extends Controller
                 ->with('success', 'Education qualification request approved and recorded successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Failed to approve education change request', [
+                'request_id' => $educationRequest->id ?? $id,
+                'officer_id' => $educationRequest->officer_id ?? null,
+                'user_id' => $user?->id,
+                'error' => $e->getMessage(),
+            ]);
             return back()->with('error', 'Failed to approve request. Please try again.');
         }
     }
