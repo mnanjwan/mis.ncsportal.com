@@ -104,6 +104,110 @@
     <script>
         // Grade selection visual feedback
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize YES/NO dropdowns for Section 9
+            function initYesNoDropdown(triggerId, dropdownId, optionsId, hiddenInputId, displayTextId, searchInputId) {
+                const trigger = document.getElementById(triggerId);
+                const dropdown = document.getElementById(dropdownId);
+                const optionsContainer = document.getElementById(optionsId);
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const displayText = document.getElementById(displayTextId);
+                const searchInput = document.getElementById(searchInputId);
+
+                if (!trigger || !dropdown || !optionsContainer || !hiddenInput || !displayText) {
+                    return;
+                }
+
+                // Options for YES/NO dropdown
+                const options = [
+                    { value: 'YES', label: 'YES' },
+                    { value: 'NO', label: 'NO' }
+                ];
+
+                // Render options
+                function renderOptions(filteredOptions = options) {
+                    optionsContainer.innerHTML = '';
+                    filteredOptions.forEach(option => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'px-4 py-2 hover:bg-muted/50 cursor-pointer transition-colors';
+                        optionDiv.textContent = option.label;
+                        optionDiv.dataset.value = option.value;
+                        
+                        // Highlight selected option
+                        if (hiddenInput.value === option.value) {
+                            optionDiv.classList.add('bg-primary/10', 'text-primary', 'font-semibold');
+                        }
+                        
+                        optionDiv.addEventListener('click', function() {
+                            hiddenInput.value = option.value;
+                            displayText.textContent = option.label;
+                            dropdown.classList.add('hidden');
+                            if (searchInput) {
+                                searchInput.value = '';
+                            }
+                            renderOptions(options);
+                        });
+                        
+                        optionsContainer.appendChild(optionDiv);
+                    });
+                }
+
+                // Initial render - ensure display text matches hidden input value
+                const currentValue = hiddenInput.value;
+                if (currentValue) {
+                    const currentOption = options.find(opt => opt.value === currentValue);
+                    if (currentOption) {
+                        displayText.textContent = currentOption.label;
+                    }
+                }
+                renderOptions();
+
+                // Handle search input if present
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const filteredOptions = options.filter(opt => 
+                            opt.label.toLowerCase().includes(searchTerm)
+                        );
+                        renderOptions(filteredOptions);
+                    });
+                }
+
+                // Toggle dropdown on trigger click
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (!dropdown.classList.contains('hidden') && searchInput) {
+                        setTimeout(() => searchInput.focus(), 100);
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Initialize both dropdowns
+            initYesNoDropdown(
+                'targets_agreed_select_trigger',
+                'targets_agreed_dropdown',
+                'targets_agreed_options',
+                'targets_agreed_id',
+                'targets_agreed_select_text',
+                'targets_agreed_search_input'
+            );
+
+            initYesNoDropdown(
+                'duties_agreed_select_trigger',
+                'duties_agreed_dropdown',
+                'duties_agreed_options',
+                'duties_agreed_id',
+                'duties_agreed_select_text',
+                'duties_agreed_search_input'
+            );
+
             // Handle grade radio button changes
             document.querySelectorAll('.grade-group').forEach(group => {
                 const radios = group.querySelectorAll('.grade-radio');

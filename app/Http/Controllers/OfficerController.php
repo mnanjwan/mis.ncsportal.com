@@ -727,6 +727,7 @@ class OfficerController extends Controller
         $originalPresentStation = $officer->present_station;
         $originalDatePosted = $officer->date_posted_to_station;
         $originalUnit = $officer->unit;
+        $originalEmail = $officer->email;
 
         $validated = $request->validate([
             'initials' => 'required|string|max:50',
@@ -782,6 +783,20 @@ class OfficerController extends Controller
 
         // Refresh to get updated values
         $officer->refresh();
+
+        // Sync email to user if email changed and officer has a user account
+        if ($originalEmail !== $officer->email && $officer->user_id) {
+            $user = \App\Models\User::find($officer->user_id);
+            if ($user) {
+                $user->update(['email' => $officer->email]);
+                Log::info('Synced officer email to user account', [
+                    'officer_id' => $officer->id,
+                    'user_id' => $user->id,
+                    'old_email' => $originalEmail,
+                    'new_email' => $officer->email,
+                ]);
+            }
+        }
 
         // Send notifications for changes
         $notificationService = app(\App\Services\NotificationService::class);
