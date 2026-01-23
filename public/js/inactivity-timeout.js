@@ -174,17 +174,24 @@
 
         document.body.appendChild(modal);
 
-        // Logout on any click after warning is shown
+        // Logout on any click after warning is shown (same behavior as app logout)
         const handleClick = function(e) {
+            // Prevent default behavior
             e.preventDefault();
             e.stopPropagation();
+            
+            // Remove event listeners to prevent multiple submissions
+            modal.removeEventListener('click', handleClick);
+            document.removeEventListener('click', handleClick, true);
+            document.removeEventListener('keydown', handleClick, true);
+            
+            // Trigger logout (uses same form submission as app logout button)
             logout();
         };
 
-        // Add click listener to modal
+        // Add click listener to modal and document
+        // Clicking anywhere (modal or outside) will trigger logout
         modal.addEventListener('click', handleClick);
-        
-        // Also listen for any other interaction
         document.addEventListener('click', handleClick, true);
         document.addEventListener('keydown', handleClick, true);
     }
@@ -221,52 +228,43 @@
         }
     }
 
-    // Logout function - simplified to always redirect to login
+    // Logout function - uses the exact same method as app logout button
     function logout() {
         try {
-            // Get login path (handle subdirectories)
-            const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
-            const loginPath = basePath + '/login';
+            // Use the app's existing logout form (same as clicking logout button)
+            // This ensures identical behavior and smooth redirect
+            const logoutForm = document.getElementById('logout-form');
             
-            // Get CSRF token
-            const csrfToken = document.querySelector('meta[name="csrf-token"]');
-            const token = csrfToken ? (csrfToken.getAttribute('content') || csrfToken.content) : null;
-            
-            // If no token or session expired, just redirect immediately
-            if (!token) {
-                console.warn('CSRF token not found or session expired, redirecting to login');
-                window.location.href = loginPath;
-                return;
+            if (logoutForm) {
+                // Submit the form exactly like the app logout button does
+                logoutForm.submit();
+            } else {
+                // Fallback: Create logout form exactly like the app does
+                const newLogoutForm = document.createElement('form');
+                newLogoutForm.id = 'inactivity-logout-form';
+                newLogoutForm.method = 'POST';
+                newLogoutForm.action = '/logout';
+                newLogoutForm.style.display = 'none';
+                
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (csrfToken) {
+                    const token = csrfToken.getAttribute('content') || csrfToken.content;
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = token;
+                    newLogoutForm.appendChild(csrfInput);
+                }
+                
+                document.body.appendChild(newLogoutForm);
+                newLogoutForm.submit();
             }
-            
-            // Try to logout via fetch (fire and forget - don't wait for response)
-            // This is just to clean up the session on server side if possible
-            // But we redirect immediately regardless
-            fetch(basePath + '/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRF-TOKEN': token,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                body: '_token=' + encodeURIComponent(token),
-                credentials: 'same-origin'
-            })
-            .catch(error => {
-                // Ignore errors - we're redirecting anyway
-                console.warn('Logout request failed (expected if session expired):', error.message);
-            });
-            
-            // Always redirect to login immediately (don't wait for logout response)
-            // This prevents hanging on 419 errors
-            window.location.href = loginPath;
             
         } catch (error) {
             console.error('Error during logout:', error);
             // Final fallback: redirect to login
-            const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
-            window.location.href = basePath + '/login';
+            window.location.href = '/login';
         }
     }
 

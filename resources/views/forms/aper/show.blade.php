@@ -60,6 +60,18 @@
                             <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Year</p>
                             <p class="text-base font-semibold text-foreground">{{ $form->year }}</p>
                         </div>
+                        @php
+                            $statusConfig = match($form->status) {
+                                'DRAFT' => ['class' => 'secondary', 'label' => 'Draft'],
+                                'SUBMITTED' => ['class' => 'info', 'label' => 'Submitted'],
+                                'REPORTING_OFFICER' => ['class' => 'warning', 'label' => 'With Reporting Officer'],
+                                'COUNTERSIGNING_OFFICER' => ['class' => 'warning', 'label' => 'With Countersigning Officer'],
+                                'OFFICER_REVIEW' => ['class' => 'primary', 'label' => 'Pending Your Review'],
+                                'ACCEPTED' => ['class' => 'success', 'label' => 'Accepted'],
+                                'REJECTED' => ['class' => 'danger', 'label' => 'Rejected'],
+                                default => ['class' => 'secondary', 'label' => $form->status]
+                            };
+                        @endphp
                         <div>
                             <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Status</p>
                             <p class="text-base font-semibold text-foreground">{{ $statusConfig['label'] }}</p>
@@ -71,18 +83,6 @@
     </div>
 
     <!-- Status Card -->
-    @php
-        $statusConfig = match($form->status) {
-            'DRAFT' => ['class' => 'secondary', 'label' => 'Draft'],
-            'SUBMITTED' => ['class' => 'info', 'label' => 'Submitted'],
-            'REPORTING_OFFICER' => ['class' => 'warning', 'label' => 'With Reporting Officer'],
-            'COUNTERSIGNING_OFFICER' => ['class' => 'warning', 'label' => 'With Countersigning Officer'],
-            'OFFICER_REVIEW' => ['class' => 'primary', 'label' => 'Pending Your Review'],
-            'ACCEPTED' => ['class' => 'success', 'label' => 'Accepted'],
-            'REJECTED' => ['class' => 'danger', 'label' => 'Rejected'],
-            default => ['class' => 'secondary', 'label' => $form->status]
-        };
-    @endphp
     
     <div class="kt-card bg-{{ $statusConfig['class'] }}/10 border border-{{ $statusConfig['class'] }}/20">
         <div class="kt-card-content p-4">
