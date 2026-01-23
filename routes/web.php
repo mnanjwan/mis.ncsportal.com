@@ -350,6 +350,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/role-assignments/create', [\App\Http\Controllers\RoleAssignmentController::class, 'create'])->name('role-assignments.create');
         Route::post('/role-assignments', [\App\Http\Controllers\RoleAssignmentController::class, 'store'])->name('role-assignments.store');
         Route::get('/role-assignments/officers-by-command', [\App\Http\Controllers\RoleAssignmentController::class, 'getOfficersByCommand'])->name('role-assignments.officers-by-command');
+        Route::get('/role-assignments/check-existing-roles', [\App\Http\Controllers\RoleAssignmentController::class, 'checkExistingRoles'])->name('role-assignments.check-existing-roles');
         Route::put('/role-assignments/{userId}/{roleId}', [\App\Http\Controllers\RoleAssignmentController::class, 'update'])->name('role-assignments.update');
         Route::delete('/role-assignments/{userId}/{roleId}', [\App\Http\Controllers\RoleAssignmentController::class, 'destroy'])->name('role-assignments.destroy');
 
@@ -626,6 +627,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/role-assignments', [AdminRoleAssignmentController::class, 'index'])->name('role-assignments');
         Route::get('/role-assignments/create', [AdminRoleAssignmentController::class, 'create'])->name('role-assignments.create');
         Route::post('/role-assignments', [AdminRoleAssignmentController::class, 'store'])->name('role-assignments.store');
+        Route::get('/role-assignments/check-existing-roles', [AdminRoleAssignmentController::class, 'checkExistingRoles'])->name('role-assignments.check-existing-roles');
         Route::put('/role-assignments/{userId}/{roleId}', [AdminRoleAssignmentController::class, 'update'])->name('role-assignments.update');
         Route::delete('/role-assignments/{userId}/{roleId}', [AdminRoleAssignmentController::class, 'destroy'])->name('role-assignments.destroy');
     });

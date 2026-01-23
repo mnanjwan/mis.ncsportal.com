@@ -122,16 +122,48 @@
                         <p class="text-xs text-secondary-foreground mt-1">Select a role to assign</p>
                     </div>
 
+                    <!-- Hidden field for confirmation -->
+                    <input type="hidden" name="confirm_override" id="confirm_override" value="0">
+
                     <!-- Form Actions -->
                     <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
                         <a href="{{ route('admin.role-assignments') }}" class="kt-btn kt-btn-secondary">
                             Cancel
                         </a>
-                        <button type="submit" class="kt-btn kt-btn-primary">
+                        <button type="submit" class="kt-btn kt-btn-primary" id="submit-btn">
                             <i class="ki-filled ki-check"></i> Assign Role
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="role-override-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="ki-filled ki-information-2 text-warning text-2xl"></i>
+                    <h3 class="text-lg font-semibold text-foreground">Confirm Role Override</h3>
+                </div>
+                <p class="text-sm text-secondary-foreground mb-4">
+                    This officer already has the following active role(s):
+                </p>
+                <ul id="existing-roles-list" class="list-disc list-inside mb-4 text-sm text-foreground space-y-1">
+                    <!-- Existing roles will be populated here -->
+                </ul>
+                <p class="text-sm text-secondary-foreground mb-4">
+                    Assigning a new role will <strong>replace</strong> the existing role(s). Do you want to continue?
+                </p>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" id="cancel-override-btn" class="kt-btn kt-btn-outline">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirm-override-btn" class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-check"></i> Confirm & Assign
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -373,6 +405,162 @@
             if (dropdown && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
+        });
+
+        // Form submission handler with role override confirmation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form[action="{{ route('admin.role-assignments.store') }}"]');
+            const submitBtn = document.getElementById('submit-btn');
+            const confirmOverrideInput = document.getElementById('confirm_override');
+            const modal = document.getElementById('role-override-modal');
+            const cancelBtn = document.getElementById('cancel-override-btn');
+            const confirmBtn = document.getElementById('confirm-override-btn');
+            const existingRolesList = document.getElementById('existing-roles-list');
+            let pendingSubmit = false;
+
+            async function handleFormSubmit(e) {
+                // If already confirmed, submit via fetch to handle JSON responses
+                if (confirmOverrideInput.value === '1') {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const submitBtn = document.getElementById('submit-btn');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="ki-filled ki-loading"></i> Assigning...';
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            }
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            } else {
+                                window.location.href = '{{ route('admin.role-assignments') }}';
+                            }
+                        } else {
+                            alert(data.message || 'Failed to assign role');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="ki-filled ki-check"></i> Assign Role';
+                        }
+                    } catch (error) {
+                        console.error('Error submitting form:', error);
+                        alert('An error occurred. Please try again.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="ki-filled ki-check"></i> Assign Role';
+                    }
+                    return;
+                }
+
+                e.preventDefault();
+
+                const officerId = document.getElementById('officer_id').value;
+                const roleId = document.getElementById('role_id').value;
+
+                // Validate required fields
+                if (!officerId || !roleId) {
+                    // Submit normally if validation fails (let server handle it)
+                    form.removeEventListener('submit', handleFormSubmit);
+                    form.submit();
+                    return;
+                }
+
+                // Check for existing roles
+                try {
+                    const response = await fetch(`{{ route('admin.role-assignments.check-existing-roles') }}?officer_id=${officerId}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.has_existing_roles && data.existing_roles.length > 0) {
+                        // Show confirmation modal
+                        existingRolesList.innerHTML = data.existing_roles.map(role => {
+                            const commandText = role.command_name ? ` (${role.command_name})` : '';
+                            return `<li>${role.name}${commandText}</li>`;
+                        }).join('');
+
+                        modal.classList.remove('hidden');
+                        pendingSubmit = true;
+                    } else {
+                        // No existing roles, submit normally
+                        form.removeEventListener('submit', handleFormSubmit);
+                        form.submit();
+                    }
+                } catch (error) {
+                    console.error('Error checking existing roles:', error);
+                    // On error, submit normally
+                    form.removeEventListener('submit', handleFormSubmit);
+                    form.submit();
+                }
+            }
+
+            form.addEventListener('submit', handleFormSubmit);
+
+            // Handle cancel button
+            cancelBtn.addEventListener('click', function() {
+                modal.classList.add('hidden');
+                pendingSubmit = false;
+            });
+
+            // Handle confirm button
+            confirmBtn.addEventListener('click', async function() {
+                confirmOverrideInput.value = '1';
+                modal.classList.add('hidden');
+                
+                // Submit form with AJAX to handle JSON responses
+                const formData = new FormData(form);
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ki-filled ki-loading"></i> Assigning...';
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            window.location.href = '{{ route('admin.role-assignments') }}';
+                        }
+                    } else {
+                        alert(data.message || 'Failed to assign role');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="ki-filled ki-check"></i> Assign Role';
+                    }
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    // Fallback to normal form submission
+                    form.submit();
+                }
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    pendingSubmit = false;
+                }
+            });
         });
     </script>
     @endpush

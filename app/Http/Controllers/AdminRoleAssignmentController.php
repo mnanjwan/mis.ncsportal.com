@@ -185,6 +185,112 @@ class AdminRoleAssignmentController extends Controller
     }
 
     /**
+     * API: Check existing active roles for an officer
+     */
+    public function checkExistingRoles(Request $request)
+    {
+        try {
+            $adminCommand = $this->getAdminCommand();
+            
+            $validated = $request->validate([
+                'officer_id' => [
+                    'required',
+                    'exists:officers,id',
+                    function ($attribute, $value, $fail) use ($adminCommand) {
+                        $officer = Officer::find($value);
+                        if ($officer && $officer->present_station != $adminCommand->id) {
+                            $fail('Officer must be assigned to your command (' . $adminCommand->name . ').');
+                        }
+                    },
+                ],
+            ]);
+
+            $officer = Officer::findOrFail($validated['officer_id']);
+            $user = $officer->user;
+
+            if (!$user) {
+                // No user means no existing roles
+                return response()->json([
+                    'has_existing_roles' => false,
+                    'existing_roles' => []
+                ]);
+            }
+
+            // Get Officer role ID to exclude it
+            $officerRole = Role::where('name', 'Officer')->first();
+            $officerRoleId = $officerRole ? $officerRole->id : null;
+
+            // Get all active roles for this command, excluding Officer role
+            $activeRoles = $user->roles()
+                ->wherePivot('is_active', true)
+                ->wherePivot('command_id', $adminCommand->id)
+                ->get()
+                ->filter(function($role) use ($officerRoleId) {
+                    return $role->id != $officerRoleId;
+                })
+                ->map(function($role) use ($adminCommand) {
+                    return [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                        'command_id' => $role->pivot->command_id,
+                        'command_name' => $adminCommand->name,
+                    ];
+                })
+                ->values();
+
+            return response()->json([
+                'has_existing_roles' => $activeRoles->count() > 0,
+                'existing_roles' => $activeRoles
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error checking existing roles (Admin)', [
+                'officer_id' => $request->officer_id ?? null,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to check existing roles',
+                'message' => config('app.debug') ? $e->getMessage() : 'An error occurred while checking existing roles'
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper method to deactivate all active roles except Officer and the new role
+     */
+    private function deactivateOtherRoles(User $user, $newRoleId, $commandId)
+    {
+        // Get Officer role ID
+        $officerRole = Role::where('name', 'Officer')->first();
+        $officerRoleId = $officerRole ? $officerRole->id : null;
+
+        // Get all active roles for this command, excluding Officer role and the new role being assigned
+        $otherActiveRoles = $user->roles()
+            ->wherePivot('is_active', true)
+            ->wherePivot('command_id', $commandId)
+            ->where('roles.id', '!=', $newRoleId);
+
+        // Exclude Officer role from deactivation
+        if ($officerRoleId) {
+            $otherActiveRoles->where('roles.id', '!=', $officerRoleId);
+        }
+
+        $rolesToDeactivate = $otherActiveRoles->get();
+
+        // Deactivate each role
+        foreach ($rolesToDeactivate as $role) {
+            $user->roles()->wherePivot('command_id', $commandId)
+                ->updateExistingPivot($role->id, [
+                    'is_active' => false,
+                ]);
+        }
+
+        return $rolesToDeactivate;
+    }
+
+    /**
      * Store role assignment
      */
     public function store(Request $request)
@@ -214,6 +320,7 @@ class AdminRoleAssignmentController extends Controller
                         }
                     },
                 ],
+                'confirm_override' => 'sometimes|boolean',
             ]);
 
             $officer = Officer::findOrFail($validated['officer_id']);
@@ -221,6 +328,13 @@ class AdminRoleAssignmentController extends Controller
             
             // Verify officer is in Admin's command
             if ($officer->present_station != $adminCommand->id) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Officer is not assigned to your command.'
+                    ], 422);
+                }
+                
                 return redirect()->back()
                     ->with('error', 'Officer is not assigned to your command.')
                     ->withInput();
@@ -241,36 +355,92 @@ class AdminRoleAssignmentController extends Controller
                 $officer->update(['user_id' => $user->id]);
             }
 
-            // Check if user already has this role for this command
-            $existingRole = $user->roles()
-                ->where('roles.id', $role->id)
-                ->wherePivot('command_id', $adminCommand->id)
-                ->wherePivot('is_active', true)
-                ->first();
+            // Get Officer role ID to exclude it
+            $officerRole = Role::where('name', 'Officer')->first();
+            $officerRoleId = $officerRole ? $officerRole->id : null;
 
-            if ($existingRole) {
-                // Update existing role assignment
-                $user->roles()->updateExistingPivot($role->id, [
-                    'command_id' => $adminCommand->id,
-                    'assigned_by' => auth()->id(),
-                    'assigned_at' => now(),
-                    'is_active' => true,
-                ], [
-                    'command_id' => $adminCommand->id
-                ]);
-            } else {
-                // Attach new role
-                $user->roles()->attach($role->id, [
-                    'command_id' => $adminCommand->id,
-                    'assigned_by' => auth()->id(),
-                    'assigned_at' => now(),
-                    'is_active' => true,
-                ]);
+            // Check if user has any active roles for this command (excluding Officer)
+            $otherActiveRoles = $user->roles()
+                ->wherePivot('is_active', true)
+                ->wherePivot('command_id', $adminCommand->id)
+                ->where('roles.id', '!=', $role->id);
+
+            if ($officerRoleId) {
+                $otherActiveRoles->where('roles.id', '!=', $officerRoleId);
+            }
+
+            $hasOtherActiveRoles = $otherActiveRoles->exists();
+
+            // If user has other active roles and confirmation not provided, return error
+            if ($hasOtherActiveRoles && !($validated['confirm_override'] ?? false)) {
+                $existingRoles = $user->roles()
+                    ->wherePivot('is_active', true)
+                    ->wherePivot('command_id', $adminCommand->id)
+                    ->where('roles.id', '!=', $role->id);
+
+                if ($officerRoleId) {
+                    $existingRoles->where('roles.id', '!=', $officerRoleId);
+                }
+
+                $existingRolesList = $existingRoles->get()->map(function($r) use ($adminCommand) {
+                    return [
+                        'id' => $r->id,
+                        'name' => $r->name,
+                        'command_name' => $adminCommand->name,
+                    ];
+                })->values();
+
+                return response()->json([
+                    'requires_confirmation' => true,
+                    'message' => 'User already has active roles. Please confirm to override.',
+                    'existing_roles' => $existingRolesList
+                ], 422);
+            }
+
+            // Use database transaction to ensure consistency
+            DB::beginTransaction();
+            try {
+                // If confirmation provided, deactivate other active roles for this command
+                if ($hasOtherActiveRoles && ($validated['confirm_override'] ?? false)) {
+                    $this->deactivateOtherRoles($user, $role->id, $adminCommand->id);
+                }
+
+                // Check if user already has this role for this command
+                $existingRole = $user->roles()
+                    ->where('roles.id', $role->id)
+                    ->wherePivot('command_id', $adminCommand->id)
+                    ->wherePivot('is_active', true)
+                    ->first();
+
+                if ($existingRole) {
+                    // Update existing role assignment
+                    $user->roles()->wherePivot('command_id', $adminCommand->id)
+                        ->updateExistingPivot($role->id, [
+                            'command_id' => $adminCommand->id,
+                            'assigned_by' => auth()->id(),
+                            'assigned_at' => now(),
+                            'is_active' => true,
+                        ]);
+                } else {
+                    // Attach new role
+                    $user->roles()->attach($role->id, [
+                        'command_id' => $adminCommand->id,
+                        'assigned_by' => auth()->id(),
+                        'assigned_at' => now(),
+                        'is_active' => true,
+                    ]);
+                }
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
 
             // Refresh user's roles relationship to clear cache
-            $user->load(['roles' => function($query) {
-                $query->wherePivot('is_active', true);
+            $user->load(['roles' => function($query) use ($adminCommand) {
+                $query->wherePivot('is_active', true)
+                      ->wherePivot('command_id', $adminCommand->id);
             }]);
             
             // Notify user about role assignment
@@ -284,14 +454,37 @@ class AdminRoleAssignmentController extends Controller
                 request()->session()->invalidate();
                 request()->session()->regenerateToken();
                 
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Your role has been updated. Please log in again.',
+                        'redirect' => route('login')
+                    ]);
+                }
+                
                 return redirect()->route('login')
                     ->with('info', 'Your role has been updated. Please log in again.');
+            }
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Role '{$role->name}' assigned successfully to {$officer->surname} {$officer->initials}",
+                    'redirect' => route('admin.role-assignments')
+                ]);
             }
 
             return redirect()->route('admin.role-assignments')
                 ->with('success', "Role '{$role->name}' assigned successfully to {$officer->surname} {$officer->initials}");
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            
             return redirect()->back()
                 ->withErrors($e->errors())
                 ->withInput();
@@ -302,6 +495,13 @@ class AdminRoleAssignmentController extends Controller
                 'admin_id' => auth()->id(),
                 'command_id' => $adminCommand->id ?? null
             ]);
+            
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to assign role: ' . $e->getMessage()
+                ], 500);
+            }
             
             return redirect()->back()
                 ->with('error', 'Failed to assign role: ' . $e->getMessage())
