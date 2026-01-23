@@ -21,6 +21,55 @@
 
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
+    <!-- Officer Passport Picture -->
+    @php
+        $profilePictureUrl = $form->officer->getProfilePictureUrlFull();
+    @endphp
+    <div class="kt-card bg-background border border-border shadow-sm">
+        <div class="kt-card-content p-5">
+            <div class="flex items-center gap-6">
+                @if($profilePictureUrl)
+                    <div class="flex-shrink-0">
+                        <img src="{{ $profilePictureUrl }}" 
+                             alt="Officer Passport Photo" 
+                             class="w-40 h-40 object-cover rounded-lg border-2 border-border shadow-md"
+                             style="width: 160px; height: 160px;">
+                    </div>
+                @else
+                    <div class="flex-shrink-0 w-40 h-40 bg-muted rounded-lg border-2 border-border flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="ki-filled ki-user text-4xl text-secondary-foreground"></i>
+                            <p class="text-xs text-secondary-foreground mt-2">No Photo</p>
+                        </div>
+                    </div>
+                @endif
+                <div class="flex-1">
+                    <h2 class="text-2xl font-bold text-foreground mb-2">
+                        {{ $form->officer->initials }} {{ $form->officer->surname }}
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Service Number</p>
+                            <p class="text-base font-semibold text-foreground">{{ $form->service_number ?? $form->officer->service_number }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Rank</p>
+                            <p class="text-base font-semibold text-foreground">{{ $form->rank ?? $form->officer->substantive_rank ?? 'N/A' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Year</p>
+                            <p class="text-base font-semibold text-foreground">{{ $form->year }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Status</p>
+                            <p class="text-base font-semibold text-foreground">{{ $statusConfig['label'] }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Status Card -->
     @php
         $statusConfig = match($form->status) {

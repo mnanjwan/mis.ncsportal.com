@@ -72,6 +72,29 @@
             padding-top: 10px;
             font-size: 10px;
         }
+        .header-photo {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid #000;
+            border-radius: 4px;
+            margin: 0 auto 10px;
+        }
+        .header-with-photo {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+        .header-photo-container {
+            flex-shrink: 0;
+        }
         @media print {
             body { margin: 0; }
             .no-print { display: none; }
@@ -85,11 +108,30 @@
         </button>
     </div>
 
-    <div class="header">
-        <h1>NIGERIA CUSTOMS SERVICE</h1>
-        <h2>CONFIDENTIAL</h2>
-        <h2>ANNUAL PERFORMANCE EVALUATION REPORT</h2>
-        <p style="font-style: italic;">(For Officers on HAPASS 03 and above)</p>
+    <div class="header-with-photo">
+        <div class="header-photo-container">
+            @php
+                $profilePictureUrl = $form->officer->getProfilePictureUrlFull();
+            @endphp
+            @if($profilePictureUrl)
+                <img src="{{ $profilePictureUrl }}" 
+                     alt="Officer Passport Photo" 
+                     class="header-photo">
+            @else
+                <div class="header-photo" style="background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #666; font-size: 10px; text-align: center;">
+                    No Photo<br>Available
+                </div>
+            @endif
+        </div>
+        <div class="header-content">
+            <h1>NIGERIA CUSTOMS SERVICE</h1>
+            <h2>CONFIDENTIAL</h2>
+            <h2>ANNUAL PERFORMANCE EVALUATION REPORT</h2>
+            <p style="font-style: italic;">(For Officers on HAPASS 03 and above)</p>
+            <p style="margin-top: 10px; font-size: 12px; font-weight: bold;">
+                {{ $form->officer->initials }} {{ $form->officer->surname }} - {{ $form->officer->service_number }}
+            </p>
+        </div>
     </div>
 
     <!-- Part 1: Personal Records -->
