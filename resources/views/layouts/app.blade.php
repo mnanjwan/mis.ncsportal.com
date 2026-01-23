@@ -350,8 +350,17 @@
     @php
         $timeoutFile = public_path('js/inactivity-timeout.js');
         $version = file_exists($timeoutFile) ? filemtime($timeoutFile) : time();
+        $scriptContent = file_exists($timeoutFile) ? file_get_contents($timeoutFile) : null;
     @endphp
-    <script src="{{ asset('js/inactivity-timeout.js') }}?v={{ $version }}"></script>
+    @if($scriptContent)
+        {{-- Inline script as fallback to avoid 404 errors --}}
+        <script>
+            {!! $scriptContent !!}
+        </script>
+    @else
+        {{-- Fallback: Try to load external file --}}
+        <script src="{{ asset('js/inactivity-timeout.js') }}?v={{ $version }}" onerror="console.error('Failed to load inactivity-timeout.js. Please ensure the file is deployed to production.')"></script>
+    @endif
     @endauth
 
     <script>

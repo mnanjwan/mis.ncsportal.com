@@ -221,36 +221,52 @@
         }
     }
 
-    // Logout function
+    // Logout function - simplified to always redirect to login
     function logout() {
         try {
-            // Create logout form
-            const form = document.createElement('form');
-            form.method = 'POST';
+            // Get login path (handle subdirectories)
+            const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
+            const loginPath = basePath + '/login';
             
-            // Get base URL from current location to handle subdirectories
-            const baseUrl = window.location.origin;
-            const logoutPath = baseUrl + '/logout';
-            form.action = logoutPath;
-            
-            // Add CSRF token
+            // Get CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]');
-            if (csrfToken) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfToken.getAttribute('content') || csrfToken.content;
-                form.appendChild(csrfInput);
-            } else {
-                console.error('CSRF token not found');
+            const token = csrfToken ? (csrfToken.getAttribute('content') || csrfToken.content) : null;
+            
+            // If no token or session expired, just redirect immediately
+            if (!token) {
+                console.warn('CSRF token not found or session expired, redirecting to login');
+                window.location.href = loginPath;
+                return;
             }
             
-            document.body.appendChild(form);
-            form.submit();
+            // Try to logout via fetch (fire and forget - don't wait for response)
+            // This is just to clean up the session on server side if possible
+            // But we redirect immediately regardless
+            fetch(basePath + '/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: '_token=' + encodeURIComponent(token),
+                credentials: 'same-origin'
+            })
+            .catch(error => {
+                // Ignore errors - we're redirecting anyway
+                console.warn('Logout request failed (expected if session expired):', error.message);
+            });
+            
+            // Always redirect to login immediately (don't wait for logout response)
+            // This prevents hanging on 419 errors
+            window.location.href = loginPath;
+            
         } catch (error) {
             console.error('Error during logout:', error);
-            // Fallback: redirect to login
-            window.location.href = '/login';
+            // Final fallback: redirect to login
+            const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
+            window.location.href = basePath + '/login';
         }
     }
 
