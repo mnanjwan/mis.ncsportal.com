@@ -11,7 +11,7 @@
     // ============================================
     // PRODUCTION: 15 minutes (900000ms)
     // ============================================
-    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+    const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 15 minutes
     const WARNING_TIME = 0; // Show warning immediately when timeout is reached
     
     let inactivityTimer;

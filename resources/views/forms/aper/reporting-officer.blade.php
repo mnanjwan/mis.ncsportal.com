@@ -238,7 +238,7 @@
                 });
             }
 
-            // Initialize both dropdowns
+            // Initialize all YES/NO dropdowns
             initYesNoDropdown(
                 'targets_agreed_select_trigger',
                 'targets_agreed_dropdown',
@@ -255,6 +255,42 @@
                 'duties_agreed_id',
                 'duties_agreed_select_text',
                 'duties_agreed_search_input'
+            );
+
+            initYesNoDropdown(
+                'disciplinary_action_select_trigger',
+                'disciplinary_action_dropdown',
+                'disciplinary_action_options',
+                'disciplinary_action_id',
+                'disciplinary_action_select_text',
+                'disciplinary_action_search_input'
+            );
+
+            initYesNoDropdown(
+                'special_commendation_select_trigger',
+                'special_commendation_dropdown',
+                'special_commendation_options',
+                'special_commendation_id',
+                'special_commendation_select_text',
+                'special_commendation_search_input'
+            );
+
+            initYesNoDropdown(
+                'suggest_different_job_select_trigger',
+                'suggest_different_job_dropdown',
+                'suggest_different_job_options',
+                'suggest_different_job_id',
+                'suggest_different_job_select_text',
+                'suggest_different_job_search_input'
+            );
+
+            initYesNoDropdown(
+                'suggest_transfer_select_trigger',
+                'suggest_transfer_dropdown',
+                'suggest_transfer_options',
+                'suggest_transfer_id',
+                'suggest_transfer_select_text',
+                'suggest_transfer_search_input'
             );
 
             // Handle grade radio button changes
