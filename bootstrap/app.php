@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'profile_picture.post_promotion' => \App\Http\Middleware\EnsureProfilePictureUpdatedAfterPromotion::class,
             'single.session' => \App\Http\Middleware\EnsureSingleSession::class,
             'session.timeout' => \App\Http\Middleware\CheckSessionTimeout::class,
+            'require.password.change' => \App\Http\Middleware\RequirePasswordChange::class,
         ]);
         
         // Add single session middleware to web group after authentication

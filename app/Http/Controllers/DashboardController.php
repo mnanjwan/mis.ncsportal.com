@@ -2181,8 +2181,13 @@ class DashboardController extends Controller
             // Clear session data
             session()->forget(['onboarding_step1', 'onboarding_step2', 'onboarding_step3', 'onboarding_step4']);
 
-            // Redirect to officer dashboard after successful onboarding
-            return redirect()->route('officer.dashboard')->with('success', 'Onboarding completed successfully! You can now access all dashboard features.');
+            // Logout user after onboarding completion
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            // Redirect to login page with message about password change requirement
+            return redirect()->route('login')->with('success', 'Onboarding completed successfully! Please login with your default password and change it to access the system.');
         } catch (\Exception $e) {
             Log::error('Onboarding error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to onboard officer: ' . $e->getMessage())->withInput();

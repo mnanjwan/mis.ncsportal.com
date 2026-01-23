@@ -103,6 +103,11 @@ class LoginController extends Controller
         // Store the new session ID as the current active session
         $user->update(['current_session_id' => $request->session()->getId()]);
 
+        // Check if user has default password (temp_password) and set session flag
+        if ($user->temp_password) {
+            $request->session()->put('must_change_password', true);
+        }
+
         // Clear any old intended URL to prevent redirect issues
         $request->session()->forget('url.intended');
 

@@ -36,18 +36,30 @@
         <strong>Default Password:</strong> {{ $tempPassword ?? 'N/A' }}
     </p>
     
-    <p><strong>Important:</strong> For security purposes, please change your password immediately after logging in. You can update your password from your dashboard settings.</p>
+    <div style="background-color: #fef3c7; border: 2px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px;">
+        <p style="margin: 0; font-weight: bold; color: #92400e; font-size: 16px;">⚠️ MANDATORY PASSWORD CHANGE REQUIRED</p>
+        <p style="margin: 10px 0 0 0; color: #78350f;">
+            <strong>You MUST change your default password before you can access any features of the system.</strong>
+        </p>
+        <p style="margin: 10px 0 0 0; color: #78350f;">
+            After logging in with your default password, you will see a password change modal on your dashboard. 
+            <strong>You will not be able to access any other pages or features until you change your password.</strong>
+        </p>
+        <p style="margin: 10px 0 0 0; color: #78350f;">
+            Please change your password immediately upon first login for security purposes.
+        </p>
+    </div>
     
-    <p>You can now log in to your dashboard and access all available features including:</p>
-    <ul>
-        <li>View and update your profile</li>
-        <li>Apply for leave and passes</li>
-        <li>Raise emolument requests</li>
-        <li>View your service records</li>
-        <li>Manage your account settings</li>
-    </ul>
+    <p><strong>Steps to Access the System:</strong></p>
+    <ol>
+        <li>Log in using your email and the default password provided above</li>
+        <li>You will be redirected to your dashboard where a password change modal will appear</li>
+        <li>Change your password using the modal (you cannot close it without changing the password)</li>
+        <li>After changing your password, you will receive a confirmation email</li>
+        <li>You can then access all dashboard features normally</li>
+    </ol>
     
-    <p><a href="{{ config('app.url') }}/login">Log In to Dashboard</a></p>
+    <p><a href="{{ config('app.url') }}/login" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Log In to Dashboard</a></p>
     
     <p>Thank you for completing your onboarding process.</p>
     

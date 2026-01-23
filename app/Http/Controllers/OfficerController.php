@@ -1055,6 +1055,10 @@ class OfficerController extends Controller
             ->sortByDesc('updated_at')
             ->take(5);
 
+        // Check if user must change password (has temp_password)
+        $mustChangePassword = $user->temp_password ? true : false;
+        $defaultPassword = $user->temp_password;
+
         return view('dashboards.officer.dashboard', compact(
             'officer',
             'emolumentStatus',
@@ -1068,7 +1072,9 @@ class OfficerController extends Controller
             'upcomingCourses',
             'currentRosterTitle',
             'rosterRole',
-            'pendingAperAssignments'
+            'pendingAperAssignments',
+            'mustChangePassword',
+            'defaultPassword'
         ));
     }
 
@@ -1193,8 +1199,13 @@ class OfficerController extends Controller
                 ->withInput($request->except('current_password', 'new_password', 'new_password_confirmation'));
         }
 
+        // Check if this is a password change from default password
+        $wasDefaultPassword = !empty($user->temp_password);
+        
         // Update password
         $user->password = \Hash::make($request->new_password);
+        // Clear temp_password to indicate password has been changed
+        $user->temp_password = null;
         $user->save();
 
         // Send notification (in-app)
@@ -1230,6 +1241,15 @@ class OfficerController extends Controller
                 'error' => $e->getMessage(),
             ]);
             // Don't fail the password change if email fails
+        }
+
+        // Clear session flag if it exists
+        session()->forget('must_change_password');
+
+        // If password was changed from default, redirect to dashboard to show full access
+        if ($wasDefaultPassword) {
+            return redirect()->route('officer.dashboard')
+                ->with('success', 'Password changed successfully! A confirmation email has been sent. You can now access all features.');
         }
 
         return redirect()->route('officer.settings')

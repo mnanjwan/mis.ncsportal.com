@@ -8,6 +8,83 @@
 @endsection
 
 @section('content')
+    <!-- Password Change Required Modal (Full Screen Overlay) -->
+    @if(isset($mustChangePassword) && $mustChangePassword)
+        <div id="password-change-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" style="display: flex;">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+                <div class="text-center mb-6">
+                    <i class="ki-filled ki-lock text-5xl text-primary mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Password Change Required</h2>
+                    <p class="text-gray-600">You must change your default password before accessing the system.</p>
+                </div>
+                
+                <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                    <p class="text-sm text-gray-700 mb-2"><strong>Your Default Password:</strong></p>
+                    <p class="text-lg font-mono font-bold text-gray-900 text-center">{{ $defaultPassword ?? 'N/A' }}</p>
+                </div>
+
+                <form method="POST" action="{{ route('officer.settings.change-password') }}" id="change-password-form" class="space-y-4">
+                    @csrf
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Current Password <span class="text-red-500">*</span></label>
+                        <input type="password" 
+                               name="current_password" 
+                               id="current_password"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                               required
+                               autocomplete="current-password"
+                               value="{{ $defaultPassword ?? '' }}">
+                        @error('current_password')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">New Password <span class="text-red-500">*</span></label>
+                        <input type="password" 
+                               name="new_password" 
+                               id="new_password"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                               required
+                               autocomplete="new-password">
+                        @error('new_password')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password <span class="text-red-500">*</span></label>
+                        <input type="password" 
+                               name="new_password_confirmation" 
+                               id="new_password_confirmation"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" 
+                               required
+                               autocomplete="new-password">
+                        @error('new_password_confirmation')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <button type="submit" class="w-full kt-btn kt-btn-primary py-3" id="change-password-submit-btn">
+                        <i class="ki-filled ki-check"></i> Change Password
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <script>
+            // Handle password change form submission
+            document.getElementById('change-password-form').addEventListener('submit', function(e) {
+                const submitBtn = document.getElementById('change-password-submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ki-filled ki-loading"></i> Changing Password...';
+            });
+        </script>
+    @endif
+
+    <!-- Hide all dashboard content when password change is required -->
+    <div id="dashboard-content" style="{{ isset($mustChangePassword) && $mustChangePassword ? 'display: none;' : '' }}">
     <!-- Success/Error Messages -->
     @if(session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -591,4 +668,5 @@
             form.submit();
         });
     </script>
+    </div> <!-- End dashboard-content -->
 @endsection

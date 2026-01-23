@@ -162,7 +162,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
 
-    <link href="{{ asset('logo.jpg') }}" rel="icon" type="image/jpeg" />
+    <link href="{{ asset('favicon-animated.svg') }}" rel="icon" type="image/svg+xml" />
     <link href="{{ asset('logo.jpg') }}" rel="shortcut icon" />
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -344,6 +344,11 @@
     <script src="{{ asset('ncs-employee-portal/config/api.js') }}"></script>
     <script src="{{ asset('ncs-employee-portal/js/auth.js') }}"></script>
     <script src="{{ asset('ncs-employee-portal/js/utils.js') }}"></script>
+
+    <!-- Inactivity Timeout Handler -->
+    @auth
+    <script src="{{ asset('js/inactivity-timeout.js') }}"></script>
+    @endauth
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
