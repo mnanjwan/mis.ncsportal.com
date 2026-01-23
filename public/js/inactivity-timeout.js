@@ -22,29 +22,39 @@
 
     // Initialize
     function init() {
-        // Get favicon link element
-        faviconLink = document.querySelector("link[rel*='icon']") || document.createElement('link');
-        if (!document.querySelector("link[rel*='icon']")) {
-            faviconLink.type = 'image/svg+xml';
-            faviconLink.rel = 'icon';
-            document.getElementsByTagName('head')[0].appendChild(faviconLink);
+        try {
+            // Get favicon link element
+            faviconLink = document.querySelector("link[rel*='icon']") || document.createElement('link');
+            if (!document.querySelector("link[rel*='icon']")) {
+                faviconLink.type = 'image/svg+xml';
+                faviconLink.rel = 'icon';
+                document.getElementsByTagName('head')[0].appendChild(faviconLink);
+            }
+            originalFavicon = faviconLink.href;
+
+            // Set animated favicon
+            setAnimatedFavicon();
+
+            // Reset timer on any user activity
+            resetTimer();
+
+            // Track user activity
+            const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+            events.forEach(event => {
+                document.addEventListener(event, resetTimer, true);
+            });
+
+            // Handle visibility change (tab switching)
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            
+            // Debug log (remove in production if needed)
+            console.log('✅ Inactivity timeout initialized. Timeout:', INACTIVITY_TIMEOUT / 1000, 'seconds');
+            
+            // Set a global flag to verify script loaded
+            window.inactivityTimeoutLoaded = true;
+        } catch (error) {
+            console.error('Error initializing inactivity timeout:', error);
         }
-        originalFavicon = faviconLink.href;
-
-        // Set animated favicon
-        setAnimatedFavicon();
-
-        // Reset timer on any user activity
-        resetTimer();
-
-        // Track user activity
-        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-        events.forEach(event => {
-            document.addEventListener(event, resetTimer, true);
-        });
-
-        // Handle visibility change (tab switching)
-        document.addEventListener('visibilitychange', handleVisibilityChange);
     }
 
     // Reset the inactivity timer
@@ -201,35 +211,57 @@
 
     // Set animated favicon
     function setAnimatedFavicon() {
-        const animatedFaviconPath = '/favicon-animated.svg';
-        faviconLink.href = animatedFaviconPath;
+        try {
+            // Use absolute path from root to handle subdirectories
+            const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
+            const animatedFaviconPath = basePath + '/favicon-animated.svg';
+            faviconLink.href = animatedFaviconPath;
+        } catch (error) {
+            console.error('Error setting animated favicon:', error);
+        }
     }
 
     // Logout function
     function logout() {
-        // Create logout form
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/logout';
-        
-        // Add CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]');
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = csrfToken.content;
-            form.appendChild(csrfInput);
+        try {
+            // Create logout form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            
+            // Get base URL from current location to handle subdirectories
+            const baseUrl = window.location.origin;
+            const logoutPath = baseUrl + '/logout';
+            form.action = logoutPath;
+            
+            // Add CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken.getAttribute('content') || csrfToken.content;
+                form.appendChild(csrfInput);
+            } else {
+                console.error('CSRF token not found');
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        } catch (error) {
+            console.error('Error during logout:', error);
+            // Fallback: redirect to login
+            window.location.href = '/login';
         }
-        
-        document.body.appendChild(form);
-        form.submit();
     }
 
     // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    try {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    } catch (error) {
+        console.error('Inactivity timeout initialization error:', error);
     }
 })();

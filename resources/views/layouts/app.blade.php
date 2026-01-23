@@ -347,7 +347,11 @@
 
     <!-- Inactivity Timeout Handler -->
     @auth
-    <script src="{{ asset('js/inactivity-timeout.js') }}"></script>
+    @php
+        $timeoutFile = public_path('js/inactivity-timeout.js');
+        $version = file_exists($timeoutFile) ? filemtime($timeoutFile) : time();
+    @endphp
+    <script src="{{ asset('js/inactivity-timeout.js') }}?v={{ $version }}"></script>
     @endauth
 
     <script>
