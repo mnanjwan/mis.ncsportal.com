@@ -12,7 +12,7 @@
     // TESTING: 1 minute (60000ms)
     // PRODUCTION: 15 minutes (900000ms) - Change to: const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
     // ============================================
-    const INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minute for testing
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 1 minute for testing
     const WARNING_TIME = 0; // Show warning immediately when timeout is reached
     
     let inactivityTimer;

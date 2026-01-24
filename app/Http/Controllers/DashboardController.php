@@ -32,6 +32,8 @@ use App\Models\Institution;
 use App\Models\Discipline;
 use App\Models\Qualification;
 use App\Models\EducationChangeRequest;
+use App\Models\FleetRequest;
+use App\Models\FleetVehicleAssignment;
 use App\Services\EducationMasterDataSync;
 
 class DashboardController extends Controller
@@ -811,6 +813,28 @@ class DashboardController extends Controller
         // Area Controller validates emoluments from all commands in their area
         $pendingEmoluments = Emolument::where('status', 'ASSESSED')->count();
 
+        $fleetInboxQuery = FleetRequest::query()
+            ->whereNotNull('current_step_order')
+            ->whereHas('steps', function ($q) {
+                $q->whereColumn('fleet_request_steps.step_order', 'fleet_requests.current_step_order')
+                    ->where('fleet_request_steps.role_name', 'Area Controller');
+            });
+        $fleetInboxCount = $fleetInboxQuery->count();
+        $fleetInboxItems = $fleetInboxQuery
+            ->with(['originCommand', 'createdBy'])
+            ->orderByDesc('updated_at')
+            ->take(5)
+            ->get();
+
+        $fleetPendingReceiptsCount = 0;
+        if ($commandId) {
+            $fleetPendingReceiptsCount = FleetVehicleAssignment::query()
+                ->where('assigned_to_command_id', $commandId)
+                ->whereNotNull('released_at')
+                ->whereNull('received_at')
+                ->count();
+        }
+
         // Get recent submitted manning requests (all commands - Area Controller oversees multiple units)
         $recentManningRequests = ManningRequest::with(['command.zone', 'requestedBy'])
             ->where('status', 'SUBMITTED')
@@ -932,7 +956,10 @@ class DashboardController extends Controller
             'officersCount',
             'unitsCount',
             'officerRank',
-            'units'
+            'units',
+            'fleetInboxCount',
+            'fleetInboxItems',
+            'fleetPendingReceiptsCount'
         ));
     }
 
@@ -2238,6 +2265,20 @@ class DashboardController extends Controller
         $cgcApprovedCount = \App\Models\RetirementListItem::where('preretirement_leave_status', 'CGC_APPROVED_IN_OFFICE')->count();
         $autoPlacedCount = \App\Models\RetirementListItem::where('preretirement_leave_status', 'AUTO_PLACED')->count();
 
+        $fleetInboxQuery = FleetRequest::query()
+            ->whereNotNull('current_step_order')
+            ->whereHas('steps', function ($q) {
+                $q->whereColumn('fleet_request_steps.step_order', 'fleet_requests.current_step_order')
+                    ->where('fleet_request_steps.role_name', 'CGC');
+            });
+        $fleetInboxCount = $fleetInboxQuery->count();
+        $fleetApprovalCount = FleetRequest::where('current_step_order', 8)->count();
+        $fleetInboxItems = $fleetInboxQuery
+            ->with(['originCommand', 'createdBy'])
+            ->orderByDesc('updated_at')
+            ->take(5)
+            ->get();
+
         // Get recent preretirement leave items
         $recentItems = \App\Models\RetirementListItem::with(['officer', 'retirementList'])
             ->whereNotNull('preretirement_leave_status')
@@ -2250,7 +2291,10 @@ class DashboardController extends Controller
             'approachingCount',
             'cgcApprovedCount',
             'autoPlacedCount',
-            'recentItems'
+            'recentItems',
+            'fleetInboxCount',
+            'fleetApprovalCount',
+            'fleetInboxItems'
         ));
     }
 }

@@ -280,6 +280,7 @@
         case 'CGC':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('cgc.dashboard')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Fleet Requests', 'href' => route('fleet.requests.index')],
                 [
                     'title' => 'Preretirement Leave',
                     'icon' => 'ki-filled ki-calendar-tick',
@@ -390,6 +391,12 @@
         case 'Area Controller':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('area-controller.dashboard')],
+                [
+                    'group' => 'Fleet',
+                    'items' => [
+                        ['icon' => 'ki-filled ki-file-up', 'title' => 'Fleet Requests', 'href' => route('fleet.requests.index')],
+                    ]
+                ],
                 [
                     'group' => 'Finance',
                     'items' => [

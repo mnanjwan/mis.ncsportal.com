@@ -3,6 +3,33 @@
 @section('title', 'Fleet Vehicles')
 @section('page-title', 'Fleet Vehicles')
 
+@section('breadcrumbs')
+    @php
+        $user = auth()->user();
+        $dashboardRoute = null;
+        if ($user->hasRole('CD')) {
+            $dashboardRoute = route('fleet.cd.dashboard');
+        } elseif ($user->hasRole('O/C T&L')) {
+            $dashboardRoute = route('fleet.oc-tl.dashboard');
+        } elseif ($user->hasRole('Transport Store/Receiver')) {
+            $dashboardRoute = route('fleet.store-receiver.dashboard');
+        } elseif ($user->hasRole('CC T&L')) {
+            $dashboardRoute = route('fleet.cc-tl.dashboard');
+        } elseif ($user->hasRole('DCG FATS')) {
+            $dashboardRoute = route('fleet.dcg-fats.dashboard');
+        } elseif ($user->hasRole('ACG TS')) {
+            $dashboardRoute = route('fleet.acg-ts.dashboard');
+        }
+    @endphp
+    @if($dashboardRoute)
+        <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">Fleet</a>
+        <span>/</span>
+    @endif
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.vehicles.index') }}">Vehicles</a>
+    <span>/</span>
+    <span class="text-primary">List</span>
+@endsection
+
 @section('content')
     @if(session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -15,7 +42,7 @@
             <div class="flex items-center justify-between w-full">
                 <h3 class="kt-card-title">Vehicles</h3>
                 @if(auth()->user()->hasRole('Transport Store/Receiver'))
-                    <a class="kt-btn kt-btn-primary" href="{{ route('fleet.vehicles.intake') }}">
+                    <a class="kt-btn kt-btn-primary" href="{{ route('fleet.vehicles.intake.create') }}">
                         <i class="ki-filled ki-plus"></i>
                         Receive Vehicle
                     </a>

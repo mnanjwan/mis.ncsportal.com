@@ -3,6 +3,37 @@
 @section('title', 'Fleet Request')
 @section('page-title', 'Fleet Request')
 
+@section('breadcrumbs')
+    @php
+        $user = auth()->user();
+        $dashboardRoute = null;
+        if ($user->hasRole('CD')) {
+            $dashboardRoute = route('fleet.cd.dashboard');
+        } elseif ($user->hasRole('O/C T&L')) {
+            $dashboardRoute = route('fleet.oc-tl.dashboard');
+        } elseif ($user->hasRole('Transport Store/Receiver')) {
+            $dashboardRoute = route('fleet.store-receiver.dashboard');
+        } elseif ($user->hasRole('CC T&L')) {
+            $dashboardRoute = route('fleet.cc-tl.dashboard');
+        } elseif ($user->hasRole('DCG FATS')) {
+            $dashboardRoute = route('fleet.dcg-fats.dashboard');
+        } elseif ($user->hasRole('ACG TS')) {
+            $dashboardRoute = route('fleet.acg-ts.dashboard');
+        } elseif ($user->hasRole('CGC')) {
+            $dashboardRoute = route('cgc.dashboard');
+        } elseif ($user->hasRole('Area Controller')) {
+            $dashboardRoute = route('area-controller.dashboard');
+        }
+    @endphp
+    @if($dashboardRoute)
+        <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">@if($user->hasRole('CGC') || $user->hasRole('Area Controller'))Dashboard @else Fleet @endif</a>
+        <span>/</span>
+    @endif
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.requests.index') }}">Requests</a>
+    <span>/</span>
+    <span class="text-primary">View #{{ $fleetRequest->id }}</span>
+@endsection
+
 @section('content')
     @if(session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -107,6 +138,14 @@
             </div>
         @endif
 
+        @php
+            $currentStep = $fleetRequest->steps->firstWhere('step_order', $fleetRequest->current_step_order);
+            $currentRole = $currentStep?->role_name;
+            $currentAction = $currentStep?->action;
+            $userRoleNames = auth()->user()->roles()->wherePivot('is_active', true)->pluck('name')->toArray();
+            $canAct = $currentRole && in_array($currentRole, $userRoleNames, true);
+        @endphp
+
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Workflow Steps</h3>
@@ -126,11 +165,22 @@
                         </thead>
                         <tbody>
                             @foreach($fleetRequest->steps as $s)
-                                <tr>
+                                @php
+                                    $isCurrent = (int) $fleetRequest->current_step_order === (int) $s->step_order;
+                                @endphp
+                                <tr class="{{ $isCurrent ? 'bg-primary/5' : '' }}">
                                     <td>{{ $s->step_order }}</td>
                                     <td>{{ $s->role_name }}</td>
                                     <td>{{ $s->action }}</td>
-                                    <td>{{ $s->decision ?? '-' }}</td>
+                                    <td>
+                                        @if($s->decision)
+                                            <span class="inline-flex px-2 py-0.5 rounded-full text-xs bg-muted">
+                                                {{ $s->decision }}
+                                            </span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                     <td>{{ $s->actedBy->email ?? '-' }}</td>
                                     <td>{{ $s->acted_at?->format('d/m/Y H:i') ?? '-' }}</td>
                                 </tr>
@@ -141,24 +191,30 @@
             </div>
         </div>
 
-        <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">Quick Action</h3>
+        @if($canAct && $currentStep)
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Action Required (Step {{ $currentStep->step_order }})</h3>
+                </div>
+                <div class="kt-card-content p-5 lg:p-7.5">
+                    <form method="POST" action="{{ route('fleet.requests.act', $fleetRequest) }}" class="flex flex-wrap gap-2">
+                        @csrf
+                        <input type="hidden" name="comment" value="">
+                        @if($currentAction === 'FORWARD')
+                            <button class="kt-btn kt-btn-sm" name="decision" value="FORWARDED">Forward</button>
+                        @elseif($currentAction === 'APPROVE')
+                            <button class="kt-btn kt-btn-sm kt-btn-success" name="decision" value="APPROVED">Approve</button>
+                            <button class="kt-btn kt-btn-sm kt-btn-danger" name="decision" value="REJECTED">Reject</button>
+                        @elseif($currentAction === 'REVIEW')
+                            <button class="kt-btn kt-btn-sm kt-btn-secondary" name="decision" value="REVIEWED">Review</button>
+                        @endif
+                    </form>
+                    <p class="text-xs text-secondary-foreground mt-2">
+                        This action aligns with the step definition. Use CC T&L panels above for inventory and release steps.
+                    </p>
+                </div>
             </div>
-            <div class="kt-card-content p-5 lg:p-7.5">
-                <form method="POST" action="{{ route('fleet.requests.act', $fleetRequest) }}" class="flex flex-wrap gap-2">
-                    @csrf
-                    <input type="hidden" name="comment" value="">
-                    <button class="kt-btn kt-btn-sm" name="decision" value="FORWARDED">Forward</button>
-                    <button class="kt-btn kt-btn-sm kt-btn-success" name="decision" value="APPROVED">Approve</button>
-                    <button class="kt-btn kt-btn-sm kt-btn-danger" name="decision" value="REJECTED">Reject</button>
-                    <button class="kt-btn kt-btn-sm kt-btn-secondary" name="decision" value="REVIEWED">Review</button>
-                </form>
-                <p class="text-xs text-secondary-foreground mt-2">
-                    Note: buttons are role-validated server-side. Use the CC T&L panels above for inventory check/release steps.
-                </p>
-            </div>
-        </div>
+        @endif
     </div>
 @endsection
 

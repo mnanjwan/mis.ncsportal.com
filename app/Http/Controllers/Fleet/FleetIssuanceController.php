@@ -7,7 +7,9 @@ use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
 use App\Models\FleetVehicleReturn;
 use App\Models\Officer;
+use App\Models\User;
 use App\Services\Fleet\FleetWorkflowService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -61,6 +63,18 @@ class FleetIssuanceController extends Controller
                 'lifecycle_status' => 'IN_OFFICER_CUSTODY',
             ]);
         });
+
+        $notificationService = app(NotificationService::class);
+        $notificationService->notify(
+            $request->user(),
+            'fleet_vehicle_issued',
+            'Vehicle issued',
+            "Vehicle {$vehicle->make} {$vehicle->model} issued to {$officer->surname}.",
+            'fleet_vehicle',
+            $vehicle->id,
+            true
+        );
+        $this->notifyCd($commandId, 'Vehicle issued', "Vehicle {$vehicle->make} {$vehicle->model} issued to {$officer->surname}.");
 
         return redirect()
             ->route('fleet.vehicles.show', $vehicle)
@@ -117,9 +131,46 @@ class FleetIssuanceController extends Controller
             ]);
         });
 
+        $notificationService = app(NotificationService::class);
+        $notificationService->notify(
+            $user,
+            'fleet_vehicle_returned',
+            'Vehicle returned',
+            "Vehicle {$vehicle->make} {$vehicle->model} returned to command pool.",
+            'fleet_vehicle',
+            $vehicle->id,
+            true
+        );
+        $commandId = $vehicle->current_command_id;
+        if ($commandId) {
+            $this->notifyCd($commandId, 'Vehicle returned', "Vehicle {$vehicle->make} {$vehicle->model} returned to command pool.");
+        }
+
         return redirect()
             ->route('fleet.vehicles.show', $vehicle)
             ->with('success', 'Vehicle returned to command pool.');
+    }
+
+    private function notifyCd(int $commandId, string $title, string $message): void
+    {
+        $notificationService = app(NotificationService::class);
+        $cdUsers = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'CD')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        foreach ($cdUsers as $cd) {
+            $notificationService->notify(
+                $cd,
+                'fleet_vehicle_update',
+                $title,
+                $message,
+                'fleet_vehicle',
+                null,
+                true
+            );
+        }
     }
 }
 

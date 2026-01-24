@@ -168,6 +168,14 @@ class FleetVehicleController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
+        if ($vehicle->current_command_id) {
+            $this->notifyCd(
+                $vehicle->current_command_id,
+                'Vehicle identifiers updated',
+                "Identifiers updated for {$vehicle->make} {$vehicle->model}."
+            );
+        }
+
         return redirect()
             ->route('fleet.vehicles.show', $vehicle)
             ->with('success', 'Vehicle identifiers updated.');
@@ -188,9 +196,49 @@ class FleetVehicleController extends Controller
             'service_status' => $data['service_status'],
         ]);
 
+        $notificationService = app(NotificationService::class);
+        $notificationService->notify(
+            $request->user(),
+            'fleet_vehicle_service_status',
+            'Service status updated',
+            "Vehicle {$vehicle->make} {$vehicle->model} marked {$data['service_status']}.",
+            'fleet_vehicle',
+            $vehicle->id,
+            true
+        );
+        if ($vehicle->current_command_id) {
+            $this->notifyCd(
+                $vehicle->current_command_id,
+                'Service status updated',
+                "Vehicle {$vehicle->make} {$vehicle->model} marked {$data['service_status']}."
+            );
+        }
+
         return redirect()
             ->route('fleet.vehicles.show', $vehicle)
             ->with('success', 'Vehicle service status updated.');
+    }
+
+    private function notifyCd(int $commandId, string $title, string $message): void
+    {
+        $notificationService = app(NotificationService::class);
+        $cdUsers = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'CD')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        foreach ($cdUsers as $cd) {
+            $notificationService->notify(
+                $cd,
+                'fleet_vehicle_update',
+                $title,
+                $message,
+                'fleet_vehicle',
+                null,
+                true
+            );
+        }
     }
 
     private function applyIdentifierChange(FleetVehicle $vehicle, int $userId, string $fieldName, ?string $old, ?string $new): void

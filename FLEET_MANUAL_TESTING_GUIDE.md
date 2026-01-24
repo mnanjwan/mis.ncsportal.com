@@ -355,6 +355,34 @@ php artisan db:seed --class=CompleteSystemSeeder
 
 ---
 
+## Dashboard Expectations (Quick Action Cards)
+
+**CD Dashboard**
+- Cards: Drafts, Submitted, KIV, Released, Command Pool, Active Assignments, Pending Returns
+- Quick actions: Create Request, View Requests, Vehicles, Returns Report
+- Inbox list shows requests awaiting CD actions (if any)
+
+**O/C T&L & Store/Receiver**
+- Cards: In Stock, Command Pool, Reserved, Inbox Requests
+- Quick actions: Fleet Requests, Fleet Vehicles
+- Store/Receiver also sees **Intake Vehicle** quick action
+
+**CC T&L**
+- Cards: In Stock, Reserved, KIV, Inventory Checks (Step 5), Release Pending (Step 11)
+- Quick actions: Fleet Requests, Fleet Vehicles, Returns Report
+- Inbox list shows Step 5 and Step 11 items
+
+**ACG TS / DCG FATS / CGC**
+- Cards: Inbox Requests, Pending Approval, KIV
+- Quick actions: Fleet Requests
+- Inbox list shows requests waiting at your step
+
+**Area Controller**
+- Cards: Fleet Requests Inbox, Pending Receipts
+- Fleet Requests list appears on the dashboard with quick links
+
+---
+
 ## Menu Items by Role
 
 After login, check the sidebar menu. You should see:

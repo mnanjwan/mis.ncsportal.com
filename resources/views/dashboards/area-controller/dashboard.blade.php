@@ -36,7 +36,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
         <div class="kt-card">
             <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                 <div class="flex items-center justify-between">
@@ -78,10 +78,81 @@
                 </div>
             </div>
         </div>
+
+        <div class="kt-card">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Fleet Requests (Inbox)</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $fleetInboxCount ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+                        <i class="ki-filled ki-file-up text-2xl text-primary"></i>
+                    </div>
+                </div>
+                <a href="{{ route('fleet.requests.index') }}" class="text-xs text-primary font-semibold">
+                    View Fleet Requests
+                </a>
+            </div>
+        </div>
+
+        <div class="kt-card">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Pending Receipts</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $fleetPendingReceiptsCount ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
+                        <i class="ki-filled ki-check-square text-2xl text-success"></i>
+                    </div>
+                </div>
+                <span class="text-xs text-secondary-foreground">
+                    Awaiting acknowledgement
+                </span>
+            </div>
+        </div>
     </div>
     
     <!-- Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-7.5">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-7.5">
+        <!-- Fleet Requests Inbox -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Fleet Requests Inbox</h3>
+            </div>
+            <div class="kt-card-content">
+                @if(isset($fleetInboxItems) && $fleetInboxItems->count() > 0)
+                    <div class="flex flex-col gap-3">
+                        @foreach($fleetInboxItems as $fleetRequest)
+                            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-semibold text-foreground">
+                                        Request #{{ $fleetRequest->id }} • {{ $fleetRequest->originCommand->name ?? 'N/A' }}
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        Status: {{ $fleetRequest->status }} | Step: {{ $fleetRequest->current_step_order ?? 'N/A' }}
+                                    </span>
+                                </div>
+                                <a href="{{ route('fleet.requests.show', $fleetRequest->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                                    <i class="ki-filled ki-eye"></i> Review
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="mt-4">
+                        <a href="{{ route('fleet.requests.index') }}" class="kt-btn kt-btn-outline w-full">
+                            View All Fleet Requests
+                        </a>
+                    </div>
+                @else
+                    <div class="text-center py-8">
+                        <i class="ki-filled ki-inbox text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground">No fleet requests waiting.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
         <!-- Recent Manning Requests -->
         <div class="kt-card">
             <div class="kt-card-header">

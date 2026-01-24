@@ -3,6 +3,37 @@
 @section('title', 'Fleet Requests')
 @section('page-title', 'Fleet Requests')
 
+@section('breadcrumbs')
+    @php
+        $user = auth()->user();
+        $dashboardRoute = null;
+        if ($user->hasRole('CD')) {
+            $dashboardRoute = route('fleet.cd.dashboard');
+        } elseif ($user->hasRole('O/C T&L')) {
+            $dashboardRoute = route('fleet.oc-tl.dashboard');
+        } elseif ($user->hasRole('Transport Store/Receiver')) {
+            $dashboardRoute = route('fleet.store-receiver.dashboard');
+        } elseif ($user->hasRole('CC T&L')) {
+            $dashboardRoute = route('fleet.cc-tl.dashboard');
+        } elseif ($user->hasRole('DCG FATS')) {
+            $dashboardRoute = route('fleet.dcg-fats.dashboard');
+        } elseif ($user->hasRole('ACG TS')) {
+            $dashboardRoute = route('fleet.acg-ts.dashboard');
+        } elseif ($user->hasRole('CGC')) {
+            $dashboardRoute = route('cgc.dashboard');
+        } elseif ($user->hasRole('Area Controller')) {
+            $dashboardRoute = route('area-controller.dashboard');
+        }
+    @endphp
+    @if($dashboardRoute)
+        <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">@if($user->hasRole('CGC') || $user->hasRole('Area Controller'))Dashboard @else Fleet @endif</a>
+        <span>/</span>
+    @endif
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.requests.index') }}">Requests</a>
+    <span>/</span>
+    <span class="text-primary">List</span>
+@endsection
+
 @section('content')
     @if(session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">

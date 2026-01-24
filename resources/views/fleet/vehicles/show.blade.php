@@ -3,6 +3,33 @@
 @section('title', 'Fleet Vehicle')
 @section('page-title', 'Fleet Vehicle')
 
+@section('breadcrumbs')
+    @php
+        $user = auth()->user();
+        $dashboardRoute = null;
+        if ($user->hasRole('CD')) {
+            $dashboardRoute = route('fleet.cd.dashboard');
+        } elseif ($user->hasRole('O/C T&L')) {
+            $dashboardRoute = route('fleet.oc-tl.dashboard');
+        } elseif ($user->hasRole('Transport Store/Receiver')) {
+            $dashboardRoute = route('fleet.store-receiver.dashboard');
+        } elseif ($user->hasRole('CC T&L')) {
+            $dashboardRoute = route('fleet.cc-tl.dashboard');
+        } elseif ($user->hasRole('DCG FATS')) {
+            $dashboardRoute = route('fleet.dcg-fats.dashboard');
+        } elseif ($user->hasRole('ACG TS')) {
+            $dashboardRoute = route('fleet.acg-ts.dashboard');
+        }
+    @endphp
+    @if($dashboardRoute)
+        <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">Fleet</a>
+        <span>/</span>
+    @endif
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.vehicles.index') }}">Vehicles</a>
+    <span>/</span>
+    <span class="text-primary">View</span>
+@endsection
+
 @section('content')
     @if(session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -15,7 +42,7 @@
             <div class="kt-card-header flex items-center justify-between">
                 <h3 class="kt-card-title">Vehicle Details</h3>
                 <div class="flex gap-2">
-                    <a class="kt-btn kt-btn-secondary" href="{{ route('fleet.vehicles.edit-identifiers', $vehicle) }}">
+                    <a class="kt-btn kt-btn-secondary" href="{{ route('fleet.vehicles.identifiers.edit', $vehicle) }}">
                         Edit Reg/Engine
                     </a>
                 </div>
@@ -36,8 +63,9 @@
 
                 <div class="flex flex-wrap gap-2 mt-5">
                     @if(auth()->user()->hasRole('CD') && (int) $vehicle->current_command_id === (int) (auth()->user()->roles()->where('name','CD')->wherePivot('is_active', true)->first()?->pivot?->command_id))
-                        <form method="POST" action="{{ route('fleet.vehicles.service-status', $vehicle) }}" class="flex gap-2 items-center">
+                        <form method="POST" action="{{ route('fleet.vehicles.service-status.update', $vehicle) }}" class="flex gap-2 items-center">
                             @csrf
+                            @method('PUT')
                             <select name="service_status" class="kt-select kt-select-sm">
                                 <option value="SERVICEABLE" @selected($vehicle->service_status === 'SERVICEABLE')>Serviceable</option>
                                 <option value="UNSERVICEABLE" @selected($vehicle->service_status === 'UNSERVICEABLE')>Unserviceable</option>
@@ -47,7 +75,7 @@
                     @endif
 
                     @if(auth()->user()->hasRole('CD') && $vehicle->lifecycle_status === 'AT_COMMAND_POOL' && !$vehicle->reserved_fleet_request_id)
-                        <a class="kt-btn kt-btn-primary" href="{{ route('fleet.vehicles.issue', $vehicle) }}">Issue to Officer</a>
+                        <a class="kt-btn kt-btn-primary" href="{{ route('fleet.vehicles.issue.create', $vehicle) }}">Issue to Officer</a>
                     @endif
 
                     @php
@@ -58,7 +86,7 @@
                     @endphp
 
                     @if($isOfficerReturningOwn || $isCdReturn)
-                        <form method="POST" action="{{ route('fleet.vehicles.return', $vehicle) }}">
+                        <form method="POST" action="{{ route('fleet.vehicles.return.store', $vehicle) }}">
                             @csrf
                             <button class="kt-btn kt-btn-warning" type="submit">Return Vehicle</button>
                         </form>

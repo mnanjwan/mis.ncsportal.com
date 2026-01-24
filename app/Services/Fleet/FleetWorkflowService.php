@@ -7,7 +7,9 @@ use App\Models\FleetRequest;
 use App\Models\FleetRequestStep;
 use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
+use App\Models\Role;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -83,6 +85,10 @@ class FleetWorkflowService
             $this->seedStepsForCommandRequisition($request);
         });
 
+        // Notify first approver (Area Controller) and CD
+        $this->notifyNextStepUsers($request);
+        $this->notifyCd($request, 'Request submitted', 'Request submitted and sent to Area Controller.');
+
         return $request->fresh(['steps', 'fulfillment', 'originCommand', 'createdBy']);
     }
 
@@ -118,6 +124,19 @@ class FleetWorkflowService
             ]);
         }
 
+        $validDecisions = match ($step->action) {
+            'FORWARD' => ['FORWARDED'],
+            'REVIEW' => ['REVIEWED'],
+            'APPROVE' => ['APPROVED', 'REJECTED'],
+            default => [],
+        };
+
+        if (!in_array($decision, $validDecisions, true)) {
+            throw ValidationException::withMessages([
+                'decision' => "Decision {$decision} is not valid for action {$step->action}.",
+            ]);
+        }
+
         DB::transaction(function () use ($request, $step, $user, $decision, $comment) {
             $step->update([
                 'acted_by_user_id' => $user->id,
@@ -133,6 +152,13 @@ class FleetWorkflowService
                 'current_step_order' => $this->hasStep($request, $nextOrder) ? $nextOrder : null,
             ]);
         });
+
+        $this->notifyNextStepUsers($request);
+        $this->notifyCd(
+            $request,
+            "Action taken: {$decision}",
+            "Step {$step->step_order} ({$step->role_name}) recorded a decision: {$decision}."
+        );
 
         return $request->fresh(['steps', 'fulfillment', 'originCommand', 'createdBy']);
     }
@@ -244,6 +270,12 @@ class FleetWorkflowService
                     'comment' => $comment,
                 ]);
 
+                $this->notifyCd(
+                    $request,
+                    'Request marked KIV',
+                    'CC T&L marked the request as KIV due to no available vehicles.'
+                );
+
                 return $request->fresh(['steps', 'fulfillment']);
             }
 
@@ -254,6 +286,12 @@ class FleetWorkflowService
             if ($kivQty > 0) {
                 $request->update(['status' => 'PARTIALLY_FULFILLED']);
             }
+
+            $this->notifyCd(
+                $request,
+                'Vehicles reserved',
+                "CC T&L reserved {$fulfilledQty} vehicle(s)."
+            );
 
             return $request->fresh(['steps', 'fulfillment']);
         });
@@ -322,6 +360,11 @@ class FleetWorkflowService
             }
 
             $this->act($request, $user, 'REVIEWED', $comment);
+            $this->notifyCd(
+                $request,
+                'Vehicles released to command',
+                'CC T&L released reserved vehicles to your command pool.'
+            );
 
             return $request->fresh(['steps', 'fulfillment']);
         });
@@ -389,6 +432,75 @@ class FleetWorkflowService
     private function hasStep(FleetRequest $request, int $order): bool
     {
         return $request->steps()->where('step_order', $order)->exists();
+    }
+
+    private function notifyNextStepUsers(FleetRequest $request): void
+    {
+        $nextOrder = $request->current_step_order;
+        if (!$nextOrder) {
+            return;
+        }
+
+        $step = $request->steps()->where('step_order', $nextOrder)->first();
+        if (!$step) {
+            return;
+        }
+
+        $roleName = $step->role_name;
+        $notificationService = app(NotificationService::class);
+
+        $query = User::whereHas('roles', function ($q) use ($roleName, $request) {
+            $q->where('name', $roleName)
+                ->where('user_roles.is_active', true);
+
+            // Command-level roles should be scoped to the origin command
+            if (in_array($roleName, ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller'], true)) {
+                $q->where('user_roles.command_id', $request->origin_command_id);
+            }
+        })->where('is_active', true);
+
+        $originName = $request->originCommand?->name ?? 'Unknown Command';
+        $title = "Fleet Request #{$request->id} awaiting action";
+        $message = "A fleet request from {$originName} is waiting at Step {$nextOrder} ({$roleName}).";
+
+        foreach ($query->get() as $recipient) {
+            $notificationService->notify(
+                $recipient,
+                'fleet_request_pending',
+                $title,
+                $message,
+                'fleet_request',
+                $request->id,
+                true
+            );
+        }
+    }
+
+    private function notifyCd(FleetRequest $request, string $title, string $message): void
+    {
+        if (!$request->origin_command_id) {
+            return;
+        }
+
+        $notificationService = app(NotificationService::class);
+
+        $cdUsers = User::whereHas('roles', function ($q) use ($request) {
+            $q->where('name', 'CD')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $request->origin_command_id);
+        })->where('is_active', true)->get();
+
+        foreach ($cdUsers as $cd) {
+            $notificationService->notify(
+                $cd,
+                'fleet_request_update',
+                $title,
+                $message,
+                'fleet_request',
+                $request->id,
+                true
+            );
+        }
     }
 }
 

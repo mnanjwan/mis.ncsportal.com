@@ -3,6 +3,33 @@
 @section('title', 'Fleet Returns Report')
 @section('page-title', 'Fleet Returns Report')
 
+@section('breadcrumbs')
+    @php
+        $user = auth()->user();
+        $dashboardRoute = null;
+        if ($user->hasRole('CD')) {
+            $dashboardRoute = route('fleet.cd.dashboard');
+        } elseif ($user->hasRole('O/C T&L')) {
+            $dashboardRoute = route('fleet.oc-tl.dashboard');
+        } elseif ($user->hasRole('Transport Store/Receiver')) {
+            $dashboardRoute = route('fleet.store-receiver.dashboard');
+        } elseif ($user->hasRole('CC T&L')) {
+            $dashboardRoute = route('fleet.cc-tl.dashboard');
+        } elseif ($user->hasRole('DCG FATS')) {
+            $dashboardRoute = route('fleet.dcg-fats.dashboard');
+        } elseif ($user->hasRole('ACG TS')) {
+            $dashboardRoute = route('fleet.acg-ts.dashboard');
+        }
+    @endphp
+    @if($dashboardRoute)
+        <a class="text-secondary-foreground hover:text-primary" href="{{ $dashboardRoute }}">Fleet</a>
+        <span>/</span>
+    @endif
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.reports.returns') }}">Reports</a>
+    <span>/</span>
+    <span class="text-primary">Returns</span>
+@endsection
+
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <div class="kt-card">
