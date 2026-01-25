@@ -27,6 +27,11 @@
         'ICT',
         'Investigation Unit',
         'Building Unit',
+        // Pharmacy roles
+        'OC Pharmacy',
+        'Controller Procurement',
+        'Central Medical Store',
+        'Command Pharmacist',
         'Area Controller',
         'DC Admin',
         // Fleet command-level roles
@@ -607,6 +612,49 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('investigation.dashboard')],
                 ['icon' => 'ki-filled ki-magnifier', 'title' => 'Search Officers', 'href' => route('investigation.search')],
                 ['icon' => 'ki-filled ki-document', 'title' => 'Investigations', 'href' => route('investigation.index')],
+            ];
+            break;
+        case 'Controller Procurement':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-procurement.dashboard')],
+                ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
+            ];
+            break;
+        case 'OC Pharmacy':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.oc-pharmacy.dashboard')],
+                ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
+                ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
+                [
+                    'title' => 'Reports',
+                    'icon' => 'ki-filled ki-chart-simple',
+                    'submenu' => [
+                        ['title' => 'Stock Balance', 'href' => route('pharmacy.reports.stock-balance')],
+                        ['title' => 'Expiry Report', 'href' => route('pharmacy.reports.expiry')],
+                        ['title' => 'Custom Report', 'href' => route('pharmacy.reports.custom')],
+                    ]
+                ],
+            ];
+            break;
+        case 'Central Medical Store':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.central-medical-store.dashboard')],
+                ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
+                ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
+            ];
+            break;
+        case 'Command Pharmacist':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.command-pharmacist.dashboard')],
+                ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
             ];
             break;
         default:

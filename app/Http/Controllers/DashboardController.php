@@ -82,6 +82,11 @@ class DashboardController extends Controller
             'ICT',
             'Investigation Unit',
             'Building Unit',
+            // Pharmacy roles
+            'OC Pharmacy',
+            'Controller Procurement',
+            'Central Medical Store',
+            'Command Pharmacist',
             'Area Controller',
             'DC Admin',
             'Admin',
@@ -2249,6 +2254,11 @@ class DashboardController extends Controller
             'CD' => 'fleet.cd.dashboard',
             'O/C T&L' => 'fleet.oc-tl.dashboard',
             'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
+            // Pharmacy
+            'Controller Procurement' => 'pharmacy.controller-procurement.dashboard',
+            'OC Pharmacy' => 'pharmacy.oc-pharmacy.dashboard',
+            'Central Medical Store' => 'pharmacy.central-medical-store.dashboard',
+            'Command Pharmacist' => 'pharmacy.command-pharmacist.dashboard',
         ];
 
         return $routes[$role] ?? 'officer.dashboard';
