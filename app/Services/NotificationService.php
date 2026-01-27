@@ -1732,6 +1732,59 @@ class NotificationService
     }
 
     /**
+     * Notify officer about email address change
+     * Sends notifications to both old and new email addresses for security
+     */
+    public function notifyEmailChanged($officer, string $oldEmail, string $newEmail): ?Notification
+    {
+        if (!$officer || !$officer->user) {
+            return null;
+        }
+
+        // Create in-app notification and send to new email (user's current email)
+        $notification = $this->notify(
+            $officer->user,
+            'email_changed',
+            'Email Address Changed',
+            "Your email address has been updated from {$oldEmail} to {$newEmail}. If you did not request this change, please contact HRD immediately.",
+            'officer',
+            $officer->id
+        );
+
+        // Also send security notification to the OLD email address
+        // This helps detect unauthorized changes
+        try {
+            Mail::to($oldEmail)->send(new NotificationMail(
+                $officer->user,
+                new Notification([
+                    'user_id' => $officer->user->id,
+                    'notification_type' => 'email_changed_security',
+                    'title' => 'Email Address Changed - Security Alert',
+                    'message' => "Your email address on the NCS Employee Portal has been changed from {$oldEmail} to {$newEmail}. If you did not authorize this change, please contact HRD immediately.",
+                    'entity_type' => 'officer',
+                    'entity_id' => $officer->id,
+                    'is_read' => false,
+                ])
+            ));
+
+            Log::info('Email change security notification sent to old email', [
+                'officer_id' => $officer->id,
+                'old_email' => $oldEmail,
+                'new_email' => $newEmail,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send email change security notification to old email', [
+                'officer_id' => $officer->id,
+                'old_email' => $oldEmail,
+                'new_email' => $newEmail,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $notification;
+    }
+
+    /**
      * Notify officer about service number assignment
      */
     public function notifyServiceNumberAssignedToOfficer($officer, string $serviceNumber): ?Notification

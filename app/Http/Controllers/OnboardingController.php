@@ -21,16 +21,37 @@ class OnboardingController extends Controller
         $this->middleware('role:HRD');
     }
 
-    public function index()
+    public function index(Request $request)
     {
         // Get all officers with user accounts (initiated onboarding)
         // Show their email delivery status and onboarding completion status
-        $onboardingOfficers = Officer::whereHas('user')
-            ->with(['user', 'presentStation'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $query = Officer::whereHas('user')
+            ->with(['user', 'presentStation']);
+
+        // Apply search filter if provided
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('service_number', 'like', "%{$search}%")
+                  ->orWhere('surname', 'like', "%{$search}%")
+                  ->orWhere('initials', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($userQuery) use ($search) {
+                      $userQuery->where('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $onboardingOfficers = $query->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->appends($request->only('search'));
+
+        $searchTerm = $search ?? null;
+
+        // Return partial view for AJAX requests
+        if ($request->ajax()) {
+            return view('dashboards.hrd.partials.onboarding-table', compact('onboardingOfficers', 'searchTerm'));
+        }
         
-        return view('dashboards.hrd.onboarding', compact('onboardingOfficers'));
+        return view('dashboards.hrd.onboarding', compact('onboardingOfficers', 'searchTerm'));
     }
 
     public function initiate(Request $request)

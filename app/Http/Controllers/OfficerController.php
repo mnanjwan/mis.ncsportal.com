@@ -843,6 +843,11 @@ class OfficerController extends Controller
             $notificationService->notifyUnitChanged($officer, $originalUnit ?? '', $officer->unit ?? '');
         }
 
+        // Email change notification (send to both old and new email for security)
+        if ($originalEmail !== $officer->email && $originalEmail && $officer->email) {
+            $notificationService->notifyEmailChanged($officer, $originalEmail, $officer->email);
+        }
+
         return redirect()->route('hrd.officers.show', $officer->id)
             ->with('success', 'Officer information updated successfully.');
     }

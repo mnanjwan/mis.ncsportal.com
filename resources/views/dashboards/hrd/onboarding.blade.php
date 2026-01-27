@@ -226,152 +226,31 @@
 
     <!-- Onboarding Management Table -->
     <div class="kt-card">
-        <div class="kt-card-header">
+        <div class="kt-card-header flex-col sm:flex-row gap-4">
             <h3 class="kt-card-title">Onboarding Management</h3>
+            <div class="relative w-full sm:w-72 sm:ml-auto">
+                <input type="text" 
+                       id="onboarding-search" 
+                       class="kt-input pl-9 w-full"
+                       placeholder="Search by name, service no, email...">
+            </div>
         </div>
         <div class="kt-card-content">
-            <!-- Desktop Table View -->
-            <div class="hidden lg:block">
-                <div class="overflow-x-auto">
-                    <table class="kt-table w-full">
-                        <thead>
-                            <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service No</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Name</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Email</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Email Status</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Onboarding Status</th>
-                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Initiated</th>
-                                <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($onboardingOfficers as $officer)
-                                @php
-                                    $emailDelivered = $officer->user->email_verified_at !== null;
-                                    $onboardingCompleted = $officer->user && 
-                                        $officer->date_of_birth && 
-                                        $officer->date_of_first_appointment && 
-                                        $officer->bank_name && 
-                                        $officer->pfa_name;
-                                @endphp
-                                <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                                    <td class="py-3 px-4 text-sm font-mono text-foreground">
-                                        {{ $officer->service_number ?? 'N/A' }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <span class="text-sm font-medium text-foreground">
-                                            {{ ($officer->initials ?? '') . ' ' . ($officer->surname ?? '') }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                        {{ $officer->user->email ?? 'N/A' }}
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        @if($emailDelivered)
-                                            <span class="kt-badge kt-badge-success">
-                                                <i class="ki-filled ki-check-circle"></i> Delivered
-                                            </span>
-                                        @else
-                                            <span class="kt-badge kt-badge-warning">
-                                                <i class="ki-filled ki-information"></i> Pending
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        @if($onboardingCompleted)
-                                            <span class="kt-badge kt-badge-success">
-                                                <i class="ki-filled ki-check-circle"></i> Completed
-                                            </span>
-                                        @else
-                                            <span class="kt-badge kt-badge-warning">
-                                                <i class="ki-filled ki-clock"></i> In Progress
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                        {{ $officer->user->created_at->format('d/m/Y H:i') }}
-                                    </td>
-                                    <td class="py-3 px-4 text-right">
-                                        <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost" title="Resend Email">
-                                                <i class="ki-filled ki-arrows-circle"></i> Resend
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="py-12 text-center">
-                                        <i class="ki-filled ki-user text-4xl text-muted-foreground mb-4"></i>
-                                        <p class="text-secondary-foreground">No onboarding initiated yet</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            <!-- Loading Indicator -->
+            <div id="search-loading" class="hidden py-8 text-center">
+                <div class="inline-flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-secondary-foreground">Searching...</span>
                 </div>
             </div>
 
-            <!-- Mobile Card View -->
-            <div class="lg:hidden">
-                <div class="flex flex-col gap-4">
-                    @forelse($onboardingOfficers as $officer)
-                        @php
-                            $emailDelivered = $officer->user->email_verified_at !== null;
-                            $onboardingCompleted = $officer->user && 
-                                $officer->date_of_birth && 
-                                $officer->date_of_first_appointment && 
-                                $officer->bank_name && 
-                                $officer->pfa_name;
-                        @endphp
-                        <div class="flex flex-col gap-3 p-4 rounded-lg bg-muted/50 border border-input">
-                            <div class="flex items-center justify-between">
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm font-semibold text-foreground">
-                                        {{ ($officer->initials ?? '') . ' ' . ($officer->surname ?? '') }}
-                                    </span>
-                                    <span class="text-xs text-secondary-foreground font-mono">
-                                        {{ $officer->service_number ?? 'N/A' }}
-                                    </span>
-                                    <span class="text-xs text-secondary-foreground">
-                                        {{ $officer->user->email ?? 'N/A' }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                @if($emailDelivered)
-                                    <span class="kt-badge kt-badge-success text-xs">Email Delivered</span>
-                                @else
-                                    <span class="kt-badge kt-badge-warning text-xs">Email Pending</span>
-                                @endif
-                                @if($onboardingCompleted)
-                                    <span class="kt-badge kt-badge-success text-xs">Completed</span>
-                                @else
-                                    <span class="kt-badge kt-badge-warning text-xs">In Progress</span>
-                                @endif
-                            </div>
-                            <div class="flex items-center justify-end pt-2 border-t border-input">
-                                <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost">
-                                        <i class="ki-filled ki-arrows-circle"></i> Resend Email
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="text-center py-12">
-                            <i class="ki-filled ki-user text-4xl text-muted-foreground mb-4"></i>
-                            <p class="text-secondary-foreground">No onboarding initiated yet</p>
-                        </div>
-                    @endforelse
-                </div>
+            <!-- Table Container (content loaded via AJAX when searching) -->
+            <div id="onboarding-table-container">
+                @include('dashboards.hrd.partials.onboarding-table')
             </div>
-
-            <!-- Pagination -->
-            <x-pagination :paginator="$onboardingOfficers" item-name="officers" />
         </div>
     </div>
 </div>
@@ -486,6 +365,122 @@ function updateBulkSubmitButton() {
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     showTab('single');
+    initOnboardingSearch();
 });
+
+// Live Search for Onboarding Management (Server-side)
+function initOnboardingSearch() {
+    const searchInput = document.getElementById('onboarding-search');
+    if (!searchInput) return;
+
+    let searchTimeout = null;
+    const tableContainer = document.getElementById('onboarding-table-container');
+    const loadingIndicator = document.getElementById('search-loading');
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim();
+        
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        // Debounce the search (wait 300ms after user stops typing)
+        searchTimeout = setTimeout(() => {
+            performSearch(searchTerm);
+        }, 300);
+    });
+
+    function performSearch(searchTerm) {
+        // Show loading indicator
+        loadingIndicator.classList.remove('hidden');
+        tableContainer.classList.add('opacity-50');
+
+        // Build the URL with search parameter
+        const url = new URL('{{ route("hrd.onboarding") }}');
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        }
+
+        // Perform AJAX request
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Update the table container with the new content
+            tableContainer.innerHTML = html;
+            
+            // Update URL without page reload (for bookmarking/sharing)
+            const newUrl = new URL(window.location.href);
+            if (searchTerm) {
+                newUrl.searchParams.set('search', searchTerm);
+            } else {
+                newUrl.searchParams.delete('search');
+            }
+            window.history.replaceState({}, '', newUrl);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            tableContainer.innerHTML = `
+                <div class="py-12 text-center">
+                    <i class="ki-filled ki-information text-4xl text-danger mb-4"></i>
+                    <p class="text-danger">Error performing search. Please try again.</p>
+                </div>
+            `;
+        })
+        .finally(() => {
+            // Hide loading indicator
+            loadingIndicator.classList.add('hidden');
+            tableContainer.classList.remove('opacity-50');
+        });
+    }
+
+    // Handle pagination clicks within search results
+    document.addEventListener('click', function(e) {
+        const paginationLink = e.target.closest('#onboarding-table-container a[href*="page="]');
+        if (paginationLink) {
+            e.preventDefault();
+            
+            // Show loading
+            loadingIndicator.classList.remove('hidden');
+            tableContainer.classList.add('opacity-50');
+
+            fetch(paginationLink.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html',
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                tableContainer.innerHTML = html;
+                window.history.replaceState({}, '', paginationLink.href);
+            })
+            .catch(error => {
+                console.error('Pagination error:', error);
+            })
+            .finally(() => {
+                loadingIndicator.classList.add('hidden');
+                tableContainer.classList.remove('opacity-50');
+            });
+        }
+    });
+
+    // Initialize search input from URL parameter (if any)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSearch = urlParams.get('search');
+    if (initialSearch) {
+        searchInput.value = initialSearch;
+    }
+}
 </script>
 @endsection
