@@ -2,6 +2,7 @@
 
 namespace App\Services\Pharmacy;
 
+use App\Models\PharmacyDrug;
 use App\Models\PharmacyProcurement;
 use App\Models\PharmacyRequisition;
 use App\Models\PharmacyStock;
@@ -624,6 +625,9 @@ class PharmacyWorkflowService
                 'dispensed_at' => now(),
             ]);
 
+            // Notify OC Pharmacy about dispensed requisition
+            $this->notifyByRole('OC Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
+
             return $requisition->fresh(['steps', 'items.drug', 'createdBy', 'command']);
         });
     }
@@ -714,5 +718,24 @@ class PharmacyWorkflowService
                 true
             );
         }
+    }
+
+    /**
+     * Notify users by role about pharmacy events.
+     */
+    private function notifyByRole(string $roleName, string $type, $entity, string $message): void
+    {
+        $notificationService = app(NotificationService::class);
+        $entityType = $type === 'procurement' ? 'Procurement' : 'Requisition';
+        
+        $notificationService->notifyByRole(
+            $roleName,
+            "pharmacy_{$type}_update",
+            "{$entityType} #{$entity->id} Update",
+            $message,
+            "pharmacy_{$type}",
+            $entity->id,
+            true
+        );
     }
 }
