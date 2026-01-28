@@ -1994,6 +1994,65 @@ class EstablishmentController extends Controller
     }
 
     /**
+     * Update recruit email address and resend onboarding link
+     */
+    public function updateRecruitEmail(Request $request, $id)
+    {
+        try {
+            $recruit = Officer::findOrFail($id);
+
+            // Validate the new email (unique check excluding current recruit)
+            $validated = $request->validate([
+                'email' => 'required|email|max:255|unique:officers,email,' . $recruit->id . '|unique:users,email',
+            ]);
+
+            $oldEmail = $recruit->email;
+            $newEmail = $validated['email'];
+
+            // Update email in officers table
+            $recruit->update([
+                'email' => $newEmail,
+            ]);
+
+            // If recruit has a user account, update that too
+            if ($recruit->user) {
+                $recruit->user->update([
+                    'email' => $newEmail,
+                    'email_verified_at' => null, // Reset email verification
+                ]);
+            }
+
+            // Generate new onboarding token
+            $recruit->update([
+                'onboarding_token' => Str::random(64),
+                'onboarding_status' => 'link_sent',
+            ]);
+
+            $onboardingLink = route('recruit.onboarding.step1', ['token' => $recruit->onboarding_token]);
+
+            // Queue email job to send to new email
+            SendRecruitOnboardingLinkJob::dispatch(
+                $recruit,
+                $onboardingLink,
+                trim(($recruit->initials ?? '') . ' ' . ($recruit->surname ?? ''))
+            );
+
+            $recruitName = trim(($recruit->initials ?? '') . ' ' . ($recruit->surname ?? ''));
+            $message = "Email updated from {$oldEmail} to {$newEmail} for {$recruitName}. New onboarding link has been sent.";
+
+            return redirect()->route('establishment.new-recruits')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            Log::error('Failed to update recruit email', [
+                'recruit_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()
+                ->with('error', 'Failed to update email: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * View recruit details with uploaded documents
      */
     public function viewRecruit($id)

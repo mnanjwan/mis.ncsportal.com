@@ -671,6 +671,14 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                                             </button>
                                                         </form>
                                                     @endif
+                                                    @if($recruit->onboarding_status !== 'completed' && $recruit->onboarding_status !== 'verified')
+                                                        <button type="button" 
+                                                                onclick="openEditRecruitEmailModal({{ $recruit->id }}, '{{ $recruit->email }}', '{{ addslashes($fullName) }}'); closeActionMenu({{ $recruit->id }});"
+                                                                class="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors flex items-center gap-2">
+                                                            <i class="ki-filled ki-pencil text-warning"></i>
+                                                            <span>Edit Email</span>
+                                                        </button>
+                                                    @endif
                                                     @if($recruit->onboarding_status === 'completed' && $recruit->verification_status === 'pending')
                                                         <a href="{{ route('establishment.new-recruits.view', $recruit->id) }}" 
                                                            class="block px-4 py-2 text-sm text-info hover:bg-info/10 transition-colors flex items-center gap-2">
@@ -1001,6 +1009,64 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                         <i class="ki-filled ki-check"></i>
                         <span>Assign to Selected</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Recruit Email Modal -->
+        <div id="edit-recruit-email-modal" class="fixed inset-0 z-50 hidden">
+            <div class="fixed inset-0 bg-black/50" onclick="closeEditRecruitEmailModal()"></div>
+            <div class="fixed inset-0 flex items-center justify-center p-4">
+                <div class="bg-background rounded-lg shadow-xl w-full max-w-md relative">
+                    <div class="flex items-center justify-between p-4 border-b border-border">
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
+                                <i class="ki-filled ki-pencil text-warning text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-foreground">Edit Email Address</h3>
+                        </div>
+                        <button type="button" onclick="closeEditRecruitEmailModal()" class="text-secondary-foreground hover:text-foreground">
+                            <i class="ki-filled ki-cross text-xl"></i>
+                        </button>
+                    </div>
+                    <form id="edit-recruit-email-form" method="POST" class="p-4 space-y-4">
+                        @csrf
+                        @method('PUT')
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-foreground">Recruit</label>
+                            <p id="edit-recruit-email-name" class="text-sm text-secondary-foreground font-medium"></p>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-foreground">Current Email</label>
+                            <p id="edit-recruit-email-current" class="text-sm text-secondary-foreground font-mono"></p>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="edit-recruit-email-new" class="block text-sm font-medium text-foreground">
+                                New Email Address <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" 
+                                   name="email" 
+                                   id="edit-recruit-email-new"
+                                   class="kt-input w-full"
+                                   placeholder="newemail@example.com"
+                                   required>
+                            <p class="text-xs text-secondary-foreground">
+                                A new onboarding link will be sent to this email address.
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
+                            <button type="button" onclick="closeEditRecruitEmailModal()" class="kt-btn kt-btn-secondary">
+                                Cancel
+                            </button>
+                            <button type="submit" class="kt-btn kt-btn-primary">
+                                <i class="ki-filled ki-check"></i> Update & Send Link
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1996,6 +2062,41 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                     menu.classList.add('hidden');
                 });
             }, true);
+
+            // Edit Recruit Email Modal Functions
+            function openEditRecruitEmailModal(recruitId, currentEmail, recruitName) {
+                const modal = document.getElementById('edit-recruit-email-modal');
+                const form = document.getElementById('edit-recruit-email-form');
+                const nameEl = document.getElementById('edit-recruit-email-name');
+                const currentEmailEl = document.getElementById('edit-recruit-email-current');
+                const newEmailInput = document.getElementById('edit-recruit-email-new');
+                
+                // Set form action URL
+                form.action = '{{ route("establishment.onboarding.update-email", ":id") }}'.replace(':id', recruitId);
+                
+                // Populate modal fields
+                nameEl.textContent = recruitName || 'N/A';
+                currentEmailEl.textContent = currentEmail || 'N/A';
+                newEmailInput.value = '';
+                
+                // Show modal
+                modal.classList.remove('hidden');
+                
+                // Focus on new email input
+                setTimeout(() => newEmailInput.focus(), 100);
+            }
+
+            function closeEditRecruitEmailModal() {
+                const modal = document.getElementById('edit-recruit-email-modal');
+                modal.classList.add('hidden');
+            }
+
+            // Close modal on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeEditRecruitEmailModal();
+                }
+            });
         </script>
         @endpush
 

@@ -773,6 +773,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/onboarding/csv-upload', [EstablishmentController::class, 'csvUploadOnboarding'])->name('onboarding.csv-upload');
         Route::post('/onboarding/{id}/verify', [EstablishmentController::class, 'verifyRecruit'])->name('onboarding.verify');
         Route::post('/onboarding/{id}/resend-link', [EstablishmentController::class, 'resendOnboardingLink'])->name('onboarding.resend-link');
+        Route::put('/onboarding/{id}/update-email', [EstablishmentController::class, 'updateRecruitEmail'])->name('onboarding.update-email');
         Route::get('/new-recruits/{id}/view', [EstablishmentController::class, 'viewRecruit'])->name('new-recruits.view');
 
         // Officer Deletion Routes
