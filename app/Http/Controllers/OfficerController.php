@@ -747,7 +747,7 @@ class OfficerController extends Controller
             'residential_address' => 'required|string',
             'permanent_home_address' => 'required|string',
             'phone_number' => 'required|string|max:20',
-            'email' => 'nullable|email|max:255',
+            'email' => 'nullable|email|max:255|unique:officers,email,' . $id,
             'unit' => 'nullable|string|max:255',
             'education' => 'required|array|min:1',
             'education.*.university' => 'required|string|max:255',
