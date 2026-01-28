@@ -255,6 +255,59 @@
     </div>
 </div>
 
+<!-- Edit Email Modal -->
+<div id="edit-email-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeEditEmailModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-background rounded-lg shadow-xl w-full max-w-md relative">
+            <div class="flex items-center justify-between p-4 border-b border-border">
+                <h3 class="text-lg font-semibold text-foreground">Edit Email Address</h3>
+                <button type="button" onclick="closeEditEmailModal()" class="text-secondary-foreground hover:text-foreground">
+                    <i class="ki-filled ki-cross text-xl"></i>
+                </button>
+            </div>
+            <form id="edit-email-form" method="POST" class="p-4 space-y-4">
+                @csrf
+                @method('PUT')
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-foreground">Officer</label>
+                    <p id="edit-email-officer-name" class="text-sm text-secondary-foreground font-medium"></p>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-foreground">Current Email</label>
+                    <p id="edit-email-current" class="text-sm text-secondary-foreground font-mono"></p>
+                </div>
+                
+                <div class="space-y-2">
+                    <label for="edit-email-new" class="block text-sm font-medium text-foreground">
+                        New Email Address <span class="text-danger">*</span>
+                    </label>
+                    <input type="email" 
+                           name="email" 
+                           id="edit-email-new"
+                           class="kt-input w-full"
+                           placeholder="newemail@example.com"
+                           required>
+                    <p class="text-xs text-secondary-foreground">
+                        A new onboarding link will be sent to this email address.
+                    </p>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
+                    <button type="button" onclick="closeEditEmailModal()" class="kt-btn kt-btn-secondary">
+                        Cancel
+                    </button>
+                    <button type="submit" class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-check"></i> Update & Send Link
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('styles')
 <style>
     /* Ensure all asterisks in onboarding forms are red */
@@ -482,5 +535,40 @@ function initOnboardingSearch() {
         searchInput.value = initialSearch;
     }
 }
+
+// Edit Email Modal Functions
+function openEditEmailModal(officerId, currentEmail, officerName) {
+    const modal = document.getElementById('edit-email-modal');
+    const form = document.getElementById('edit-email-form');
+    const officerNameEl = document.getElementById('edit-email-officer-name');
+    const currentEmailEl = document.getElementById('edit-email-current');
+    const newEmailInput = document.getElementById('edit-email-new');
+    
+    // Set form action URL
+    form.action = '{{ route("hrd.onboarding.update-email", ":id") }}'.replace(':id', officerId);
+    
+    // Populate modal fields
+    officerNameEl.textContent = officerName || 'N/A';
+    currentEmailEl.textContent = currentEmail || 'N/A';
+    newEmailInput.value = '';
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Focus on new email input
+    setTimeout(() => newEmailInput.focus(), 100);
+}
+
+function closeEditEmailModal() {
+    const modal = document.getElementById('edit-email-modal');
+    modal.classList.add('hidden');
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditEmailModal();
+    }
+});
 </script>
 @endsection

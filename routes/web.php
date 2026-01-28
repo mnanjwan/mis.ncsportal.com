@@ -345,6 +345,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/onboarding/bulk-initiate', [OnboardingController::class, 'bulkInitiate'])->name('onboarding.bulk-initiate');
         Route::post('/onboarding/csv-upload', [OnboardingController::class, 'csvUpload'])->name('onboarding.csv-upload');
         Route::post('/onboarding/{id}/resend-link', [OnboardingController::class, 'resendLink'])->name('onboarding.resend-link');
+        Route::put('/onboarding/{id}/update-email', [OnboardingController::class, 'updateEmail'])->name('onboarding.update-email');
 
         Route::get('/role-assignments', [\App\Http\Controllers\RoleAssignmentController::class, 'index'])->name('role-assignments');
         Route::get('/role-assignments/create', [\App\Http\Controllers\RoleAssignmentController::class, 'create'])->name('role-assignments.create');

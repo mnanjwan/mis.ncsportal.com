@@ -394,6 +394,83 @@ class OnboardingController extends Controller
         }
     }
 
+    public function updateEmail(Request $request, $id)
+    {
+        try {
+            $officer = Officer::with('user')->findOrFail($id);
+            
+            if (!$officer->user) {
+                return redirect()->back()
+                    ->with('error', 'Officer does not have a user account. Please initiate onboarding first.');
+            }
+
+            // Validate the new email (unique check excluding current user)
+            $validated = $request->validate([
+                'email' => 'required|email|max:255|unique:users,email,' . $officer->user->id,
+            ]);
+
+            $oldEmail = $officer->user->email;
+            $newEmail = $validated['email'];
+
+            // Update email in users table
+            $officer->user->update([
+                'email' => $newEmail,
+                'email_verified_at' => null, // Reset email verification
+            ]);
+
+            // Update email in officers table
+            $officer->update([
+                'email' => $newEmail,
+            ]);
+
+            // Generate new random 8-digit password
+            $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $officer->user->update([
+                'password' => Hash::make($tempPassword),
+                'temp_password' => $tempPassword,
+            ]);
+
+            // Generate new onboarding link
+            $onboardingLink = route('onboarding.step1') . '?token=' . base64_encode($officer->user->id . '|' . $tempPassword);
+
+            // Send email notification to new email
+            $emailSent = false;
+            $emailDelivered = false;
+            try {
+                $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+                Mail::to($newEmail)->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $newEmail));
+                $emailSent = true;
+                $emailDelivered = true;
+            } catch (\Exception $e) {
+                Log::error("Failed to send onboarding email to updated address: " . $e->getMessage());
+                $emailSent = false;
+                $emailDelivered = false;
+            }
+
+            // Update email delivery status
+            $officer->user->update([
+                'email_verified_at' => $emailDelivered ? now() : null,
+            ]);
+
+            $message = "Email updated from {$oldEmail} to {$newEmail} for {$officer->initials} {$officer->surname}.";
+            if ($emailSent) {
+                $message .= " New onboarding link has been sent to {$newEmail}.";
+            } else {
+                $message .= " Failed to send email. Onboarding link: {$onboardingLink}";
+            }
+
+            return redirect()->route('hrd.onboarding')
+                ->with('success', $message)
+                ->with('onboarding_link', $onboardingLink)
+                ->with('temp_password', $tempPassword)
+                ->with('email_sent', $emailSent);
+        } catch (\Exception $e) {
+            Log::error('Update onboarding email error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to update email: ' . $e->getMessage());
+        }
+    }
+
     public function csvUpload(Request $request)
     {
         $validated = $request->validate([

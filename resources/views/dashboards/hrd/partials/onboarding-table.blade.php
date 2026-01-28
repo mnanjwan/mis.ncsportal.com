@@ -61,12 +61,22 @@
                             {{ $officer->user->created_at->format('d/m/Y H:i') }}
                         </td>
                         <td class="py-3 px-4 text-right">
-                            <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost" title="Resend Email">
-                                    <i class="ki-filled ki-arrows-circle"></i> Resend
-                                </button>
-                            </form>
+                            <div class="flex items-center justify-end gap-2">
+                                @if(!$onboardingCompleted)
+                                    <button type="button" 
+                                            onclick="openEditEmailModal({{ $officer->id }}, '{{ $officer->user->email }}', '{{ addslashes(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}')"
+                                            class="kt-btn kt-btn-sm kt-btn-ghost" 
+                                            title="Edit Email">
+                                        <i class="ki-filled ki-pencil"></i> Edit Email
+                                    </button>
+                                @endif
+                                <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost" title="Resend Email">
+                                        <i class="ki-filled ki-arrows-circle"></i> Resend
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -125,11 +135,19 @@
                         <span class="kt-badge kt-badge-warning text-xs">In Progress</span>
                     @endif
                 </div>
-                <div class="flex items-center justify-end pt-2 border-t border-input">
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-input">
+                    @if(!$onboardingCompleted)
+                        <button type="button" 
+                                onclick="openEditEmailModal({{ $officer->id }}, '{{ $officer->user->email }}', '{{ addslashes(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}')"
+                                class="kt-btn kt-btn-sm kt-btn-ghost" 
+                                title="Edit Email">
+                            <i class="ki-filled ki-pencil"></i> Edit
+                        </button>
+                    @endif
                     <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost">
-                            <i class="ki-filled ki-arrows-circle"></i> Resend Email
+                            <i class="ki-filled ki-arrows-circle"></i> Resend
                         </button>
                     </form>
                 </div>
