@@ -205,6 +205,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/officers/{id}/edit', [OfficerController::class, 'edit'])->name('officers.edit');
         Route::put('/officers/{id}', [OfficerController::class, 'update'])->name('officers.update');
 
+        // Officer Uploads (Document Browser)
+        Route::get('/uploads', [OfficerController::class, 'uploads'])->name('uploads');
+        Route::get('/uploads/download/{id}', [OfficerController::class, 'downloadDocument'])->name('uploads.download');
+
         // Education Qualification Requests
         Route::get('/education-requests', [EducationChangeRequestController::class, 'pending'])->name('education-requests.pending');
         Route::post('/education-requests/{id}/approve', [EducationChangeRequestController::class, 'approve'])->name('education-requests.approve');

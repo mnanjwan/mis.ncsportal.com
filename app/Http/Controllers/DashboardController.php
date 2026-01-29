@@ -1922,6 +1922,8 @@ class DashboardController extends Controller
             'next_of_kin.*.is_primary' => 'nullable|in:0,1',
             'profile_picture_data' => 'required|string',
             'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:2048',
+            'document_categories' => 'nullable|array',
+            'document_categories.*' => 'nullable|string|in:' . implode(',', array_keys(config('document_categories'))),
         ]);
 
         // Validate that profile picture data is not empty
@@ -1953,12 +1955,13 @@ class DashboardController extends Controller
 
         // Handle document uploads immediately (before storing in session, as UploadedFile cannot be serialized)
         $documentPaths = [];
+        $documentCategories = $request->input('document_categories', []);
         if ($request->hasFile('documents')) {
             $user = auth()->user();
             $officer = $user->officer;
 
             if ($officer) {
-                foreach ($request->file('documents') as $document) {
+                foreach ($request->file('documents') as $index => $document) {
                     $path = $document->store('officer-documents-temp', 'public');
                     $documentPaths[] = [
                         'path' => $path,
@@ -1966,6 +1969,7 @@ class DashboardController extends Controller
                         'size' => $document->getSize(),
                         'mime' => $document->getMimeType(),
                         'extension' => $document->getClientOriginalExtension(),
+                        'category' => $documentCategories[$index] ?? 'other',
                     ];
                 }
             }
@@ -2166,7 +2170,7 @@ class DashboardController extends Controller
 
                         \App\Models\OfficerDocument::create([
                             'officer_id' => $officer->id,
-                            'document_type' => $docInfo['extension'],
+                            'document_type' => $docInfo['category'] ?? 'other',
                             'file_name' => $docInfo['name'],
                             'file_path' => $finalPath,
                             'file_size' => $docInfo['size'],
@@ -2178,12 +2182,13 @@ class DashboardController extends Controller
             }
 
             // Also handle documents from request if submitted again (for backward compatibility)
+            $documentCategories = $request->input('document_categories', []);
             if ($request->hasFile('documents')) {
-                foreach ($request->file('documents') as $document) {
+                foreach ($request->file('documents') as $index => $document) {
                     $path = $document->store('officer-documents', 'public');
                     \App\Models\OfficerDocument::create([
                         'officer_id' => $officer->id,
-                        'document_type' => $document->getClientOriginalExtension(),
+                        'document_type' => $documentCategories[$index] ?? 'other',
                         'file_name' => $document->getClientOriginalName(),
                         'file_path' => $path,
                         'file_size' => $document->getSize(),

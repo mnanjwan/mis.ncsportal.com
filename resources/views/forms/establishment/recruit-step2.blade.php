@@ -168,7 +168,9 @@
                         <div id="selected-files-list" class="flex flex-col gap-2 hidden">
                             <!-- Selected files will be displayed here -->
                         </div>
-                        <small class="text-muted">You can upload multiple documents. JPEG format is preferred to save space. <span class="text-danger">At least one document is required.</span></small>
+                        <!-- Hidden inputs to store document categories -->
+                        <div id="document-categories-container"></div>
+                        <small class="text-muted">You can upload multiple documents. Select a category for each document. JPEG format is preferred to save space. <span class="text-danger">At least one document is required.</span></small>
                         <span class="text-xs" style="color: red;">
                             <strong>Document Type Allowed:</strong> JPEG, JPG, PNG (multiple files allowed)<br>
                             <strong>Document Size Allowed:</strong> Maximum 5MB per file
@@ -1137,8 +1139,13 @@ document.querySelectorAll('#recruit-step2-form input, #recruit-step2-form select
 const documentsInput = document.getElementById('documents-input');
 const selectedFilesList = document.getElementById('selected-files-list');
 const uploadButtonText = document.getElementById('upload-button-text');
+const documentCategoriesContainer = document.getElementById('document-categories-container');
 let selectedFiles = [];
 let filePreviewUrls = []; // Store object URLs for cleanup
+let fileCategories = []; // Store category selections
+
+// Document categories from config
+const documentCategories = @json(config('document_categories'));
 
 // Load saved documents from session
 function loadSavedDocuments() {
@@ -1176,6 +1183,9 @@ function loadSavedDocuments() {
                 // Add to selectedFiles array
                 selectedFiles.push(fileInfo);
                 
+                // Load saved category or default to 'other'
+                fileCategories.push(doc.category || 'other');
+                
                 // For images, create preview URL from server
                 if (mimeType.startsWith('image/') && doc.temp_path) {
                     // Use server endpoint to preview saved document
@@ -1202,6 +1212,8 @@ if (documentsInput) {
         files.forEach(file => {
             if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
                 selectedFiles.push(file);
+                // Default category for new files
+                fileCategories.push('other');
                 // Create preview URL for images
                 if (file.type.startsWith('image/')) {
                     filePreviewUrls.push(URL.createObjectURL(file));
@@ -1251,6 +1263,12 @@ function updateFileDisplay() {
                 previewUrl: previewUrl
             });
             
+            // Generate category options
+            const categoryOptions = Object.entries(documentCategories).map(([key, label]) => {
+                const selected = fileCategories[index] === key ? 'selected' : '';
+                return `<option value="${key}" ${selected}>${label}</option>`;
+            }).join('');
+            
             return `
                 <div class="relative p-3 bg-muted/50 rounded-lg border border-input" data-file-index="${index}">
                     <div class="flex items-start gap-3">
@@ -1283,10 +1301,18 @@ function updateFileDisplay() {
                                     <i class="ki-filled ki-cross"></i>
                                 </button>
                             </div>
-                            <div class="flex items-center gap-2 text-xs text-muted">
+                            <div class="flex items-center gap-2 text-xs text-muted mb-2">
                                 <span>${fileSize} KB</span>
                                 ${isImage ? `<span>• Image</span>` : `<span>• ${file.type || 'File'}</span>`}
                                 ${isSaved ? `<span class="text-success">• Saved</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs text-muted flex-shrink-0">Category:</label>
+                                <select class="kt-input kt-input-sm flex-1 text-xs document-category-select" 
+                                        data-file-index="${index}"
+                                        onchange="updateFileCategory(${index}, this.value)">
+                                    ${categoryOptions}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -1296,6 +1322,9 @@ function updateFileDisplay() {
         
         // Update the file input with remaining files
         updateFileInput();
+        
+        // Update hidden inputs for categories
+        updateCategoryHiddenInputs();
     }
 }
 
@@ -1307,7 +1336,20 @@ function removeFile(index) {
     
     selectedFiles.splice(index, 1);
     filePreviewUrls.splice(index, 1);
+    fileCategories.splice(index, 1);
     updateFileDisplay();
+}
+
+function updateFileCategory(index, category) {
+    fileCategories[index] = category;
+    updateCategoryHiddenInputs();
+}
+
+function updateCategoryHiddenInputs() {
+    // Update hidden inputs for document categories
+    documentCategoriesContainer.innerHTML = fileCategories.map((category, index) => {
+        return `<input type="hidden" name="document_categories[]" value="${category}">`;
+    }).join('');
 }
 
 function updateFileInput() {

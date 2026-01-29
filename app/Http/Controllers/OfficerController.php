@@ -1609,6 +1609,58 @@ class OfficerController extends Controller
 
         return view('dashboards.officer.course-nominations', compact('courses', 'years'));
     }
+
+    /**
+     * Display the HRD uploads page for browsing officer documents by category.
+     */
+    public function uploads(Request $request)
+    {
+        // Only get officers that have at least one document uploaded
+        $officers = \App\Models\Officer::select('id', 'initials', 'surname', 'service_number')
+            ->whereHas('documents')
+            ->orderBy('surname')
+            ->get();
+
+        $categories = config('document_categories');
+        $selectedOfficer = null;
+        $documents = collect();
+        $selectedCategory = $request->category ?? 'all';
+
+        if ($request->officer_id) {
+            $selectedOfficer = \App\Models\Officer::with('documents')->find($request->officer_id);
+            
+            if ($selectedOfficer) {
+                $documents = $selectedOfficer->documents;
+
+                if ($selectedCategory !== 'all') {
+                    $documents = $documents->where('document_type', $selectedCategory);
+                }
+            }
+        }
+
+        return view('dashboards.hrd.uploads', compact(
+            'officers',
+            'categories',
+            'selectedOfficer',
+            'documents',
+            'selectedCategory'
+        ));
+    }
+
+    /**
+     * Download an officer document.
+     */
+    public function downloadDocument(int $documentId)
+    {
+        $document = \App\Models\OfficerDocument::findOrFail($documentId);
+
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
+            return back()->with('error', 'File not found on disk');
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->download(
+            $document->file_path,
+            $document->file_name
+        );
+    }
 }
-
-

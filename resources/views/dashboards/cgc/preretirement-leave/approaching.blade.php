@@ -109,7 +109,7 @@
                                 <td class="py-3 px-4 text-sm">
                                     @if($daysUntil > 0)
                                         <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-warning/10 text-warning">
-                                            {{ $daysUntil }} days
+                                            {{ number_format($daysUntil) }} days
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-info/10 text-info">

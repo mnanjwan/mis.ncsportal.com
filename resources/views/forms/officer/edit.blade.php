@@ -1217,14 +1217,14 @@ function addEducationEntry(data = null) {
     entryDiv.innerHTML = `
         <div class="grid lg:grid-cols-3 gap-5">
             <div class="flex flex-col gap-1">
-                <label class="kt-form-label">University <span class="text-danger">*</span></label>
+                <label class="kt-form-label">Institution <span class="text-danger">*</span></label>
                 <div class="relative">
                     <input type="text" 
                            name="education[${entryId}][university]" 
                            id="university_search_${entryId}"
                            class="kt-input w-full education-university" 
                            value="${escapeHtml(savedUniversity)}"
-                           placeholder="Search or type university name..."
+                           placeholder="Search or type institution name..."
                            autocomplete="off"
                            required>
                     <div id="university_dropdown_${entryId}" 

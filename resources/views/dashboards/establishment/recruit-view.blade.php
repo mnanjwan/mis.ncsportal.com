@@ -213,12 +213,12 @@
                                         @endif
                                         @if(isset($edu['university']) && $edu['university'])
                                         <div class="flex items-center justify-between">
-                                            <span class="text-sm text-secondary-foreground">Institution/University</span>
+                                            <span class="text-sm text-secondary-foreground">Institution</span>
                                             <span class="text-sm font-semibold text-mono">{{ $edu['university'] }}</span>
                                         </div>
                                         @elseif(isset($edu['institution']) && $edu['institution'])
                                         <div class="flex items-center justify-between">
-                                            <span class="text-sm text-secondary-foreground">Institution/University</span>
+                                            <span class="text-sm text-secondary-foreground">Institution</span>
                                             <span class="text-sm font-semibold text-mono">{{ $edu['institution'] }}</span>
                                         </div>
                                         @endif

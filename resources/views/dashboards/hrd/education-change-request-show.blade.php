@@ -87,7 +87,7 @@
             <div class="kt-card-content">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <span class="text-sm text-secondary-foreground">University/Institution</span>
+                        <span class="text-sm text-secondary-foreground">Institution</span>
                         <p class="text-sm font-semibold text-foreground mt-1">
                             {{ $request->university }}
                         </p>

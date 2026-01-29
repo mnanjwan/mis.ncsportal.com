@@ -243,7 +243,7 @@
                                     <div class="text-xs text-secondary-foreground mb-2 font-semibold">Education Entry #{{ $index + 1 }}</div>
                                     @if(!empty($edu['university']))
                                     <div class="flex items-center justify-between mb-2">
-                                        <span class="text-sm text-secondary-foreground">University</span>
+                                        <span class="text-sm text-secondary-foreground">Institution</span>
                                         <span class="text-sm font-semibold text-mono">{{ $edu['university'] }}</span>
                                     </div>
                                     @endif

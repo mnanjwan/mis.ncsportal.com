@@ -38,7 +38,7 @@
                             <div class="flex-1">
                                 <h3 class="text-lg font-semibold text-foreground mb-2">Retirement Alert</h3>
                                 <p class="text-sm text-secondary-foreground mb-3">
-                                    You are approaching retirement! Your retirement date is in <strong>{{ $daysUntilRetirement }} days</strong>.
+                                    You are approaching retirement! Your retirement date is in <strong>{{ number_format($daysUntilRetirement) }} days</strong>.
                                 </p>
                                 <div class="flex flex-col gap-2 text-sm">
                                     <div class="flex items-center gap-2">
@@ -83,7 +83,7 @@
                             @if($daysUntilRetirement !== null)
                                 <p class="text-sm text-secondary-foreground mt-2">
                                     @if($daysUntilRetirement > 0)
-                                        <span class="font-medium text-foreground">{{ $daysUntilRetirement }}</span> days remaining
+                                        <span class="font-medium text-foreground">{{ number_format($daysUntilRetirement) }}</span> days remaining
                                     @else
                                         <span class="font-medium text-danger">Retired</span>
                                     @endif

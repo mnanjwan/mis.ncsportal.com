@@ -364,6 +364,8 @@ class RecruitOnboardingController extends Controller
             'education.*.discipline' => 'nullable|string|max:255',
             'documents' => 'nullable|array',
             'documents.*' => 'file|mimes:jpeg,jpg,png|max:5120',
+            'document_categories' => 'nullable|array',
+            'document_categories.*' => 'nullable|string|in:' . implode(',', array_keys(config('document_categories'))),
         ]);
         
         // Handle document uploads - store file info for preview (same as step4)
@@ -373,15 +375,18 @@ class RecruitOnboardingController extends Controller
             ? $existingStep2['documents'] 
             : [];
         
+        $documentCategories = $request->input('document_categories', []);
+        
         if ($request->hasFile('documents')) {
             // Add new documents to existing ones
-            foreach ($request->file('documents') as $file) {
+            foreach ($request->file('documents') as $index => $file) {
                 $tempPath = $file->store('temp/recruit-documents', 'local');
                 $existingDocuments[] = [
                     'name' => $file->getClientOriginalName(),
                     'size' => $file->getSize(),
                     'type' => $file->getMimeType(),
                     'temp_path' => $tempPath,
+                    'category' => $documentCategories[$index] ?? 'other',
                 ];
             }
             $validated['documents'] = $existingDocuments;
@@ -834,7 +839,7 @@ class RecruitOnboardingController extends Controller
                             // Create OfficerDocument record
                             \App\Models\OfficerDocument::create([
                                 'officer_id' => $recruit->id,
-                                'document_type' => 'onboarding',
+                                'document_type' => $docData['category'] ?? 'other',
                                 'file_name' => $docData['name'] ?? 'document',
                                 'file_path' => $permanentPath,
                                 'file_size' => $docData['size'] ?? 0,

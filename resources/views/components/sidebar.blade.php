@@ -203,7 +203,8 @@
                         ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('hrd.officers')],
                         ['icon' => 'ki-filled ki-trash', 'title' => 'Delete Officer', 'href' => route('hrd.officers.delete.index')],
                         ['icon' => 'ki-filled ki-user', 'title' => 'Officer Onboarding', 'href' => route('hrd.onboarding')],
-                        ['icon' => 'ki-filled ki-graduation-cap', 'title' => 'Education Requests', 'href' => route('hrd.education-requests.pending')],
+                        ['icon' => 'ki-filled ki-teacher', 'title' => 'Education Requests', 'href' => route('hrd.education-requests.pending')],
+                        ['icon' => 'ki-filled ki-folder-up', 'title' => 'Uploads', 'href' => route('hrd.uploads')],
                         [
                             'title' => 'User Management',
                             'icon' => 'ki-filled ki-user',
