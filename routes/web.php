@@ -114,7 +114,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications/{id}', [NotificationController::class, 'show'])->name('notifications.show');
 
     // Officer Routes
-    Route::prefix('officer')->name('officer.')->middleware(['onboarding.complete', 'require.password.change'])->group(function () {
+    Route::prefix('officer')->name('officer.')->middleware(['onboarding.complete', 'require.password.change', 'profile_picture.post_promotion'])->group(function () {
         Route::get('/dashboard', [OfficerController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [OfficerController::class, 'profile'])->name('profile');
         Route::post('/profile/update-picture', [OfficerController::class, 'updateProfilePicture'])->name('profile.update-picture');
