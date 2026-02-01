@@ -36,9 +36,12 @@
                         @endif
                     </div>
                     @if($isOnboarded)
-                    <div class="text-xs" style="color: red; margin-top: 0.5rem;">
-                        <strong>Document Type Allowed:</strong> Images (all types)<br>
-                        <strong>Document Size Allowed:</strong> Maximum 5MB
+                    <div class="text-xs" style="margin-top: 0.5rem;">
+                        @if($officer->profile_picture_updated_at)
+                            <span class="text-secondary-foreground">Last updated: <strong class="text-mono">{{ $officer->profile_picture_updated_at->format('d/m/Y') }}</strong></span><br>
+                        @endif
+                        <span style="color: red;"><strong>Document Type Allowed:</strong> Images (all types)<br>
+                        <strong>Document Size Allowed:</strong> Maximum 5MB</span>
                     </div>
                     @endif
                     <div class="flex flex-col gap-2 grow">
