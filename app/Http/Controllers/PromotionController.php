@@ -395,10 +395,29 @@ class PromotionController extends Controller
                 }
 
                 // Update officer’s rank and reset date_of_present_appointment for future eligibility calculations.
+                // Get the corresponding grade level for the new rank
+                $toGradeLevel = $promotionService->getGradeLevelForRank($toRank);
+
+                // Update officer's rank, grade level, date_of_present_appointment, and profile picture requirement.
                 $officer->update([
                     'substantive_rank' => $toRank,
+                    'salary_grade_level' => $toGradeLevel,
                     'date_of_present_appointment' => $promotionDate,
+                    'profile_picture_required_after_promotion_at' => $promotionDate,
                 ]);
+
+                // Notify officer about profile picture requirement (in-app + email)
+                if ($officer->user) {
+                    app(NotificationService::class)->notify(
+                        $officer->user,
+                        'profile_picture_update_required',
+                        'Profile Picture Update Required',
+                        'Your promotion has been approved. Please update your profile picture to continue using all officer services.',
+                        'officer',
+                        $officer->id,
+                        false
+                    );
+                }
 
                 $createdOrUpdated++;
             }

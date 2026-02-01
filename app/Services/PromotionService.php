@@ -61,6 +61,28 @@ class PromotionService
     }
 
     /**
+     * Rank to Grade Level mapping.
+     */
+    private const RANK_TO_GRADE_LEVEL = [
+        'CGC' => 'GL 18',
+        'DCG' => 'GL 17',
+        'ACG' => 'GL 16',
+        'CC' => 'GL 15',
+        'DC' => 'GL 14',
+        'AC' => 'GL 13',
+        'CSC' => 'GL 12',
+        'SC' => 'GL 11',
+        'DSC' => 'GL 10',
+        'ASC I' => 'GL 09',
+        'ASC II' => 'GL 08',
+        'IC' => 'GL 07',
+        'AIC' => 'GL 06',
+        'CA I' => 'GL 05',
+        'CA II' => 'GL 04',
+        'CA III' => 'GL 03',
+    ];
+
+    /**
      * Get the next rank (promotion) for the provided rank.
      * Returns null if rank is unknown or already at the top.
      */
@@ -80,6 +102,21 @@ class PromotionService
         $next = array_search($targetOrder, self::RANK_ORDER, true);
 
         return $next === false ? null : (string) $next;
+    }
+
+    /**
+     * Get the grade level for a given rank.
+     * Returns null if rank is unknown.
+     */
+    public function getGradeLevelForRank(?string $rank): ?string
+    {
+        if (empty($rank)) {
+            return null;
+        }
+
+        $abbr = $this->normalizeRankToAbbreviation($rank);
+        
+        return self::RANK_TO_GRADE_LEVEL[$abbr] ?? null;
     }
 }
 
