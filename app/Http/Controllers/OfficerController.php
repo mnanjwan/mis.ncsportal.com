@@ -1124,7 +1124,12 @@ class OfficerController extends Controller
             $officer->date_of_first_appointment &&
             $officer->nextOfKin()->where('is_primary', true)->exists();
 
-        if (!$isOnboarded) {
+        // Allow profile picture upload if:
+        // 1. Officer has completed onboarding, OR
+        // 2. Officer needs to update profile picture after promotion (even if not fully onboarded)
+        $needsPromotionPictureUpdate = $officer->needsProfilePictureUpdateAfterPromotion();
+        
+        if (!$isOnboarded && !$needsPromotionPictureUpdate) {
             return response()->json(['message' => 'You can only change your profile picture after completing onboarding.'], 403);
         }
 
