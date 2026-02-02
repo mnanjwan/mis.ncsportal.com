@@ -399,11 +399,13 @@ class PromotionController extends Controller
                 $toGradeLevel = $promotionService->getGradeLevelForRank($toRank);
 
                 // Update officer's rank, grade level, date_of_present_appointment, and profile picture requirement.
+                // Clear profile_picture_updated_at to force a new upload after promotion.
                 $officer->update([
                     'substantive_rank' => $toRank,
                     'salary_grade_level' => $toGradeLevel,
                     'date_of_present_appointment' => $promotionDate,
                     'profile_picture_required_after_promotion_at' => $promotionDate,
+                    'profile_picture_updated_at' => null, // Force new picture upload
                 ]);
 
                 // Notify officer about profile picture requirement (in-app + email)

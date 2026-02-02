@@ -50,8 +50,10 @@ class Promotion extends Model
 
             $requiredAt = $promotion->promotion_date ?? now();
 
+            // Clear profile_picture_updated_at to force a new upload after promotion
             $officer->forceFill([
                 'profile_picture_required_after_promotion_at' => $requiredAt,
+                'profile_picture_updated_at' => null, // Force new picture upload
             ])->saveQuietly();
 
             // Notify officer (in-app + email via queued job).
