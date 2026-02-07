@@ -730,17 +730,18 @@ Route::middleware('auth')->group(function () {
         Route::post('/assignments/{assignment}/receive', [FleetAssignmentController::class, 'receive'])->middleware('role:Area Controller')->name('assignments.receive');
 
         // Requests
-        Route::get('/requests', [FleetRequestController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|Area Controller|CC T&L|DCG FATS|ACG TS|CGC')->name('requests.index');
-        Route::get('/requests/create', [FleetRequestController::class, 'create'])->middleware('role:CD')->name('requests.create');
-        Route::post('/requests', [FleetRequestController::class, 'store'])->middleware('role:CD')->name('requests.store');
-        Route::get('/requests/{fleetRequest}', [FleetRequestController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|Area Controller|CC T&L|DCG FATS|ACG TS|CGC')->name('requests.show');
-        Route::post('/requests/{fleetRequest}/submit', [FleetRequestController::class, 'submit'])->middleware('role:CD')->name('requests.submit');
+        Route::get('/requests', [FleetRequestController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|Area Controller|OC Workshop|Staff Officer T&L|CC T&L|DCG FATS|ACG TS|CGC')->name('requests.index');
+        Route::get('/requests/create', [FleetRequestController::class, 'create'])->middleware('role:CD|Area Controller|OC Workshop|Staff Officer T&L|CC T&L')->name('requests.create');
+        Route::post('/requests', [FleetRequestController::class, 'store'])->middleware('role:CD|Area Controller|OC Workshop|Staff Officer T&L|CC T&L')->name('requests.store');
+        Route::get('/requests/{fleetRequest}', [FleetRequestController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|Area Controller|OC Workshop|Staff Officer T&L|CC T&L|DCG FATS|ACG TS|CGC')->name('requests.show');
+        Route::post('/requests/{fleetRequest}/submit', [FleetRequestController::class, 'submit'])->middleware('role:CD|Area Controller|OC Workshop|Staff Officer T&L|CC T&L')->name('requests.submit');
         Route::post('/requests/{fleetRequest}/act', [FleetRequestController::class, 'act'])->middleware('role:Area Controller|O/C T&L|Transport Store/Receiver|ACG TS|DCG FATS|CGC')->name('requests.act');
         Route::post('/requests/{fleetRequest}/cc-tl/propose', [FleetRequestController::class, 'ccTlPropose'])->middleware('role:CC T&L')->name('requests.cc-tl.propose');
         Route::post('/requests/{fleetRequest}/cc-tl/release', [FleetRequestController::class, 'ccTlRelease'])->middleware('role:CC T&L')->name('requests.cc-tl.release');
 
         // Reports
         Route::get('/reports/returns', [FleetReportsController::class, 'returnsReport'])->middleware('role:CC T&L|CD')->name('reports.returns');
+        Route::get('/reports/serviceability', [FleetReportsController::class, 'serviceabilityReport'])->middleware('role:CD|CC T&L')->name('reports.serviceability');
     });
 
     // Establishment Routes

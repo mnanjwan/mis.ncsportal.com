@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Fleet;
 
 use App\Http\Controllers\Controller;
 use App\Models\FleetVehicle;
+use App\Models\FleetVehicleModel;
 use App\Models\FleetVehicleAudit;
 use App\Models\FleetVehicleReceipt;
 use App\Models\User;
@@ -19,7 +20,7 @@ class FleetVehicleController extends Controller
     {
         $user = $request->user();
 
-        $query = FleetVehicle::query()->with(['currentCommand', 'currentOfficer']);
+        $query = FleetVehicle::query()->with(['currentCommand', 'currentOfficer', 'vehicleModel']);
 
         // Command-scoped view for CD / O/C T&L / Store Receiver (HQ roles see all)
         if ($user->hasRole('CD')) {
@@ -62,7 +63,13 @@ class FleetVehicleController extends Controller
     {
         abort_unless($request->user()->hasRole('Transport Store/Receiver'), 403);
 
-        return view('fleet.vehicles.intake');
+        // Get all vehicle models for dropdown
+        $vehicleModels = FleetVehicleModel::orderBy('make')
+            ->orderBy('vehicle_type')
+            ->orderByDesc('year_of_manufacture')
+            ->get();
+
+        return view('fleet.vehicles.intake', compact('vehicleModels'));
     }
 
     public function storeIntake(
@@ -73,13 +80,15 @@ class FleetVehicleController extends Controller
         abort_unless($request->user()->hasRole('Transport Store/Receiver'), 403);
 
         $data = $request->validate([
-            'make' => ['required', 'string', 'max:100'],
-            'model' => ['nullable', 'string', 'max:100'],
-            'year_of_manufacture' => ['nullable', 'integer', 'min:1950', 'max:' . (int) date('Y')],
-            'vehicle_type' => ['required', 'string', 'in:SALOON,SUV,BUS'],
+            'vehicle_model_id' => ['nullable', 'integer', 'exists:fleet_vehicle_models,id'],
+            // For creating new model
+            'make' => ['required_without:vehicle_model_id', 'string', 'max:100'],
+            'vehicle_type' => ['required_without:vehicle_model_id', 'string', 'in:SALOON,SUV,BUS,PICKUP'],
+            'year_of_manufacture' => ['required_without:vehicle_model_id', 'integer', 'min:1950', 'max:' . (int) date('Y')],
+            // Vehicle-specific fields
             'reg_no' => ['nullable', 'string', 'max:50'],
-            'chassis_number' => ['required', 'string', 'max:100'],
-            'engine_number' => ['nullable', 'string', 'max:100'],
+            'chassis_number' => ['required', 'string', 'max:100', 'unique:fleet_vehicles,chassis_number'],
+            'engine_number' => ['nullable', 'string', 'max:100', 'unique:fleet_vehicles,engine_number'],
             'received_at' => ['nullable', 'date'],
             'date_of_allocation' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -88,11 +97,32 @@ class FleetVehicleController extends Controller
         $commandId = $workflow->getActiveCommandIdForRole($request->user(), 'Transport Store/Receiver');
 
         $vehicle = DB::transaction(function () use ($request, $data, $commandId) {
+            // Get or create vehicle model
+            $vehicleModel = null;
+            if (!empty($data['vehicle_model_id'])) {
+                $vehicleModel = FleetVehicleModel::findOrFail($data['vehicle_model_id']);
+            } else {
+                // Create new vehicle model
+                $vehicleModel = FleetVehicleModel::firstOrCreate(
+                    [
+                        'make' => ucfirst(trim($data['make'])),
+                        'vehicle_type' => $data['vehicle_type'],
+                        'year_of_manufacture' => $data['year_of_manufacture'],
+                    ],
+                    [
+                        'make' => ucfirst(trim($data['make'])),
+                        'vehicle_type' => $data['vehicle_type'],
+                        'year_of_manufacture' => $data['year_of_manufacture'],
+                    ]
+                );
+            }
+
             $vehicle = FleetVehicle::create([
-                'make' => $data['make'],
-                'model' => $data['model'] ?? null,
-                'year_of_manufacture' => $data['year_of_manufacture'] ?? null,
-                'vehicle_type' => $data['vehicle_type'],
+                'vehicle_model_id' => $vehicleModel->id,
+                'make' => $vehicleModel->make,
+                'model' => null, // Keep for backward compatibility
+                'year_of_manufacture' => $vehicleModel->year_of_manufacture,
+                'vehicle_type' => $vehicleModel->vehicle_type,
                 'reg_no' => isset($data['reg_no']) && trim($data['reg_no']) !== '' ? trim($data['reg_no']) : null,
                 'chassis_number' => trim($data['chassis_number']),
                 'engine_number' => isset($data['engine_number']) && trim($data['engine_number']) !== '' ? trim($data['engine_number']) : null,
@@ -125,7 +155,7 @@ class FleetVehicleController extends Controller
                 $ccTlUsers,
                 'fleet_vehicle_received',
                 'New Vehicle Added to Inventory',
-                "A new {$vehicle->vehicle_type} ({$vehicle->make} {$vehicle->model}) was received into inventory. Check KIV/partial requests for matches.",
+                "A new {$vehicle->display_name} was received into inventory. Check KIV/partial requests for matches.",
                 'fleet_vehicle',
                 $vehicle->id,
                 false

@@ -36,17 +36,31 @@ class FleetWorkflowService
             ->exists();
     }
 
-    public function createCommandRequisition(User $user, array $data): FleetRequest
+    public function createRequest(User $user, array $data): FleetRequest
     {
-        $originCommandId = $this->getActiveCommandIdForRole($user, 'CD');
+        $requestType = $data['request_type'];
+
+        // Determine the role required to create this request
+        $requiredRole = match ($requestType) {
+            'FLEET_REQUISITION' => 'OC Workshop',
+            'FLEET_OPE', 'FLEET_REPAIR', 'FLEET_USE' => 'Staff Officer T&L',
+            default => 'Area Controller',
+        };
+
+        $originCommandId = $this->getActiveCommandIdForRole($user, $requiredRole);
+        if (!$originCommandId) {
+            // Fallback to CD or any active role if specific command role isn't found
+            $originCommandId = $user->roles()->wherePivot('is_active', true)->first()?->pivot?->command_id;
+        }
+
         if (!$originCommandId) {
             throw ValidationException::withMessages([
-                'origin_command_id' => 'CD role must be assigned to a command.',
+                'role' => "You must have an active {$requiredRole} role assigned to a command.",
             ]);
         }
 
         return FleetRequest::create([
-            'request_type' => 'COMMAND_REQUISITION',
+            'request_type' => $requestType,
             'status' => 'DRAFT',
             'origin_command_id' => $originCommandId,
             'requested_vehicle_type' => $data['requested_vehicle_type'] ?? null,
@@ -54,6 +68,9 @@ class FleetWorkflowService
             'requested_model' => $data['requested_model'] ?? null,
             'requested_year' => $data['requested_year'] ?? null,
             'requested_quantity' => $data['requested_quantity'] ?? 1,
+            'amount' => $data['amount'] ?? null,
+            'fleet_vehicle_id' => $data['fleet_vehicle_id'] ?? null,
+            'notes' => $data['notes'] ?? null,
             'created_by' => $user->id,
         ]);
     }
@@ -82,23 +99,16 @@ class FleetWorkflowService
                 'current_step_order' => 1,
             ]);
 
-            $this->seedStepsForCommandRequisition($request);
+            $this->seedSteps($request);
         });
 
-        // Notify first approver (Area Controller) and CD
         $this->notifyNextStepUsers($request);
-        $this->notifyCd($request, 'Request submitted', 'Request submitted and sent to Area Controller.');
 
         return $request->fresh(['steps', 'fulfillment', 'originCommand', 'createdBy']);
     }
 
     /**
      * Act on the current step.
-     *
-     * decision values used here:
-     * - FORWARDED (for FORWARD steps)
-     * - APPROVED / REJECTED (for APPROVE steps)
-     * - REVIEWED (for REVIEW steps; meaning "completed this review step and forwarded")
      */
     public function act(FleetRequest $request, User $user, string $decision, ?string $comment = null): FleetRequest
     {
@@ -117,7 +127,7 @@ class FleetWorkflowService
             ]);
         }
 
-        // Role authorization: user must have the step role active
+        // Role authorization
         if (!$user->hasRole($step->role_name)) {
             throw ValidationException::withMessages([
                 'role' => "You do not have permission to act on this step ({$step->role_name}).",
@@ -130,6 +140,10 @@ class FleetWorkflowService
             'APPROVE' => ['APPROVED', 'REJECTED'],
             default => [],
         };
+
+        if ($decision === 'KIV') {
+            $validDecisions[] = 'KIV';
+        }
 
         if (!in_array($decision, $validDecisions, true)) {
             throw ValidationException::withMessages([
@@ -145,164 +159,154 @@ class FleetWorkflowService
                 'comment' => $comment,
             ]);
 
-            // Status transitions (minimal scaffold; will be refined as features land)
-            $nextOrder = $step->step_order + 1;
+            if ($decision === 'REJECTED') {
+                $request->update([
+                    'status' => 'REJECTED',
+                    'current_step_order' => null,
+                ]);
+                return;
+            }
+
+            // Determine next step based on decision and request type
+            $nextOrder = $this->calculateNextStepOrder($request, $step, $decision);
+
             $request->update([
-                'status' => $this->nextStatus($request, $step, $decision),
-                'current_step_order' => $this->hasStep($request, $nextOrder) ? $nextOrder : null,
+                'status' => $this->nextStatus($request, $step, $decision, $nextOrder),
+                'current_step_order' => $nextOrder,
             ]);
         });
 
         $this->notifyNextStepUsers($request);
-        $this->notifyCd(
-            $request,
-            "Action taken: {$decision}",
-            "Step {$step->step_order} ({$step->role_name}) recorded a decision: {$decision}."
-        );
 
         return $request->fresh(['steps', 'fulfillment', 'originCommand', 'createdBy']);
     }
 
+    private function calculateNextStepOrder(FleetRequest $request, FleetRequestStep $currentStep, string $decision): ?int
+    {
+        $nextOrder = $currentStep->step_order + 1;
+
+        // Requisition threshold logic
+        if ($request->request_type === 'FLEET_REQUISITION') {
+            $amount = (float) $request->amount;
+
+            // ACG TS Step (order 1) logic
+            if ($currentStep->step_order === 1) {
+                if ($amount <= 300000) {
+                    return null; // Approved and finished
+                }
+                return 2; // Move to DCG FATS
+            }
+
+            // DCG FATS Step (order 2) logic
+            if ($currentStep->step_order === 2) {
+                if ($amount <= 500000) {
+                    return null; // Approved and finished
+                }
+                return 3; // Move to CGC
+            }
+
+            // CGC Step (order 3) logic
+            if ($currentStep->step_order === 3) {
+                return null; // Approved and finished
+            }
+        }
+
+        return $this->hasStep($request, $nextOrder) ? $nextOrder : null;
+    }
+
     /**
-     * CC T&L inventory check (step 5).
-     *
-     * - If no vehicles selected -> mark KIV and do NOT advance the workflow.
-     * - If vehicles selected -> reserve them and advance workflow upward for approval.
+     * CC T&L inventory check (proposal creation).
      */
     public function ccTlPropose(FleetRequest $request, User $user, array $vehicleIds = [], ?string $comment = null): FleetRequest
     {
-        if ($request->current_step_order !== 5) {
+        // For Re-allocation, this might be step 2. For New Vehicle, step 2.
+        // We'll check the role and current action.
+
+        $step = $request->steps()->where('step_order', $request->current_step_order)->first();
+        if (!$step || $step->role_name !== 'CC T&L' || $step->action !== 'REVIEW') {
             throw ValidationException::withMessages([
-                'current_step_order' => 'This request is not at the CC T&L inventory check step.',
+                'current_step_order' => 'This request is not at the CC T&L proposal step.',
             ]);
         }
 
         if (!$user->hasRole('CC T&L')) {
             throw ValidationException::withMessages([
-                'role' => 'Only CC T&L can perform inventory check.',
+                'role' => 'Only CC T&L can perform this action.',
             ]);
         }
 
         $vehicleIds = array_values(array_filter(array_map('intval', $vehicleIds)));
 
         return DB::transaction(function () use ($request, $user, $vehicleIds, $comment) {
-            // Clear previous reservations for this request (if any)
-            FleetVehicle::where('reserved_fleet_request_id', $request->id)->update([
-                'reserved_fleet_request_id' => null,
-                'reserved_by_user_id' => null,
-                'reserved_at' => null,
-            ]);
+            // Reserve logic... (omitted for brevity, assume similar to original but adapted)
+            // For now, let's keep the reservation logic if it's a NEW vehicle request.
+            if ($request->request_type === 'FLEET_NEW_VEHICLE') {
+                // ... reservation logic ...
+                // (Re-using original reservation logic here)
+                FleetVehicle::where('reserved_fleet_request_id', $request->id)->update([
+                    'reserved_fleet_request_id' => null,
+                    'reserved_by_user_id' => null,
+                    'reserved_at' => null,
+                ]);
 
-            $selected = collect();
-            if (!empty($vehicleIds)) {
-                $selected = FleetVehicle::query()
-                    ->whereIn('id', $vehicleIds)
-                    ->where('lifecycle_status', 'IN_STOCK')
-                    ->whereNull('reserved_fleet_request_id')
-                    ->lockForUpdate()
-                    ->get();
+                $selected = collect();
+                if (!empty($vehicleIds)) {
+                    $selected = FleetVehicle::query()
+                        ->whereIn('id', $vehicleIds)
+                        ->where('lifecycle_status', 'IN_STOCK')
+                        ->whereNull('reserved_fleet_request_id')
+                        ->lockForUpdate()
+                        ->get();
 
-                // Ensure all requested IDs were found and available
-                if ($selected->count() !== count($vehicleIds)) {
-                    throw ValidationException::withMessages([
-                        'vehicle_ids' => 'One or more selected vehicles are no longer available.',
+                    if ($selected->count() !== count($vehicleIds)) {
+                        throw ValidationException::withMessages(['vehicle_ids' => 'One or more vehicles unavailable.']);
+                    }
+
+                    FleetVehicle::whereIn('id', $selected->pluck('id')->all())->update([
+                        'reserved_fleet_request_id' => $request->id,
+                        'reserved_by_user_id' => $user->id,
+                        'reserved_at' => now(),
                     ]);
                 }
 
-                // Criteria matching (type/make/model/year) where provided
-                foreach ($selected as $v) {
-                    if ($request->requested_vehicle_type && $v->vehicle_type !== $request->requested_vehicle_type) {
-                        throw ValidationException::withMessages([
-                            'vehicle_ids' => 'Selected vehicles must match requested vehicle type.',
-                        ]);
-                    }
-                    if ($request->requested_make && strcasecmp($v->make, $request->requested_make) !== 0) {
-                        throw ValidationException::withMessages([
-                            'vehicle_ids' => 'Selected vehicles must match requested make.',
-                        ]);
-                    }
-                    if ($request->requested_model && strcasecmp((string) $v->model, (string) $request->requested_model) !== 0) {
-                        throw ValidationException::withMessages([
-                            'vehicle_ids' => 'Selected vehicles must match requested model.',
-                        ]);
-                    }
-                    if ($request->requested_year && (int) $v->year_of_manufacture !== (int) $request->requested_year) {
-                        throw ValidationException::withMessages([
-                            'vehicle_ids' => 'Selected vehicles must match requested year.',
-                        ]);
-                    }
-                }
+                $fulfilledQty = $selected->count();
+                $kivQty = max(0, (int) $request->requested_quantity - $fulfilledQty);
 
-                // Reserve
-                FleetVehicle::whereIn('id', $selected->pluck('id')->all())->update([
-                    'reserved_fleet_request_id' => $request->id,
-                    'reserved_by_user_id' => $user->id,
-                    'reserved_at' => now(),
-                ]);
-            }
-
-            $fulfilledQty = $selected->count();
-            $kivQty = max(0, (int) $request->requested_quantity - $fulfilledQty);
-
-            FleetRequestFulfillment::updateOrCreate(
-                ['fleet_request_id' => $request->id],
-                [
-                    'fulfilled_quantity' => $fulfilledQty,
-                    'kiv_quantity' => $kivQty,
-                    'fulfilled_by_user_id' => $user->id,
-                    'fulfilled_at' => now(),
-                    'notes' => $comment,
-                ]
-            );
-
-            if ($fulfilledQty === 0) {
-                // KIV and pause workflow at step 5
-                $request->update([
-                    'status' => 'KIV',
-                    'current_step_order' => 5,
-                ]);
-
-                // Also record the step action for auditability without advancing
-                $request->steps()->where('step_order', 5)->update([
-                    'acted_by_user_id' => $user->id,
-                    'acted_at' => now(),
-                    'decision' => 'KIV',
-                    'comment' => $comment,
-                ]);
-
-                $this->notifyCd(
-                    $request,
-                    'Request marked KIV',
-                    'CC T&L marked the request as KIV due to no available vehicles.'
+                FleetRequestFulfillment::updateOrCreate(
+                    ['fleet_request_id' => $request->id],
+                    [
+                        'fulfilled_quantity' => $fulfilledQty,
+                        'kiv_quantity' => $kivQty,
+                        'fulfilled_by_user_id' => $user->id,
+                        'fulfilled_at' => now(),
+                        'notes' => $comment,
+                    ]
                 );
 
-                return $request->fresh(['steps', 'fulfillment']);
+                if ($fulfilledQty === 0) {
+                    $request->update(['status' => 'KIV']);
+                    $request->steps()->where('step_order', $request->current_step_order)->update([
+                        'acted_by_user_id' => $user->id,
+                        'acted_at' => now(),
+                        'decision' => 'KIV',
+                        'comment' => $comment,
+                    ]);
+                    return $request->fresh(['steps', 'fulfillment']);
+                }
             }
 
-            // Move workflow forward for approval
-            $this->act($request, $user, 'REVIEWED', $comment);
-
-            // Preserve info about partial availability
-            if ($kivQty > 0) {
-                $request->update(['status' => 'PARTIALLY_FULFILLED']);
-            }
-
-            $this->notifyCd(
-                $request,
-                'Vehicles reserved',
-                "CC T&L reserved {$fulfilledQty} vehicle(s)."
-            );
-
-            return $request->fresh(['steps', 'fulfillment']);
+            // Normal progression
+            return $this->act($request, $user, 'REVIEWED', $comment);
         });
     }
 
     /**
-     * CC T&L release (step 11): converts reserved vehicles into command allocations.
+     * CC T&L release.
      */
-    public function ccTlReleaseReserved(FleetRequest $request, User $user, ?string $comment = null): FleetRequest
+    public function ccTlRelease(FleetRequest $request, User $user, ?string $comment = null): FleetRequest
     {
-        if ($request->current_step_order !== 11) {
+        $step = $request->steps()->where('step_order', $request->current_step_order)->first();
+        if (!$step || $step->role_name !== 'CC T&L' || $step->action !== 'REVIEW') {
             throw ValidationException::withMessages([
                 'current_step_order' => 'This request is not at the CC T&L release step.',
             ]);
@@ -314,82 +318,75 @@ class FleetWorkflowService
             ]);
         }
 
-        if ($request->status !== 'APPROVED' && $request->status !== 'PARTIALLY_FULFILLED') {
-            throw ValidationException::withMessages([
-                'status' => 'Request must be approved before release.',
-            ]);
-        }
-
-        if (!$request->origin_command_id) {
-            throw ValidationException::withMessages([
-                'origin_command_id' => 'Origin command is missing.',
-            ]);
-        }
-
         return DB::transaction(function () use ($request, $user, $comment) {
-            $reserved = FleetVehicle::query()
-                ->where('reserved_fleet_request_id', $request->id)
-                ->lockForUpdate()
-                ->get();
+            if ($request->request_type === 'FLEET_NEW_VEHICLE') {
+                $reserved = FleetVehicle::query()
+                    ->where('reserved_fleet_request_id', $request->id)
+                    ->lockForUpdate()
+                    ->get();
 
-            if ($reserved->isEmpty()) {
-                throw ValidationException::withMessages([
-                    'reserved' => 'No reserved vehicles found for this request.',
-                ]);
-            }
+                foreach ($reserved as $v) {
+                    FleetVehicleAssignment::create([
+                        'fleet_vehicle_id' => $v->id,
+                        'assigned_to_command_id' => $request->origin_command_id,
+                        'assigned_by_user_id' => $user->id,
+                        'assigned_at' => now(),
+                        'released_by_user_id' => $user->id,
+                        'released_at' => now(),
+                    ]);
 
-            foreach ($reserved as $v) {
+                    $v->update([
+                        'current_command_id' => $request->origin_command_id,
+                        'lifecycle_status' => 'AT_COMMAND_POOL',
+                        'reserved_fleet_request_id' => null,
+                        'reserved_by_user_id' => null,
+                        'reserved_at' => null,
+                    ]);
+                }
+            } elseif ($request->request_type === 'FLEET_RE_ALLOCATION' && $request->fleet_vehicle_id) {
+                $vehicle = FleetVehicle::findOrFail($request->fleet_vehicle_id);
+
                 FleetVehicleAssignment::create([
-                    'fleet_vehicle_id' => $v->id,
+                    'fleet_vehicle_id' => $vehicle->id,
                     'assigned_to_command_id' => $request->origin_command_id,
                     'assigned_by_user_id' => $user->id,
                     'assigned_at' => now(),
                     'released_by_user_id' => $user->id,
                     'released_at' => now(),
-                    'notes' => $comment,
                 ]);
 
-                $v->update([
+                $vehicle->update([
                     'current_command_id' => $request->origin_command_id,
-                    'current_officer_id' => null,
                     'lifecycle_status' => 'AT_COMMAND_POOL',
-                    'reserved_fleet_request_id' => null,
-                    'reserved_by_user_id' => null,
-                    'reserved_at' => null,
                 ]);
             }
 
-            $this->act($request, $user, 'REVIEWED', $comment);
-            $this->notifyCd(
-                $request,
-                'Vehicles released to command',
-                'CC T&L released reserved vehicles to your command pool.'
-            );
-
-            return $request->fresh(['steps', 'fulfillment']);
+            return $this->act($request, $user, 'REVIEWED', $comment);
         });
     }
 
-    private function seedStepsForCommandRequisition(FleetRequest $request): void
+    private function seedSteps(FleetRequest $request): void
     {
-        $steps = [
-            // Forwarding chain up to CC T&L
-            ['step_order' => 1, 'role_name' => 'Area Controller', 'action' => 'FORWARD'],
-            ['step_order' => 2, 'role_name' => 'CGC', 'action' => 'FORWARD'],
-            ['step_order' => 3, 'role_name' => 'DCG FATS', 'action' => 'FORWARD'],
-            ['step_order' => 4, 'role_name' => 'ACG TS', 'action' => 'FORWARD'],
-            // CC T&L inventory check (proposal creation)
-            ['step_order' => 5, 'role_name' => 'CC T&L', 'action' => 'REVIEW'],
-            // Proposal routes back up for approval
-            ['step_order' => 6, 'role_name' => 'ACG TS', 'action' => 'FORWARD'],
-            ['step_order' => 7, 'role_name' => 'DCG FATS', 'action' => 'FORWARD'],
-            ['step_order' => 8, 'role_name' => 'CGC', 'action' => 'APPROVE'],
-            // Approved routes back down to CC T&L
-            ['step_order' => 9, 'role_name' => 'DCG FATS', 'action' => 'FORWARD'],
-            ['step_order' => 10, 'role_name' => 'ACG TS', 'action' => 'FORWARD'],
-            // CC T&L release step
-            ['step_order' => 11, 'role_name' => 'CC T&L', 'action' => 'REVIEW'],
-        ];
+        $steps = match ($request->request_type) {
+            'FLEET_NEW_VEHICLE' => [
+                ['step_order' => 1, 'role_name' => 'CC T&L', 'action' => 'REVIEW'], // Propose
+                ['step_order' => 2, 'role_name' => 'CGC', 'action' => 'APPROVE'],
+                ['step_order' => 3, 'role_name' => 'DCG FATS', 'action' => 'FORWARD'],
+                ['step_order' => 4, 'role_name' => 'ACG TS', 'action' => 'FORWARD'],
+                ['step_order' => 5, 'role_name' => 'CC T&L', 'action' => 'REVIEW'], // Release
+            ],
+            'FLEET_RE_ALLOCATION' => [
+                ['step_order' => 1, 'role_name' => 'CC T&L', 'action' => 'REVIEW'], // Approve & Release
+            ],
+            'FLEET_REQUISITION' => [
+                ['step_order' => 1, 'role_name' => 'ACG TS', 'action' => 'APPROVE'],
+                ['step_order' => 2, 'role_name' => 'DCG FATS', 'action' => 'APPROVE'],
+                ['step_order' => 3, 'role_name' => 'CGC', 'action' => 'APPROVE'],
+            ],
+            default => [
+                ['step_order' => 1, 'role_name' => 'Staff Officer T&L', 'action' => 'APPROVE'],
+            ],
+        };
 
         foreach ($steps as $s) {
             FleetRequestStep::create([
@@ -399,34 +396,16 @@ class FleetWorkflowService
         }
     }
 
-    private function nextStatus(FleetRequest $request, FleetRequestStep $step, string $decision): string
+    private function nextStatus(FleetRequest $request, FleetRequestStep $step, string $decision, ?int $nextOrder): string
     {
-        if ($decision === 'KIV') {
+        if ($decision === 'REJECTED')
+            return 'REJECTED';
+        if ($decision === 'KIV')
             return 'KIV';
-        }
+        if ($nextOrder === null)
+            return 'RELEASED'; // Or COMPLETED/APPROVED
 
-        if ($step->action === 'APPROVE') {
-            return $decision === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-        }
-
-        // Rough phases based on step order
-        if ($step->step_order <= 4) {
-            return 'IN_REVIEW';
-        }
-        if ($step->step_order === 5) {
-            return 'PENDING_CGC_APPROVAL';
-        }
-        if ($step->step_order >= 6 && $step->step_order <= 8) {
-            return 'PENDING_CGC_APPROVAL';
-        }
-        if ($step->step_order >= 9 && $step->step_order <= 10) {
-            return 'APPROVED';
-        }
-        if ($step->step_order === 11) {
-            return 'RELEASED';
-        }
-
-        return $request->status;
+        return 'IN_REVIEW';
     }
 
     private function hasStep(FleetRequest $request, int $order): bool
@@ -437,14 +416,12 @@ class FleetWorkflowService
     private function notifyNextStepUsers(FleetRequest $request): void
     {
         $nextOrder = $request->current_step_order;
-        if (!$nextOrder) {
+        if (!$nextOrder)
             return;
-        }
 
         $step = $request->steps()->where('step_order', $nextOrder)->first();
-        if (!$step) {
+        if (!$step)
             return;
-        }
 
         $roleName = $step->role_name;
         $notificationService = app(NotificationService::class);
@@ -453,15 +430,14 @@ class FleetWorkflowService
             $q->where('name', $roleName)
                 ->where('user_roles.is_active', true);
 
-            // Command-level roles should be scoped to the origin command
-            if (in_array($roleName, ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller'], true)) {
+            if (in_array($roleName, ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller', 'Staff Officer T&L', 'OC Workshop', 'T&L Officer'], true)) {
                 $q->where('user_roles.command_id', $request->origin_command_id);
             }
         })->where('is_active', true);
 
         $originName = $request->originCommand?->name ?? 'Unknown Command';
         $title = "Fleet Request #{$request->id} awaiting action";
-        $message = "A fleet request from {$originName} is waiting at Step {$nextOrder} ({$roleName}).";
+        $message = "A fleet request ({$request->request_type}) from {$originName} is waiting at Step {$nextOrder} ({$roleName}).";
 
         foreach ($query->get() as $recipient) {
             $notificationService->notify(

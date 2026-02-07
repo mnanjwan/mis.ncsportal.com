@@ -45,7 +45,13 @@
         <div class="kt-card">
             <div class="kt-card-header flex items-center justify-between">
                 <h3 class="kt-card-title">Inbox</h3>
-                @if(auth()->user()->hasRole('CD'))
+                @php
+                    $user = auth()->user();
+                    $creatorRoles = ['CD', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'CC T&L'];
+                    $canCreate = false;
+                    foreach($creatorRoles as $r) { if($user->hasRole($r)) { $canCreate = true; break; } }
+                @endphp
+                @if($canCreate)
                     <a class="kt-btn kt-btn-primary" href="{{ route('fleet.requests.create') }}">
                         <i class="ki-filled ki-plus"></i>
                         New Request
@@ -61,10 +67,9 @@
                             <thead>
                                 <tr>
                                     <th class="text-left">ID</th>
-                                    <th class="text-left">Command</th>
-                                    <th class="text-left">Type</th>
-                                    <th class="text-left">Make/Model</th>
-                                    <th class="text-left">Qty</th>
+                                    <th class="text-left">Origin</th>
+                                    <th class="text-left">Request Type</th>
+                                    <th class="text-left">Details</th>
                                     <th class="text-left">Status</th>
                                     <th class="text-left">Action</th>
                                 </tr>
@@ -74,10 +79,19 @@
                                     <tr>
                                         <td>#{{ $req->id }}</td>
                                         <td>{{ $req->originCommand->name ?? 'N/A' }}</td>
-                                        <td>{{ $req->requested_vehicle_type }}</td>
-                                        <td>{{ trim(($req->requested_make ?? '') . ' ' . ($req->requested_model ?? '')) ?: '-' }}</td>
-                                        <td>{{ $req->requested_quantity }}</td>
-                                        <td>{{ $req->status }}</td>
+                                        <td><span class="text-xs font-semibold uppercase">{{ str_replace('_', ' ', $req->request_type) }}</span></td>
+                                        <td>
+                                            @if($req->request_type === 'FLEET_NEW_VEHICLE')
+                                                {{ $req->requested_quantity }}x {{ $req->requested_vehicle_type }}
+                                            @elseif($req->amount)
+                                                ₦{{ number_format($req->amount, 2) }}
+                                            @elseif($req->fleet_vehicle_id)
+                                                {{ $req->vehicle->reg_no ?? '-' }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td><span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">{{ $req->status }}</span></td>
                                         <td>
                                             <a class="kt-btn kt-btn-sm" href="{{ route('fleet.requests.show', $req) }}">Open</a>
                                         </td>
@@ -103,30 +117,37 @@
                             <thead>
                                 <tr>
                                     <th class="text-left">ID</th>
-                                    <th class="text-left">Type</th>
-                                    <th class="text-left">Make/Model</th>
-                                    <th class="text-left">Qty</th>
+                                    <th class="text-left">Request Type</th>
+                                    <th class="text-left">Details</th>
                                     <th class="text-left">Status</th>
-                                    <th class="text-left">Submit</th>
+                                    <th class="text-left">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($myRequests as $req)
                                     <tr>
                                         <td>#{{ $req->id }}</td>
-                                        <td>{{ $req->requested_vehicle_type }}</td>
-                                        <td>{{ trim(($req->requested_make ?? '') . ' ' . ($req->requested_model ?? '')) ?: '-' }}</td>
-                                        <td>{{ $req->requested_quantity }}</td>
-                                        <td>{{ $req->status }}</td>
+                                        <td><span class="text-xs font-semibold uppercase">{{ str_replace('_', ' ', $req->request_type) }}</span></td>
+                                        <td>
+                                            @if($req->request_type === 'FLEET_NEW_VEHICLE')
+                                                {{ $req->requested_quantity }}x {{ $req->requested_vehicle_type }}
+                                            @elseif($req->amount)
+                                                ₦{{ number_format($req->amount, 2) }}
+                                            @elseif($req->fleet_vehicle_id)
+                                                {{ $req->vehicle->reg_no ?? '-' }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td><span class="px-2 py-0.5 rounded-full bg-muted text-xs">{{ $req->status }}</span></td>
                                         <td>
                                             @if($req->status === 'DRAFT')
-                                                <form method="POST" action="{{ route('fleet.requests.submit', $req) }}">
+                                                <form method="POST" action="{{ route('fleet.requests.submit', $req) }}" class="inline submit-request-form" data-request-id="{{ $req->id }}" data-request-type="{{ str_replace('_', ' ', $req->request_type) }}">
                                                     @csrf
-                                                    <button class="kt-btn kt-btn-sm kt-btn-primary">Submit</button>
+                                                    <button class="kt-btn kt-btn-sm kt-btn-primary" type="submit">Submit</button>
                                                 </form>
-                                            @else
-                                                <a class="kt-btn kt-btn-sm" href="{{ route('fleet.requests.show', $req) }}">Open</a>
                                             @endif
+                                            <a class="kt-btn kt-btn-sm" href="{{ route('fleet.requests.show', $req) }}">View</a>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -137,5 +158,112 @@
             </div>
         </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div class="kt-modal hidden" data-kt-modal="true" id="confirm-modal">
+        <div class="kt-modal-content max-w-[500px]">
+            <div class="kt-modal-header py-4 px-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center size-10 rounded-full bg-warning/10" id="confirm-modal-icon">
+                        <i class="ki-filled ki-information text-warning text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-foreground" id="confirm-modal-title">Confirm Action</h3>
+                </div>
+                <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                    <i class="ki-filled ki-cross"></i>
+                </button>
+            </div>
+            <div class="kt-modal-body py-5 px-5">
+                <p class="text-sm text-secondary-foreground whitespace-pre-line" id="confirm-modal-message">
+                    Are you sure you want to proceed?
+                </p>
+            </div>
+            <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true" id="confirm-modal-cancel">
+                    Cancel
+                </button>
+                <button class="kt-btn kt-btn-primary" id="confirm-modal-confirm">
+                    <span class="kt-menu-icon"><i class="ki-filled ki-check"></i></span>
+                    <span>Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- End of Confirmation Modal -->
+
+    @push('scripts')
+    <script>
+        function showConfirmModal(title, message, onConfirm, type = 'warning') {
+            const modal = document.getElementById('confirm-modal');
+            const modalTitle = document.getElementById('confirm-modal-title');
+            const modalMessage = document.getElementById('confirm-modal-message');
+            const confirmBtn = document.getElementById('confirm-modal-confirm');
+            const cancelBtn = document.getElementById('confirm-modal-cancel');
+            const iconDiv = document.getElementById('confirm-modal-icon');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            if (type === 'error') {
+                iconDiv.className = 'flex items-center justify-center size-10 rounded-full bg-danger/10';
+                iconDiv.innerHTML = '<i class="ki-filled ki-information text-danger text-xl"></i>';
+                confirmBtn.className = 'kt-btn kt-btn-danger';
+            } else if (type === 'success') {
+                iconDiv.className = 'flex items-center justify-center size-10 rounded-full bg-success/10';
+                iconDiv.innerHTML = '<i class="ki-filled ki-check-circle text-success text-xl"></i>';
+                confirmBtn.className = 'kt-btn kt-btn-success';
+            } else {
+                iconDiv.className = 'flex items-center justify-center size-10 rounded-full bg-warning/10';
+                iconDiv.innerHTML = '<i class="ki-filled ki-information text-warning text-xl"></i>';
+                confirmBtn.className = 'kt-btn kt-btn-primary';
+            }
+
+            confirmBtn.onclick = () => {
+                onConfirm();
+                if (typeof KTModal !== 'undefined') {
+                    const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+                    modalInstance.hide();
+                } else {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+            };
+
+            if (typeof KTModal !== 'undefined') {
+                const modalInstance = KTModal.getInstance(modal) || new KTModal(modal);
+                modalInstance.show();
+            } else {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.submit-request-form').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const requestId = form.getAttribute('data-request-id');
+                    const requestType = form.getAttribute('data-request-type');
+
+                    showConfirmModal(
+                        'Submit Request',
+                        'Are you sure you want to submit Request #' + requestId + ' (' + requestType + ')?\n\n' +
+                        'WHAT WILL HAPPEN:\n' +
+                        '• This request will be submitted into the workflow\n' +
+                        '• It will be sent to the next approver in the chain\n' +
+                        '• You will no longer be able to edit the request\n' +
+                        '• Notifications will be sent to the next step approver\n\n' +
+                        'WHY:\n' +
+                        'Submitting the request initiates the approval process. Once submitted, the request moves through the workflow based on its type and amount (for requisitions).',
+                        function() {
+                            form.submit();
+                        },
+                        'warning'
+                    );
+                });
+            });
+        });
+    </script>
+    @endpush
 @endsection
 

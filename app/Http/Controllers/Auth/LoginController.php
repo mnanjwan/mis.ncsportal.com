@@ -41,7 +41,7 @@ class LoginController extends Controller
             }
         }
 
-        if (!$user || !Hash::check($request->password, $user->password_hash ?? $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'username' => ['The provided credentials are incorrect.'],
             ]);

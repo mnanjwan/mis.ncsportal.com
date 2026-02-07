@@ -354,8 +354,10 @@ class OfficerDeletionController extends Controller
                 // Get all assessment IDs for these emoluments
                 $assessmentIds = \App\Models\EmolumentAssessment::whereIn('emolument_id', $emolumentIds)->pluck('id');
                 
-                // Delete emolument validations first (they reference assessments)
+                // Delete emolument audits first (they reference validations), then validations (they reference assessments)
                 if ($assessmentIds->isNotEmpty()) {
+                    $validationIds = \App\Models\EmolumentValidation::whereIn('assessment_id', $assessmentIds)->pluck('id');
+                    \App\Models\EmolumentAudit::whereIn('validation_id', $validationIds)->delete();
                     \App\Models\EmolumentValidation::whereIn('assessment_id', $assessmentIds)->delete();
                 }
                 
@@ -427,15 +429,19 @@ class OfficerDeletionController extends Controller
                 // Get assessment IDs where this user is the assessor
                 $assessmentIds = \App\Models\EmolumentAssessment::where('assessor_id', $userId)->pluck('id');
                 
-                // Delete validations for these assessments first
+                // Delete audits (child of validations) first, then validations for these assessments
                 if ($assessmentIds->isNotEmpty()) {
+                    $validationIds = \App\Models\EmolumentValidation::whereIn('assessment_id', $assessmentIds)->pluck('id');
+                    \App\Models\EmolumentAudit::whereIn('validation_id', $validationIds)->delete();
                     \App\Models\EmolumentValidation::whereIn('assessment_id', $assessmentIds)->delete();
                 }
                 
                 // Delete assessments where this user is the assessor
                 \App\Models\EmolumentAssessment::where('assessor_id', $userId)->delete();
                 
-                // Also delete validations where this user is the validator (for assessments they didn't create)
+                // Delete audits then validations where this user is the validator (for assessments they didn't create)
+                $validatorValidationIds = \App\Models\EmolumentValidation::where('validator_id', $userId)->pluck('id');
+                \App\Models\EmolumentAudit::whereIn('validation_id', $validatorValidationIds)->delete();
                 \App\Models\EmolumentValidation::where('validator_id', $userId)->delete();
             }
 

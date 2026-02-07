@@ -10,6 +10,7 @@ class FleetVehicle extends Model
     use HasFactory;
 
     protected $fillable = [
+        'vehicle_model_id',
         'make',
         'model',
         'year_of_manufacture',
@@ -83,6 +84,24 @@ class FleetVehicle extends Model
     public function audits()
     {
         return $this->hasMany(FleetVehicleAudit::class, 'fleet_vehicle_id');
+    }
+
+    public function vehicleModel()
+    {
+        return $this->belongsTo(FleetVehicleModel::class, 'vehicle_model_id');
+    }
+
+    /**
+     * Get the vehicle display name from model or fallback to make/model/year
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->vehicleModel) {
+            return $this->vehicleModel->display_name;
+        }
+        // Fallback for vehicles without a model
+        $parts = array_filter([$this->make, $this->vehicle_type, $this->year_of_manufacture]);
+        return implode(' ', $parts) ?: 'Unknown Vehicle';
     }
 }
 

@@ -226,7 +226,25 @@
                     @if($expiringSoon->count() > 0)
                         <div class="flex flex-col gap-3">
                             @foreach($expiringSoon as $stock)
-                                <div class="flex items-center justify-between p-3 rounded-lg bg-warning/5 border border-warning/20">
+                                    @php
+                                        $daysUntilExpiry = $stock->getDaysUntilExpiry();
+                                        $warningLevel = $stock->getExpiryWarningLevel();
+                                        $borderClass = match($warningLevel) {
+                                            'expired' => 'border-danger/30 bg-danger/5',
+                                            'critical' => 'border-danger/30 bg-danger/5',
+                                            'warning' => 'border-warning/30 bg-warning/5',
+                                            'caution' => 'border-info/30 bg-info/5',
+                                            default => 'border-warning/20 bg-warning/5'
+                                        };
+                                        $badgeClass = match($warningLevel) {
+                                            'expired' => 'kt-badge-danger',
+                                            'critical' => 'kt-badge-danger',
+                                            'warning' => 'kt-badge-warning',
+                                            'caution' => 'kt-badge-info',
+                                            default => 'kt-badge-warning'
+                                        };
+                                    @endphp
+                                    <div class="flex items-center justify-between p-3 rounded-lg {{ $borderClass }}">
                                     <div class="flex flex-col gap-1">
                                         <span class="text-sm font-semibold text-foreground">
                                             {{ $stock->drug->name ?? 'Unknown' }}
@@ -235,8 +253,18 @@
                                             {{ $stock->getLocationName() }} | Batch: {{ $stock->batch_number ?? 'N/A' }}
                                         </span>
                                     </div>
-                                    <span class="kt-badge kt-badge-warning kt-badge-sm">
-                                        Expires: {{ $stock->expiry_date->format('d M Y') }}
+                                    <span class="kt-badge {{ $badgeClass }} kt-badge-sm">
+                                        @if($daysUntilExpiry !== null && $daysUntilExpiry >= 0)
+                                            @if($daysUntilExpiry === 0)
+                                                Expires today!
+                                            @elseif($daysUntilExpiry === 1)
+                                                1 day left
+                                            @else
+                                                {{ $daysUntilExpiry }} days left
+                                            @endif
+                                        @else
+                                            Expires: {{ $stock->expiry_date->format('d M Y') }}
+                                        @endif
                                     </span>
                                 </div>
                             @endforeach

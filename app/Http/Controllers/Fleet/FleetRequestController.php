@@ -45,9 +45,20 @@ class FleetRequestController extends Controller
 
     public function create(Request $request)
     {
-        abort_unless($request->user()->hasRole('CD'), 403);
+        $user = $request->user();
+        $roles = ['CD', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'CC T&L'];
+        $hasRole = false;
+        foreach ($roles as $role) {
+            if ($user->hasRole($role)) {
+                $hasRole = true;
+                break;
+            }
+        }
+        abort_unless($hasRole, 403);
 
-        return view('fleet.requests.create');
+        $vehicles = FleetVehicle::all(); // For re-allocation/repair etc.
+
+        return view('fleet.requests.create', compact('vehicles'));
     }
 
     public function show(Request $request, FleetRequest $fleetRequest)
@@ -58,19 +69,45 @@ class FleetRequestController extends Controller
             'steps.actedBy',
             'fulfillment',
             'reservedVehicles',
+            'vehicle',
         ]);
 
         $availableVehicles = collect();
-        if ($request->user()->hasRole('CC T&L') && (int) $fleetRequest->current_step_order === 5) {
+        // Check if current step role matches user and if it's a CC T&L proposal step
+        $userRoleNames = $request->user()->roles()->wherePivot('is_active', true)->pluck('name')->toArray();
+        $currentStep = $fleetRequest->steps()->where('step_order', $fleetRequest->current_step_order)->first();
+
+        if ($currentStep && $currentStep->role_name === 'CC T&L' && $currentStep->action === 'REVIEW' && $fleetRequest->request_type === 'FLEET_NEW_VEHICLE') {
             $availableVehicles = FleetVehicle::query()
+                ->with('vehicleModel')
                 ->where('lifecycle_status', 'IN_STOCK')
                 ->whereNull('reserved_fleet_request_id')
-                ->when($fleetRequest->requested_vehicle_type, fn ($q) => $q->where('vehicle_type', $fleetRequest->requested_vehicle_type))
-                ->when($fleetRequest->requested_make, fn ($q) => $q->where('make', $fleetRequest->requested_make))
-                ->when($fleetRequest->requested_model, fn ($q) => $q->where('model', $fleetRequest->requested_model))
-                ->when($fleetRequest->requested_year, fn ($q) => $q->where('year_of_manufacture', $fleetRequest->requested_year))
+                ->when($fleetRequest->requested_vehicle_type, function($q) use ($fleetRequest) {
+                    $q->where(function($query) use ($fleetRequest) {
+                        $query->where('vehicle_type', $fleetRequest->requested_vehicle_type)
+                              ->orWhereHas('vehicleModel', function($vm) use ($fleetRequest) {
+                                  $vm->where('vehicle_type', $fleetRequest->requested_vehicle_type);
+                              });
+                    });
+                })
+                ->when($fleetRequest->requested_make, function($q) use ($fleetRequest) {
+                    $q->where(function($query) use ($fleetRequest) {
+                        $query->where('make', $fleetRequest->requested_make)
+                              ->orWhereHas('vehicleModel', function($vm) use ($fleetRequest) {
+                                  $vm->where('make', $fleetRequest->requested_make);
+                              });
+                    });
+                })
+                ->when($fleetRequest->requested_year, function($q) use ($fleetRequest) {
+                    $q->where(function($query) use ($fleetRequest) {
+                        $query->where('year_of_manufacture', $fleetRequest->requested_year)
+                              ->orWhereHas('vehicleModel', function($vm) use ($fleetRequest) {
+                                  $vm->where('year_of_manufacture', $fleetRequest->requested_year);
+                              });
+                    });
+                })
                 ->orderBy('make')
-                ->orderBy('model')
+                ->orderBy('vehicle_type')
                 ->take(200)
                 ->get();
         }
@@ -80,17 +117,35 @@ class FleetRequestController extends Controller
 
     public function store(Request $request, FleetWorkflowService $service)
     {
-        abort_unless($request->user()->hasRole('CD'), 403);
-
         $data = $request->validate([
-            'requested_vehicle_type' => ['required', 'string', Rule::in(['SALOON', 'SUV', 'BUS'])],
+            'request_type' => [
+                'required',
+                'string',
+                Rule::in([
+                    'FLEET_NEW_VEHICLE',
+                    'FLEET_RE_ALLOCATION',
+                    'FLEET_OPE',
+                    'FLEET_REPAIR',
+                    'FLEET_USE',
+                    'FLEET_REQUISITION'
+                ])
+            ],
+            'requested_vehicle_type' => ['nullable', 'string', Rule::in(['SALOON', 'SUV', 'BUS'])],
             'requested_make' => ['nullable', 'string', 'max:100'],
             'requested_model' => ['nullable', 'string', 'max:100'],
             'requested_year' => ['nullable', 'integer', 'min:1950', 'max:' . (int) date('Y')],
-            'requested_quantity' => ['required', 'integer', 'min:1', 'max:1000'],
+            'requested_quantity' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+            'fleet_vehicle_id' => ['nullable', 'exists:fleet_vehicles,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ]);
 
-        $fleetRequest = $service->createCommandRequisition($request->user(), $data);
+        if ($request->hasFile('document')) {
+            $data['document_path'] = $request->file('document')->store('fleet/requests', 'public');
+        }
+
+        $fleetRequest = $service->createRequest($request->user(), $data);
 
         return redirect()
             ->route('fleet.requests.index')
@@ -99,7 +154,8 @@ class FleetRequestController extends Controller
 
     public function submit(Request $request, FleetRequest $fleetRequest, FleetWorkflowService $service)
     {
-        abort_unless($request->user()->hasRole('CD'), 403);
+        // Permission check: only creator can submit
+        abort_unless((int) $fleetRequest->created_by === (int) $request->user()->id, 403);
 
         $service->submit($fleetRequest, $request->user());
 
@@ -111,7 +167,7 @@ class FleetRequestController extends Controller
     public function act(Request $request, FleetRequest $fleetRequest, FleetWorkflowService $service)
     {
         $data = $request->validate([
-            'decision' => ['required', 'string', Rule::in(['FORWARDED', 'APPROVED', 'REJECTED', 'REVIEWED'])],
+            'decision' => ['required', 'string', Rule::in(['FORWARDED', 'APPROVED', 'REJECTED', 'REVIEWED', 'KIV'])],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -147,7 +203,7 @@ class FleetRequestController extends Controller
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $service->ccTlReleaseReserved($fleetRequest, $request->user(), $data['comment'] ?? null);
+        $service->ccTlRelease($fleetRequest, $request->user(), $data['comment'] ?? null);
 
         return redirect()
             ->route('fleet.requests.show', $fleetRequest)

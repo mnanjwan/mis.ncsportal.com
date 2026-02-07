@@ -95,12 +95,64 @@ class PharmacyStock extends Model
         return $this->expiry_date->between(now(), now()->addDays($days));
     }
 
+    public function isExpiringVerySoon($days = 30): bool
+    {
+        if (!$this->expiry_date) {
+            return false;
+        }
+        return $this->expiry_date->between(now(), now()->addDays($days));
+    }
+
+    public function isExpiringModerately($days = 60): bool
+    {
+        if (!$this->expiry_date) {
+            return false;
+        }
+        return $this->expiry_date->between(now()->addDays(30), now()->addDays($days));
+    }
+
     public function getDaysUntilExpiry(): ?int
     {
         if (!$this->expiry_date) {
             return null;
         }
         return now()->diffInDays($this->expiry_date, false);
+    }
+
+    public function getExpiryWarningLevel(): string
+    {
+        if ($this->isExpired()) {
+            return 'expired';
+        }
+        if ($this->isExpiringVerySoon(30)) {
+            return 'critical';
+        }
+        if ($this->isExpiringModerately(60)) {
+            return 'warning';
+        }
+        if ($this->isExpiringSoon(90)) {
+            return 'caution';
+        }
+        return 'ok';
+    }
+
+    public function getExpiryWarningBadge(): string
+    {
+        $level = $this->getExpiryWarningLevel();
+        $days = $this->getDaysUntilExpiry();
+        
+        switch ($level) {
+            case 'expired':
+                return '<span class="kt-badge kt-badge-danger kt-badge-sm">Expired</span>';
+            case 'critical':
+                return '<span class="kt-badge kt-badge-danger kt-badge-sm">Expires in ' . $days . ' days</span>';
+            case 'warning':
+                return '<span class="kt-badge kt-badge-warning kt-badge-sm">Expires in ' . $days . ' days</span>';
+            case 'caution':
+                return '<span class="kt-badge kt-badge-info kt-badge-sm">Expires in ' . $days . ' days</span>';
+            default:
+                return '';
+        }
     }
 
     public function getLocationName(): string

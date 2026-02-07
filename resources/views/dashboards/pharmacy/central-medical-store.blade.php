@@ -184,22 +184,62 @@
                                         <td>{{ $stock->batch_number ?? '-' }}</td>
                                         <td>
                                             @if($stock->expiry_date)
-                                                <span class="{{ $stock->isExpired() ? 'text-danger' : ($stock->isExpiringSoon() ? 'text-warning' : '') }}">
-                                                    {{ $stock->expiry_date->format('d M Y') }}
-                                                </span>
+                                                @php
+                                                    $daysUntilExpiry = $stock->getDaysUntilExpiry();
+                                                    $warningLevel = $stock->getExpiryWarningLevel();
+                                                    $expiryClass = match($warningLevel) {
+                                                        'expired' => 'text-danger font-semibold',
+                                                        'critical' => 'text-danger font-semibold',
+                                                        'warning' => 'text-warning font-semibold',
+                                                        'caution' => 'text-info font-semibold',
+                                                        default => ''
+                                                    };
+                                                @endphp
+                                                <div class="flex flex-col">
+                                                    <span class="{{ $expiryClass }}">
+                                                        {{ $stock->expiry_date->format('d M Y') }}
+                                                    </span>
+                                                    @if($daysUntilExpiry !== null && $daysUntilExpiry >= 0)
+                                                        <span class="text-xs {{ $expiryClass }}">
+                                                            @if($daysUntilExpiry === 0)
+                                                                Expires today!
+                                                            @elseif($daysUntilExpiry === 1)
+                                                                1 day left
+                                                            @else
+                                                                {{ $daysUntilExpiry }} days left
+                                                            @endif
+                                                        </span>
+                                                    @endif
+                                                </div>
                                             @else
-                                                -
+                                                <span class="text-secondary-foreground">-</span>
                                             @endif
                                         </td>
                                         <td>
                                             @if($stock->isExpired())
-                                                <span class="kt-badge kt-badge-danger kt-badge-sm">Expired</span>
-                                            @elseif($stock->isExpiringSoon())
-                                                <span class="kt-badge kt-badge-warning kt-badge-sm">Expiring Soon</span>
+                                                <span class="kt-badge kt-badge-danger kt-badge-sm">
+                                                    <i class="ki-filled ki-cross-circle"></i> Expired
+                                                </span>
+                                            @elseif($stock->isExpiringVerySoon(30))
+                                                <span class="kt-badge kt-badge-danger kt-badge-sm">
+                                                    <i class="ki-filled ki-information"></i> Critical
+                                                </span>
+                                            @elseif($stock->isExpiringModerately(60))
+                                                <span class="kt-badge kt-badge-warning kt-badge-sm">
+                                                    <i class="ki-filled ki-information"></i> Warning
+                                                </span>
+                                            @elseif($stock->isExpiringSoon(90))
+                                                <span class="kt-badge kt-badge-info kt-badge-sm">
+                                                    <i class="ki-filled ki-information"></i> Caution
+                                                </span>
                                             @elseif($stock->quantity < 10)
-                                                <span class="kt-badge kt-badge-danger kt-badge-sm">Low Stock</span>
+                                                <span class="kt-badge kt-badge-danger kt-badge-sm">
+                                                    <i class="ki-filled ki-arrow-down"></i> Low Stock
+                                                </span>
                                             @else
-                                                <span class="kt-badge kt-badge-success kt-badge-sm">OK</span>
+                                                <span class="kt-badge kt-badge-success kt-badge-sm">
+                                                    <i class="ki-filled ki-check-circle"></i> OK
+                                                </span>
                                             @endif
                                         </td>
                                     </tr>

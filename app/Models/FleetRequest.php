@@ -19,6 +19,11 @@ class FleetRequest extends Model
         'requested_model',
         'requested_year',
         'requested_quantity',
+        'amount',
+        'fleet_vehicle_id',
+        'document_path',
+        'notes',
+        'assigned_to_workshop_at',
         'created_by',
         'submitted_at',
         'current_step_order',
@@ -57,6 +62,11 @@ class FleetRequest extends Model
     public function fulfillment()
     {
         return $this->hasOne(FleetRequestFulfillment::class, 'fleet_request_id');
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(FleetVehicle::class, 'fleet_vehicle_id');
     }
 
     public function reservedVehicles()
