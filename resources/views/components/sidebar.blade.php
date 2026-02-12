@@ -33,6 +33,7 @@
         'Central Medical Store',
         'Command Pharmacist',
         'Area Controller',
+        'OC Workshop',
         'DC Admin',
         // Fleet command-level roles
         'CD',
@@ -392,6 +393,12 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('auditor.dashboard')],
                 ['icon' => 'ki-filled ki-wallet', 'title' => 'Emoluments', 'href' => route('auditor.emoluments')],
+            ];
+            break;
+        case 'OC Workshop':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Fleet Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-plus', 'title' => 'New Request', 'href' => route('fleet.requests.create')],
             ];
             break;
         case 'Area Controller':

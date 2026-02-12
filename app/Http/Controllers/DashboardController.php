@@ -2259,6 +2259,7 @@ class DashboardController extends Controller
             'CD' => 'fleet.cd.dashboard',
             'O/C T&L' => 'fleet.oc-tl.dashboard',
             'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
+            'OC Workshop' => 'fleet.requests.index',
             // Pharmacy
             'Controller Procurement' => 'pharmacy.controller-procurement.dashboard',
             'OC Pharmacy' => 'pharmacy.oc-pharmacy.dashboard',

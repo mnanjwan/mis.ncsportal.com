@@ -128,6 +128,7 @@ class RoleMiddleware
             'CD' => 'fleet.cd.dashboard',
             'O/C T&L' => 'fleet.oc-tl.dashboard',
             'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
+            'OC Workshop' => 'fleet.requests.index',
             'Welfare' => 'welfare.dashboard',
             'Establishment' => 'establishment.dashboard',
             'Building Unit' => 'building.dashboard',
