@@ -89,10 +89,10 @@ class FleetVehicleController extends Controller
 
         $data = $request->validate([
             'vehicle_model_id' => ['nullable', 'integer', 'exists:fleet_vehicle_models,id'],
-            // For creating new model
-            'make' => ['required_without:vehicle_model_id', 'string', 'max:100'],
-            'vehicle_type' => ['required_without:vehicle_model_id', 'string', 'in:SALOON,SUV,BUS,PICKUP'],
-            'year_of_manufacture' => ['required_without:vehicle_model_id', 'integer', 'min:1950', 'max:' . (int) date('Y')],
+            // For creating new model (nullable so when existing model is selected these can be empty)
+            'make' => ['required_without:vehicle_model_id', 'nullable', 'string', 'max:100'],
+            'vehicle_type' => ['required_without:vehicle_model_id', 'nullable', 'string', 'in:SALOON,SUV,BUS,PICKUP'],
+            'year_of_manufacture' => ['required_without:vehicle_model_id', 'nullable', 'integer', 'min:1950', 'max:' . (int) date('Y')],
             // Vehicle-specific fields
             'reg_no' => ['nullable', 'string', 'max:50'],
             'chassis_number' => ['required', 'string', 'max:100', 'unique:fleet_vehicles,chassis_number'],
