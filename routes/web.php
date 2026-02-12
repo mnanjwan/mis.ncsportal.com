@@ -716,8 +716,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/vehicles/intake', [FleetVehicleController::class, 'createIntake'])->middleware('role:Transport Store/Receiver')->name('vehicles.intake.create');
         Route::post('/vehicles/intake', [FleetVehicleController::class, 'storeIntake'])->middleware('role:Transport Store/Receiver')->name('vehicles.intake.store');
         Route::get('/vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.show');
-        Route::get('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'editIdentifiers'])->middleware('role:CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.edit');
-        Route::put('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'updateIdentifiers'])->middleware('role:CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.update');
+        Route::get('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'editIdentifiers'])->middleware('role:CD|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.edit');
+        Route::put('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'updateIdentifiers'])->middleware('role:CD|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.update');
         Route::put('/vehicles/{vehicle}/service-status', [FleetVehicleController::class, 'updateServiceStatus'])->middleware('role:CD')->name('vehicles.service-status.update');
 
         // Issuance / Return (CD)

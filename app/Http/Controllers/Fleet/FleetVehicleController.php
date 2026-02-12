@@ -79,6 +79,14 @@ class FleetVehicleController extends Controller
     ) {
         abort_unless($request->user()->hasRole('Transport Store/Receiver'), 403);
 
+        // When user selects "+ Create New Model", the form sends vehicle_model_id="new".
+        // Normalize so validation and logic see "no model selected" and require make/type/year.
+        $input = $request->all();
+        if (isset($input['vehicle_model_id']) && ($input['vehicle_model_id'] === 'new' || $input['vehicle_model_id'] === '')) {
+            $input['vehicle_model_id'] = null;
+            $request->merge($input);
+        }
+
         $data = $request->validate([
             'vehicle_model_id' => ['nullable', 'integer', 'exists:fleet_vehicle_models,id'],
             // For creating new model

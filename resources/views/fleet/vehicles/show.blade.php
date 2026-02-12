@@ -41,11 +41,13 @@
         <div class="kt-card">
             <div class="kt-card-header flex items-center justify-between">
                 <h3 class="kt-card-title">Vehicle Details</h3>
+                @if(auth()->user()->hasAnyRole(['CD', 'Transport Store/Receiver', 'CC T&L', 'DCG FATS', 'ACG TS']))
                 <div class="flex gap-2">
                     <a class="kt-btn kt-btn-secondary" href="{{ route('fleet.vehicles.identifiers.edit', $vehicle) }}">
                         Edit Reg/Engine
                     </a>
                 </div>
+                @endif
             </div>
             <div class="kt-card-content p-5 lg:p-7.5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

@@ -91,6 +91,7 @@
 - **Primary Function**: Vehicle intake and inventory management
 - **Key Responsibilities**:
   - Intake new vehicles into system
+  - Edit vehicle identifiers (Reg No, Engine No) — audit trail
   - View vehicles
   - View requests
   - Access fleet dashboard
@@ -118,9 +119,9 @@
 - ACG TS (Forwards to CC T&L Release)
 
 ### **Vehicle Managers**
-- CD (Issue/Return vehicles)
-- CC T&L (Inventory & Release)
-- Transport Store/Receiver (Intake)
+- CD (Issue/Return vehicles, edit identifiers)
+- CC T&L (Inventory & Release, edit identifiers)
+- Transport Store/Receiver (Intake, edit identifiers)
 - O/C T&L (View vehicles)
 
 ### **Viewers**
