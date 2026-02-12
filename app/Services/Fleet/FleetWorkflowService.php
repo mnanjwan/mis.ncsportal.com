@@ -178,6 +178,32 @@ class FleetWorkflowService
 
         $this->notifyNextStepUsers($request);
 
+        // Notify creator when request is REJECTED or RELEASED (in-app + email)
+        $creator = $request->createdBy ?? User::find($request->created_by);
+        if ($creator && $request->status === 'REJECTED') {
+            app(NotificationService::class)->notify(
+                $creator,
+                'fleet_request_rejected',
+                "Fleet Request #{$request->id} Rejected",
+                "Your fleet request #{$request->id} ({$request->request_type}) has been rejected.",
+                'fleet_request',
+                $request->id,
+                true
+            );
+        }
+        if ($creator && $request->status === 'RELEASED') {
+            app(NotificationService::class)->notify(
+                $creator,
+                'fleet_request_released',
+                "Fleet Request #{$request->id} Released",
+                "Your fleet request #{$request->id} has been approved and released.",
+                'fleet_request',
+                $request->id,
+                true
+            );
+            $this->notifyCd($request, 'Fleet Request Released', "Request #{$request->id} has been approved and released.");
+        }
+
         return $request->fresh(['steps', 'fulfillment', 'originCommand', 'createdBy']);
     }
 
