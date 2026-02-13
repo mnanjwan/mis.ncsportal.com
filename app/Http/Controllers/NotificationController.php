@@ -69,6 +69,12 @@ class NotificationController extends Controller
                     return redirect()->route('hrd.officers.show', $entityId);
                 }
                 break;
+
+            case 'fleet_request':
+                return redirect()->route('fleet.requests.show', $entityId);
+
+            case 'fleet_vehicle':
+                return redirect()->route('fleet.vehicles.show', $entityId);
         }
 
         return redirect()->route('dashboard')

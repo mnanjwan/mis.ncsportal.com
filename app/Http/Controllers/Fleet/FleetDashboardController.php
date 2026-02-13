@@ -53,6 +53,11 @@ class FleetDashboardController extends Controller
                     ->where('fleet_request_steps.role_name', $roleName);
             });
 
+        $commandScopedRoles = ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller', 'OC Workshop', 'Staff Officer T&L'];
+        if (in_array($roleName, $commandScopedRoles, true) && $commandId) {
+            $inboxQuery->where('fleet_requests.origin_command_id', $commandId);
+        }
+
         $inboxCount = $inboxQuery->count();
         $inboxItems = $inboxQuery
             ->with(['originCommand', 'createdBy'])
@@ -130,8 +135,8 @@ class FleetDashboardController extends Controller
                 $inStockCount = FleetVehicle::where('lifecycle_status', 'IN_STOCK')->whereNull('reserved_fleet_request_id')->count();
                 $reservedCount = FleetVehicle::whereNotNull('reserved_fleet_request_id')->count();
                 $kivCount = FleetRequest::where('status', 'KIV')->count();
-                $pendingInventory = FleetRequest::where('current_step_order', 5)->count();
-                $pendingRelease = FleetRequest::where('current_step_order', 11)->count();
+                $pendingInventory = FleetRequest::where('current_step_order', 1)->where('request_type', 'FLEET_NEW_VEHICLE')->count();
+                $pendingRelease = FleetRequest::where('current_step_order', 5)->count();
 
                 $cards = [
                     ['label' => 'In Stock', 'value' => $inStockCount, 'icon' => 'ki-archive', 'tone' => 'primary'],
@@ -151,9 +156,7 @@ class FleetDashboardController extends Controller
             case 'ACG TS':
             case 'DCG FATS':
             case 'CGC':
-                $pendingApproval = $roleName === 'CGC'
-                    ? FleetRequest::where('current_step_order', 8)->count()
-                    : $inboxCount;
+                $pendingApproval = $inboxCount;
 
                 $cards = [
                     ['label' => 'Inbox Requests', 'value' => $inboxCount, 'icon' => 'ki-inbox', 'tone' => 'primary'],
