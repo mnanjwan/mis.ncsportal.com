@@ -70,6 +70,7 @@ class FleetWorkflowService
             'requested_quantity' => $data['requested_quantity'] ?? 1,
             'amount' => $data['amount'] ?? null,
             'fleet_vehicle_id' => $data['fleet_vehicle_id'] ?? null,
+            'document_path' => $data['document_path'] ?? null,
             'notes' => $data['notes'] ?? null,
             'created_by' => $user->id,
         ]);

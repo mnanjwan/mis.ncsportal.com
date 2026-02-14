@@ -483,6 +483,37 @@ LIMIT 20;
 
 ---
 
+## Production: Save Draft / Submit Not Working
+
+If **Save Draft** or **Submit** works locally but not on production, check the following.
+
+### 1. Browser Network tab (F12 → Network)
+
+Submit the form and inspect the **POST** to `/fleet/requests`:
+
+- **419 (CSRF / Session):** Session cookie not sent or CSRF token invalid.
+  - Ensure production uses **HTTPS** and set `SESSION_SECURE_COOKIE=true` in `.env`.
+  - Set `APP_URL` to the exact production URL (e.g. `https://portal.example.com`).
+  - If the app is behind a proxy/load balancer, ensure **TrustProxies** is configured and `APP_URL` matches the public URL.
+- **413 (Payload too large):** Increase `upload_max_filesize` and `post_max_size` in PHP (e.g. ≥ 6MB for 5MB documents).
+- **422 (Validation):** Response body will list validation errors; the create form now shows these at the top (e.g. "You must have an active Area Controller role assigned to a command").
+- **500:** Check `storage/logs/laravel.log` on the server for the exception.
+
+### 2. Session / CSRF on production
+
+In production `.env`:
+
+- `APP_URL=https://your-production-domain.com` (no trailing slash)
+- `SESSION_SECURE_COOKIE=true` (when using HTTPS)
+- `SESSION_DOMAIN` only if you use a subdomain; otherwise leave unset
+- `SESSION_SAME_SITE=lax` (default; use `none` only if you need cross-site cookies and understand the implications)
+
+### 3. Role / command for the user
+
+Draft creation requires the user to have an **active role** for the chosen request type, with a **command** assigned (e.g. Area Controller, OC Workshop, or Staff Officer T&L). If production users don’t have the right role/command, you’ll see a validation error on the create form after submit.
+
+---
+
 ## Notes
 
 - **KIV Status:** When CC T&L finds no vehicles, request stays at Step 5. Resume by proposing vehicles later.

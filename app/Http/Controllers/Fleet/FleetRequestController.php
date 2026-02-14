@@ -8,6 +8,7 @@ use App\Models\FleetVehicle;
 use App\Services\Fleet\FleetWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FleetRequestController extends Controller
 {
@@ -145,7 +146,14 @@ class FleetRequestController extends Controller
             $data['document_path'] = $request->file('document')->store('fleet/requests', 'public');
         }
 
-        $fleetRequest = $service->createRequest($request->user(), $data);
+        try {
+            $fleetRequest = $service->createRequest($request->user(), $data);
+        } catch (ValidationException $e) {
+            return redirect()
+                ->route('fleet.requests.create')
+                ->withInput($request->except('document'))
+                ->withErrors($e->errors());
+        }
 
         return redirect()
             ->route('fleet.requests.index')

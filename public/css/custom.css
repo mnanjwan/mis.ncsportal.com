@@ -6,6 +6,13 @@
     --kt-info-color: #0ea5e9;
     --kt-warning-color: #f59e0b;
     --kt-success-color: #10b981;
+    /* Theme variables for NCS portal / Tailwind-style utilities (PIS colors) */
+    --color-primary: #088a56;
+    --color-primary-foreground: #ffffff;
+    --color-accent: #088a56;
+    --accent: #088a56;
+    --accent-foreground: #ffffff;
+    --color-mono: #333333;
 }
 
 /* All icons on the body use the active color */
@@ -192,18 +199,18 @@ body [class^="ki-"].text-success {
     color: var(--kt-active-color) !important;
 }
 
-/* Active state for sidebar menu items */
+/* Active state for sidebar menu items (white text on PIS green tint) */
 #sidebar_primary_menu .kt-menu-item-active,
 #sidebar_primary_menu .kt-menu-link.kt-menu-item-active {
-    background-color: rgba(var(--kt-active-color-rgb), 0.1) !important;
-    color: var(--kt-active-color) !important;
+    background-color: rgba(var(--kt-active-color-rgb), 0.6) !important;
+    color: #ffffff !important;
 }
 
 #sidebar_primary_menu .kt-menu-item-active .kt-menu-icon,
 #sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-icon,
 #sidebar_primary_menu .kt-menu-item-active .kt-menu-title,
 #sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-title {
-    color: var(--kt-active-color) !important;
+    color: #ffffff !important;
 }
 
 /* Tab navigation active states */
@@ -240,6 +247,80 @@ body [class^="ki-"].text-success {
     color: var(--kt-primary-color) !important;
 }
 
+/* NCS portal: accent and mono utilities to match PIS */
+.text-mono {
+    color: var(--color-mono) !important;
+}
+
+.bg-mono,
+header.bg-mono {
+    background-color: var(--color-mono) !important;
+}
+
+/* Sidebar: default text and icons white (dark sidebar) */
+#sidebar,
+#sidebar-container {
+    --sidebar-text: #ffffff;
+}
+
+/* Sidebar: default text white, icons green (PIS) */
+#sidebar .kt-menu-title,
+#sidebar .kt-menu-label,
+#sidebar .kt-menu-label .text-inverse,
+#sidebar .text-inverse,
+#sidebar .text-muted-foreground,
+#sidebar .text-foreground,
+#sidebar .text-secondary-foreground,
+#sidebar #sidebar_primary_menu .kt-menu-link .kt-menu-title,
+#sidebar #sidebar_header .text-mono,
+#sidebar #sidebar_header .text-inverse {
+    color: #ffffff !important;
+}
+
+/* Sidebar: default icons green (PIS) */
+#sidebar #sidebar_primary_menu .kt-menu-link .kt-menu-icon,
+#sidebar #sidebar_primary_menu .kt-menu-link .kt-menu-icon i {
+    color: var(--kt-active-color) !important;
+}
+
+/* Sidebar footer (user name, SVC) */
+#sidebar_footer .text-mono,
+#sidebar_footer .text-secondary-foreground {
+    color: #ffffff !important;
+}
+
+/* Sidebar "Menu" heading */
+#sidebar .mb-5 .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Accent backgrounds in sidebar menu - PIS green (active & hover) */
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-here {
+    background-color: rgba(var(--kt-active-color-rgb), 0.6) !important;
+}
+
+#sidebar_primary_menu .kt-menu-link:hover {
+    background-color: rgba(var(--kt-active-color-rgb), 0.6) !important;
+}
+
+/* Active/hover: keep text and icons white for contrast */
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-title,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-icon,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-active .kt-menu-icon i,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-here .kt-menu-title,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-here .kt-menu-icon,
+#sidebar_primary_menu .kt-menu-link.kt-menu-item-here .kt-menu-icon i,
+#sidebar_primary_menu .kt-menu-link:hover .kt-menu-title,
+#sidebar_primary_menu .kt-menu-link:hover .kt-menu-icon,
+#sidebar_primary_menu .kt-menu-link:hover .kt-menu-icon i {
+    color: #ffffff !important;
+}
+
+.bg-primary\/10 {
+    background-color: rgba(var(--kt-active-color-rgb), 0.1) !important;
+}
+
 /* Text color classes for info, warning, and success */
 .text-info {
     color: var(--kt-info-color) !important;
@@ -265,7 +346,7 @@ body [class^="ki-"].text-success {
     border-color: var(--kt-active-color) !important;
 }
 
-/* Sidebar Footer Icons */
+/* Sidebar Footer Icons (green by default, white on hover) */
 #sidebar_footer .kt-btn-icon i {
     color: var(--kt-active-color) !important;
     transition: color 0.2s ease;

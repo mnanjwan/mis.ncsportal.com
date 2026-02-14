@@ -36,6 +36,16 @@
             <h3 class="kt-card-title">New Transport & Logistics Request</h3>
         </div>
         <div class="kt-card-content p-5 lg:p-7.5">
+            @if($errors->any())
+                <div class="mb-4 p-4 rounded-lg bg-danger/10 border border-danger/20 text-danger">
+                    <p class="font-medium">The request could not be saved. Please fix the following:</p>
+                    <ul class="list-disc list-inside mt-2 text-sm">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <form method="POST" action="{{ route('fleet.requests.store') }}" enctype="multipart/form-data"
                 class="grid gap-4 max-w-2xl">
                 @csrf
@@ -217,23 +227,37 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const saveDraftBtn = document.getElementById('saveDraftBtn');
-            const createForm = saveDraftBtn.closest('form');
-            
-            if (saveDraftBtn && createForm) {
-                createForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const requestType = document.getElementById('request_type').value;
-                    
-                    if (!requestType) {
+            const createForm = saveDraftBtn ? saveDraftBtn.closest('form') : null;
+            if (!createForm) return;
+
+            function doSubmit() {
+                try {
+                    createForm.submit();
+                } catch (err) {
+                    createForm.submit();
+                }
+            }
+
+            createForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const requestTypeEl = document.getElementById('request_type');
+                const requestType = requestTypeEl ? requestTypeEl.value : '';
+
+                if (!requestType) {
+                    try {
                         showConfirmModal(
                             'Request Type Required',
                             'Please select a request type first.',
                             function() {},
                             'error'
                         );
+                    } catch (modalErr) {
                         return;
                     }
-                    
+                    return;
+                }
+
+                try {
                     showConfirmModal(
                         'Save as Draft',
                         'Are you sure you want to save this request as DRAFT?\n\n' +
@@ -245,13 +269,13 @@
                         '• You can submit it when ready\n\n' +
                         'WHY:\n' +
                         'Saving as draft allows you to complete the request details later. You must submit the request to start the approval workflow.',
-                        function() {
-                            createForm.submit();
-                        },
+                        doSubmit,
                         'warning'
                     );
-                });
-            }
+                } catch (modalErr) {
+                    doSubmit();
+                }
+            });
         });
     </script>
     @endpush
