@@ -5,6 +5,10 @@
 @section('breadcrumbs')
     <span class="text-secondary-foreground">Pharmacy</span>
     <span>/</span>
+    @if(auth()->user()->hasRole('Command Pharmacist'))
+        <a href="{{ route('pharmacy.command-pharmacist.dashboard') }}" class="text-secondary-foreground hover:text-primary">Dashboard</a>
+        <span>/</span>
+    @endif
     <a href="{{ route('pharmacy.requisitions.index') }}" class="text-secondary-foreground hover:text-primary">Requisitions</a>
     <span>/</span>
     <span class="text-secondary-foreground">{{ $requisition->reference_number ?? 'Draft' }}</span>
@@ -13,9 +17,16 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         @if(session('success'))
-            <div class="kt-alert kt-alert-success">
-                <i class="ki-filled ki-check-circle"></i>
-                {{ session('success') }}
+            <div class="kt-alert kt-alert-success flex flex-wrap items-center justify-between gap-3">
+                <span class="flex items-center gap-2">
+                    <i class="ki-filled ki-check-circle"></i>
+                    {{ session('success') }}
+                </span>
+                @if(auth()->user()->hasRole('Command Pharmacist'))
+                    <a href="{{ route('pharmacy.command-pharmacist.dashboard') }}" class="kt-btn kt-btn-sm kt-btn-success">
+                        <i class="ki-filled ki-home-3"></i> Back to Dashboard
+                    </a>
+                @endif
             </div>
         @endif
 
@@ -78,6 +89,10 @@
                                         <th>Requested</th>
                                         @if($requisition->status === 'ISSUED' || $requisition->status === 'DISPENSED' || $requisition->status === 'APPROVED')
                                             <th>Issued</th>
+                                            @if($requisition->status === 'ISSUED' || $requisition->status === 'DISPENSED')
+                                                <th>Dispensed</th>
+                                                <th>Remaining</th>
+                                            @endif
                                         @endif
                                     </tr>
                                 </thead>
@@ -90,6 +105,10 @@
                                             <td>{{ number_format($item->quantity_requested) }}</td>
                                             @if($requisition->status === 'ISSUED' || $requisition->status === 'DISPENSED' || $requisition->status === 'APPROVED')
                                                 <td>{{ number_format($item->quantity_issued) }}</td>
+                                                @if($requisition->status === 'ISSUED' || $requisition->status === 'DISPENSED')
+                                                    <td>{{ number_format($item->quantity_dispensed ?? 0) }}</td>
+                                                    <td>{{ number_format($item->getRemainingToDispense()) }}</td>
+                                                @endif
                                             @endif
                                         </tr>
                                     @endforeach
@@ -175,34 +194,44 @@
                     </div>
                 @endif
 
-                <!-- Command Pharmacist Dispense Form -->
-                @if(auth()->user()->hasRole('Command Pharmacist') && $requisition->status === 'ISSUED')
+                <!-- Command Pharmacist Dispense Form (show when ISSUED and there is remaining to dispense) -->
+                @if(auth()->user()->hasRole('Command Pharmacist') && $requisition->status === 'ISSUED' && $requisition->items->contains(fn ($i) => $i->hasRemainingToDispense()))
                     <div class="kt-card border-success">
                         <div class="kt-card-header">
                             <h3 class="kt-card-title">Dispense Items</h3>
+                            <span class="text-sm text-secondary-foreground">You can dispense in batches. Remaining quantities will stay on this requisition until fully dispensed.</span>
                         </div>
                         <div class="kt-card-content">
                             <form method="POST" action="{{ route('pharmacy.requisitions.dispense', $requisition->id) }}">
                                 @csrf
                                 <div class="grid gap-4">
+                                    @php $dispenseIndex = 0; @endphp
                                     @foreach($requisition->items as $item)
-                                        @if($item->quantity_issued > 0)
+                                        @if($item->hasRemainingToDispense())
+                                            @php $remaining = $item->getRemainingToDispense(); @endphp
                                             <div class="p-3 bg-muted/50 rounded-lg border border-input">
                                                 <div class="flex justify-between items-center mb-2">
                                                     <span class="font-medium">{{ $item->drug->name ?? 'Unknown' }}</span>
-                                                    <span class="text-xs text-secondary-foreground">Available: {{ number_format($item->quantity_issued) }}</span>
+                                                    <span class="text-xs text-secondary-foreground">
+                                                        Issued: {{ number_format($item->quantity_issued) }}
+                                                        @if(($item->quantity_dispensed ?? 0) > 0)
+                                                            · Already dispensed: {{ number_format($item->quantity_dispensed) }}
+                                                        @endif
+                                                        · Remaining: {{ number_format($remaining) }}
+                                                    </span>
                                                 </div>
-                                                <input type="hidden" name="items[{{ $loop->index }}][id]" value="{{ $item->id }}">
+                                                <input type="hidden" name="items[{{ $dispenseIndex }}][id]" value="{{ $item->id }}">
                                                 <div class="flex gap-3 items-center">
                                                     <div class="flex-grow">
-                                                        <label class="kt-label text-xs">Quantity to Dispense</label>
-                                                        <input type="number" name="items[{{ $loop->index }}][quantity_dispensed]" 
+                                                        <label class="kt-label text-xs">Quantity to Dispense Now</label>
+                                                        <input type="number" name="items[{{ $dispenseIndex }}][quantity_dispensed]" 
                                                                class="kt-input kt-input-sm" 
-                                                               value="{{ $item->quantity_issued }}" 
-                                                               min="0" max="{{ $item->quantity_issued }}" required>
+                                                               value="{{ $remaining }}" 
+                                                               min="1" max="{{ $remaining }}" required>
                                                     </div>
                                                 </div>
                                             </div>
+                                            @php $dispenseIndex++; @endphp
                                         @endif
                                     @endforeach
 
@@ -213,7 +242,7 @@
 
                                     <div class="flex justify-end">
                                         <button type="submit" class="kt-btn kt-btn-success">
-                                            <i class="ki-filled ki-pill"></i> Mark as Dispensed
+                                            <i class="ki-filled ki-pill"></i> Dispense
                                         </button>
                                     </div>
                                 </div>

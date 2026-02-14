@@ -2,7 +2,7 @@
 
 ## All Roles Involved in Transport & Logistics (T&L)
 
-### 1. **CD** (Command Department)
+### 1. **CD** (Chief Driver)
 - **Primary Function**: View/Create requests at Command level
 - **Test User**: `tl_user_1@example.com`
 - **Key Responsibilities**:

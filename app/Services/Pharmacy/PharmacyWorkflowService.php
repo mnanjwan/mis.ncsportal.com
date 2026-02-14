@@ -580,8 +580,15 @@ class PharmacyWorkflowService
                     continue;
                 }
 
-                $quantityDispensed = (int) ($itemData['quantity_dispensed'] ?? 0);
-                if ($quantityDispensed <= 0) {
+                $quantityThisTime = (int) ($itemData['quantity_dispensed'] ?? 0);
+                if ($quantityThisTime <= 0) {
+                    continue;
+                }
+
+                $alreadyDispensed = (int) ($item->quantity_dispensed ?? 0);
+                $remainingToDispense = max(0, $item->quantity_issued - $alreadyDispensed);
+                $quantityToDispense = min($quantityThisTime, $remainingToDispense);
+                if ($quantityToDispense <= 0) {
                     continue;
                 }
 
@@ -593,15 +600,15 @@ class PharmacyWorkflowService
                     ->orderBy('expiry_date') // FEFO
                     ->get();
 
-                $remainingToDispense = $quantityDispensed;
+                $remainingFromStock = $quantityToDispense;
                 foreach ($commandStock as $stock) {
-                    if ($remainingToDispense <= 0) {
+                    if ($remainingFromStock <= 0) {
                         break;
                     }
 
-                    $dispenseFromStock = min($stock->quantity, $remainingToDispense);
+                    $dispenseFromStock = min($stock->quantity, $remainingFromStock);
                     $stock->decrement('quantity', $dispenseFromStock);
-                    $remainingToDispense -= $dispenseFromStock;
+                    $remainingFromStock -= $dispenseFromStock;
 
                     // Record stock movement
                     PharmacyStockMovement::create([
@@ -618,15 +625,23 @@ class PharmacyWorkflowService
                         'created_by' => $user->id,
                     ]);
                 }
+
+                $item->update(['quantity_dispensed' => $alreadyDispensed + $quantityToDispense]);
             }
 
-            $requisition->update([
-                'status' => 'DISPENSED',
-                'dispensed_at' => now(),
-            ]);
+            // Only mark requisition DISPENSED when every item is fully dispensed
+            $allFullyDispensed = $requisition->items()
+                ->where('quantity_issued', '>', 0)
+                ->get()
+                ->every(fn ($item) => ($item->quantity_dispensed ?? 0) >= $item->quantity_issued);
 
-            // Notify OC Pharmacy about dispensed requisition
-            $this->notifyByRole('OC Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
+            if ($allFullyDispensed) {
+                $requisition->update([
+                    'status' => 'DISPENSED',
+                    'dispensed_at' => now(),
+                ]);
+                $this->notifyByRole('OC Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
+            }
 
             return $requisition->fresh(['steps', 'items.drug', 'createdBy', 'command']);
         });

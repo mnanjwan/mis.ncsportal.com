@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **CD (Command Department)** role is responsible for managing vehicle requests and fleet operations at the command level. This document provides a complete guide to all pages, functions, and features accessible to CD users.
+The **CD (Chief Driver)** role is responsible for managing vehicle requests and fleet operations at the command level. This document provides a complete guide to all pages, functions, and features accessible to CD users.
 
 ## Dashboard Access
 

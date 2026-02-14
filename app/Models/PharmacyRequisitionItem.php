@@ -14,6 +14,7 @@ class PharmacyRequisitionItem extends Model
         'pharmacy_drug_id',
         'quantity_requested',
         'quantity_issued',
+        'quantity_dispensed',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class PharmacyRequisitionItem extends Model
         return [
             'quantity_requested' => 'integer',
             'quantity_issued' => 'integer',
+            'quantity_dispensed' => 'integer',
         ];
     }
 
@@ -44,5 +46,17 @@ class PharmacyRequisitionItem extends Model
     public function getPendingQuantity(): int
     {
         return max(0, $this->quantity_requested - $this->quantity_issued);
+    }
+
+    /** Quantity still to dispense (issued minus already dispensed). */
+    public function getRemainingToDispense(): int
+    {
+        return max(0, ($this->quantity_issued ?? 0) - ($this->quantity_dispensed ?? 0));
+    }
+
+    /** Whether this item has any quantity left to dispense. */
+    public function hasRemainingToDispense(): bool
+    {
+        return $this->getRemainingToDispense() > 0;
     }
 }

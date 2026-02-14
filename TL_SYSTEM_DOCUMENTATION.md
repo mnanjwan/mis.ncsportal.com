@@ -26,7 +26,7 @@ The T&L System manages vehicle requests, allocations, requisitions, and maintena
 
 ## Roles and Responsibilities
 
-### CD (Command Department)
+### CD (Chief Driver)
 **Primary Activities**: View/Create requests at Command level
 
 **Access & Functions**:
