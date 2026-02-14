@@ -18,9 +18,16 @@
     <div class="grid gap-5 lg:gap-7.5">
         @if(session('success'))
             <div class="kt-alert kt-alert-success flex flex-wrap items-center justify-between gap-3">
-                <span class="flex items-center gap-2">
-                    <i class="ki-filled ki-check-circle"></i>
-                    {{ session('success') }}
+                <span class="flex flex-col gap-1">
+                    <span class="flex items-center gap-2">
+                        <i class="ki-filled ki-check-circle"></i>
+                        {{ session('success') }}
+                    </span>
+                    @if(auth()->user()->hasRole('Command Pharmacist') && $requisition->status === 'ISSUED' && $requisition->items->contains(fn ($i) => $i->hasRemainingToDispense()))
+                        <a href="#dispense-form" class="text-sm font-medium underline hover:no-underline">
+                            ↓ Dispense again (form below)
+                        </a>
+                    @endif
                 </span>
                 @if(auth()->user()->hasRole('Command Pharmacist'))
                     <a href="{{ route('pharmacy.command-pharmacist.dashboard') }}" class="kt-btn kt-btn-sm kt-btn-success">
@@ -196,10 +203,10 @@
 
                 <!-- Command Pharmacist Dispense Form (show when ISSUED and there is remaining to dispense) -->
                 @if(auth()->user()->hasRole('Command Pharmacist') && $requisition->status === 'ISSUED' && $requisition->items->contains(fn ($i) => $i->hasRemainingToDispense()))
-                    <div class="kt-card border-success">
+                    <div class="kt-card border-success" id="dispense-form">
                         <div class="kt-card-header">
-                            <h3 class="kt-card-title">Dispense Items</h3>
-                            <span class="text-sm text-secondary-foreground">You can dispense in batches. Remaining quantities will stay on this requisition until fully dispensed.</span>
+                            <h3 class="kt-card-title">Dispense Items — Dispense Again</h3>
+                            <span class="text-sm text-secondary-foreground">You can dispense in batches. Use the form below to dispense the remaining quantity. This requisition stays in Dashboard → Ready to Dispense until fully dispensed.</span>
                         </div>
                         <div class="kt-card-content">
                             <form method="POST" action="{{ route('pharmacy.requisitions.dispense', $requisition->id) }}">

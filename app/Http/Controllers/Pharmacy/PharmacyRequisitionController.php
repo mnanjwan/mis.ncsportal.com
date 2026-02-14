@@ -354,8 +354,12 @@ class PharmacyRequisitionController extends Controller
             $request->input('comment')
         );
 
+        $message = $requisition->status === 'ISSUED'
+            ? 'Items dispensed. You can dispense the remaining below, or from Dashboard → Ready to Dispense.'
+            : 'Items dispensed successfully.';
+
         return redirect()
             ->route('pharmacy.requisitions.show', $requisition->id)
-            ->with('success', 'Items dispensed successfully.');
+            ->with('success', $message);
     }
 }
