@@ -40,22 +40,27 @@ class FleetWorkflowService
     {
         $requestType = $data['request_type'];
 
-        // Determine the role required to create this request
-        $requiredRole = match ($requestType) {
+        // Request needs an origin command (which command the request is from).
+        // Prefer the role that "owns" this request type for that command; otherwise use any active role with a command.
+        $preferredRole = match ($requestType) {
             'FLEET_REQUISITION' => 'OC Workshop',
             'FLEET_OPE', 'FLEET_REPAIR', 'FLEET_USE' => 'Staff Officer T&L',
             default => 'Area Controller',
         };
 
-        $originCommandId = $this->getActiveCommandIdForRole($user, $requiredRole);
+        $originCommandId = $this->getActiveCommandIdForRole($user, $preferredRole);
         if (!$originCommandId) {
-            // Fallback to CD or any active role if specific command role isn't found
-            $originCommandId = $user->roles()->wherePivot('is_active', true)->first()?->pivot?->command_id;
+            // Fallback: first active role that is actually assigned to a command (some roles e.g. CC T&L have null command_id)
+            $roleWithCommand = $user->roles()
+                ->wherePivot('is_active', true)
+                ->get()
+                ->first(fn ($role) => $role->pivot->command_id !== null);
+            $originCommandId = $roleWithCommand?->pivot?->command_id;
         }
 
         if (!$originCommandId) {
             throw ValidationException::withMessages([
-                'role' => "You must have an active {$requiredRole} role assigned to a command.",
+                'role' => 'You must have at least one active role assigned to a command so we know which command this request is for. Please ask an admin to assign your user to a command (e.g. CD, Area Controller, or OC Workshop with a command).',
             ]);
         }
 
