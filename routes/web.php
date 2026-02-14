@@ -902,6 +902,7 @@ Route::middleware('auth')->group(function () {
         // Command Pharmacist Dashboard & Routes
         Route::prefix('command-pharmacist')->name('command-pharmacist.')->middleware('role:Command Pharmacist')->group(function () {
             Route::get('/dashboard', [\App\Http\Controllers\Pharmacy\PharmacyDashboardController::class, 'commandPharmacist'])->name('dashboard');
+            Route::get('/ready-to-dispense', [\App\Http\Controllers\Pharmacy\PharmacyDashboardController::class, 'readyToDispense'])->name('ready-to-dispense');
         });
 
         // Procurement Routes - Controller Procurement creates, others view/act

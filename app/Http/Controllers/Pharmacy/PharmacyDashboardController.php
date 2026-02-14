@@ -229,4 +229,30 @@ class PharmacyDashboardController extends Controller
             'commandName'
         ));
     }
+
+    /**
+     * Command Pharmacist: dedicated Ready to Dispense page (issued requisitions with drug names).
+     */
+    public function readyToDispense(Request $request)
+    {
+        $user = $request->user();
+        $commandId = $this->workflowService->getActiveCommandIdForRole($user, 'Command Pharmacist');
+
+        if (!$commandId) {
+            return redirect()
+                ->route('pharmacy.command-pharmacist.dashboard')
+                ->with('error', 'You are not assigned to any command. Please contact administration.');
+        }
+
+        $command = \App\Models\Command::find($commandId);
+        $commandName = $command ? $command->name : 'Unknown Command';
+
+        $requisitions = PharmacyRequisition::where('command_id', $commandId)
+            ->where('status', 'ISSUED')
+            ->with(['items.drug'])
+            ->latest()
+            ->get();
+
+        return view('pharmacy.ready-to-dispense', compact('requisitions', 'commandName'));
+    }
 }

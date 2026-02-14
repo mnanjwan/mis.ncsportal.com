@@ -122,10 +122,13 @@
                                             {{ $requisition->reference_number }}
                                         </span>
                                         <span class="text-xs text-secondary-foreground">
+                                            {{ $requisition->items->map(fn ($i) => $i->drug->name ?? null)->filter()->unique()->values()->implode(', ') ?: '—' }}
+                                        </span>
+                                        <span class="text-xs text-muted-foreground">
                                             {{ $requisition->items->count() }} items | Issued: {{ $requisition->issued_at?->format('d M Y') ?? 'N/A' }}
                                         </span>
                                     </div>
-                                    <a href="{{ route('pharmacy.requisitions.show', $requisition->id) }}" class="kt-btn kt-btn-sm kt-btn-success">
+                                    <a href="{{ route('pharmacy.requisitions.show', $requisition->id) }}#dispense-form" class="kt-btn kt-btn-sm kt-btn-success">
                                         Dispense
                                     </a>
                                 </div>
