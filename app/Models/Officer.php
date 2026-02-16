@@ -67,6 +67,8 @@ class Officer extends Model
         'created_by',
     ];
 
+    protected $appends = ['display_rank'];
+
     protected function casts(): array
     {
         return [
@@ -92,6 +94,19 @@ class Officer extends Model
     public function getFullNameAttribute()
     {
         return "{$this->initials} {$this->surname}";
+    }
+
+    /**
+     * Get display rank with (T) suffix for Transport & Logistics officers.
+     * When unit is 'Transport', displays e.g. ASC II (T).
+     */
+    public function getDisplayRankAttribute(): string
+    {
+        $rank = $this->substantive_rank ?? 'N/A';
+        if ($this->unit === 'Transport') {
+            return $rank . ' (T)';
+        }
+        return $rank;
     }
 
     /**

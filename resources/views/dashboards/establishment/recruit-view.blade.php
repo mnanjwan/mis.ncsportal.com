@@ -51,7 +51,7 @@
                             Appointment Number: <span class="font-semibold text-mono">{{ $recruit->appointment_number ?? 'N/A' }}</span>
                         </span>
                         <span class="text-secondary-foreground">
-                            Rank: <span class="font-semibold text-mono">{{ $recruit->substantive_rank ?? 'N/A' }}</span>
+                            Rank: <span class="font-semibold text-mono">{{ $recruit->display_rank }}</span>
                         </span>
                         <span class="text-secondary-foreground">
                             Email: <span class="font-semibold text-mono">{{ $recruit->email ?? 'N/A' }}</span>
@@ -148,7 +148,7 @@
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-secondary-foreground">Substantive Rank</span>
-                            <span class="text-sm font-semibold text-mono">{{ $recruit->substantive_rank ?? 'N/A' }}</span>
+                            <span class="text-sm font-semibold text-mono">{{ $recruit->display_rank }}</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-secondary-foreground">Salary Grade Level</span>

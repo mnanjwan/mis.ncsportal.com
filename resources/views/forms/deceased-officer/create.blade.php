@@ -100,7 +100,7 @@
                                                  data-service="{{ $officer->service_number }}"
                                                  data-rank="{{ $officer->substantive_rank }}">
                                                 <div class="text-sm text-foreground font-medium">{{ $officer->initials }} {{ $officer->surname }}</div>
-                                                <div class="text-xs text-secondary-foreground">{{ $officer->service_number }} - {{ $officer->substantive_rank }}</div>
+                                                <div class="text-xs text-secondary-foreground">{{ $officer->service_number }} - {{ $officer->display_rank }}</div>
                                             </div>
                                         @endforeach
                                     </div>
@@ -221,7 +221,7 @@
                     'id' => $officer->id,
                     'name' => $officer->initials . ' ' . $officer->surname,
                     'service_number' => $officer->service_number ?? 'N/A',
-                    'rank' => $officer->substantive_rank ?? 'N/A'
+                    'rank' => $officer->display_rank ?? 'N/A'
                 ];
             })->values();
         @endphp

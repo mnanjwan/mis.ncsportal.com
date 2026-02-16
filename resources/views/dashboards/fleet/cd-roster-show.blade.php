@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Duty Roster Details')
-@section('page-title', 'Duty Roster Details')
+@section('title', 'Roster Details - CD Approval')
+@section('page-title', 'Roster Details - CD Approval')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">DC Admin</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.cd.dashboard') }}">Fleet CD</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.roster') }}">Duty Rosters</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('fleet.roster.cd-index') }}">Roster Approvals</a>
     <span>/</span>
     <span class="text-primary">Review</span>
 @endsection
@@ -14,27 +14,17 @@
 @section('content')
 <div class="grid gap-5 lg:gap-7.5">
     <div class="flex items-center justify-between">
-        <a href="{{ route('dc-admin.roster') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+        <a href="{{ route('fleet.roster.cd-index') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
             <i class="ki-filled ki-arrow-left"></i> Back
         </a>
     </div>
 
     <div class="kt-card">
         <div class="kt-card-header">
-            <h3 class="kt-card-title">Duty Roster Details</h3>
+            <h3 class="kt-card-title">Duty Roster Details - CD Approval</h3>
+            <p class="text-sm text-secondary-foreground mt-1">This roster includes Transport officers. Approve to allow Area Controller or DC Admin to give final approval.</p>
         </div>
         <div class="kt-card-content">
-            @if($roster->hasTransportOfficers() && !$roster->cd_approved_at)
-                <div class="mb-6 p-4 rounded-lg bg-warning/10 border border-warning/30">
-                    <div class="flex items-center gap-3">
-                        <i class="ki-filled ki-information-2 text-warning text-xl"></i>
-                        <div>
-                            <p class="font-semibold text-warning">CD (Fleet CD) approval required</p>
-                            <p class="text-sm text-secondary-foreground mt-1">This roster includes Transport officers. The CD must approve it before you can give final approval. Ask the CD to visit Fleet → Roster Approvals.</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 @if($roster->unit)
                 <div>
@@ -64,7 +54,7 @@
                 <div>
                     <label class="text-sm font-medium text-secondary-foreground">Officer in Charge (OIC)</label>
                     <p class="text-sm text-foreground mt-1">
-                        {{ $roster->oicOfficer->initials }} {{ $roster->oicOfficer->surname }} ({{ $roster->oicOfficer->service_number }})
+                        {{ $roster->oicOfficer->display_rank }} {{ $roster->oicOfficer->initials }} {{ $roster->oicOfficer->surname }} ({{ $roster->oicOfficer->service_number }})
                     </p>
                 </div>
                 @endif
@@ -72,7 +62,7 @@
                 <div>
                     <label class="text-sm font-medium text-secondary-foreground">Second In Command (2IC)</label>
                     <p class="text-sm text-foreground mt-1">
-                        {{ $roster->secondInCommandOfficer->initials }} {{ $roster->secondInCommandOfficer->surname }} ({{ $roster->secondInCommandOfficer->service_number }})
+                        {{ $roster->secondInCommandOfficer->display_rank }} {{ $roster->secondInCommandOfficer->initials }} {{ $roster->secondInCommandOfficer->surname }} ({{ $roster->secondInCommandOfficer->service_number }})
                     </p>
                 </div>
                 @endif
@@ -99,6 +89,9 @@
                                             @elseif($roster->second_in_command_officer_id == $assignment->officer_id)
                                                 <span class="kt-badge kt-badge-info kt-badge-sm ml-2">2IC</span>
                                             @endif
+                                            @if(($assignment->officer->unit ?? '') === 'Transport')
+                                                <span class="kt-badge kt-badge-warning kt-badge-sm ml-1">Transport</span>
+                                            @endif
                                         </td>
                                         <td class="py-3 px-4 text-sm">{{ $assignment->shift ?? 'N/A' }}</td>
                                     </tr>
@@ -111,17 +104,8 @@
 
             <div class="border-t border-border pt-6 mt-6">
                 <div class="flex gap-3">
-                    @if($roster->hasTransportOfficers() && !$roster->cd_approved_at)
-                        <span class="kt-btn kt-btn-secondary kt-btn-disabled" title="CD approval required first">
-                            <i class="ki-filled ki-check"></i> Approve (CD approval required)
-                        </span>
-                    @else
                     <button type="button" class="kt-btn kt-btn-success" data-kt-modal-toggle="#approve-modal">
-                        <i class="ki-filled ki-check"></i> Approve
-                    </button>
-                    @endif
-                    <button type="button" class="kt-btn kt-btn-danger" onclick="showRejectModal()">
-                        <i class="ki-filled ki-cross"></i> Reject
+                        <i class="ki-filled ki-check"></i> Approve (CD)
                     </button>
                 </div>
             </div>
@@ -137,7 +121,7 @@
                 <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
                     <i class="ki-filled ki-check-circle text-success text-xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground">Approve Roster</h3>
+                <h3 class="text-lg font-semibold text-foreground">Approve Roster (CD)</h3>
             </div>
             <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
                 <i class="ki-filled ki-cross"></i>
@@ -145,14 +129,12 @@
         </div>
         <div class="kt-modal-body py-5 px-5">
             <p class="text-sm text-secondary-foreground">
-                Are you sure you want to approve this duty roster? Once approved, the roster will be activated and cannot be modified.
+                Confirm CD approval for this roster? After approval, Area Controller or DC Admin can give final approval.
             </p>
         </div>
         <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
-            <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
-                Cancel
-            </button>
-            <form action="{{ route('dc-admin.roster.approve', $roster->id) }}" method="POST" class="inline">
+            <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+            <form action="{{ route('fleet.roster.cd-approve', $roster->id) }}" method="POST" class="inline">
                 @csrf
                 <button type="submit" class="kt-btn kt-btn-success">
                     <i class="ki-filled ki-check"></i> Approve
@@ -161,47 +143,4 @@
         </div>
     </div>
 </div>
-
-<!-- Reject Modal -->
-<div id="reject-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div class="kt-card max-w-md w-full mx-4">
-        <div class="kt-card-header">
-            <h3 class="kt-card-title">Reject Roster</h3>
-        </div>
-        <form action="{{ route('dc-admin.roster.reject', $roster->id) }}" method="POST" class="kt-card-content">
-            @csrf
-            <div class="flex flex-col gap-4">
-                <div>
-                    <label class="kt-form-label">Rejection Reason <span class="text-danger">*</span></label>
-                    <textarea name="rejection_reason" class="kt-input" rows="4" placeholder="Enter reason for rejection" required></textarea>
-                </div>
-                <div class="flex gap-3 justify-end">
-                    <button type="button" class="kt-btn kt-btn-outline" onclick="closeRejectModal()">Cancel</button>
-                    <button type="submit" class="kt-btn kt-btn-danger">Reject</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-@push('scripts')
-<script>
-function showRejectModal() {
-    document.getElementById('reject-modal').classList.remove('hidden');
-}
-
-function closeRejectModal() {
-    document.getElementById('reject-modal').classList.add('hidden');
-    document.querySelector('#reject-modal form').reset();
-}
-
-document.getElementById('reject-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeRejectModal();
-    }
-});
-</script>
-@endpush
 @endsection
-
-

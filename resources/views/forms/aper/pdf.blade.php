@@ -156,7 +156,7 @@
             </tr>
             <tr>
                 <th>Rank</th>
-                <td>{{ $form->rank ?? $form->officer->substantive_rank }}</td>
+                <td>{{ $form->rank ?? $form->officer->display_rank }}</td>
             </tr>
             <tr>
                 <th>HAPASS</th>

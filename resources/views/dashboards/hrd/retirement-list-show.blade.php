@@ -99,7 +99,7 @@
                                                 </span>
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $item->rank ?? ($item->officer->substantive_rank ?? 'N/A') }}
+                                                {{ $item->rank ?? ($item->officer->display_rank ?? 'N/A') }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $item->retirement_condition === 'AGE' ? 'Age' : ($item->retirement_condition === 'SVC' ? 'Service' : 'N/A') }}
@@ -140,7 +140,7 @@
                                                 SVC: {{ $item->officer->service_number ?? 'N/A' }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
-                                                {{ $item->rank ?? ($item->officer->substantive_rank ?? 'N/A') }}
+                                                {{ $item->rank ?? ($item->officer->display_rank ?? 'N/A') }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
                                                 Reason: {{ $item->retirement_condition === 'AGE' ? 'Age' : ($item->retirement_condition === 'SVC' ? 'Service' : 'N/A') }}

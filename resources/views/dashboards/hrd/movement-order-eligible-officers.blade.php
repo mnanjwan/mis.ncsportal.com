@@ -251,7 +251,7 @@
                                                 {{ $officer->initials }} {{ $officer->surname }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $officer->substantive_rank ?? 'N/A' }}
+                                                {{ $officer->display_rank }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $officer->presentStation->name ?? 'N/A' }}

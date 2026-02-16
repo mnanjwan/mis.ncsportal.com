@@ -23,7 +23,7 @@
         @if($officer->appointment_number)
         <strong>Appointment Number:</strong> {{ $officer->appointment_number }}<br>
         @endif
-        <strong>Rank:</strong> {{ $officer->substantive_rank ?? 'N/A' }}<br>
+        <strong>Rank:</strong> {{ $officer->display_rank }}<br>
         @if($officer->presentStation)
         <strong>Command/Station:</strong> {{ $officer->presentStation->name ?? 'N/A' }}<br>
         @endif

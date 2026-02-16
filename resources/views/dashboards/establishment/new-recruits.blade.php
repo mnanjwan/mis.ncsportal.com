@@ -357,6 +357,12 @@
                                 @error('unit')
                                     <p class="text-sm text-danger">{{ $message }}</p>
                                 @enderror
+                                <div id="assign_to_transport_container" class="mt-3 hidden">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="assign_to_transport" name="assign_to_transport" value="1" class="rounded">
+                                        <span class="text-sm text-foreground">Assign to Transport (rank will display with (T))</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -421,7 +427,7 @@
                                 <p class="text-sm text-danger">{{ $message }}</p>
                             @enderror
                             <p class="text-xs text-secondary-foreground">
-                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>, <strong>date_of_first_appointment</strong>, <strong>date_of_present_appointment</strong>, <strong>date_posted_to_station</strong>, <strong>command_id</strong>, <strong>unit</strong> (optional). Maximum 10 entries per upload.
+                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>, <strong>date_of_first_appointment</strong>, <strong>date_of_present_appointment</strong>, <strong>date_posted_to_station</strong>, <strong>command_id</strong>, <strong>unit</strong> (optional: General Duty (GD), Support Services (SS), Transport). Maximum 10 entries per upload.
                             </p>
                             <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
                                 <strong>Document Type Allowed:</strong> CSV, TXT<br>
@@ -585,7 +591,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                        {{ $recruit->substantive_rank ?? 'N/A' }}
+                                        {{ $recruit->display_rank }}
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
                                         @if($recruit->appointment_number && $recruit->service_number)
@@ -1302,7 +1308,8 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                 const unitOptions = [
                     {id: '', name: 'Select...'},
                     {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-                    {id: 'Support Staff (SS)', name: 'Support Staff (SS)'}
+                    {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+                    {id: 'Transport', name: 'Transport'}
                 ];
 
                 const commandOptions = [
@@ -1628,11 +1635,12 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                     @endforeach
                 ];
 
-                // Unit options
+                // Unit options (Support Services (SS) = same as Support Staff per spec)
                 const unitOptions = [
                     {id: '', name: 'Select Unit...'},
                     {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-                    {id: 'Support Staff (SS)', name: 'Support Staff (SS)'}
+                    {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+                    {id: 'Transport', name: 'Transport'}
                 ];
 
                 // Verification status options
@@ -1679,7 +1687,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                     searchPlaceholder: 'Search grade level...'
                 });
 
-                // Initialize unit select
+                // Initialize unit select with Assign to Transport logic (when Unit = Support Services (SS))
                 createSearchableSelect({
                     triggerId: 'unit_select_trigger',
                     hiddenInputId: 'unit',
@@ -1689,8 +1697,39 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                     displayTextId: 'unit_select_text',
                     options: unitOptions,
                     placeholder: 'Select Unit...',
-                    searchPlaceholder: 'Search unit...'
+                    searchPlaceholder: 'Search unit...',
+                    onSelect: function(option) {
+                        const container = document.getElementById('assign_to_transport_container');
+                        const checkbox = document.getElementById('assign_to_transport');
+                        if (container && checkbox) {
+                            if (option.id === 'Support Services (SS)') {
+                                container.classList.remove('hidden');
+                                checkbox.checked = false;
+                            } else {
+                                container.classList.add('hidden');
+                                checkbox.checked = false;
+                                if (option.id === 'Transport') {
+                                    document.getElementById('unit').value = 'Transport';
+                                }
+                            }
+                        }
+                    }
                 });
+                document.getElementById('assign_to_transport')?.addEventListener('change', function() {
+                    const unitInput = document.getElementById('unit');
+                    const unitText = document.getElementById('unit_select_text');
+                    if (this.checked) {
+                        unitInput.value = 'Transport';
+                        if (unitText) unitText.textContent = 'Transport';
+                    } else {
+                        unitInput.value = 'Support Services (SS)';
+                        if (unitText) unitText.textContent = 'Support Services (SS)';
+                    }
+                });
+                const initialUnit = document.getElementById('unit')?.value;
+                if (initialUnit === 'Support Services (SS)') {
+                    document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
+                }
 
                 // Initialize verification status select in verify modal
                 createSearchableSelect({

@@ -140,7 +140,7 @@
                                         </td>
                                         <td class="py-3 px-4">
                                             <span class="text-sm text-secondary-foreground">
-                                                {{ $emolument->officer->substantive_rank ?? 'N/A' }}
+                                                {{ $emolument->officer->display_rank }}
                                             </span>
                                         </td>
                                         <td class="py-3 px-4">
@@ -200,7 +200,7 @@
                                         {{ $emolument->officer->initials ?? '' }} {{ $emolument->officer->surname ?? '' }}
                                     </h4>
                                     <p class="text-sm text-secondary-foreground mt-1">
-                                        {{ $emolument->officer->service_number ?? 'N/A' }} • {{ $emolument->officer->substantive_rank ?? 'N/A' }}
+                                        {{ $emolument->officer->service_number ?? 'N/A' }} • {{ $emolument->officer->display_rank }}
                                     </p>
                                 </div>
                                 <div class="flex gap-2">

@@ -46,7 +46,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Rank</p>
-                            <p class="text-base font-semibold text-foreground">{{ $officer->substantive_rank ?? 'N/A' }}</p>
+                            <p class="text-base font-semibold text-foreground">{{ $officer->display_rank }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Year</p>

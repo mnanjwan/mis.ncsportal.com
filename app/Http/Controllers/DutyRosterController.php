@@ -13,7 +13,7 @@ class DutyRosterController extends Controller
     {
         $this->middleware('auth');
         // Allow Staff Officer, Area Controller, and DC Admin access
-        $this->middleware('role:Staff Officer|Area Controller|DC Admin');
+        $this->middleware('role:Staff Officer|Area Controller|DC Admin|CD');
     }
 
     public function index(Request $request)
@@ -838,12 +838,18 @@ class DutyRosterController extends Controller
             abort(403, 'Only Area Controller can approve rosters');
         }
 
-        $roster = \App\Models\DutyRoster::findOrFail($id);
+        $roster = \App\Models\DutyRoster::with('assignments.officer')->findOrFail($id);
 
         // Only allow approving SUBMITTED rosters
         if ($roster->status !== 'SUBMITTED') {
             return redirect()->back()
                 ->with('error', 'Only SUBMITTED rosters can be approved.');
+        }
+
+        // Rosters with Transport officers require CD (Fleet CD) approval first
+        if ($roster->hasTransportOfficers() && !$roster->cd_approved_at) {
+            return redirect()->back()
+                ->with('error', 'This roster includes Transport officers. CD (Fleet CD) approval is required before Area Controller can approve.');
         }
 
         try {
@@ -984,12 +990,18 @@ class DutyRosterController extends Controller
             abort(403, 'Only DC Admin can approve rosters');
         }
 
-        $roster = \App\Models\DutyRoster::findOrFail($id);
+        $roster = \App\Models\DutyRoster::with('assignments.officer')->findOrFail($id);
 
         // Only allow approving SUBMITTED rosters
         if ($roster->status !== 'SUBMITTED') {
             return redirect()->back()
                 ->with('error', 'Only SUBMITTED rosters can be approved.');
+        }
+
+        // Rosters with Transport officers require CD (Fleet CD) approval first
+        if ($roster->hasTransportOfficers() && !$roster->cd_approved_at) {
+            return redirect()->back()
+                ->with('error', 'This roster includes Transport officers. CD (Fleet CD) approval is required before DC Admin can approve.');
         }
 
         try {
@@ -1079,6 +1091,94 @@ class DutyRosterController extends Controller
             return redirect()->back()
                 ->with('error', 'Failed to reject roster: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * CD (Fleet CD) roster approval - for rosters with Transport officers.
+     */
+    public function cdIndex(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user->hasRole('CD')) {
+            abort(403, 'Only CD (Fleet CD) can access roster approvals.');
+        }
+
+        $cdRole = $user->roles()
+            ->where('name', 'CD')
+            ->wherePivot('is_active', true)
+            ->first();
+        $commandId = $cdRole?->pivot->command_id ?? null;
+
+        $rosters = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer'])
+            ->where('status', 'SUBMITTED')
+            ->where('command_id', $commandId)
+            ->whereNull('cd_approved_at')
+            ->whereHas('assignments.officer', fn ($q) => $q->where('unit', 'Transport'))
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('dashboards.fleet.cd-roster-index', compact('rosters'));
+    }
+
+    public function cdShow($id)
+    {
+        $user = auth()->user();
+        if (!$user->hasRole('CD')) {
+            abort(403, 'Only CD (Fleet CD) can approve rosters.');
+        }
+
+        $roster = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments.officer', 'oicOfficer', 'secondInCommandOfficer'])->findOrFail($id);
+
+        if ($roster->status !== 'SUBMITTED' || $roster->cd_approved_at) {
+            abort(403, 'This roster is not pending CD approval.');
+        }
+
+        $cdRole = $user->roles()->where('name', 'CD')->wherePivot('is_active', true)->first();
+        $commandId = $cdRole?->pivot->command_id ?? null;
+        if ((int) $roster->command_id !== (int) $commandId) {
+            abort(403, 'You can only approve rosters for your command.');
+        }
+
+        if (!$roster->hasTransportOfficers()) {
+            abort(403, 'This roster does not include Transport officers and does not require CD approval.');
+        }
+
+        return view('dashboards.fleet.cd-roster-show', compact('roster'));
+    }
+
+    public function cdApprove(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user->hasRole('CD')) {
+            abort(403, 'Only CD (Fleet CD) can approve rosters.');
+        }
+
+        $roster = \App\Models\DutyRoster::with('assignments.officer')->findOrFail($id);
+
+        if ($roster->status !== 'SUBMITTED' || $roster->cd_approved_at) {
+            return redirect()->back()
+                ->with('error', 'This roster is not pending CD approval.');
+        }
+
+        $cdRole = $user->roles()->where('name', 'CD')->wherePivot('is_active', true)->first();
+        $commandId = $cdRole?->pivot->command_id ?? null;
+        if ((int) $roster->command_id !== (int) $commandId) {
+            abort(403, 'You can only approve rosters for your command.');
+        }
+
+        if (!$roster->hasTransportOfficers()) {
+            return redirect()->back()
+                ->with('error', 'This roster does not include Transport officers and does not require CD approval.');
+        }
+
+        $approvingOfficer = $user->officer;
+        $roster->cd_approved_at = now();
+        $roster->cd_approved_by = $approvingOfficer?->id;
+        $roster->save();
+
+        return redirect()->route('fleet.roster.cd-index')
+            ->with('success', 'Roster approved. Area Controller or DC Admin can now give final approval.');
     }
 }
 

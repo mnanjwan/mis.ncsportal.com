@@ -77,7 +77,7 @@
                                 <div class="grid gap-3">
                                     <div><strong>Date of First Appointment:</strong> {{ $step2['date_of_first_appointment'] ?? 'N/A' }}</div>
                                     <div><strong>Date of Present Appointment:</strong> {{ $step2['date_of_present_appointment'] ?? 'N/A' }}</div>
-                                    <div><strong>Substantive Rank:</strong> {{ $step2['substantive_rank'] ?? 'N/A' }}</div>
+                                    <div><strong>Substantive Rank:</strong> {{ (isset($step2['unit']) && $step2['unit'] === 'Transport') ? ($step2['substantive_rank'] ?? 'N/A') . ' (T)' : ($step2['substantive_rank'] ?? 'N/A') }}</div>
                                     <div><strong>Salary Grade Level:</strong> {{ $step2['salary_grade_level'] ?? 'N/A' }}</div>
                                     <div><strong>Zone:</strong> {{ $zone->name ?? ($step2['zone_id'] ?? 'N/A') }}</div>
                                     <div><strong>Command/Present Station:</strong> {{ $command->name ?? ($step2['command_id'] ?? 'N/A') }}</div>

@@ -162,7 +162,7 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                            {{ $officer->substantive_rank ?? 'N/A' }}
+                                            {{ $officer->display_rank }}
                                         </td>
                                         <td class="py-3 px-4" style="white-space: nowrap;">
                                             @if($isDocumented)
@@ -237,7 +237,7 @@
                                             SVC: {{ $officer->service_number ?? 'N/A' }}
                                         </span>
                                         <span class="text-xs text-secondary-foreground">
-                                            {{ $officer->substantive_rank ?? 'N/A' }}
+                                            {{ $officer->display_rank }}
                                         </span>
                                         <div class="mt-1">
                                             @if($isDocumented)

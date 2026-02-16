@@ -237,7 +237,7 @@
                 
                 // Sort assignments by rank
                 $sortedAssignments = $commandAssignments->sortBy(function($assignment) use ($rankOrder) {
-                    $rank = $assignment->officer->substantive_rank ?? '';
+                    $rank = $assignment->officer->display_rank ?? '';
                     return $rankOrder[$rank] ?? 999;
                 });
                 
@@ -246,7 +246,7 @@
                     $officer = $assignment->officer;
                     $items[] = [
                         'serial_number' => $serialNumber++,
-                        'rank' => $officer->substantive_rank ?? 'N/A',
+                        'rank' => $officer->display_rank ?? 'N/A',
                         'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
                         'service_number' => $officer->service_number ?? 'N/A',
                         'previous_posting' => $assignment->fromCommand->name ?? 'N/A',

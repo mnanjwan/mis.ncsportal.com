@@ -62,7 +62,7 @@
                         </div>
                         <div>
                             <span class="text-sm text-secondary-foreground">Rank:</span>
-                            <p class="font-medium">{{ $investigation->officer->substantive_rank }}</p>
+                            <p class="font-medium">{{ $investigation->officer->display_rank }}</p>
                         </div>
                         <div>
                             <span class="text-sm text-secondary-foreground">Command:</span>

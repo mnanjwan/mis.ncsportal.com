@@ -133,7 +133,7 @@
                                             {{ ($allocation->officer->initials ?? '') . ' ' . ($allocation->officer->surname ?? '') }}
                                         </span>
                                         <span class="text-xs text-secondary-foreground">
-                                            {{ $allocation->officer->service_number ?? 'N/A' }} • {{ $allocation->officer->substantive_rank ?? 'N/A' }}
+                                            {{ $allocation->officer->service_number ?? 'N/A' }} • {{ $allocation->officer->display_rank }}
                                         </span>
                                     </div>
                                     <span class="kt-badge kt-badge-danger kt-badge-sm">REJECTED</span>

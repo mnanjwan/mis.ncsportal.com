@@ -336,6 +336,12 @@
                                 <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
+                        <div id="assign_to_transport_container" class="mt-3 hidden">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="assign_to_transport" value="1" class="rounded">
+                                <span class="text-sm text-foreground">Assign to Transport (rank will display with (T))</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 
@@ -388,6 +394,15 @@
         </div>
     </form>
 </div>
+
+@push('styles')
+<style>
+    /* Ensure select dropdowns stack above other content */
+    #officer-edit-form [id$="_dropdown"] {
+        z-index: 9999 !important;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -610,8 +625,9 @@ function createSearchableSelect(config) {
         renderOptions(filteredOptions);
     });
 
-    // Toggle dropdown
+    // Toggle dropdown (preventDefault avoids any default button behavior interfering)
     trigger.addEventListener('click', function(e) {
+        e.preventDefault();
         e.stopPropagation();
         dropdown.classList.toggle('hidden');
         if (!dropdown.classList.contains('hidden')) {
@@ -684,11 +700,12 @@ function initializeSearchableSelects() {
         @endforeach
     ];
 
-    // Unit options
+    // Unit options (Support Services (SS) = same as Support Staff per spec)
     const unitOptions = [
         {id: '', name: 'Select Unit...'},
         {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-        {id: 'Support Staff (SS)', name: 'Support Staff (SS)'}
+        {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+        {id: 'Transport', name: 'Transport'}
     ];
 
     // Initialize sex select
@@ -818,7 +835,7 @@ function initializeSearchableSelects() {
         }
     });
 
-    // Initialize unit select
+    // Initialize unit select with Assign to Transport logic (when Unit = Support Services (SS))
     createSearchableSelect({
         triggerId: 'unit_select_trigger',
         hiddenInputId: 'unit_id',
@@ -828,8 +845,44 @@ function initializeSearchableSelects() {
         displayTextId: 'unit_select_text',
         options: unitOptions,
         placeholder: 'Select Unit...',
-        searchPlaceholder: 'Search unit...'
+        searchPlaceholder: 'Search unit...',
+        onSelect: function(option) {
+            const container = document.getElementById('assign_to_transport_container');
+            const checkbox = document.getElementById('assign_to_transport');
+            const unitInput = document.getElementById('unit_id');
+            if (container && checkbox && unitInput) {
+                if (option.id === 'Support Services (SS)') {
+                    container.classList.remove('hidden');
+                    checkbox.checked = false;
+                } else {
+                    container.classList.add('hidden');
+                    checkbox.checked = false;
+                }
+            }
+        }
     });
+    document.getElementById('assign_to_transport')?.addEventListener('change', function() {
+        const unitInput = document.getElementById('unit_id');
+        const unitText = document.getElementById('unit_select_text');
+        if (unitInput && unitText) {
+            if (this.checked) {
+                unitInput.value = 'Transport';
+                unitInput.name = 'unit';
+                unitText.textContent = 'Transport';
+            } else {
+                unitInput.value = 'Support Services (SS)';
+                unitInput.name = 'unit';
+                unitText.textContent = 'Support Services (SS)';
+            }
+        }
+    });
+    const initialUnit = document.getElementById('unit_id')?.value;
+    if (initialUnit === 'Support Services (SS)') {
+        document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
+    }
+    if (initialUnit === 'Transport') {
+        document.getElementById('assign_to_transport')?.checked = true;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async function() {

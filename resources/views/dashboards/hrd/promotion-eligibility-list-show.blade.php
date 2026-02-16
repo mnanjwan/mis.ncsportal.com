@@ -147,7 +147,7 @@
                                                 </span>
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $item->current_rank ?? ($item->officer->substantive_rank ?? 'N/A') }}
+                                                {{ $item->current_rank ?? ($item->officer->display_rank ?? 'N/A') }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $item->years_in_rank ?? 0 }} years
@@ -190,7 +190,7 @@
                                                 SVC: {{ $item->officer->service_number ?? 'N/A' }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
-                                                {{ $item->current_rank ?? ($item->officer->substantive_rank ?? 'N/A') }}
+                                                {{ $item->current_rank ?? ($item->officer->display_rank ?? 'N/A') }}
                                             </span>
                                             <span class="text-xs text-secondary-foreground">
                                                 Years in Rank: {{ $item->years_in_rank ?? 0 }}

@@ -288,7 +288,7 @@
                                                             Service Number: {{ $unit['oic']->service_number ?? 'N/A' }}
                                                         </span>
                                                         <span class="text-xs text-secondary-foreground">
-                                                            Rank: {{ $unit['oic']->substantive_rank ?? 'N/A' }}
+                                                            Rank: {{ $unit['oic']->display_rank }}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -310,7 +310,7 @@
                                                             Service Number: {{ $unit['second_ic']->service_number ?? 'N/A' }}
                                                         </span>
                                                         <span class="text-xs text-secondary-foreground">
-                                                            Rank: {{ $unit['second_ic']->substantive_rank ?? 'N/A' }}
+                                                            Rank: {{ $unit['second_ic']->display_rank }}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -336,7 +336,7 @@
                                                                     Service Number: {{ $member->service_number ?? 'N/A' }}
                                                                 </span>
                                                                 <span class="text-xs text-secondary-foreground">
-                                                                    Rank: {{ $member->substantive_rank ?? 'N/A' }}
+                                                                    Rank: {{ $member->display_rank }}
                                                                 </span>
                                                             </div>
                                                         </div>

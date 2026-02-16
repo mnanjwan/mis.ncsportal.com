@@ -55,3 +55,8 @@ Schedule::command('queries:check-expired')
 // Run every 6 hours to catch queries approaching deadline
 Schedule::command('queries:send-reminders')
     ->everySixHours();
+
+// Pharmacy: move expired stock from pharmacy_stocks to pharmacy_expired_drug_records
+Schedule::command('pharmacy:move-expired-stock')
+    ->daily()
+    ->at('00:05');

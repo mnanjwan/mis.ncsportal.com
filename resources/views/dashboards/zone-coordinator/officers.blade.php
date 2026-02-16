@@ -184,7 +184,7 @@ Zone Officers
                                         <span class="text-sm font-mono text-foreground">{{ $officer->service_number }}</span>
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                        {{ $officer->substantive_rank }}
+                                        {{ $officer->display_rank }}
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $officer->presentStation->name ?? 'N/A' }}

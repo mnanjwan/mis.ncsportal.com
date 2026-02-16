@@ -24,6 +24,17 @@
             <h3 class="kt-card-title">Duty Roster Details</h3>
         </div>
         <div class="kt-card-content">
+            @if($roster->hasTransportOfficers() && !$roster->cd_approved_at)
+                <div class="mb-6 p-4 rounded-lg bg-warning/10 border border-warning/30">
+                    <div class="flex items-center gap-3">
+                        <i class="ki-filled ki-information-2 text-warning text-xl"></i>
+                        <div>
+                            <p class="font-semibold text-warning">CD (Fleet CD) approval required</p>
+                            <p class="text-sm text-secondary-foreground mt-1">This roster includes Transport officers. The CD must approve it before you can give final approval. Ask the CD to visit Fleet → Roster Approvals.</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 @if($roster->unit)
                 <div>
@@ -82,7 +93,7 @@
                                 @foreach($roster->assignments as $assignment)
                                     <tr class="border-b border-border last:border-0">
                                         <td class="py-3 px-4 text-sm">
-                                            {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
+                                            {{ $assignment->officer->display_rank ?? '' }} {{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}
                                             @if($roster->oic_officer_id == $assignment->officer_id)
                                                 <span class="kt-badge kt-badge-success kt-badge-sm ml-2">OIC</span>
                                             @elseif($roster->second_in_command_officer_id == $assignment->officer_id)
@@ -100,9 +111,15 @@
 
             <div class="border-t border-border pt-6 mt-6">
                 <div class="flex gap-3">
+                    @if($roster->hasTransportOfficers() && !$roster->cd_approved_at)
+                        <span class="kt-btn kt-btn-secondary kt-btn-disabled" title="CD approval required first">
+                            <i class="ki-filled ki-check"></i> Approve (CD approval required)
+                        </span>
+                    @else
                     <button type="button" class="kt-btn kt-btn-success" data-kt-modal-toggle="#approve-modal">
                             <i class="ki-filled ki-check"></i> Approve
                         </button>
+                    @endif
                     <button type="button" class="kt-btn kt-btn-danger" onclick="showRejectModal()">
                         <i class="ki-filled ki-cross"></i> Reject
                     </button>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Fleet;
 
 use App\Http\Controllers\Controller;
+use App\Models\DutyRoster;
 use App\Models\FleetRequest;
 use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
@@ -99,12 +100,26 @@ class FleetDashboardController extends Controller
                     ['label' => 'Pending Returns', 'value' => $pendingReturns, 'icon' => 'ki-refresh', 'tone' => 'warning'],
                 ];
 
+                $rosterApprovalsCount = $commandId ? DutyRoster::where('status', 'SUBMITTED')
+                    ->where('command_id', $commandId)
+                    ->whereNull('cd_approved_at')
+                    ->whereHas('assignments.officer', fn ($q) => $q->where('unit', 'Transport'))
+                    ->count() : 0;
+
                 $quickLinks = [
                     ['label' => 'Create Request', 'href' => route('fleet.requests.create'), 'icon' => 'ki-file-up', 'tone' => 'primary'],
                     ['label' => 'View Requests', 'href' => route('fleet.requests.index'), 'icon' => 'ki-eye', 'tone' => 'info'],
                     ['label' => 'Command Vehicles', 'href' => route('fleet.vehicles.index'), 'icon' => 'ki-car', 'tone' => 'secondary'],
                     ['label' => 'Returns Report', 'href' => route('fleet.reports.returns'), 'icon' => 'ki-chart-simple', 'tone' => 'success'],
                 ];
+                if ($commandId) {
+                    $quickLinks[] = [
+                        'label' => 'Roster Approvals' . ($rosterApprovalsCount > 0 ? " ({$rosterApprovalsCount})" : ''),
+                        'href' => route('fleet.roster.cd-index'),
+                        'icon' => 'ki-calendar-tick',
+                        'tone' => $rosterApprovalsCount > 0 ? 'warning' : 'secondary',
+                    ];
+                }
                 break;
 
             case 'O/C T&L':

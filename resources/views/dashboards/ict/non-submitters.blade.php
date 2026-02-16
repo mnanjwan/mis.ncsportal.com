@@ -259,7 +259,7 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                            {{ $officer->substantive_rank ?? 'N/A' }}
+                                            {{ $officer->display_rank }}
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground">
                                             {{ $officer->presentStation->zone->name ?? 'N/A' }}
@@ -298,7 +298,7 @@
                                             {{ $officer->initials ?? '' }} {{ $officer->surname ?? '' }}
                                         </span>
                                         <span class="text-xs text-secondary-foreground">
-                                            Rank: {{ $officer->substantive_rank ?? 'N/A' }}
+                                            Rank: {{ $officer->display_rank }}
                                         </span>
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="text-xs text-secondary-foreground">
@@ -525,7 +525,7 @@
                                         div.className = 'p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 autocomplete-option';
                                         div.innerHTML = `
                                             <div class="text-sm font-medium text-foreground">${officer.initials} ${officer.surname}</div>
-                                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank}</div>
+                                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.display_rank || officer.substantive_rank}</div>
                                         `;
                                         div.addEventListener('click', () => {
                                             // Set search input value to service number or name

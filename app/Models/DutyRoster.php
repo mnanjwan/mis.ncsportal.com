@@ -20,6 +20,8 @@ class DutyRoster extends Model
         'rejection_reason',
         'oic_officer_id',
         'second_in_command_officer_id',
+        'cd_approved_at',
+        'cd_approved_by',
     ];
 
     protected function casts(): array
@@ -28,6 +30,7 @@ class DutyRoster extends Model
             'roster_period_start' => 'date',
             'roster_period_end' => 'date',
             'approved_at' => 'datetime',
+            'cd_approved_at' => 'datetime',
         ];
     }
 
@@ -60,6 +63,21 @@ class DutyRoster extends Model
     public function secondInCommandOfficer()
     {
         return $this->belongsTo(Officer::class, 'second_in_command_officer_id');
+    }
+
+    public function cdApprovedBy()
+    {
+        return $this->belongsTo(Officer::class, 'cd_approved_by');
+    }
+
+    /**
+     * Check if roster includes any Transport officers.
+     */
+    public function hasTransportOfficers(): bool
+    {
+        return $this->assignments()
+            ->whereHas('officer', fn ($q) => $q->where('unit', 'Transport'))
+            ->exists();
     }
 }
 

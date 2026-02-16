@@ -20,6 +20,7 @@ class OfficerResource extends JsonResource
             'date_of_first_appointment' => $this->date_of_first_appointment?->format('Y-m-d'),
             'date_of_present_appointment' => $this->date_of_present_appointment?->format('Y-m-d'),
             'substantive_rank' => $this->substantive_rank,
+            'display_rank' => $this->display_rank,
             'salary_grade_level' => $this->salary_grade_level,
             'state_of_origin' => $this->state_of_origin,
             'lga' => $this->lga,

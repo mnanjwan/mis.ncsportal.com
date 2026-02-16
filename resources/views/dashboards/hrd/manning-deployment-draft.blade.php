@@ -147,7 +147,7 @@
                                     @php
                                         // Group assignments by rank
                                         $assignmentsByRank = $assignments->groupBy(function($assignment) {
-                                            return $assignment->officer->substantive_rank ?? 'Unknown';
+                                            return $assignment->officer->display_rank ?? 'Unknown';
                                         });
                                     @endphp
                                     @foreach($assignmentsByRank as $rank => $rankAssignments)
@@ -186,7 +186,7 @@
                                                 {{ $assignment->officer->service_number ?? 'N/A' }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
-                                                {{ $assignment->officer->substantive_rank ?? 'N/A' }}
+                                                {{ $assignment->officer->display_rank }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-secondary-foreground">
                                                 {{ $assignment->fromCommand->name ?? 'N/A' }}
@@ -305,7 +305,7 @@
                             Select a new officer to replace <span class="font-semibold">{{ $assignment->officer->initials ?? '' }} {{ $assignment->officer->surname ?? '' }}</span>:
                         </p>
                         <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2">Search Officer (Same Rank: {{ $assignment->officer->substantive_rank ?? 'N/A' }})</label>
+                            <label class="block text-sm font-medium mb-2">Search Officer (Same Rank: {{ $assignment->officer->display_rank }})</label>
                             <input type="text" 
                                    id="officer-search-{{ $assignment->id }}" 
                                    class="kt-input w-full" 
@@ -348,7 +348,7 @@
                         </p>
                         <div class="p-3 bg-muted/50 rounded-lg">
                             <div class="text-sm text-secondary-foreground">
-                                <div><strong>Rank:</strong> {{ $assignment->officer->substantive_rank ?? 'N/A' }}</div>
+                                <div><strong>Rank:</strong> {{ $assignment->officer->display_rank }}</div>
                                 <div><strong>From:</strong> {{ $assignment->fromCommand->name ?? 'N/A' }}</div>
                                 <div><strong>To:</strong> {{ $assignment->toCommand->name ?? 'N/A' }}</div>
                             </div>
@@ -554,7 +554,7 @@ let searchTimeout;
                         div.className = 'p-3 hover:bg-muted cursor-pointer border-b border-input last:border-0';
                         div.innerHTML = `
                             <div class="font-semibold">${officer.initials} ${officer.surname}</div>
-                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
+                            <div class="text-xs text-secondary-foreground">${officer.service_number} - ${officer.display_rank || officer.substantive_rank} - ${officer.present_station_name || 'N/A'}</div>
                         `;
                         div.addEventListener('click', () => {
                                             const newOfficerIdInput = document.getElementById(`new-officer-id-${assignmentId}`);

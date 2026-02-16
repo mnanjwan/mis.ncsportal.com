@@ -293,7 +293,7 @@ function renderOfficers(officers) {
                 <span class="text-sm font-medium text-foreground">${(officer.initials || '') + ' ' + (officer.surname || '')}</span>
             </td>
             <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                ${officer.substantive_rank || 'N/A'}
+                ${officer.display_rank || 'N/A'}
             </td>
             <td class="py-3 px-4" style="white-space: nowrap;">
                 ${officer.has_pending_allocation ? `

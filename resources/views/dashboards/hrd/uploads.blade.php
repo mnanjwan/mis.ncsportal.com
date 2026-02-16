@@ -98,7 +98,7 @@
                             <p class="text-sm text-secondary-foreground">
                                 Service Number: <span class="font-medium">{{ $selectedOfficer->service_number ?? 'N/A' }}</span>
                                 <span class="mx-2">|</span>
-                                Rank: <span class="font-medium">{{ $selectedOfficer->substantive_rank ?? 'N/A' }}</span>
+                                Rank: <span class="font-medium">{{ $selectedOfficer->display_rank }}</span>
                             </p>
                         </div>
                         <div class="ml-auto">

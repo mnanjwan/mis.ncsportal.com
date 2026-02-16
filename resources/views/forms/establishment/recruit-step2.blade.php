@@ -78,8 +78,10 @@
                         <label class="kt-form-label">Substantive Rank <span class="text-danger">*</span></label>
                         @php
                             $rankValue = old('substantive_rank', $savedData['substantive_rank'] ?? ($recruit && $recruit->substantive_rank ? $recruit->substantive_rank : ''));
+                            $unitForDisplay = old('unit', $savedData['unit'] ?? ($recruit && $recruit->unit ? $recruit->unit : ''));
+                            $displayRankValue = ($unitForDisplay === 'Transport' && $rankValue) ? $rankValue . ' (T)' : $rankValue;
                         @endphp
-                        <input type="text" id="substantive_rank" class="kt-input" value="{{ $rankValue }}" readonly/>
+                        <input type="text" id="substantive_rank" class="kt-input" value="{{ $displayRankValue }}" readonly/>
                         <input type="hidden" name="substantive_rank" value="{{ $rankValue }}">
                         <span class="error-message text-sm hidden"></span>
                     </div>

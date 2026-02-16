@@ -742,6 +742,11 @@ Route::middleware('auth')->group(function () {
         // Reports
         Route::get('/reports/returns', [FleetReportsController::class, 'returnsReport'])->middleware('role:CC T&L|CD')->name('reports.returns');
         Route::get('/reports/serviceability', [FleetReportsController::class, 'serviceabilityReport'])->middleware('role:CD|CC T&L')->name('reports.serviceability');
+
+        // CD Roster Approval (for rosters with Transport officers)
+        Route::get('/roster/cd', [DutyRosterController::class, 'cdIndex'])->middleware('role:CD')->name('roster.cd-index');
+        Route::get('/roster/cd/{id}', [DutyRosterController::class, 'cdShow'])->middleware('role:CD')->name('roster.cd-show');
+        Route::post('/roster/cd/{id}/approve', [DutyRosterController::class, 'cdApprove'])->middleware('role:CD')->name('roster.cd-approve');
     });
 
     // Establishment Routes

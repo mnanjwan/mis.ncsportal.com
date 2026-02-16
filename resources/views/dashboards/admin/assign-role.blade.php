@@ -179,7 +179,7 @@
                     'id' => $officer->id,
                     'name' => $name,
                     'service_number' => $officer->service_number ?? 'N/A',
-                    'rank' => $officer->substantive_rank ?? 'N/A'
+                    'rank' => $officer->display_rank ?? 'N/A'
                 ];
             })->values();
             $rolesData = $assignableRoles->map(function($role) {

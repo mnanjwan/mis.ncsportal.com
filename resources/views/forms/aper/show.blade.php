@@ -54,7 +54,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Rank</p>
-                            <p class="text-base font-semibold text-foreground">{{ $form->rank ?? $form->officer->substantive_rank ?? 'N/A' }}</p>
+                            <p class="text-base font-semibold text-foreground">{{ $form->rank ?? $form->officer->display_rank ?? 'N/A' }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-1">Year</p>
@@ -220,7 +220,7 @@
                     </div>
                     <div>
                         <label class="kt-form-label text-sm">Rank</label>
-                        <p class="text-sm text-foreground">{{ $form->rank ?? $form->officer->substantive_rank }}</p>
+                        <p class="text-sm text-foreground">{{ $form->rank ?? $form->officer->display_rank }}</p>
                     </div>
                     <div>
                         <label class="kt-form-label text-sm">Date of Birth</label>

@@ -222,7 +222,7 @@
                                             </span>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                            {{ $officer->substantive_rank ?? 'N/A' }}
+                                            {{ $officer->display_rank }}
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             {{ $officer->presentStation->name ?? 'N/A' }}
