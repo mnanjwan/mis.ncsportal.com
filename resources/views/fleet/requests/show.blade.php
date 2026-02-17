@@ -98,7 +98,7 @@
         </div>
 
         {{-- Vehicle requested: full specification (New Vehicle) --}}
-        @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE')
+        {{-- @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE')
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Vehicle requested (full specification)</h3>
@@ -117,7 +117,7 @@
                     </div>
                 </div>
             </div>
-        @endif
+        @endif --}}
 
         {{-- Specific vehicle(s) proposed by CC T&L (when any reserved) --}}
         @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $fleetRequest->reservedVehicles->isNotEmpty())
