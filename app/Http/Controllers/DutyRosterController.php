@@ -160,6 +160,33 @@ class DutyRosterController extends Controller
                 'second_in_command_officer_id' => $request->second_in_command_officer_id,
             ]);
 
+            // Reassignment: remove OIC/2IC from previous roster and notify
+            $notificationService = app(NotificationService::class);
+            if ($request->filled('reassign_oic_roster_id') && $request->oic_officer_id) {
+                $fromRosterId = (int) $request->reassign_oic_roster_id;
+                $fromRoster = \App\Models\DutyRoster::where('id', $fromRosterId)->where('command_id', $commandId)->first();
+                if ($fromRoster && ($fromRoster->oic_officer_id == $request->oic_officer_id || $fromRoster->second_in_command_officer_id == $request->oic_officer_id || $fromRoster->assignments()->where('officer_id', $request->oic_officer_id)->exists())) {
+                    $removed = $this->removeOfficerFromRoster((int) $request->oic_officer_id, $fromRosterId);
+                    if ($removed) {
+                        $officer = \App\Models\Officer::find($request->oic_officer_id);
+                        $newDisplay = ($roster->unit ?? 'Roster') . ' (' . \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') . ')';
+                        $notificationService->notifyOfficerReassignedFromRoster($removed['roster'], $officer, $roster, $newDisplay);
+                    }
+                }
+            }
+            if ($request->filled('reassign_2ic_roster_id') && $request->second_in_command_officer_id) {
+                $fromRosterId = (int) $request->reassign_2ic_roster_id;
+                $fromRoster = \App\Models\DutyRoster::where('id', $fromRosterId)->where('command_id', $commandId)->first();
+                if ($fromRoster && ($fromRoster->oic_officer_id == $request->second_in_command_officer_id || $fromRoster->second_in_command_officer_id == $request->second_in_command_officer_id || $fromRoster->assignments()->where('officer_id', $request->second_in_command_officer_id)->exists())) {
+                    $removed = $this->removeOfficerFromRoster((int) $request->second_in_command_officer_id, $fromRosterId);
+                    if ($removed) {
+                        $officer = \App\Models\Officer::find($request->second_in_command_officer_id);
+                        $newDisplay = ($roster->unit ?? 'Roster') . ' (' . \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') . ')';
+                        $notificationService->notifyOfficerReassignedFromRoster($removed['roster'], $officer, $roster, $newDisplay);
+                    }
+                }
+            }
+
             return redirect()->route('staff-officer.roster.show', $roster->id)
                 ->with('success', 'Duty roster created successfully! You can now add officer assignments.');
 
@@ -388,6 +415,43 @@ class DutyRosterController extends Controller
         return null;
     }
 
+    /**
+     * Remove an officer from a roster (OIC, 2IC, or assignment).
+     * Returns ['roster' => DutyRoster, 'role' => 'OIC'|'2IC'|'member'] or null if officer was not on that roster.
+     */
+    private function removeOfficerFromRoster(int $officerId, int $rosterId): ?array
+    {
+        $roster = \App\Models\DutyRoster::find($rosterId);
+        if (!$roster) {
+            return null;
+        }
+
+        $role = null;
+        if ($roster->oic_officer_id == $officerId) {
+            $roster->oic_officer_id = null;
+            $roster->save();
+            $role = 'OIC';
+        } elseif ($roster->second_in_command_officer_id == $officerId) {
+            $roster->second_in_command_officer_id = null;
+            $roster->save();
+            $role = '2IC';
+        } else {
+            $assignment = \App\Models\RosterAssignment::where('roster_id', $rosterId)
+                ->where('officer_id', $officerId)
+                ->first();
+            if ($assignment) {
+                $assignment->delete();
+                $role = 'member';
+            }
+        }
+
+        if ($role === null) {
+            return null;
+        }
+
+        return ['roster' => $roster->fresh(['command', 'oicOfficer', 'secondInCommandOfficer', 'preparedBy']), 'role' => $role];
+    }
+
     public function update(Request $request, $id)
     {
         $roster = \App\Models\DutyRoster::findOrFail($id);
@@ -487,6 +551,48 @@ class DutyRosterController extends Controller
             return redirect()->back()
                 ->with('error', 'The Officer in Charge (OIC) cannot be the same as the Second In Command (2IC).')
                 ->withInput();
+        }
+
+        // Reassignment: remove officers from previous rosters first (so they pass the "already in approved roster" check below)
+        $reassignRosterIds = [];
+        if ($request->filled('reassign_roster_ids')) {
+            $decoded = json_decode($request->reassign_roster_ids, true);
+            if (is_array($decoded)) {
+                $reassignRosterIds = $decoded;
+            }
+        }
+        if (!empty($reassignRosterIds)) {
+            DB::beginTransaction();
+            try {
+                $notificationService = app(NotificationService::class);
+                $newDisplay = ($request->input('unit', $roster->unit) ?: 'Roster') . ' (' . \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') . ')';
+                foreach ($reassignRosterIds as $officerIdStr => $fromRosterIdStr) {
+                    $officerId = (int) $officerIdStr;
+                    $fromRosterId = (int) $fromRosterIdStr;
+                    $fromRoster = \App\Models\DutyRoster::where('id', $fromRosterId)->where('command_id', $commandId)->first();
+                    if (!$fromRoster || $fromRoster->id == $roster->id) {
+                        continue;
+                    }
+                    $isOnRoster = $fromRoster->oic_officer_id == $officerId || $fromRoster->second_in_command_officer_id == $officerId || $fromRoster->assignments()->where('officer_id', $officerId)->exists();
+                    if (!$isOnRoster) {
+                        continue;
+                    }
+                    $removed = $this->removeOfficerFromRoster($officerId, $fromRosterId);
+                    if ($removed) {
+                        $officer = \App\Models\Officer::find($officerId);
+                        if ($officer) {
+                            $notificationService->notifyOfficerReassignedFromRoster($removed['roster'], $officer, $roster, $newDisplay);
+                        }
+                    }
+                }
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Failed to process roster reassignments: ' . $e->getMessage());
+                return redirect()->back()
+                    ->with('error', 'Failed to process reassignment: ' . $e->getMessage())
+                    ->withInput();
+            }
         }
 
         // Check for active APER timeline

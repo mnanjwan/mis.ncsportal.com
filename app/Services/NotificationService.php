@@ -2349,6 +2349,56 @@ class NotificationService
     }
 
     /**
+     * Notify officer and Staff Officer when an officer is reassigned from one roster to another.
+     * Notifies: (1) the officer (removed from previous, assigned to new), (2) Staff Officer who prepared the previous roster.
+     */
+    public function notifyOfficerReassignedFromRoster($previousRoster, $officer, $newRoster, string $newRosterDisplayName): array
+    {
+        $notifications = [];
+        if (!$officer || !$previousRoster) {
+            return $notifications;
+        }
+
+        $command = $previousRoster->command;
+        $commandName = $command ? $command->name : 'your command';
+        $periodStart = $previousRoster->roster_period_start ? \Carbon\Carbon::parse($previousRoster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $previousRoster->roster_period_end ? \Carbon\Carbon::parse($previousRoster->roster_period_end)->format('d/m/Y') : 'N/A';
+        $previousDisplayName = ($previousRoster->unit ?? 'Roster') . ' (' . $periodStart . ' - ' . $periodEnd . ')';
+
+        // Notify the officer: removed from previous roster, reassigned to new
+        if ($officer->user) {
+            $message = "You have been reassigned from duty roster {$previousDisplayName} to {$newRosterDisplayName}. You are no longer on the previous roster.";
+            $notifications[] = $this->notify(
+                $officer->user,
+                'duty_roster_removed',
+                'Duty Roster Reassignment',
+                $message,
+                'duty_roster',
+                $previousRoster->id,
+                true
+            );
+        }
+
+        // Notify Staff Officer who prepared the previous roster (if different from current user)
+        $preparedBy = $previousRoster->preparedBy;
+        $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+        if ($preparedBy && $preparedBy->id !== auth()->id()) {
+            $message = "Officer {$officerName} has been reassigned from your roster {$previousDisplayName} to {$newRosterDisplayName}.";
+            $notifications[] = $this->notify(
+                $preparedBy,
+                'duty_roster_officer_reassigned',
+                'Officer Reassigned From Roster',
+                $message,
+                'duty_roster',
+                $previousRoster->id,
+                true
+            );
+        }
+
+        return $notifications;
+    }
+
+    /**
      * Notify DC Admins about submitted duty roster ready for approval
      */
     public function notifyDutyRosterSubmitted($roster): array

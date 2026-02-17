@@ -139,6 +139,7 @@
                                     </label>
                                     <div class="relative">
                                         <input type="hidden" name="oic_officer_id" id="oic_officer_id" value="{{ old('oic_officer_id') }}">
+                                        <input type="hidden" name="reassign_oic_roster_id" id="reassign_oic_roster_id" value="">
                                         <button type="button" 
                                                 id="oic_select_trigger" 
                                                 class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('oic_officer_id') ? 'border-danger' : '' }}">
@@ -164,13 +165,14 @@
                                                         $isAssigned = $officerData['is_assigned'];
                                                         $assignedRoster = $officerData['assigned_roster'];
                                                     @endphp
-                                                    <div class="p-3 border-b border-input last:border-0 officer-option {{ $isAssigned ? 'opacity-60 cursor-not-allowed bg-muted/30' : 'hover:bg-muted/50 cursor-pointer' }}" 
+                                                    <div class="p-3 border-b border-input last:border-0 officer-option {{ $isAssigned ? 'opacity-60 cursor-pointer hover:bg-muted/50' : 'hover:bg-muted/50 cursor-pointer' }}" 
                                                          data-id="{{ $officer->id }}" 
                                                          data-name="{{ $officer->initials }} {{ $officer->surname }}"
                                                          data-service="{{ $officer->service_number }}"
                                                          data-rank="{{ $officer->substantive_rank }}"
                                                          data-assigned="{{ $isAssigned ? 'true' : 'false' }}"
-                                                         data-roster-name="{{ $isAssigned && $assignedRoster ? $assignedRoster['display_name'] : '' }}">
+                                                         data-roster-name="{{ $isAssigned && $assignedRoster ? $assignedRoster['display_name'] : '' }}"
+                                                         data-roster-id="{{ $isAssigned && $assignedRoster ? $assignedRoster['id'] : '' }}">
                                                         <div class="flex items-center justify-between">
                                                             <div class="flex-1">
                                                                 <div class="text-sm text-foreground">{{ $officer->initials }} {{ $officer->surname }}</div>
@@ -197,6 +199,7 @@
                                     </label>
                                     <div class="relative">
                                         <input type="hidden" name="second_in_command_officer_id" id="second_in_command_officer_id" value="{{ old('second_in_command_officer_id') }}">
+                                        <input type="hidden" name="reassign_2ic_roster_id" id="reassign_2ic_roster_id" value="">
                                         <button type="button" 
                                                 id="second_ic_select_trigger" 
                                                 class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('second_in_command_officer_id') ? 'border-danger' : '' }}">
@@ -228,7 +231,8 @@
                                                          data-service="{{ $officer->service_number }}"
                                                          data-rank="{{ $officer->substantive_rank }}"
                                                          data-assigned="{{ $isAssigned ? 'true' : 'false' }}"
-                                                         data-roster-name="{{ $isAssigned && $assignedRoster ? $assignedRoster['display_name'] : '' }}">
+                                                         data-roster-name="{{ $isAssigned && $assignedRoster ? $assignedRoster['display_name'] : '' }}"
+                                                         data-roster-id="{{ $isAssigned && $assignedRoster ? $assignedRoster['id'] : '' }}">
                                                         <div class="flex items-center justify-between">
                                                             <div class="flex-1">
                                                                 <div class="text-sm text-foreground">{{ $officer->initials }} {{ $officer->surname }}</div>
@@ -380,29 +384,32 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        const reassignInput = document.getElementById(prefix === 'oic' ? 'reassign_oic_roster_id' : 'reassign_2ic_roster_id');
+
         optionsContainer.addEventListener('click', function(e) {
             const option = e.target.closest('.officer-option');
             if (option) {
                 const isAssigned = option.dataset.assigned === 'true';
                 const rosterName = option.dataset.rosterName || '';
+                const rosterId = option.dataset.rosterId || '';
                 
-                // Prevent selection of assigned officers
                 if (isAssigned) {
-                    alert(`This officer is already assigned to an active roster: ${rosterName}. Please select a different officer.`);
-                    return;
+                    const msg = `This officer is already assigned to: ${rosterName}.\n\nReassign to this roster? They will be removed from the previous roster and the officer plus relevant parties will be notified.`;
+                    if (!confirm(msg)) return;
+                    if (reassignInput) reassignInput.value = rosterId;
+                } else {
+                    if (reassignInput) reassignInput.value = '';
                 }
                 
                 const id = option.dataset.id;
                 const name = option.dataset.name;
                 const service = option.dataset.service;
-                const rank = option.dataset.rank;
 
                 hiddenInput.value = id;
                 text.textContent = `${name} (${service})`;
                 dropdown.classList.add('hidden');
                 searchInput.value = '';
                 
-                // Reset search display
                 options.forEach(opt => opt.style.display = 'block');
             }
         });

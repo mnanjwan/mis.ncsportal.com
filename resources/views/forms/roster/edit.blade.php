@@ -87,6 +87,7 @@
         <form class="kt-card" method="POST" action="{{ route('staff-officer.roster.update', $roster->id) }}" id="roster-edit-form">
             @csrf
             @method('PUT')
+            <input type="hidden" name="reassign_roster_ids" id="reassign_roster_ids" value="">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Roster Leadership & Assignments</h3>
             </div>
