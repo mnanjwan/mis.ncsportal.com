@@ -97,6 +97,96 @@
             </div>
         </div>
 
+        {{-- Vehicle requested: full specification (New Vehicle) --}}
+        @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE')
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Vehicle requested (full specification)</h3>
+                </div>
+                <div class="kt-card-content p-5 lg:p-7.5">
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full text-sm">
+                            <tbody>
+                                <tr><td class="font-medium w-48">Vehicle type</td><td>{{ $fleetRequest->requested_vehicle_type ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Quantity</td><td>{{ $fleetRequest->requested_quantity ?? 1 }}</td></tr>
+                                <tr><td class="font-medium">Make</td><td>{{ $fleetRequest->requested_make ?: 'Not specified' }}</td></tr>
+                                <tr><td class="font-medium">Model</td><td>{{ $fleetRequest->requested_model ?: 'Not specified' }}</td></tr>
+                                <tr><td class="font-medium">Year</td><td>{{ $fleetRequest->requested_year ?: 'Not specified' }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Specific vehicle(s) proposed by CC T&L (when any reserved) --}}
+        @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $fleetRequest->reservedVehicles->isNotEmpty())
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Vehicles proposed for this request ({{ $fleetRequest->reservedVehicles->count() }})</h3>
+                </div>
+                <div class="kt-card-content p-5 lg:p-7.5">
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full text-sm">
+                            <thead>
+                                <tr>
+                                    <th class="text-left">Reg No</th>
+                                    <th class="text-left">Chassis No</th>
+                                    <th class="text-left">Engine No</th>
+                                    <th class="text-left">Make</th>
+                                    <th class="text-left">Model</th>
+                                    <th class="text-left">Year</th>
+                                    <th class="text-left">Type</th>
+                                    <th class="text-left">Service status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($fleetRequest->reservedVehicles as $v)
+                                    <tr>
+                                        <td>{{ $v->reg_no ?? '–' }}</td>
+                                        <td>{{ $v->chassis_number ?? '–' }}</td>
+                                        <td>{{ $v->engine_number ?? '–' }}</td>
+                                        <td>{{ $v->make ?? '–' }}</td>
+                                        <td>{{ $v->model ?? '–' }}</td>
+                                        <td>{{ $v->year_of_manufacture ?? '–' }}</td>
+                                        <td>{{ $v->vehicle_type ?? '–' }}</td>
+                                        <td>{{ $v->service_status ?? '–' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Specific vehicle requested (Re-allocation / Repair / OPE / Use) --}}
+        @if(in_array($fleetRequest->request_type, ['FLEET_RE_ALLOCATION', 'FLEET_REPAIR', 'FLEET_OPE', 'FLEET_USE']) && $fleetRequest->vehicle)
+            @php $v = $fleetRequest->vehicle; @endphp
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Vehicle requested (full details)</h3>
+                </div>
+                <div class="kt-card-content p-5 lg:p-7.5">
+                    <div class="overflow-x-auto">
+                        <table class="kt-table w-full text-sm">
+                            <tbody>
+                                <tr><td class="font-medium w-48">Registration number</td><td>{{ $v->reg_no ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Chassis number</td><td>{{ $v->chassis_number ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Engine number</td><td>{{ $v->engine_number ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Make</td><td>{{ $v->make ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Model</td><td>{{ $v->model ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Year of manufacture</td><td>{{ $v->year_of_manufacture ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Vehicle type</td><td>{{ $v->vehicle_type ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Service status</td><td>{{ $v->service_status ?? '–' }}</td></tr>
+                                <tr><td class="font-medium">Lifecycle status</td><td>{{ $v->lifecycle_status ?? '–' }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         @php
             $currentStep = $fleetRequest->steps->firstWhere('step_order', $fleetRequest->current_step_order);
             $currentRole = $currentStep?->role_name;
