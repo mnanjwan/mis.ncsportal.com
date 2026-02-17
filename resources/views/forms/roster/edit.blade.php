@@ -1004,8 +1004,9 @@ function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenIn
         const isAssigned = officer.is_assigned === true;
         const assignedRoster = officer.assigned_roster || null;
         const rosterDisplayName = assignedRoster ? assignedRoster.display_name : '';
+        const rosterId = assignedRoster ? assignedRoster.id : '';
         const optionClass = isAssigned 
-            ? 'p-3 opacity-60 cursor-not-allowed bg-muted/30 border-b border-input last:border-0 assignment-officer-option' 
+            ? 'p-3 opacity-60 cursor-pointer hover:bg-muted/50 border-b border-input last:border-0 assignment-officer-option' 
             : 'p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 assignment-officer-option';
         
         return `
@@ -1015,7 +1016,8 @@ function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenIn
                  data-service="${details}"
                  data-rank="${officer.rank}"
                  data-assigned="${isAssigned ? 'true' : 'false'}"
-                 data-roster-name="${rosterDisplayName}">
+                 data-roster-name="${rosterDisplayName}"
+                 data-roster-id="${rosterId}">
                 <div class="flex items-center justify-between">
                     <div class="flex-1">
                         <div class="text-sm text-foreground">${officer.name}</div>
@@ -1051,24 +1053,25 @@ function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenIn
         option.addEventListener('click', function() {
             const isAssigned = this.dataset.assigned === 'true';
             const rosterName = this.dataset.rosterName || '';
+            const rosterId = this.dataset.rosterId || '';
+            const id = this.dataset.id;
             
-            // Prevent selection of assigned officers
             if (isAssigned) {
-                alert(`This officer is already assigned to an active roster: ${rosterName}. Please select a different officer.`);
-                return;
+                const msg = `This officer is already assigned to: ${rosterName}.\n\nReassign to this roster? They will be removed from the previous roster and relevant parties will be notified.`;
+                if (!confirm(msg)) return;
+                if (rosterId) reassignOfficerRosterIds[id] = rosterId;
+            } else {
+                delete reassignOfficerRosterIds[id];
             }
             
-            const id = this.dataset.id;
             const name = this.dataset.name;
             const service = this.dataset.service;
             const rank = this.dataset.rank;
             
-            // Update hidden input
             if (hiddenInput) {
                 hiddenInput.value = id;
             }
             
-            // Update display text
             const selectText = document.getElementById(`assignment-officer-${assignmentIndex}-text`);
             const dropdown = document.getElementById(`assignment-officer-${assignmentIndex}-dropdown`);
             const searchInput = document.getElementById(`assignment-officer-${assignmentIndex}-search-input`);
@@ -1077,16 +1080,8 @@ function renderAssignmentOfficerOptions(officersList, optionsContainer, hiddenIn
                 const displayText = name + (service !== 'N/A' && service ? ' (' + service + (rank !== 'N/A' ? ' - ' + rank : '') + ')' : '');
                 selectText.textContent = displayText;
             }
-            
-            // Close dropdown
-            if (dropdown) {
-                dropdown.classList.add('hidden');
-            }
-            
-            // Clear search
-            if (searchInput) {
-                searchInput.value = '';
-            }
+            if (dropdown) dropdown.classList.add('hidden');
+            if (searchInput) searchInput.value = '';
         });
     });
 }
@@ -1401,6 +1396,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Form validation before submit
     document.getElementById('roster-edit-form').addEventListener('submit', function(e) {
+        const reassignInput = document.getElementById('reassign_roster_ids');
+        if (reassignInput) reassignInput.value = JSON.stringify(reassignOfficerRosterIds);
+
         const commandId = document.getElementById('command_id') ? document.getElementById('command_id').value : null;
         const oicHiddenInput = document.getElementById('oic_officer_id');
         const secondIcHiddenInput = document.getElementById('second_in_command_officer_id');
