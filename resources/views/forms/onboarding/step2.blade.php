@@ -189,6 +189,12 @@
                                 </div>
                                 <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
+                            <div id="assign_to_transport_container" class="mt-3 hidden">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="assign_to_transport" value="1" class="rounded">
+                                    <span class="text-sm text-foreground">Assign to Transport (rank will display with (T))</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -560,17 +566,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error initializing rank/grade level selects:', error);
     }
     
-    // Initialize unit select
+    // Initialize unit select (GD, SS, Transport with Assign to Transport when SS)
     try {
-        // Unit options
-        const units = [
-            'GD',
-            'SS'
-        ];
-        
         const unitOptions = [
             {id: '', name: 'Select Unit...'},
-            ...units.map(unit => ({id: unit, name: unit}))
+            {id: 'General Duty (GD)', name: 'General Duty (GD)'},
+            {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+            {id: 'Transport', name: 'Transport'}
         ];
         
         createSearchableSelect({
@@ -582,7 +584,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             displayTextId: 'unit_select_text',
             options: unitOptions,
             placeholder: 'Select Unit...',
-            searchPlaceholder: 'Search unit...'
+            searchPlaceholder: 'Search unit...',
+            onSelect: function(option) {
+                const container = document.getElementById('assign_to_transport_container');
+                const checkbox = document.getElementById('assign_to_transport');
+                const unitInput = document.getElementById('unit_id');
+                if (container && checkbox && unitInput) {
+                    if (option.id === 'Support Services (SS)') {
+                        container.classList.remove('hidden');
+                        checkbox.checked = false;
+                    } else {
+                        container.classList.add('hidden');
+                        checkbox.checked = false;
+                    }
+                }
+            }
+        });
+        
+        document.getElementById('assign_to_transport')?.addEventListener('change', function() {
+            const unitInput = document.getElementById('unit_id');
+            const unitText = document.getElementById('unit_select_text');
+            if (unitInput && unitText) {
+                if (this.checked) {
+                    unitInput.value = 'Transport';
+                    unitText.textContent = 'Transport';
+                } else {
+                    unitInput.value = 'Support Services (SS)';
+                    unitText.textContent = 'Support Services (SS)';
+                }
+            }
         });
         
         // Set initial value if saved
@@ -590,6 +620,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (savedUnit) {
             document.getElementById('unit_id').value = savedUnit;
             document.getElementById('unit_select_text').textContent = savedUnit;
+            if (savedUnit === 'Support Services (SS)') {
+                document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
+            }
+            if (savedUnit === 'Transport') {
+                document.getElementById('assign_to_transport')?.checked = true;
+                document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
+            }
         }
     } catch (error) {
         console.error('Error initializing unit select:', error);

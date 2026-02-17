@@ -3,6 +3,21 @@
 @section('title', 'Edit Officer')
 @section('page-title', 'Edit Officer')
 
+@push('styles')
+<style>
+    /* Ensure dropdowns are visible - escape overflow clipping from scroll containers */
+    #officer-edit-form,
+    #officer-edit-form .kt-card,
+    #officer-edit-form .kt-card-content {
+        overflow: visible !important;
+    }
+    #officer-edit-form [id$="_dropdown"],
+    #officer-edit-form [id*="_dropdown_"] {
+        z-index: 9999 !important;
+    }
+</style>
+@endpush
+
 @section('breadcrumbs')
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
     <span>/</span>
@@ -395,15 +410,6 @@
     </form>
 </div>
 
-@push('styles')
-<style>
-    /* Ensure select dropdowns stack above other content */
-    #officer-edit-form [id$="_dropdown"] {
-        z-index: 9999 !important;
-    }
-</style>
-@endpush
-
 @push('scripts')
 <script>
 // Include all JavaScript from onboarding forms
@@ -601,7 +607,7 @@ function createSearchableSelect(config) {
                 if (selectedOption || id === '') {
                     hiddenInput.value = id;
                     displayText.textContent = name;
-                    dropdown.classList.add('hidden');
+                    hideDropdown();
                     searchInput.value = '';
                     filteredOptions = [...options];
                     renderOptions(filteredOptions);
@@ -625,20 +631,43 @@ function createSearchableSelect(config) {
         renderOptions(filteredOptions);
     });
 
-    // Toggle dropdown (preventDefault avoids any default button behavior interfering)
+    // Toggle dropdown - use position:fixed to escape overflow clipping from scroll containers
+    function showDropdown() {
+        dropdown.style.display = 'block';
+        dropdown.classList.remove('hidden');
+        dropdown.style.position = 'fixed';
+        const rect = trigger.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + 4) + 'px';
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.width = rect.width + 'px';
+        dropdown.style.minWidth = rect.width + 'px';
+    }
+    function hideDropdown() {
+        dropdown.style.display = 'none';
+        dropdown.classList.add('hidden');
+        dropdown.style.position = '';
+        dropdown.style.top = '';
+        dropdown.style.left = '';
+        dropdown.style.width = '';
+        dropdown.style.minWidth = '';
+    }
+
     trigger.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        dropdown.classList.toggle('hidden');
-        if (!dropdown.classList.contains('hidden')) {
-            setTimeout(() => searchInput.focus(), 100);
+        const isVisible = dropdown.style.display === 'block';
+        if (isVisible) {
+            hideDropdown();
+        } else {
+            showDropdown();
+            setTimeout(() => searchInput.focus(), 50);
         }
     });
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
+            hideDropdown();
         }
     });
 }
