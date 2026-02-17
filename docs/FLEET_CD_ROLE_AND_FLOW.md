@@ -151,6 +151,37 @@ Flow is identical:
 
 ---
 
+## Same view for CD (no action panel)
+
+When CD opens **My Requests** and clicks **View** on a request, they see the **same page** as the approvers:
+
+- Full request details (origin command, type, quantity, notes, document, amount, created by, status)
+- **Workflow Progress** table: Order, Role, Action, Decision, **Comment**, By, At for every step
+- So CD can see **who** approved/forwarded, **when**, and **what comment** each person left
+
+CD does **not** see an action panel (Forward / Approve / Reject / KIV) because CD is not a step in the workflow. They only view.
+
+---
+
+## Approval flow: who acts on CD’s request (by type)
+
+| Request type | Step | Role | Action |
+|--------------|------|------|--------|
+| **New Vehicle** | 1 | CC T&L | REVIEW (propose vehicles or KIV) |
+| | 2 | CGC | APPROVE |
+| | 3 | DCG FATS | FORWARD |
+| | 4 | ACG TS | FORWARD |
+| | 5 | CC T&L | REVIEW (release to command) |
+| **Re-allocation** | 1 | CC T&L | REVIEW (approve & release) |
+| **Maintenance Requisition** | 1 | ACG TS | APPROVE (≤₦300k done; >₦300k forward) |
+| | 2 | DCG FATS | APPROVE (≤₦500k done; >₦500k forward) |
+| | 3 | CGC | APPROVE |
+| **Repair / OPE / Use** | 1 | Staff Officer T&L | APPROVE |
+
+After release, **Area Controller** (Unit Head) receives the vehicle(s) for the command (not a workflow step; receipt only).
+
+---
+
 ## Workflow Flows (CD as Creator)
 
 ### 1. New Vehicle Request (`FLEET_NEW_VEHICLE`)

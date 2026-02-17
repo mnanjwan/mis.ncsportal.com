@@ -85,6 +85,21 @@
                         <input type="number" name="requested_quantity" class="kt-input w-full" min="1"
                             value="{{ old('requested_quantity', 1) }}" />
                     </div>
+                    <div>
+                        <label class="text-sm font-medium">Make (optional)</label>
+                        <input type="text" name="requested_make" class="kt-input w-full" maxlength="100"
+                            placeholder="e.g. Toyota" value="{{ old('requested_make') }}" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium">Model (optional)</label>
+                        <input type="text" name="requested_model" class="kt-input w-full" maxlength="100"
+                            placeholder="e.g. Corolla" value="{{ old('requested_model') }}" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium">Year (optional)</label>
+                        <input type="number" name="requested_year" class="kt-input w-full" min="1950" max="{{ date('Y') }}"
+                            placeholder="e.g. 2024" value="{{ old('requested_year') }}" />
+                    </div>
                 </div>
 
                 <div id="vehicle_select" class="hidden">

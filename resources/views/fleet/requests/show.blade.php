@@ -42,44 +42,56 @@
     @endif
 
     <div class="grid gap-5 lg:gap-7.5">
-        <div class="kt-card">
+        {{-- Request details: what you are reviewing --}}
+        <div class="kt-card border-l-4 border-primary">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Request #{{ $fleetRequest->id }} - {{ str_replace('_', ' ', $fleetRequest->request_type) }}</h3>
+                <h3 class="kt-card-title">Request details (what you are reviewing)</h3>
             </div>
             <div class="kt-card-content p-5 lg:p-7.5 text-sm">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="text-secondary-foreground mb-4">
+                    Request #{{ $fleetRequest->id }} — {{ str_replace('_', ' ', $fleetRequest->request_type) }} from <strong>{{ $fleetRequest->originCommand->name ?? 'Unknown' }}</strong>.
+                    @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE')
+                        Vehicle: <strong>{{ $fleetRequest->requested_quantity ?? 1 }} × {{ $fleetRequest->requested_vehicle_type ?? 'N/A' }}</strong>
+                        @if($fleetRequest->requested_make || $fleetRequest->requested_model || $fleetRequest->requested_year)
+                            ({{ trim(implode(' ', array_filter([$fleetRequest->requested_make, $fleetRequest->requested_model, $fleetRequest->requested_year ? (string)$fleetRequest->requested_year : null]))) }})
+                        @endif
+                    @endif
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div><strong>Origin Command:</strong> {{ $fleetRequest->originCommand->name ?? '-' }}</div>
                     <div><strong>Status:</strong> <span class="px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">{{ $fleetRequest->status }}</span></div>
                     <div><strong>Created By:</strong> {{ $fleetRequest->createdBy->name ?? $fleetRequest->createdBy->email }}</div>
-                    
                     @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE')
-                        <div><strong>Requested Type:</strong> {{ $fleetRequest->requested_vehicle_type }}</div>
-                        <div><strong>Requested Quantity:</strong> {{ $fleetRequest->requested_quantity }}</div>
+                        <div><strong>Requested vehicle type:</strong> {{ $fleetRequest->requested_vehicle_type ?? '-' }}</div>
+                        <div><strong>Requested quantity:</strong> {{ $fleetRequest->requested_quantity ?? 1 }}</div>
+                        @if($fleetRequest->requested_make)<div><strong>Requested make:</strong> {{ $fleetRequest->requested_make }}</div>@endif
+                        @if($fleetRequest->requested_model)<div><strong>Requested model:</strong> {{ $fleetRequest->requested_model }}</div>@endif
+                        @if($fleetRequest->requested_year)<div><strong>Requested year:</strong> {{ $fleetRequest->requested_year }}</div>@endif
                     @endif
-
                     @if($fleetRequest->vehicle)
-                        <div><strong>Target Vehicle:</strong> {{ $fleetRequest->vehicle->make }} {{ $fleetRequest->vehicle->model }} ({{ $fleetRequest->vehicle->reg_no }})</div>
+                        <div><strong>Target vehicle:</strong> {{ $fleetRequest->vehicle->make }} {{ $fleetRequest->vehicle->model }} ({{ $fleetRequest->vehicle->reg_no }})</div>
                     @endif
-
                     @if($fleetRequest->amount)
                         <div><strong>Amount:</strong> ₦{{ number_format($fleetRequest->amount, 2) }}</div>
                     @endif
-
                     @if($fleetRequest->document_path)
-                        <div>
-                            <strong>Document:</strong> 
-                            <a href="{{ Storage::url($fleetRequest->document_path) }}" target="_blank" class="text-primary hover:underline flex items-center gap-1">
+                        <div class="md:col-span-2 lg:col-span-3">
+                            <strong>Supporting document:</strong>
+                            <a href="{{ Storage::url($fleetRequest->document_path) }}" target="_blank" class="text-primary hover:underline inline-flex items-center gap-1 ml-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                View Attachment
+                                View attachment
                             </a>
                         </div>
                     @endif
                 </div>
-
                 @if($fleetRequest->notes)
                     <div class="mt-4 p-3 bg-muted rounded">
-                        <strong>Notes:</strong><br>
+                        <strong>Notes / description from requester:</strong><br>
                         {{ $fleetRequest->notes }}
+                    </div>
+                @else
+                    <div class="mt-4 p-3 bg-muted/50 rounded text-muted-foreground">
+                        <strong>Notes:</strong> None provided.
                     </div>
                 @endif
             </div>
