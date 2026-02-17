@@ -171,12 +171,7 @@ class InternalStaffOrderController extends Controller
         }
 
         $query = InternalStaffOrder::with(['command', 'officer', 'preparedBy.officer'])
-            ->where('command_id', $commandId)
-            ->where(function ($q) {
-                $q->whereHas('officer', fn ($oq) => $oq->where(function ($o) {
-                    $o->where('unit', '!=', 'Transport')->orWhereNull('unit');
-                }));
-            });
+            ->where('command_id', $commandId);
 
         // Filter by status
         if ($request->has('status') && $request->status !== 'all') {
@@ -222,12 +217,9 @@ class InternalStaffOrderController extends Controller
 
         $command = Command::find($commandId);
 
-        // Get officers in this command (non-Transport only; CD handles Transport officers)
+        // Get officers in this command
         $officers = Officer::where('present_station', $commandId)
             ->where('is_active', true)
-            ->where(function ($q) {
-                $q->where('unit', '!=', 'Transport')->orWhereNull('unit');
-            })
             ->orderBy('surname')
             ->orderBy('initials')
             ->get();
@@ -281,9 +273,6 @@ class InternalStaffOrderController extends Controller
         
         if ($officer->present_station != $commandId) {
             return response()->json(['error' => 'Officer is not in your command'], 403);
-        }
-        if ($officer->unit === 'Transport') {
-            return response()->json(['error' => 'Transport officers are posted by CD. Use Fleet > Internal Staff Orders (Transport).'], 403);
         }
 
         $assignment = $this->getOfficerCurrentAssignment($officer->id, $commandId);
@@ -395,11 +384,6 @@ class InternalStaffOrderController extends Controller
                 ->withInput()
                 ->with('error', 'Selected officer is not in your command.');
         }
-        if ($officer->unit === 'Transport') {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Transport officers are posted by CD. Use Fleet > Internal Staff Orders (Transport).');
-        }
 
         $currentAssignment = $this->getOfficerCurrentAssignment($officer->id, $commandId);
 
@@ -451,11 +435,6 @@ class InternalStaffOrderController extends Controller
         $order = InternalStaffOrder::with(['command', 'officer', 'preparedBy.officer'])
             ->where('id', $id)
             ->where('command_id', $commandId)
-            ->where(function ($q) {
-                $q->whereHas('officer', fn ($oq) => $oq->where(function ($o) {
-                    $o->where('unit', '!=', 'Transport')->orWhereNull('unit');
-                }));
-            })
             ->firstOrFail();
 
         // Get conflict information if applicable
@@ -486,11 +465,6 @@ class InternalStaffOrderController extends Controller
 
         $order = InternalStaffOrder::where('id', $id)
             ->where('command_id', $commandId)
-            ->where(function ($q) {
-                $q->whereHas('officer', fn ($oq) => $oq->where(function ($o) {
-                    $o->where('unit', '!=', 'Transport')->orWhereNull('unit');
-                }));
-            })
             ->firstOrFail();
 
         if ($order->status !== 'DRAFT') {
@@ -537,11 +511,6 @@ class InternalStaffOrderController extends Controller
         $order = InternalStaffOrder::with(['officer'])
             ->where('id', $id)
             ->where('command_id', $commandId)
-            ->where(function ($q) {
-                $q->whereHas('officer', fn ($oq) => $oq->where(function ($o) {
-                    $o->where('unit', '!=', 'Transport')->orWhereNull('unit');
-                }));
-            })
             ->firstOrFail();
 
         if ($order->status !== 'DRAFT') {
@@ -552,9 +521,6 @@ class InternalStaffOrderController extends Controller
         $command = Command::find($commandId);
         $officers = Officer::where('present_station', $commandId)
             ->where('is_active', true)
-            ->where(function ($q) {
-                $q->where('unit', '!=', 'Transport')->orWhereNull('unit');
-            })
             ->orderBy('surname')
             ->orderBy('initials')
             ->get();
@@ -583,11 +549,6 @@ class InternalStaffOrderController extends Controller
 
         $order = InternalStaffOrder::where('id', $id)
             ->where('command_id', $commandId)
-            ->where(function ($q) {
-                $q->whereHas('officer', fn ($oq) => $oq->where(function ($o) {
-                    $o->where('unit', '!=', 'Transport')->orWhereNull('unit');
-                }));
-            })
             ->firstOrFail();
 
         if ($order->status !== 'DRAFT') {
@@ -609,11 +570,6 @@ class InternalStaffOrderController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Selected officer is not in your command.');
-        }
-        if ($officer->unit === 'Transport') {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Transport officers are posted by CD. Use Fleet > Internal Staff Orders (Transport).');
         }
 
         $currentAssignment = $this->getOfficerCurrentAssignment($officer->id, $commandId);
@@ -654,11 +610,6 @@ class InternalStaffOrderController extends Controller
 
         $order = InternalStaffOrder::where('id', $id)
             ->where('command_id', $commandId)
-            ->where(function ($q) {
-                $q->whereHas('officer', fn ($oq) => $oq->where(function ($o) {
-                    $o->where('unit', '!=', 'Transport')->orWhereNull('unit');
-                }));
-            })
             ->firstOrFail();
 
         if ($order->status !== 'DRAFT') {
