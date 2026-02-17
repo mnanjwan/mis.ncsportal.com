@@ -110,6 +110,20 @@ class FleetWorkflowService
 
         $this->notifyNextStepUsers($request);
 
+        // Notify creator: in-app (notification panel) + email
+        $creator = $request->createdBy ?? User::find($request->created_by);
+        if ($creator) {
+            app(NotificationService::class)->notify(
+                $creator,
+                'fleet_request_update',
+                "Fleet Request #{$request->id} submitted",
+                "Your fleet request #{$request->id} has been submitted and is now with the first step (Head of Unit / Area Controller).",
+                'fleet_request',
+                $request->id,
+                true
+            );
+        }
+
         return $request->fresh(['steps', 'fulfillment', 'originCommand', 'createdBy']);
     }
 
@@ -260,6 +274,12 @@ class FleetWorkflowService
                 'current_step_order' => 'This request is not at the CC T&L proposal step.',
             ]);
         }
+        // For New Vehicle (9-step flow), proposal is step 5 only; release is step 9
+        if ($request->request_type === 'FLEET_NEW_VEHICLE' && (int) $step->step_order !== 5) {
+            throw ValidationException::withMessages([
+                'current_step_order' => 'This request is not at the CC T&L proposal step.',
+            ]);
+        }
 
         if (!$user->hasRole('CC T&L')) {
             throw ValidationException::withMessages([
@@ -323,6 +343,20 @@ class FleetWorkflowService
                         'decision' => 'KIV',
                         'comment' => $comment,
                     ]);
+                    // Notify creator: in-app + email (dashboard and notification panel)
+                    $creator = $request->createdBy ?? User::find($request->created_by);
+                    if ($creator) {
+                        app(NotificationService::class)->notify(
+                            $creator,
+                            'fleet_request_update',
+                            "Fleet Request #{$request->id} on KIV",
+                            "Your fleet request #{$request->id} has been placed on KIV (no matching vehicles in inventory). It will be revisited when vehicles become available.",
+                            'fleet_request',
+                            $request->id,
+                            true
+                        );
+                    }
+                    $this->notifyCd($request, 'Fleet Request on KIV', "Request #{$request->id} has been placed on KIV.");
                     return $request->fresh(['steps', 'fulfillment']);
                 }
             }
@@ -339,6 +373,12 @@ class FleetWorkflowService
     {
         $step = $request->steps()->where('step_order', $request->current_step_order)->first();
         if (!$step || $step->role_name !== 'CC T&L' || $step->action !== 'REVIEW') {
+            throw ValidationException::withMessages([
+                'current_step_order' => 'This request is not at the CC T&L release step.',
+            ]);
+        }
+        // For New Vehicle (9-step flow), release is step 9 only; proposal is step 5
+        if ($request->request_type === 'FLEET_NEW_VEHICLE' && (int) $step->step_order !== 9) {
             throw ValidationException::withMessages([
                 'current_step_order' => 'This request is not at the CC T&L release step.',
             ]);
@@ -401,11 +441,15 @@ class FleetWorkflowService
     {
         $steps = match ($request->request_type) {
             'FLEET_NEW_VEHICLE' => [
-                ['step_order' => 1, 'role_name' => 'CC T&L', 'action' => 'REVIEW'], // Propose
-                ['step_order' => 2, 'role_name' => 'CGC', 'action' => 'APPROVE'],
+                ['step_order' => 1, 'role_name' => 'Area Controller', 'action' => 'FORWARD'],   // Head of Unit forwards
+                ['step_order' => 2, 'role_name' => 'CGC', 'action' => 'FORWARD'],
                 ['step_order' => 3, 'role_name' => 'DCG FATS', 'action' => 'FORWARD'],
                 ['step_order' => 4, 'role_name' => 'ACG TS', 'action' => 'FORWARD'],
-                ['step_order' => 5, 'role_name' => 'CC T&L', 'action' => 'REVIEW'], // Release
+                ['step_order' => 5, 'role_name' => 'CC T&L', 'action' => 'REVIEW'],              // Inventory check & propose
+                ['step_order' => 6, 'role_name' => 'ACG TS', 'action' => 'FORWARD'],             // Send back up
+                ['step_order' => 7, 'role_name' => 'DCG FATS', 'action' => 'FORWARD'],
+                ['step_order' => 8, 'role_name' => 'CGC', 'action' => 'APPROVE'],
+                ['step_order' => 9, 'role_name' => 'CC T&L', 'action' => 'REVIEW'],              // Release to Unit Head
             ],
             'FLEET_RE_ALLOCATION' => [
                 ['step_order' => 1, 'role_name' => 'CC T&L', 'action' => 'REVIEW'], // Approve & Release
@@ -445,6 +489,10 @@ class FleetWorkflowService
         return $request->steps()->where('step_order', $order)->exists();
     }
 
+    /**
+     * Notify users at the current workflow step. Each notification is created in-app (notification panel)
+     * and sent by email (sendEmail = true) so it lands on every recipient's dashboard, email, and notification panel.
+     */
     private function notifyNextStepUsers(FleetRequest $request): void
     {
         $nextOrder = $request->current_step_order;
@@ -484,6 +532,9 @@ class FleetWorkflowService
         }
     }
 
+    /**
+     * Notify CD users at the request's origin command. In-app + email so it lands on dashboard and notification panel.
+     */
     private function notifyCd(FleetRequest $request, string $title, string $message): void
     {
         if (!$request->origin_command_id) {

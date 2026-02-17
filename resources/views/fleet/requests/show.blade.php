@@ -95,10 +95,10 @@
 
         {{-- CC T&L Specific Action Panels --}}
         @if($isMyStep && $currentRole === 'CC T&L')
-            @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $currentStep->step_order === 1)
+            @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $currentStep->step_order === 5)
                 <div class="kt-card border-l-4 border-primary">
                     <div class="kt-card-header">
-                        <h3 class="kt-card-title">CC T&L Inventory Check & Proposal (Step 1)</h3>
+                        <h3 class="kt-card-title">CC T&L Inventory Check & Proposal (Step 5)</h3>
                     </div>
                     <div class="kt-card-content p-5 lg:p-7.5">
                         <form method="POST" action="{{ route('fleet.requests.cc-tl.propose', $fleetRequest) }}" class="grid gap-4" id="ccProposalForm">
@@ -140,7 +140,7 @@
                 </div>
             @endif
 
-            @if(($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $currentStep->step_order === 5) || ($fleetRequest->request_type === 'FLEET_RE_ALLOCATION' && $currentStep->step_order === 1))
+            @if(($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $currentStep->step_order === 9) || ($fleetRequest->request_type === 'FLEET_RE_ALLOCATION' && $currentStep->step_order === 1))
                 <div class="kt-card border-l-4 border-success">
                     <div class="kt-card-header">
                         <h3 class="kt-card-title">Release Vehicle(s) to Command</h3>
