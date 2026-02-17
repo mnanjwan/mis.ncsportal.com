@@ -460,6 +460,7 @@ const initialOicId = {{ $roster->oic_officer_id ?? 'null' }};
 const initialSecondIcId = {{ $roster->second_in_command_officer_id ?? 'null' }};
 const currentRosterId = {{ $roster->id ?? 'null' }};
 let isInitialLoad = true;
+let reassignOfficerRosterIds = {};
 
 let _pendingReassignConfirm = null;
 
