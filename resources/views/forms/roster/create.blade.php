@@ -302,6 +302,33 @@
             </div>
         </div>
     </div>
+
+    <!-- Site standard confirmation modal for reassignment -->
+    <div class="kt-modal hidden" data-kt-modal="true" id="confirm-reassign-modal">
+        <div class="kt-modal-content max-w-[500px]">
+            <div class="kt-modal-header py-4 px-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center size-10 rounded-full bg-warning/10" id="confirm-reassign-modal-icon">
+                        <i class="ki-filled ki-information text-warning text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-foreground" id="confirm-reassign-modal-title">Reassign Officer</h3>
+                </div>
+                <button type="button" class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true" aria-label="Close">
+                    <i class="ki-filled ki-cross"></i>
+                </button>
+            </div>
+            <div class="kt-modal-body py-5 px-5">
+                <p class="text-sm text-secondary-foreground whitespace-pre-line" id="confirm-reassign-modal-message"></p>
+            </div>
+            <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">
+                <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true" id="confirm-reassign-modal-cancel">Cancel</button>
+                <button type="button" class="kt-btn kt-btn-primary" id="confirm-reassign-modal-confirm">
+                    <span class="kt-menu-icon"><i class="ki-filled ki-check"></i></span>
+                    <span>Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
 @endif
 
 @push('styles')
@@ -314,6 +341,30 @@
 
 @push('scripts')
 <script>
+function showConfirmReassignModal(message, onConfirm) {
+    const modal = document.getElementById('confirm-reassign-modal');
+    const modalMessage = document.getElementById('confirm-reassign-modal-message');
+    const confirmBtn = document.getElementById('confirm-reassign-modal-confirm');
+    if (!modal || !confirmBtn) return;
+    modalMessage.textContent = message;
+    confirmBtn.onclick = () => {
+        if (typeof onConfirm === 'function') onConfirm();
+        if (typeof KTModal !== 'undefined') {
+            const instance = KTModal.getInstance(modal) || new KTModal(modal);
+            instance.hide();
+        } else {
+            modal.classList.add('hidden');
+        }
+    };
+    if (typeof KTModal !== 'undefined') {
+        const instance = KTModal.getInstance(modal) || new KTModal(modal);
+        instance.show();
+    } else {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const unitSelect = document.getElementById('unit-select');
     const unitCustomInput = document.getElementById('unit-custom-input');
@@ -392,25 +443,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const isAssigned = option.dataset.assigned === 'true';
                 const rosterName = option.dataset.rosterName || '';
                 const rosterId = option.dataset.rosterId || '';
-                
-                if (isAssigned) {
-                    const msg = `This officer is already assigned to: ${rosterName}.\n\nReassign to this roster? They will be removed from the previous roster and the officer plus relevant parties will be notified.`;
-                    if (!confirm(msg)) return;
-                    if (reassignInput) reassignInput.value = rosterId;
-                } else {
-                    if (reassignInput) reassignInput.value = '';
-                }
-                
                 const id = option.dataset.id;
                 const name = option.dataset.name;
                 const service = option.dataset.service;
 
-                hiddenInput.value = id;
-                text.textContent = `${name} (${service})`;
-                dropdown.classList.add('hidden');
-                searchInput.value = '';
-                
-                options.forEach(opt => opt.style.display = 'block');
+                const applySelection = () => {
+                    if (reassignInput) reassignInput.value = isAssigned ? rosterId : '';
+                    hiddenInput.value = id;
+                    text.textContent = `${name} (${service})`;
+                    dropdown.classList.add('hidden');
+                    searchInput.value = '';
+                    options.forEach(opt => opt.style.display = 'block');
+                };
+
+                if (isAssigned) {
+                    const msg = `This officer is already assigned to: ${rosterName}.\n\nReassign to this roster? They will be removed from the previous roster and the officer plus relevant parties will be notified.`;
+                    showConfirmReassignModal(msg, applySelection);
+                } else {
+                    applySelection();
+                }
             }
         });
 
