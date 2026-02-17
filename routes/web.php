@@ -747,6 +747,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/roster/cd', [DutyRosterController::class, 'cdIndex'])->middleware('role:CD')->name('roster.cd-index');
         Route::get('/roster/cd/{id}', [DutyRosterController::class, 'cdShow'])->middleware('role:CD')->name('roster.cd-show');
         Route::post('/roster/cd/{id}/approve', [DutyRosterController::class, 'cdApprove'])->middleware('role:CD')->name('roster.cd-approve');
+
+        // CD Internal Staff Orders (Transport officers only - same model as Staff Officer for normal officers)
+        Route::prefix('internal-staff-orders')->name('cd.internal-staff-orders.')->middleware('role:CD')->group(function () {
+            Route::post('/get-officer-assignment', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'getOfficerAssignment'])->name('get-officer-assignment');
+            Route::post('/check-conflicts', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'checkConflicts'])->name('check-conflicts');
+            Route::get('/', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'store'])->name('store');
+            Route::get('/{id}', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'show'])->name('show');
+            Route::post('/{id}/submit', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'submit'])->name('submit');
+            Route::get('/{id}/edit', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\Fleet\CdInternalStaffOrderController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // Establishment Routes

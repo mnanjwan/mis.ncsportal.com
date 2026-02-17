@@ -624,7 +624,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
             }
             if (savedUnit === 'Transport') {
-                document.getElementById('assign_to_transport')?.checked = true;
+                const assignEl = document.getElementById('assign_to_transport');
+                if (assignEl) assignEl.checked = true;
                 document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
             }
         }

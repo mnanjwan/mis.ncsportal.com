@@ -1,6 +1,10 @@
 import './bootstrap';
 import Swal from 'sweetalert2';
 import './session-timeout';
+import { createSearchableSelect } from './searchable-select';
+
+// Expose globally for Blade templates that use custom selects
+window.createSearchableSelect = createSearchableSelect;
 
 // Configure SweetAlert2 with site colors
 window.Swal = Swal.mixin({

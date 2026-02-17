@@ -22,6 +22,23 @@ The **CD (Chief Driver)** role manages vehicle requests and fleet operations at 
 | Issue Vehicle to Officer | `/fleet/vehicles/{id}/issue` | GET / POST |
 | Process Vehicle Return | `/fleet/vehicles/{id}/return` | GET / POST |
 | Returns Report | `/fleet/reports/returns` | GET |
+| Roster Approvals (Transport officers) | `/fleet/roster/cd` | GET |
+| Internal Staff Orders (Transport) | `/fleet/internal-staff-orders` | GET / POST |
+
+---
+
+## Internal Staff Orders (Transport)
+
+CD handles **internal posting** for Transport officers within the command, in the same model as Staff Officer does for normal officers:
+
+- **Staff Officer:** Creates internal staff orders for officers where unit ≠ Transport (Revenue, Admin, SS, etc.).
+- **CD:** Creates internal staff orders for officers where unit = Transport.
+
+Flow is identical:
+1. Create order (select Transport officer, target unit, target role).
+2. Submit for DC Admin approval.
+3. DC Admin approves or rejects.
+4. On approval, roster assignments are updated.
 
 ---
 
@@ -30,7 +47,7 @@ The **CD (Chief Driver)** role manages vehicle requests and fleet operations at 
 **Route:** `/fleet/dashboard/cd`
 
 - **Cards:** My Draft Requests, Submitted, KIV, Released, Command Pool Vehicles, Active Assignments, Pending Returns
-- **Quick links:** Create Request, View Requests, Command Vehicles, Returns Report
+- **Quick links:** Create Request, View Requests, Command Vehicles, Returns Report, Roster Approvals, Internal Staff Orders (Transport)
 - **Requests Inbox:** Empty for CD (no CD step in the workflow)
 
 ---
@@ -115,3 +132,5 @@ CD receives notifications when:
 | **Acts on steps** | No |
 | **Vehicle operations** | Issue, return, update service status (command-scoped) |
 | **Reports** | Returns Report |
+| **Roster approvals** | For rosters with Transport officers |
+| **Internal posting** | Transport officers only (Staff Officer does non-Transport) |

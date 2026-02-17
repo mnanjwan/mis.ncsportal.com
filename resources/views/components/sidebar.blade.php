@@ -576,6 +576,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.cd.dashboard')],
                 ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'Internal Staff Orders (Transport)', 'href' => route('fleet.cd.internal-staff-orders.index')],
                 ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
             ];
             break;

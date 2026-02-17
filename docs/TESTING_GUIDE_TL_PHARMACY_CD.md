@@ -86,7 +86,44 @@ Rosters that include Transport officers must be approved by CD before Area Contr
 
 ---
 
-## 4. Pharmacy Expired Drug Records
+## 4. CD Internal Staff Orders (Transport Officers)
+
+CD handles internal posting for **Transport officers** within the command, mirroring the Staff Officer flow for normal officers. Staff Officer creates internal staff orders for non-Transport officers; CD creates them for Transport officers only.
+
+### Setup
+- User with **CD** role assigned to a command.
+- At least one officer with unit **Transport** in that command.
+- Command has active duty roster(s) with units.
+
+### Tests
+
+#### 4a. CD creates internal staff order for Transport officer
+1. Log in as CD.
+2. Go to **Fleet** → **Internal Staff Orders (Transport)** (or `/fleet/internal-staff-orders`).
+3. Click **Create Internal Staff Order**.
+4. Officer dropdown should list **only Transport officers** in the command.
+5. Select a Transport officer, target unit, target role.
+6. Save as draft → order created.
+
+#### 4b. CD submits for DC Admin approval
+1. Open a DRAFT internal staff order.
+2. Click **Submit for Approval**.
+3. Order status becomes PENDING_APPROVAL.
+4. DC Admin can approve or reject (same as Staff Officer orders).
+
+#### 4c. Staff Officer restricted from Transport officers
+1. Log in as Staff Officer.
+2. Go to **Staff Officer** → **Internal Staff Orders** → **Create**.
+3. Officer dropdown should **exclude** Transport officers.
+4. If a Transport officer is somehow selected and form submitted, error: "Transport officers are posted by CD. Use Fleet > Internal Staff Orders (Transport)."
+
+#### 4d. DC Admin approval (same flow)
+1. DC Admin receives both Staff Officer (non-Transport) and CD (Transport) internal staff orders.
+2. Approve a CD-created order → roster assignments updated as usual.
+
+---
+
+## 5. Pharmacy Expired Drug Records
 
 Expired pharmacy stock is moved from `pharmacy_stocks` into `pharmacy_expired_drug_records` by a scheduled command.
 
@@ -109,7 +146,7 @@ php artisan pharmacy:move-expired-stock
 
 ---
 
-## 5. Officer Edit Form – Select Dropdowns
+## 6. Officer Edit Form – Select Dropdowns
 
 The officer edit page uses searchable select dropdowns for Sex, State, Zone, Rank, Unit, etc.
 
@@ -131,6 +168,7 @@ The officer edit page uses searchable select dropdowns for Sex, State, Zone, Ran
 | HRD officer edit | `/hrd/officers/{id}/edit` |
 | Establishment new recruits | `/establishment/new-recruits` |
 | CD roster approvals | `/fleet/roster/cd` |
+| CD internal staff orders (Transport) | `/fleet/internal-staff-orders` |
 | Area Controller rosters | `/area-controller/roster` |
 | DC Admin rosters | `/dc-admin/roster` |
 | Fleet CD dashboard | `/fleet/dashboard/cd` |

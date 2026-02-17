@@ -119,6 +119,12 @@ class FleetDashboardController extends Controller
                         'icon' => 'ki-calendar-tick',
                         'tone' => $rosterApprovalsCount > 0 ? 'warning' : 'secondary',
                     ];
+                    $quickLinks[] = [
+                        'label' => 'Internal Staff Orders (Transport)',
+                        'href' => route('fleet.cd.internal-staff-orders.index'),
+                        'icon' => 'ki-document',
+                        'tone' => 'secondary',
+                    ];
                 }
                 break;
 
