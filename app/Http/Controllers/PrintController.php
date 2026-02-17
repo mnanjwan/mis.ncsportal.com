@@ -911,7 +911,7 @@ class PrintController extends Controller
         if ($roster->oicOfficer) {
             $deployments->push([
                 'service_number' => $roster->oicOfficer->service_number ?? 'N/A',
-                'rank' => $roster->oicOfficer->substantive_rank ?? 'N/A',
+                'rank' => $roster->oicOfficer->display_rank ?? 'N/A',
                 'name' => trim(($roster->oicOfficer->initials ?? '') . ' ' . ($roster->oicOfficer->surname ?? '')),
                 'role' => 'O/C',
                 'unit' => $roster->unit ?? 'N/A',
@@ -922,7 +922,7 @@ class PrintController extends Controller
         if ($roster->secondInCommandOfficer) {
             $deployments->push([
                 'service_number' => $roster->secondInCommandOfficer->service_number ?? 'N/A',
-                'rank' => $roster->secondInCommandOfficer->substantive_rank ?? 'N/A',
+                'rank' => $roster->secondInCommandOfficer->display_rank ?? 'N/A',
                 'name' => trim(($roster->secondInCommandOfficer->initials ?? '') . ' ' . ($roster->secondInCommandOfficer->surname ?? '')),
                 'role' => '2iC',
                 'unit' => $roster->unit ?? 'N/A',
@@ -937,7 +937,7 @@ class PrintController extends Controller
                 $officer->id !== $roster->second_in_command_officer_id) {
                 $deployments->push([
                     'service_number' => $officer->service_number ?? 'N/A',
-                    'rank' => $officer->substantive_rank ?? 'N/A',
+                    'rank' => $officer->display_rank ?? 'N/A',
                     'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
                     'role' => '',
                     'unit' => $roster->unit ?? 'N/A',
@@ -1026,7 +1026,7 @@ class PrintController extends Controller
             if ($roster->oicOfficer) {
                 $rosterDeployments->push([
                     'service_number' => $roster->oicOfficer->service_number ?? 'N/A',
-                    'rank' => $roster->oicOfficer->substantive_rank ?? 'N/A',
+                    'rank' => $roster->oicOfficer->display_rank ?? 'N/A',
                     'name' => trim(($roster->oicOfficer->initials ?? '') . ' ' . ($roster->oicOfficer->surname ?? '')),
                     'role' => 'O/C',
                     'unit' => $roster->unit ?? 'N/A',
@@ -1037,7 +1037,7 @@ class PrintController extends Controller
             if ($roster->secondInCommandOfficer) {
                 $rosterDeployments->push([
                     'service_number' => $roster->secondInCommandOfficer->service_number ?? 'N/A',
-                    'rank' => $roster->secondInCommandOfficer->substantive_rank ?? 'N/A',
+                    'rank' => $roster->secondInCommandOfficer->display_rank ?? 'N/A',
                     'name' => trim(($roster->secondInCommandOfficer->initials ?? '') . ' ' . ($roster->secondInCommandOfficer->surname ?? '')),
                     'role' => '2iC',
                     'unit' => $roster->unit ?? 'N/A',
@@ -1052,7 +1052,7 @@ class PrintController extends Controller
                     $officer->id !== $roster->second_in_command_officer_id) {
                     $rosterDeployments->push([
                         'service_number' => $officer->service_number ?? 'N/A',
-                        'rank' => $officer->substantive_rank ?? 'N/A',
+                        'rank' => $officer->display_rank ?? 'N/A',
                         'name' => trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')),
                         'role' => '',
                         'unit' => $roster->unit ?? 'N/A',

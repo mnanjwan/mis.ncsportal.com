@@ -109,6 +109,8 @@ class FleetDashboardController extends Controller
                     })
                     ->count() : 0;
 
+                $cards[] = ['label' => 'Roster Approvals (Transport)', 'value' => $rosterApprovalsCount, 'icon' => 'ki-calendar-tick', 'tone' => $rosterApprovalsCount > 0 ? 'warning' : 'secondary'];
+
                 $quickLinks = [
                     ['label' => 'Create Request', 'href' => route('fleet.requests.create'), 'icon' => 'ki-file-up', 'tone' => 'primary'],
                     ['label' => 'View Requests', 'href' => route('fleet.requests.index'), 'icon' => 'ki-eye', 'tone' => 'info'],
