@@ -2506,6 +2506,89 @@ class NotificationService
     }
 
     /**
+     * Notify CD (Fleet CD) when a duty roster with Transport officers is submitted.
+     * CD must approve before Area Controller or DC Admin can give final approval.
+     */
+    public function notifyDutyRosterSubmittedToCd($roster): array
+    {
+        if (!$roster->hasTransportOfficers()) {
+            return [];
+        }
+
+        $command = $roster->command;
+        if (!$command) {
+            return [];
+        }
+
+        $commandId = $command->id;
+        $preparedBy = $roster->preparedBy;
+        $preparedByName = $preparedBy ? ($preparedBy->name ?? $preparedBy->email) : 'Staff Officer';
+        $periodStart = $roster->roster_period_start ? \Carbon\Carbon::parse($roster->roster_period_start)->format('d/m/Y') : 'N/A';
+        $periodEnd = $roster->roster_period_end ? \Carbon\Carbon::parse($roster->roster_period_end)->format('d/m/Y') : 'N/A';
+        $assignmentsCount = $roster->assignments ? $roster->assignments->count() : 0;
+
+        $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
+        $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
+
+        // Get CD users assigned to this command
+        $cdUsers = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'CD')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        if ($cdUsers->isEmpty()) {
+            return [];
+        }
+
+        $message = "A duty roster for {$command->name} (includes Transport officers) has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Your approval is required before Area Controller or DC Admin can give final approval.";
+
+        $notifications = [];
+        foreach ($cdUsers as $cdUser) {
+            $notification = $this->notify(
+                $cdUser,
+                'duty_roster_submitted',
+                'Duty Roster – CD Approval Required (Transport Officers)',
+                $message,
+                'duty_roster',
+                $roster->id,
+                false
+            );
+
+            if ($cdUser->email) {
+                try {
+                    \App\Jobs\SendDutyRosterSubmittedMailJob::dispatch(
+                        $roster,
+                        $cdUser,
+                        $command->name,
+                        $periodStart,
+                        $periodEnd,
+                        $preparedByName,
+                        $assignmentsCount,
+                        $oicName,
+                        $secondInCommandName,
+                        'fleet/roster/cd'
+                    );
+                    Log::info('Duty roster submitted email job dispatched to CD', [
+                        'user_id' => $cdUser->id,
+                        'roster_id' => $roster->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch duty roster submitted email job to CD', [
+                        'user_id' => $cdUser->id,
+                        'roster_id' => $roster->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $notifications[] = $notification;
+        }
+
+        return $notifications;
+    }
+
+    /**
      * Notify Staff Officer when duty roster is approved
      * Also sends assignment emails to all assigned officers
      */

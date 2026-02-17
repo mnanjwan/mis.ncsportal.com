@@ -794,6 +794,11 @@ class DutyRosterController extends Controller
             $notificationService->notifyDutyRosterSubmitted($roster);
             $notificationService->notifyDutyRosterSubmittedToAreaController($roster);
 
+            // Notify CD (Fleet CD) when roster includes Transport officers
+            if ($roster->hasTransportOfficers()) {
+                $notificationService->notifyDutyRosterSubmittedToCd($roster);
+            }
+
             return redirect()->route('staff-officer.roster.show', $roster->id)
                 ->with('success', 'Roster submitted successfully! It is now pending DC Admin and Area Controller approval.');
 
