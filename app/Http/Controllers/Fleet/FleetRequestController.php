@@ -78,7 +78,7 @@ class FleetRequestController extends Controller
         $userRoleNames = $request->user()->roles()->wherePivot('is_active', true)->pluck('name')->toArray();
         $currentStep = $fleetRequest->steps()->where('step_order', $fleetRequest->current_step_order)->first();
 
-        if ($currentStep && $currentStep->role_name === 'CC T&L' && $currentStep->action === 'REVIEW' && $fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && (int) $currentStep->step_order === 5) {
+        if ($currentStep && $currentStep->role_name === 'CC T&L' && $currentStep->action === 'REVIEW' && $fleetRequest->request_type === 'FLEET_NEW_VEHICLE') {
             $availableVehicles = FleetVehicle::query()
                 ->with('vehicleModel')
                 ->where('lifecycle_status', 'IN_STOCK')

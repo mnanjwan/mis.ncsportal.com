@@ -48,31 +48,26 @@ Compared with the process you described (CD → Head of Unit → CGC → … →
 - Get notified when the request is released or rejected.
 - Manage vehicles at command level (issue, return, service status) **after** they are at the command; CD does not “receive” from HQ — that is Area Controller (Unit Head).
 
-### Summary (after update)
+### Summary (current)
 
-- **Implemented:** Request now goes **through** Area Controller (Head of Unit) at Step 1; CD submits, then Area Controller forwards.
-- **Implemented:** Workflow order matches: HoU → CGC → DCG FATS → ACG TS → CC T&L (propose) → back up → CGC approve → CC T&L (release).
-- **By design:** CD does not receive the vehicle; Unit Head (Area Controller) receives.
+- **Current:** New Vehicle request goes **directly to CC T&L** at Step 1 (no Area Controller step). CD workflow may change later.
+- **By design:** CD does not receive the vehicle; Unit Head (Area Controller) receives after release.
 
 ---
 
-## New Vehicle workflow (implemented)
+## New Vehicle workflow (current)
 
-The system has been updated to match the described process. **Head of Unit** is mapped to **Area Controller** (same role that receives the vehicle at command level).
+**Area Controller is not a step** for New Vehicle in the current system. The flow is as below. (A CD → Head of Unit flow may be introduced later and is subject to change.)
 
-### Implemented New Vehicle flow (9 steps)
+### Current New Vehicle flow (5 steps)
 
-| Step | Role             | Action   | Purpose                              |
-|------|------------------|----------|--------------------------------------|
-| 1    | Area Controller  | FORWARD  | Head of Unit; CD sends through HoU  |
-| 2    | CGC              | FORWARD  | To DCG FATS                         |
-| 3    | DCG FATS         | FORWARD  | To ACG TS                            |
-| 4    | ACG TS           | FORWARD  | To CC T&L                            |
-| 5    | CC T&L           | REVIEW   | Inventory check; propose or KIV      |
-| 6    | ACG TS           | FORWARD  | Send back up for approval            |
-| 7    | DCG FATS         | FORWARD  | To CGC                               |
-| 8    | CGC              | APPROVE  | Approve for release                  |
-| 9    | CC T&L           | REVIEW   | Release to Unit Head (Area Controller receives) |
+| Step | Role    | Action  | Purpose                    |
+|------|---------|---------|----------------------------|
+| 1    | CC T&L  | REVIEW  | Inventory check; propose or KIV |
+| 2    | CGC     | APPROVE |                            |
+| 3    | DCG FATS| FORWARD |                            |
+| 4    | ACG TS  | FORWARD |                            |
+| 5    | CC T&L  | REVIEW  | Release to Unit Head (Area Controller receives) |
 
 ### Notifications (dashboard, email, notification panel)
 
@@ -84,7 +79,7 @@ All fleet notifications are sent so they land on **every relevant user’s**:
 
 Who gets notified:
 
-- **On submit:** Creator (submitted); users at **Step 1 (Area Controller)** for the origin command (awaiting action).
+- **On submit:** Users at **Step 1 (CC T&L)** (awaiting action).
 - **On each step action:** Users at the **next step** (awaiting action).
 - **On REJECTED:** Creator.
 - **On RELEASED:** Creator; **CD users** at the origin command.
@@ -161,12 +156,10 @@ Flow is identical:
 ### 1. New Vehicle Request (`FLEET_NEW_VEHICLE`)
 
 1. CD creates → **DRAFT**
-2. CD submits → **Step 1:** Area Controller (Head of Unit) forwards
-3. **Step 2:** CGC → **Step 3:** DCG FATS → **Step 4:** ACG TS (forward to CC T&L)
-4. **Step 5:** CC T&L (inventory check; propose vehicles or KIV)
-5. **Step 6:** ACG TS → **Step 7:** DCG FATS → **Step 8:** CGC (approve)
-6. **Step 9:** CC T&L releases to command → **RELEASED**
-7. Area Controller (Unit Head) receives; CD and origin command notified
+2. CD submits → **Step 1:** CC T&L (propose vehicles or KIV)
+3. **Step 2:** CGC (approve) → **Step 3:** DCG FATS (forward) → **Step 4:** ACG TS (forward)
+4. **Step 5:** CC T&L (release) → **RELEASED**
+5. Area Controller (Unit Head) receives; CD and origin command notified
 
 ### 2. Re-allocation (`FLEET_RE_ALLOCATION`)
 
