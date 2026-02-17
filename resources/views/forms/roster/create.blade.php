@@ -341,21 +341,14 @@
 
 @push('scripts')
 <script>
+let _pendingReassignConfirm = null;
+
 function showConfirmReassignModal(message, onConfirm) {
     const modal = document.getElementById('confirm-reassign-modal');
     const modalMessage = document.getElementById('confirm-reassign-modal-message');
-    const confirmBtn = document.getElementById('confirm-reassign-modal-confirm');
-    if (!modal || !confirmBtn) return;
+    if (!modal || !modalMessage) return;
     modalMessage.textContent = message;
-    confirmBtn.onclick = () => {
-        if (typeof onConfirm === 'function') onConfirm();
-        if (typeof KTModal !== 'undefined') {
-            const instance = KTModal.getInstance(modal) || new KTModal(modal);
-            instance.hide();
-        } else {
-            modal.classList.add('hidden');
-        }
-    };
+    _pendingReassignConfirm = onConfirm;
     if (typeof KTModal !== 'undefined') {
         const instance = KTModal.getInstance(modal) || new KTModal(modal);
         instance.show();
@@ -364,6 +357,25 @@ function showConfirmReassignModal(message, onConfirm) {
         modal.style.display = 'flex';
     }
 }
+
+document.addEventListener('click', function confirmReassignModalHandler(e) {
+    const confirmBtn = e.target.closest('#confirm-reassign-modal-confirm');
+    if (!confirmBtn || !_pendingReassignConfirm) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const fn = _pendingReassignConfirm;
+    _pendingReassignConfirm = null;
+    if (typeof fn === 'function') fn();
+    const modal = document.getElementById('confirm-reassign-modal');
+    if (modal) {
+        if (typeof KTModal !== 'undefined') {
+            const instance = KTModal.getInstance(modal) || new KTModal(modal);
+            instance.hide();
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+}, true);
 
 document.addEventListener('DOMContentLoaded', function() {
     const unitSelect = document.getElementById('unit-select');
