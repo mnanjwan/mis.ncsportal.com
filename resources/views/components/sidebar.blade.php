@@ -574,6 +574,7 @@
         case 'CD':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.cd.dashboard')],
+                ['icon' => 'ki-filled ki-calendar-tick', 'title' => 'Roster Approvals', 'href' => route('fleet.roster.cd-index')],
                 ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
                 ['icon' => 'ki-filled ki-document', 'title' => 'Internal Staff Orders (Transport)', 'href' => route('fleet.cd.internal-staff-orders.index')],

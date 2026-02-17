@@ -71,10 +71,15 @@ class DutyRoster extends Model
     }
 
     /**
-     * Check if roster includes any Transport officers.
+     * Check if roster includes any Transport officers or is a Transport-unit roster.
+     * True when: roster unit is Transport/Transport and Logistics, or any assigned officer has unit Transport.
      */
     public function hasTransportOfficers(): bool
     {
+        $transportUnits = ['Transport', 'Transport and Logistics'];
+        if (in_array($this->unit, $transportUnits, true)) {
+            return true;
+        }
         return $this->assignments()
             ->whereHas('officer', fn ($q) => $q->where('unit', 'Transport'))
             ->exists();

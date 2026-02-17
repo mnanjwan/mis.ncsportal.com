@@ -1224,7 +1224,10 @@ class DutyRosterController extends Controller
             ->where('status', 'SUBMITTED')
             ->where('command_id', $commandId)
             ->whereNull('cd_approved_at')
-            ->whereHas('assignments.officer', fn ($q) => $q->where('unit', 'Transport'))
+            ->where(function ($q) {
+                $q->whereIn('unit', ['Transport', 'Transport and Logistics'])
+                    ->orWhereHas('assignments.officer', fn ($oq) => $oq->where('unit', 'Transport'));
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
