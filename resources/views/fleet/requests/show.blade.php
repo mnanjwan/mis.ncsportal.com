@@ -204,6 +204,7 @@
                                 <th class="text-left">Role</th>
                                 <th class="text-left">Action</th>
                                 <th class="text-left">Decision</th>
+                                <th class="text-left">Comment</th>
                                 <th class="text-left">By</th>
                                 <th class="text-left">At</th>
                             </tr>
@@ -224,6 +225,13 @@
                                             </span>
                                         @else
                                             <span class="text-muted-foreground italic">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="max-w-[200px]">
+                                        @if(!empty($s->comment))
+                                            <span class="text-sm text-secondary-foreground" title="{{ $s->comment }}">{{ Str::limit($s->comment, 60) }}</span>
+                                        @else
+                                            <span class="text-muted-foreground">-</span>
                                         @endif
                                     </td>
                                     <td>{{ $s->actedBy->name ?? ($s->actedBy->email ?? '-') }}</td>
