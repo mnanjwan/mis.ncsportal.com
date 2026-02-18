@@ -80,22 +80,43 @@ class FleetAllocationController extends Controller
             ]);
         });
 
-        // Notify Area Controller(s) for the command that a vehicle is allocated and pending receipt
+        // Notify Area Controller(s) and CD(s) for the command that a vehicle is allocated and pending receipt
         $commandId = (int) $validated['command_id'];
+        $vehicleLabel = trim(($vehicle->make ?? '') . ' ' . ($vehicle->model ?? '')) ?: $vehicle->reg_no ?? $vehicle->chassis_number;
+        $notificationService = app(NotificationService::class);
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, User> $areaControllers */
         $areaControllers = User::whereHas('roles', function ($q) use ($commandId) {
             $q->where('name', 'Area Controller')
                 ->where('user_roles.is_active', true)
                 ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
 
-        $vehicleLabel = trim(($vehicle->make ?? '') . ' ' . ($vehicle->model ?? '')) ?: $vehicle->reg_no ?? $vehicle->chassis_number;
-        $notificationService = app(NotificationService::class);
-        foreach ($areaControllers as $user) {
+        foreach ($areaControllers as $ac) {
             $notificationService->notify(
-                $user,
+                $ac,
                 'fleet_vehicle_allocated_to_command',
                 'Vehicle allocated to your command',
                 "A vehicle ({$vehicleLabel}) has been allocated to your command and is pending receipt. Acknowledge receipt on the vehicle page.",
+                'fleet_vehicle',
+                $vehicle->id,
+                true
+            );
+        }
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, User> $cdUsers */
+        $cdUsers = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'CD')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        foreach ($cdUsers as $cdUser) {
+            $notificationService->notify(
+                $cdUser,
+                'fleet_vehicle_allocated_to_command',
+                'Vehicle allocated to your command',
+                "A vehicle ({$vehicleLabel}) has been allocated to your command. Unit Head (Area Controller) will acknowledge receipt; then you can issue it to officers from the Vehicles list.",
                 'fleet_vehicle',
                 $vehicle->id,
                 true

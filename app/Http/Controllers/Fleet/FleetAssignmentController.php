@@ -32,13 +32,15 @@ class FleetAssignmentController extends Controller
             ]);
         });
 
+        $vehicle = $assignment->vehicle;
+        $vehicleLabel = $vehicle ? (trim(($vehicle->make ?? '') . ' ' . ($vehicle->model ?? '')) ?: $vehicle->reg_no ?? $vehicle->chassis_number) : 'Vehicle';
+        $notificationService = app(NotificationService::class);
+
         // Notify the user who released (e.g. CC T&L) that the command has acknowledged receipt
         if ($releasedByUserId) {
-            $vehicle = $assignment->vehicle;
-            $vehicleLabel = $vehicle ? (trim(($vehicle->make ?? '') . ' ' . ($vehicle->model ?? '')) ?: $vehicle->reg_no ?? $vehicle->chassis_number) : 'Vehicle';
             $releasedBy = \App\Models\User::find($releasedByUserId);
             if ($releasedBy && $releasedBy->is_active) {
-                app(NotificationService::class)->notify(
+                $notificationService->notify(
                     $releasedBy,
                     'fleet_vehicle_received_by_command',
                     'Vehicle received by command',
@@ -48,6 +50,27 @@ class FleetAssignmentController extends Controller
                     true
                 );
             }
+        }
+
+        // Notify CD(s) for this command that the vehicle is received and available to issue to officers
+        $commandId = (int) $assignment->assigned_to_command_id;
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $cdUsers */
+        $cdUsers = \App\Models\User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'CD')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        foreach ($cdUsers as $cdUser) {
+            $notificationService->notify(
+                $cdUser,
+                'fleet_vehicle_received_by_command',
+                'Vehicle received – ready to issue',
+                "{$vehicleLabel} has been received by the command and is in the pool. You can issue it to an officer from the Vehicles list.",
+                'fleet_vehicle',
+                $vehicle?->id,
+                true
+            );
         }
 
         return redirect()
