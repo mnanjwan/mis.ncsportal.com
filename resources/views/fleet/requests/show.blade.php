@@ -97,28 +97,6 @@
             </div>
         </div>
 
-        {{-- Vehicle requested: full specification (New Vehicle) --}}
-        {{-- @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE')
-            <div class="kt-card">
-                <div class="kt-card-header">
-                    <h3 class="kt-card-title">Vehicle requested (full specification)</h3>
-                </div>
-                <div class="kt-card-content p-5 lg:p-7.5">
-                    <div class="overflow-x-auto">
-                        <table class="kt-table w-full text-sm">
-                            <tbody>
-                                <tr><td class="font-medium w-48">Vehicle type</td><td>{{ $fleetRequest->requested_vehicle_type ?? '–' }}</td></tr>
-                                <tr><td class="font-medium">Quantity</td><td>{{ $fleetRequest->requested_quantity ?? 1 }}</td></tr>
-                                <tr><td class="font-medium">Make</td><td>{{ $fleetRequest->requested_make ?: 'Not specified' }}</td></tr>
-                                <tr><td class="font-medium">Model</td><td>{{ $fleetRequest->requested_model ?: 'Not specified' }}</td></tr>
-                                <tr><td class="font-medium">Year</td><td>{{ $fleetRequest->requested_year ?: 'Not specified' }}</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        @endif --}}
-
         {{-- Specific vehicle(s) proposed by CC T&L (when any reserved) --}}
         @if($fleetRequest->request_type === 'FLEET_NEW_VEHICLE' && $fleetRequest->reservedVehicles->isNotEmpty())
             <div class="kt-card">
@@ -455,11 +433,11 @@
                     } else {
                         message += 'WHAT WILL HAPPEN:\n';
                         message += '• ' + selectedVehicles + ' vehicle(s) will be reserved for this request\n';
-                        message += '• The request will be forwarded to CGC for approval\n';
+                        message += '• The request will be forwarded to CGC Office for approval\n';
                         message += '• Reserved vehicles cannot be selected by other requests\n';
                         message += '• If approved, vehicles will proceed through the approval chain\n\n';
                         message += 'WHY:\n';
-                        message += 'Reserving vehicles ensures they are available for this request. After CGC approval, the request goes through DCG FATS and ACG TS before final release.';
+                        message += 'Reserving vehicles ensures they are available for this request. After CGC Office approval, the request goes through DCG FATS and ACG TS before final release.';
                     }
                     
                     showConfirmModal(title, message, function() {
@@ -551,8 +529,8 @@
                                 message += '• This requisition (₦' + amount.toLocaleString() + ') will be forwarded to DCG FATS\n';
                                 message += '• DCG FATS will review and approve (amount > ₦300,000)\n';
                             } else {
-                                message += '• This requisition (₦' + amount.toLocaleString() + ') will be forwarded to CGC\n';
-                                message += '• CGC will review and approve (amount > ₦500,000)\n';
+                                message += '• This requisition (₦' + amount.toLocaleString() + ') will be forwarded to CGC Office\n';
+                                message += '• CGC Office will review and approve (amount > ₦500,000)\n';
                             }
                         } else if (requestType === 'FLEET_NEW_VEHICLE') {
                             message += '• The vehicle proposal will be approved\n';

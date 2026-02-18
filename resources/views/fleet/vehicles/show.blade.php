@@ -104,6 +104,7 @@
                 ->first();
             $canReceive = auth()->user()->hasRole('Area Controller')
                 && $latestCommandAssignment
+                && !empty($latestCommandAssignment->released_at)
                 && empty($latestCommandAssignment->received_at);
         @endphp
 

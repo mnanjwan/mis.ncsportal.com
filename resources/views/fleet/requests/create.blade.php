@@ -72,13 +72,8 @@
 
                 <div id="vehicle_specs" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
                     <div>
-                        <label class="text-sm font-medium">Vehicle Type</label>
-                        <select name="requested_vehicle_type" class="kt-select w-full">
-                            <option value="">Select type</option>
-                            <option value="SALOON" @selected(old('requested_vehicle_type') === 'SALOON')>Saloon</option>
-                            <option value="SUV" @selected(old('requested_vehicle_type') === 'SUV')>SUV</option>
-                            <option value="BUS" @selected(old('requested_vehicle_type') === 'BUS')>Bus</option>
-                        </select>
+                        <label class="text-sm font-medium" for="requested_vehicle_type">Vehicle Type</label>
+                        <x-fleet-vehicle-type-select name="requested_vehicle_type" id="requested_vehicle_type" />
                     </div>
                     <div>
                         <label class="text-sm font-medium">Quantity</label>

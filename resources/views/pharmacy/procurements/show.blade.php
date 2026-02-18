@@ -107,7 +107,7 @@
                 @if(auth()->user()->hasRole('OC Pharmacy') && $procurement->status === 'SUBMITTED' && $procurement->current_step_order === 1)
                     <div class="kt-card border-warning">
                         <div class="kt-card-header">
-                            <h3 class="kt-card-title">OC Pharmacy Approval</h3>
+                            <h3 class="kt-card-title">Controller Pharmacy Approval</h3>
                         </div>
                         <div class="kt-card-content">
                             <form method="POST" action="{{ route('pharmacy.procurements.act', $procurement->id) }}">

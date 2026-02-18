@@ -183,6 +183,16 @@ Laravel's task scheduler needs to be set up to run all scheduled tasks. See `doc
 - **API Specification**: `docs/API_SPECIFICATION.md`
 - **Laravel Setup**: `docs/LARAVEL_SETUP.md`
 - **Cron Jobs Setup**: `docs/CRONJOBS_SETUP.md`
+- **Fleet vehicle visibility by role**: `docs/FLEET_VEHICLE_VISIBILITY_BY_ROLE.md`
+
+## Future possible updates
+
+Planned or optional enhancements (not yet implemented):
+
+- **Fleet vehicles**: Pagination or “Load more” for the vehicles list (beyond current 200); CSV/Excel export (e.g. for CGC: all vehicles with Officer and Command); lifecycle/status filter (IN_STOCK, AT_COMMAND_POOL, IN_OFFICER_CUSTODY, RETIRED) on the vehicles index.
+- **Fleet requests**: Live filters on the requests index (search + dropdowns by type, status, command for CGC).
+- **Dashboards**: Fleet widgets for Area Controller / CGC (e.g. “Vehicles in my command”, “All fleet vehicles” counts/links).
+- **Vehicle detail**: Extra info or actions (assignment history, lifecycle, quick links).
 
 ## Support
 

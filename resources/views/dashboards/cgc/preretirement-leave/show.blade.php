@@ -4,7 +4,7 @@
 @section('page-title', 'Preretirement Leave Details')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.dashboard') }}">CGC</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.dashboard') }}">CGC Office</a>
     <span>/</span>
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.preretirement-leave.index') }}">Preretirement Leave</a>
     <span>/</span>
@@ -105,7 +105,7 @@
                             </span>
                         @elseif($item->preretirement_leave_status === 'CGC_APPROVED_IN_OFFICE')
                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-success/10 text-success">
-                                <i class="ki-filled ki-check-circle"></i> CGC Approved (In Office)
+                                <i class="ki-filled ki-check-circle"></i> CGC Office Approved (In Office)
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-muted text-secondary-foreground">
@@ -122,7 +122,7 @@
                 @endif
                 @if($item->cgc_approved_at)
                 <div>
-                    <label class="text-xs text-secondary-foreground block mb-1">CGC Approved At</label>
+                    <label class="text-xs text-secondary-foreground block mb-1">CGC Office Approved At</label>
                     <p class="text-sm font-medium">{{ $item->cgc_approved_at->format('d/m/Y H:i') }}</p>
                 </div>
                 @endif
@@ -165,7 +165,7 @@
             <button type="button" 
                     onclick="openCancelApprovalModal({{ $item->id }}, '{{ $item->officer->full_name ?? 'N/A' }}')"
                     class="kt-btn kt-btn-danger">
-                <i class="ki-filled ki-cross"></i> Cancel CGC Approval
+                <i class="ki-filled ki-cross"></i> Cancel CGC Office Approval
             </button>
         </div>
     </div>
@@ -289,7 +289,7 @@ function closeCancelApprovalModal() {
                 <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
                     <i class="ki-filled ki-information text-warning text-xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground">Cancel CGC Approval</h3>
+                <h3 class="text-lg font-semibold text-foreground">Cancel CGC Office Approval</h3>
             </div>
             <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true" onclick="closeCancelApprovalModal()">
                 <i class="ki-filled ki-cross"></i>

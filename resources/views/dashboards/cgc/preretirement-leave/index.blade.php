@@ -4,7 +4,7 @@
 @section('page-title', 'Preretirement Leave Management')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.dashboard') }}">CGC</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.dashboard') }}">CGC Office</a>
     <span>/</span>
     <span class="text-primary">Preretirement Leave</span>
 @endsection
@@ -48,7 +48,7 @@
                             <button type="button" 
                                     id="status_select_trigger" 
                                     class="kt-input text-left flex items-center justify-between cursor-pointer">
-                                <span id="status_select_text">{{ request('status') ? (request('status') === 'AUTO_PLACED' ? 'Auto Placed' : (request('status') === 'CGC_APPROVED_IN_OFFICE' ? 'CGC Approved (In Office)' : 'All Status')) : 'All Status' }}</span>
+                                <span id="status_select_text">{{ request('status') ? (request('status') === 'AUTO_PLACED' ? 'Auto Placed' : (request('status') === 'CGC_APPROVED_IN_OFFICE' ? 'CGC Office Approved (In Office)' : 'All Status')) : 'All Status' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
                             <div id="status_dropdown" 
@@ -284,7 +284,7 @@ function closeCancelApprovalModal() {
                 <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
                     <i class="ki-filled ki-information text-warning text-xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground">Cancel CGC Approval</h3>
+                <h3 class="text-lg font-semibold text-foreground">Cancel CGC Office Approval</h3>
             </div>
             <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true" onclick="closeCancelApprovalModal()">
                 <i class="ki-filled ki-cross"></i>
@@ -423,7 +423,7 @@ function closeCancelApprovalModal() {
         const statusOptions = [
             {id: '', name: 'All Status'},
             {id: 'AUTO_PLACED', name: 'Auto Placed'},
-            {id: 'CGC_APPROVED_IN_OFFICE', name: 'CGC Approved (In Office)'}
+            {id: 'CGC_APPROVED_IN_OFFICE', name: 'CGC Office Approved (In Office)'}
         ];
 
         // Initialize status select

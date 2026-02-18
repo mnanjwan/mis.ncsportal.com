@@ -4,7 +4,7 @@
 @section('page-title', 'Officers Approaching Preretirement Leave')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.dashboard') }}">CGC</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.dashboard') }}">CGC Office</a>
     <span>/</span>
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('cgc.preretirement-leave.index') }}">Preretirement Leave</a>
     <span>/</span>

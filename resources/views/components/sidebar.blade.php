@@ -287,7 +287,9 @@
         case 'CGC':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('cgc.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Fleet Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'Report by Type', 'href' => route('fleet.reports.by-type')],
                 [
                     'title' => 'Preretirement Leave',
                     'icon' => 'ki-filled ki-calendar-tick',
@@ -407,7 +409,9 @@
                 [
                     'group' => 'Fleet',
                     'items' => [
+                        ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
                         ['icon' => 'ki-filled ki-file-up', 'title' => 'Fleet Requests', 'href' => route('fleet.requests.index')],
+                        ['icon' => 'ki-filled ki-document', 'title' => 'Report by Type', 'href' => route('fleet.reports.by-type')],
                     ]
                 ],
                 [
@@ -551,8 +555,10 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.cc-tl.dashboard')],
                 ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-map', 'title' => 'Allocate to Command', 'href' => route('fleet.allocate-to-command.create')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
                 ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'Report by Type', 'href' => route('fleet.reports.by-type')],
             ];
             break;
         case 'DCG FATS':
@@ -579,6 +585,7 @@
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
                 ['icon' => 'ki-filled ki-document', 'title' => 'Internal Staff Orders (Transport)', 'href' => route('fleet.cd.internal-staff-orders.index')],
                 ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+                ['icon' => 'ki-filled ki-document', 'title' => 'Report by Type', 'href' => route('fleet.reports.by-type')],
             ];
             break;
         case 'O/C T&L':
@@ -680,6 +687,13 @@
         $serviceNumber = $officer->service_number;
     }
     $currentRoute = request()->route()->getName();
+
+    // Display names for roles (text only; role identifiers unchanged for functionality)
+    $roleDisplayNames = [
+        'CGC' => 'CGC Office',
+        'OC Pharmacy' => 'Controller Pharmacy',
+    ];
+    $primaryRoleDisplay = $roleDisplayNames[$primaryRole] ?? $primaryRole;
 @endphp
 
 <div class="flex-col fixed top-0 bottom-0 z-20 hidden lg:flex items-stretch shrink-0 w-(--sidebar-width) dark [--kt-drawer-enable:true] lg:[--kt-drawer-enable:false]"
@@ -760,7 +774,7 @@
             <div class="mb-5">
                 <h3 class="text-sm text-muted-foreground uppercase ps-5 inline-block mb-3">
                     @if($isOfficerWithRole)
-                        {{ $primaryRole }} Menu
+                        {{ $primaryRoleDisplay }} Menu
                     @else
                         Menu
                     @endif

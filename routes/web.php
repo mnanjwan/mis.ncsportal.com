@@ -46,6 +46,7 @@ use App\Http\Controllers\InternalStaffOrderController;
 use App\Http\Controllers\OfficerDeletionController;
 use App\Http\Controllers\CommandDurationController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Fleet\FleetAllocationController;
 use App\Http\Controllers\Fleet\FleetAssignmentController;
 use App\Http\Controllers\Fleet\FleetDashboardController;
 use App\Http\Controllers\Fleet\FleetIssuanceController;
@@ -712,10 +713,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/store-receiver', [FleetDashboardController::class, 'storeReceiver'])->middleware('role:Transport Store/Receiver')->name('store-receiver.dashboard');
 
         // Vehicles
-        Route::get('/vehicles', [FleetVehicleController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.index');
+        Route::get('/vehicles', [FleetVehicleController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS|Area Controller|CGC')->name('vehicles.index');
         Route::get('/vehicles/intake', [FleetVehicleController::class, 'createIntake'])->middleware('role:Transport Store/Receiver')->name('vehicles.intake.create');
         Route::post('/vehicles/intake', [FleetVehicleController::class, 'storeIntake'])->middleware('role:Transport Store/Receiver')->name('vehicles.intake.store');
-        Route::get('/vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.show');
+        Route::get('/vehicles/{vehicle}', [FleetVehicleController::class, 'show'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS|Area Controller|CGC')->name('vehicles.show');
         Route::get('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'editIdentifiers'])->middleware('role:CD|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.edit');
         Route::put('/vehicles/{vehicle}/identifiers', [FleetVehicleController::class, 'updateIdentifiers'])->middleware('role:CD|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS')->name('vehicles.identifiers.update');
         Route::put('/vehicles/{vehicle}/service-status', [FleetVehicleController::class, 'updateServiceStatus'])->middleware('role:CD')->name('vehicles.service-status.update');
@@ -728,6 +729,10 @@ Route::middleware('auth')->group(function () {
 
         // Area Controller receipt acknowledgement
         Route::post('/assignments/{assignment}/receive', [FleetAssignmentController::class, 'receive'])->middleware('role:Area Controller')->name('assignments.receive');
+
+        // CC T&L: allocate vehicle directly to command (command receives via Area Controller)
+        Route::get('/allocate-to-command', [FleetAllocationController::class, 'create'])->middleware('role:CC T&L')->name('allocate-to-command.create');
+        Route::post('/allocate-to-command', [FleetAllocationController::class, 'store'])->middleware('role:CC T&L')->name('allocate-to-command.store');
 
         // Requests
         Route::get('/requests', [FleetRequestController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|Area Controller|OC Workshop|Staff Officer T&L|CC T&L|DCG FATS|ACG TS|CGC')->name('requests.index');
@@ -742,6 +747,7 @@ Route::middleware('auth')->group(function () {
         // Reports
         Route::get('/reports/returns', [FleetReportsController::class, 'returnsReport'])->middleware('role:CC T&L|CD')->name('reports.returns');
         Route::get('/reports/serviceability', [FleetReportsController::class, 'serviceabilityReport'])->middleware('role:CD|CC T&L')->name('reports.serviceability');
+        Route::get('/reports/by-type', [FleetReportsController::class, 'byTypeReport'])->middleware('role:CC T&L|CGC|Area Controller|CD')->name('reports.by-type');
 
         // CD Roster Approval (for rosters with Transport officers)
         Route::get('/roster/cd', [DutyRosterController::class, 'cdIndex'])->middleware('role:CD')->name('roster.cd-index');

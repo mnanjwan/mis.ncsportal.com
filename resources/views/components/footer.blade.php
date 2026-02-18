@@ -32,7 +32,7 @@
             <div class="flex flex-wrap items-center gap-4">
                 <div class="flex items-center gap-2">
                     <i class="ki-filled ki-code text-sm"></i>
-                    <span>Developed by <strong class="text-foreground">ICT Mod</strong></span>
+                    <span>Developed by <strong class="text-foreground">ICT MOD</strong></span>
                 </div>
                 <div class="flex items-center gap-2">
                     <i class="ki-filled ki-calendar text-sm"></i>
@@ -74,7 +74,7 @@
                     <div class="pb-3">
                         <h5 class="font-semibold text-foreground mb-2">What should I do if I encounter an error?</h5>
                         <p class="text-sm text-secondary-foreground">
-                            Please report any errors or issues by clicking the support email link above or contact ICT Mod directly. Include a screenshot if possible.
+                            Please report any errors or issues by clicking the support email link above or contact <strong class="text-foreground">ICT MOD</strong> directly. Include a screenshot if possible.
                         </p>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
             </p>
             <p class="flex items-center gap-2">
                 <span>Powered by</span>
-                <strong class="text-foreground">ICT Mod</strong>
+                <strong class="text-foreground">ICT MOD</strong>
             </p>
         </div>
     </div>

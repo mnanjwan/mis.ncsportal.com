@@ -131,7 +131,7 @@ class FleetRequestController extends Controller
                     'FLEET_REQUISITION'
                 ])
             ],
-            'requested_vehicle_type' => ['nullable', 'string', Rule::in(['SALOON', 'SUV', 'BUS'])],
+            'requested_vehicle_type' => ['nullable', 'string', Rule::in(array_keys(config('fleet.vehicle_types', [])))],
             'requested_make' => ['nullable', 'string', 'max:100'],
             'requested_model' => ['nullable', 'string', 'max:100'],
             'requested_year' => ['nullable', 'integer', 'min:1950', 'max:' . (int) date('Y')],

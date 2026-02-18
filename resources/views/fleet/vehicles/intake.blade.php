@@ -65,14 +65,8 @@
                             @error('make')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label class="text-sm font-medium">Vehicle Type <span class="text-red-600">*</span></label>
-                            <select class="kt-select w-full" name="vehicle_type" id="vehicle_type">
-                                <option value="">Select type</option>
-                                <option value="SALOON" @selected(old('vehicle_type')==='SALOON')>Saloon</option>
-                                <option value="SUV" @selected(old('vehicle_type')==='SUV')>SUV</option>
-                                <option value="BUS" @selected(old('vehicle_type')==='BUS')>Bus</option>
-                                <option value="PICKUP" @selected(old('vehicle_type')==='PICKUP')>Pickup</option>
-                            </select>
+                            <label class="text-sm font-medium" for="vehicle_type">Vehicle Type <span class="text-red-600">*</span></label>
+                            <x-fleet-vehicle-type-select name="vehicle_type" id="vehicle_type" :required="true" />
                             @error('vehicle_type')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>

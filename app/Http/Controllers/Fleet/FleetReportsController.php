@@ -8,9 +8,73 @@ use App\Models\FleetVehicleAssignment;
 use App\Services\Fleet\FleetWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class FleetReportsController extends Controller
 {
+    /**
+     * Report: vehicles by type.
+     * CC T&L and CGC: all commands. Unit Head (Area Controller) and CD: their command only.
+     * Report states the officer allocated to each vehicle if any.
+     */
+    public function byTypeReport(Request $request, FleetWorkflowService $workflow)
+    {
+        $user = $request->user();
+
+        $vehicleType = $request->input('vehicle_type');
+        $vehicleTypes = config('fleet.vehicle_types', []);
+        $vehicleTypeLabel = $vehicleType ? ($vehicleTypes[$vehicleType] ?? $vehicleType) : null;
+
+        $vehicles = collect();
+        $scopeLabel = '';
+
+        if ($vehicleType) {
+            $request->validate([
+                'vehicle_type' => ['required', 'string', Rule::in(array_keys($vehicleTypes))],
+            ]);
+
+            $query = FleetVehicle::query()
+                ->with(['currentCommand', 'currentOfficer'])
+                ->where('vehicle_type', $vehicleType)
+                ->orderBy('current_command_id')
+                ->orderBy('reg_no');
+
+            if ($user->hasRole('CC T&L') || $user->hasRole('CGC')) {
+                $scopeLabel = 'All Commands';
+            } elseif ($user->hasRole('Area Controller')) {
+                $commandId = $workflow->getActiveCommandIdForRole($user, 'Area Controller');
+                if ($commandId) {
+                    $query->where('current_command_id', $commandId);
+                    $command = \App\Models\Command::find($commandId);
+                    $scopeLabel = $command ? $command->name : 'Command';
+                } else {
+                    $scopeLabel = 'My Command';
+                }
+            } elseif ($user->hasRole('CD')) {
+                $commandId = $workflow->getActiveCommandIdForRole($user, 'CD');
+                if ($commandId) {
+                    $query->where('current_command_id', $commandId);
+                    $command = \App\Models\Command::find($commandId);
+                    $scopeLabel = $command ? $command->name : 'Command';
+                } else {
+                    $scopeLabel = 'My Command';
+                }
+            } else {
+                abort(403, 'You do not have access to this report.');
+            }
+
+            $vehicles = $query->get();
+        }
+
+        return view('fleet.reports.by-type', [
+            'vehicles' => $vehicles,
+            'vehicleType' => $vehicleType,
+            'vehicleTypeLabel' => $vehicleTypeLabel,
+            'scopeLabel' => $scopeLabel,
+            'vehicleTypes' => $vehicleTypes,
+        ]);
+    }
+
     public function returnsReport(Request $request, FleetWorkflowService $workflow)
     {
         $user = $request->user();

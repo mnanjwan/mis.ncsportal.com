@@ -12,6 +12,7 @@ use App\Services\Fleet\FleetWorkflowService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class FleetVehicleController extends Controller
@@ -22,8 +23,17 @@ class FleetVehicleController extends Controller
 
         $query = FleetVehicle::query()->with(['currentCommand', 'currentOfficer', 'vehicleModel']);
 
-        // Command-scoped view for CD / O/C T&L / Store Receiver (HQ roles see all)
-        if ($user->hasRole('CD')) {
+        // CGC: system-wide (all commands) — no filter
+        // Area Controller: command-scoped (his/her command only)
+        // CD / O/C T&L / Store Receiver: command-scoped; CC T&L / DCG FATS / ACG TS: no filter (HQ)
+        if ($user->hasRole('CGC')) {
+            // No filter — show all vehicles across all commands
+        } elseif ($user->hasRole('Area Controller')) {
+            $commandId = $workflow->getActiveCommandIdForRole($user, 'Area Controller');
+            if ($commandId) {
+                $query->where('current_command_id', $commandId);
+            }
+        } elseif ($user->hasRole('CD')) {
             $commandId = $workflow->getActiveCommandIdForRole($user, 'CD');
             if ($commandId) {
                 $query->where('current_command_id', $commandId);
@@ -45,8 +55,18 @@ class FleetVehicleController extends Controller
         return view('fleet.vehicles.index', compact('vehicles'));
     }
 
-    public function show(FleetVehicle $vehicle)
+    public function show(Request $request, FleetVehicle $vehicle, FleetWorkflowService $workflow)
     {
+        $user = $request->user();
+
+        // Area Controller may only view vehicles in their assigned command
+        if ($user->hasRole('Area Controller')) {
+            $commandId = $workflow->getActiveCommandIdForRole($user, 'Area Controller');
+            if ($commandId !== null && (int) $vehicle->current_command_id !== (int) $commandId) {
+                abort(403, 'You can only view vehicles in your command.');
+            }
+        }
+
         $vehicle->load([
             'currentCommand',
             'currentOfficer',
@@ -91,7 +111,7 @@ class FleetVehicleController extends Controller
             'vehicle_model_id' => ['nullable', 'integer', 'exists:fleet_vehicle_models,id'],
             // For creating new model (nullable so when existing model is selected these can be empty)
             'make' => ['required_without:vehicle_model_id', 'nullable', 'string', 'max:100'],
-            'vehicle_type' => ['required_without:vehicle_model_id', 'nullable', 'string', 'in:SALOON,SUV,BUS,PICKUP'],
+            'vehicle_type' => ['required_without:vehicle_model_id', 'nullable', 'string', Rule::in(array_keys(config('fleet.vehicle_types', [])))],
             'year_of_manufacture' => ['required_without:vehicle_model_id', 'nullable', 'integer', 'min:1950', 'max:' . (int) date('Y')],
             // Vehicle-specific fields
             'reg_no' => ['nullable', 'string', 'max:50'],
