@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Command;
 use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -77,6 +79,28 @@ class FleetAllocationController extends Controller
                 'lifecycle_status' => 'AT_COMMAND_POOL',
             ]);
         });
+
+        // Notify Area Controller(s) for the command that a vehicle is allocated and pending receipt
+        $commandId = (int) $validated['command_id'];
+        $areaControllers = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'Area Controller')
+                ->where('user_roles.is_active', true)
+                ->where('user_roles.command_id', $commandId);
+        })->where('is_active', true)->get();
+
+        $vehicleLabel = trim(($vehicle->make ?? '') . ' ' . ($vehicle->model ?? '')) ?: $vehicle->reg_no ?? $vehicle->chassis_number;
+        $notificationService = app(NotificationService::class);
+        foreach ($areaControllers as $user) {
+            $notificationService->notify(
+                $user,
+                'fleet_vehicle_allocated_to_command',
+                'Vehicle allocated to your command',
+                "A vehicle ({$vehicleLabel}) has been allocated to your command and is pending receipt. Acknowledge receipt on the vehicle page.",
+                'fleet_vehicle',
+                $vehicle->id,
+                true
+            );
+        }
 
         return redirect()
             ->route('fleet.vehicles.show', $vehicle)

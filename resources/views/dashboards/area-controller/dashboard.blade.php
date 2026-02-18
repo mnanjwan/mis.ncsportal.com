@@ -96,7 +96,7 @@
             </div>
         </div>
 
-        <div class="kt-card">
+        <a href="{{ route('fleet.vehicles.index') }}" class="kt-card block hover:shadow-md transition-shadow">
             <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
@@ -108,10 +108,13 @@
                     </div>
                 </div>
                 <span class="text-xs text-secondary-foreground">
-                    Awaiting acknowledgement
+                    Vehicles allocated to your command awaiting acknowledgement
+                </span>
+                <span class="text-xs text-primary font-semibold">
+                    View vehicles →
                 </span>
             </div>
-        </div>
+        </a>
     </div>
     
     <!-- Recent Activity -->

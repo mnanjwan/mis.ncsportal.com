@@ -72,33 +72,48 @@
                             class="kt-input w-full"
                             autocomplete="off">
                     </div>
-                    <div class="w-40">
-                        <label for="fleet-type" class="mb-1 block text-xs font-medium text-secondary-foreground">Type</label>
-                        <select id="fleet-type" class="kt-input w-full">
-                            <option value="">All</option>
-                            @foreach($vehicleTypes as $t)
-                                <option value="{{ $t }}">{{ $t }}</option>
-                            @endforeach
-                        </select>
-                    </div>
                     <div class="w-44">
-                        <label for="fleet-status" class="mb-1 block text-xs font-medium text-secondary-foreground">Status</label>
-                        <select id="fleet-status" class="kt-input w-full">
-                            <option value="">All</option>
-                            @foreach($serviceStatuses as $s)
-                                <option value="{{ $s }}">{{ $s }}</option>
-                            @endforeach
-                        </select>
+                        <label for="fleet-type-trigger" class="mb-1 block text-xs font-medium text-secondary-foreground">Type</label>
+                        <input type="hidden" id="fleet-type" value="">
+                        <div class="relative">
+                            <button type="button" id="fleet-type-trigger" class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="fleet-type-text">All</span>
+                                <i class="ki-filled ki-down text-muted-foreground text-xs"></i>
+                            </button>
+                            <div id="fleet-type-dropdown" class="absolute z-50 w-full mt-1 bg-background border border-input rounded-lg shadow-lg hidden">
+                                <input type="text" id="fleet-type-search" class="kt-input m-2 w-[calc(100%-1rem)]" placeholder="Search type..." autocomplete="off">
+                                <div id="fleet-type-options" class="max-h-48 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-48">
+                        <label for="fleet-status-trigger" class="mb-1 block text-xs font-medium text-secondary-foreground">Status</label>
+                        <input type="hidden" id="fleet-status" value="">
+                        <div class="relative">
+                            <button type="button" id="fleet-status-trigger" class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="fleet-status-text">All</span>
+                                <i class="ki-filled ki-down text-muted-foreground text-xs"></i>
+                            </button>
+                            <div id="fleet-status-dropdown" class="absolute z-50 w-full mt-1 bg-background border border-input rounded-lg shadow-lg hidden">
+                                <input type="text" id="fleet-status-search" class="kt-input m-2 w-[calc(100%-1rem)]" placeholder="Search status..." autocomplete="off">
+                                <div id="fleet-status-options" class="max-h-48 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     @if($filterCommands->isNotEmpty())
-                        <div class="w-52">
-                            <label for="fleet-command" class="mb-1 block text-xs font-medium text-secondary-foreground">Command</label>
-                            <select id="fleet-command" class="kt-input w-full">
-                                <option value="">All</option>
-                                @foreach($filterCommands as $cmd)
-                                    <option value="{{ $cmd }}">{{ $cmd }}</option>
-                                @endforeach
-                            </select>
+                        <div class="w-56">
+                            <label for="fleet-command-trigger" class="mb-1 block text-xs font-medium text-secondary-foreground">Command</label>
+                            <input type="hidden" id="fleet-command" value="">
+                            <div class="relative">
+                                <button type="button" id="fleet-command-trigger" class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="fleet-command-text">All</span>
+                                    <i class="ki-filled ki-down text-muted-foreground text-xs"></i>
+                                </button>
+                                <div id="fleet-command-dropdown" class="absolute z-50 w-full mt-1 bg-background border border-input rounded-lg shadow-lg hidden">
+                                    <input type="text" id="fleet-command-search" class="kt-input m-2 w-[calc(100%-1rem)]" placeholder="Search command..." autocomplete="off">
+                                    <div id="fleet-command-options" class="max-h-48 overflow-y-auto"></div>
+                                </div>
+                            </div>
                         </div>
                     @endif
                     <button type="button" id="fleet-filters-reset" class="kt-btn kt-btn-secondary whitespace-nowrap">Clear</button>
@@ -170,6 +185,10 @@
         @push('scripts')
             <script>
                 (function () {
+                    var fleetFilterTypes = @json($vehicleTypes->values());
+                    var fleetFilterStatuses = @json($serviceStatuses->values());
+                    var fleetFilterCommands = @json($filterCommands->values());
+
                     const table = document.getElementById('fleet-vehicles-table');
                     const rows = table ? Array.from(table.querySelectorAll('tbody tr.fleet-row')) : [];
                     const total = rows.length;
@@ -217,17 +236,81 @@
                         applyFilters();
                     }
 
+                    function initSearchableFilter(name, options, triggerId, textId, hiddenId, dropdownId, searchId, optionsId) {
+                        var trigger = document.getElementById(triggerId);
+                        var textEl = document.getElementById(textId);
+                        var hidden = document.getElementById(hiddenId);
+                        var dropdown = document.getElementById(dropdownId);
+                        var searchInput = document.getElementById(searchId);
+                        var optionsContainer = document.getElementById(optionsId);
+                        if (!trigger || !textEl || !hidden || !dropdown || !searchInput || !optionsContainer) return;
+                        var allOptions = [{ id: '', name: 'All' }].concat(options.map(function(o) { return { id: o, name: o }; }));
+                        var filtered = allOptions.slice();
+
+                        function render(opts) {
+                            optionsContainer.innerHTML = opts.map(function(opt) {
+                                var n = (opt.name || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                                return '<div class="p-2 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 text-sm" data-id="' + (opt.id || '').replace(/"/g, '&quot;') + '" data-name="' + n + '">' + (opt.name || '') + '</div>';
+                            }).join('');
+                            optionsContainer.querySelectorAll('[data-id]').forEach(function(opt) {
+                                opt.addEventListener('click', function() {
+                                    hidden.value = this.dataset.id || '';
+                                    textEl.textContent = this.dataset.name || 'All';
+                                    dropdown.classList.add('hidden');
+                                    searchInput.value = '';
+                                    filtered = allOptions.slice();
+                                    render(filtered);
+                                    onFilterChange();
+                                });
+                            });
+                        }
+                        function open() {
+                            dropdown.classList.remove('hidden');
+                            var rect = trigger.getBoundingClientRect();
+                            dropdown.style.cssText = 'position:fixed;z-index:99999;top:' + (rect.bottom + 2) + 'px;left:' + rect.left + 'px;width:' + Math.max(rect.width, 160) + 'px;';
+                            setTimeout(function() { searchInput.focus(); }, 50);
+                        }
+                        function close() {
+                            dropdown.classList.add('hidden');
+                            dropdown.style.cssText = '';
+                        }
+                        render(filtered);
+                        searchInput.addEventListener('input', function() {
+                            var term = (this.value || '').toLowerCase();
+                            filtered = allOptions.filter(function(o) { return (o.name || '').toLowerCase().includes(term); });
+                            render(filtered);
+                        });
+                        trigger.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            if (dropdown.classList.contains('hidden')) open(); else close();
+                        });
+                        document.addEventListener('click', function(e) {
+                            setTimeout(function() {
+                                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) close();
+                            }, 0);
+                        });
+                    }
+
                     searchEl?.addEventListener('input', onFilterChange);
                     searchEl?.addEventListener('keyup', onFilterChange);
-                    typeEl?.addEventListener('change', onFilterChange);
-                    statusEl?.addEventListener('change', onFilterChange);
-                    if (commandEl) commandEl.addEventListener('change', onFilterChange);
+
+                    initSearchableFilter('Type', fleetFilterTypes, 'fleet-type-trigger', 'fleet-type-text', 'fleet-type', 'fleet-type-dropdown', 'fleet-type-search', 'fleet-type-options');
+                    initSearchableFilter('Status', fleetFilterStatuses, 'fleet-status-trigger', 'fleet-status-text', 'fleet-status', 'fleet-status-dropdown', 'fleet-status-search', 'fleet-status-options');
+                    if (document.getElementById('fleet-command-trigger')) {
+                        initSearchableFilter('Command', fleetFilterCommands, 'fleet-command-trigger', 'fleet-command-text', 'fleet-command', 'fleet-command-dropdown', 'fleet-command-search', 'fleet-command-options');
+                    }
 
                     resetEl?.addEventListener('click', function () {
                         if (searchEl) searchEl.value = '';
                         if (typeEl) typeEl.value = '';
                         if (statusEl) statusEl.value = '';
                         if (commandEl) commandEl.value = '';
+                        var t = document.getElementById('fleet-type-text');
+                        var s = document.getElementById('fleet-status-text');
+                        var c = document.getElementById('fleet-command-text');
+                        if (t) t.textContent = 'All';
+                        if (s) s.textContent = 'All';
+                        if (c) c.textContent = 'All';
                         onFilterChange();
                     });
 

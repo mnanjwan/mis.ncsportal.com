@@ -32,9 +32,21 @@
             </div>
             <div class="kt-card-content p-5 lg:p-7.5">
                 <form method="GET" action="{{ route('fleet.reports.by-type') }}" class="flex flex-wrap items-end gap-4">
-                    <div class="min-w-[200px]">
-                        <label class="text-sm font-medium" for="vehicle_type">Vehicle Type <span class="text-red-600">*</span></label>
-                        <x-fleet-vehicle-type-select name="vehicle_type" id="vehicle_type" :selected="request('vehicle_type')" class="kt-input w-full" />
+                    <div class="min-w-[220px]">
+                        <label class="text-sm font-medium" for="vehicle_type_select_trigger">Vehicle Type <span class="text-red-600">*</span></label>
+                        <input type="hidden" name="vehicle_type" id="vehicle_type" value="{{ request('vehicle_type') }}">
+                        <div class="relative">
+                            <button type="button" id="vehicle_type_select_trigger" class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                <span id="vehicle_type_select_text">{{ request('vehicle_type') && isset($vehicleTypes[request('vehicle_type')]) ? $vehicleTypes[request('vehicle_type')] : 'Search vehicle type...' }}</span>
+                                <i class="ki-filled ki-down text-muted-foreground"></i>
+                            </button>
+                            <div id="vehicle_type_dropdown" class="absolute z-50 w-full mt-1 bg-background border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-2 border-b border-input">
+                                    <input type="text" id="vehicle_type_search_input" class="kt-input w-full" placeholder="Search vehicle type..." autocomplete="off">
+                                </div>
+                                <div id="vehicle_type_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
                     </div>
                     <button type="submit" class="kt-btn kt-btn-primary">Generate Report</button>
                 </form>
@@ -123,6 +135,67 @@
             </div>
         @endif
     </div>
+
+    @push('scripts')
+    <script>
+        (function() {
+            var vehicleTypes = @json(collect($vehicleTypes ?? [])->map(fn($label, $value) => ['id' => $value, 'name' => $label])->values());
+            var trigger = document.getElementById('vehicle_type_select_trigger');
+            var hidden = document.getElementById('vehicle_type');
+            var dropdown = document.getElementById('vehicle_type_dropdown');
+            var searchInput = document.getElementById('vehicle_type_search_input');
+            var optionsContainer = document.getElementById('vehicle_type_options');
+            var displayText = document.getElementById('vehicle_type_select_text');
+            if (!trigger || !hidden || !dropdown || !searchInput || !optionsContainer || !displayText) return;
+            var filtered = vehicleTypes.slice();
+            function render(opts) {
+                if (opts.length === 0) {
+                    optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No types found</div>';
+                    return;
+                }
+                optionsContainer.innerHTML = opts.map(function(opt) {
+                    var name = (opt.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" data-id="' + (opt.id || '').replace(/"/g, '&quot;') + '" data-name="' + name + '"><div class="text-sm text-foreground">' + (opt.name || '') + '</div></div>';
+                }).join('');
+                optionsContainer.querySelectorAll('.select-option').forEach(function(opt) {
+                    opt.addEventListener('click', function() {
+                        hidden.value = this.dataset.id || '';
+                        displayText.textContent = this.dataset.name || 'Search vehicle type...';
+                        dropdown.classList.add('hidden');
+                        searchInput.value = '';
+                        filtered = vehicleTypes.slice();
+                        render(filtered);
+                    });
+                });
+            }
+            function openDropdown() {
+                dropdown.classList.remove('hidden');
+                var rect = trigger.getBoundingClientRect();
+                dropdown.style.cssText = 'position:fixed;z-index:99999;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;width:' + Math.max(rect.width, 260) + 'px;';
+                setTimeout(function() { searchInput.focus(); }, 100);
+            }
+            function closeDropdown() {
+                dropdown.classList.add('hidden');
+                dropdown.style.cssText = '';
+            }
+            render(filtered);
+            searchInput.addEventListener('input', function() {
+                var term = this.value.toLowerCase();
+                filtered = vehicleTypes.filter(function(o) { return (o.name || '').toLowerCase().includes(term); });
+                render(filtered);
+            });
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (dropdown.classList.contains('hidden')) openDropdown(); else closeDropdown();
+            });
+            document.addEventListener('click', function(e) {
+                setTimeout(function() {
+                    if (!trigger.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
+                }, 0);
+            });
+        })();
+    </script>
+    @endpush
 
     @push('styles')
     <style media="print">
