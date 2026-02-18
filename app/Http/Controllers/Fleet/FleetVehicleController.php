@@ -89,7 +89,22 @@ class FleetVehicleController extends Controller
             ->orderByDesc('year_of_manufacture')
             ->get();
 
-        return view('fleet.vehicles.intake', compact('vehicleModels'));
+        $configTypes = config('fleet.vehicle_types', []);
+        $usedTypes = FleetVehicleModel::distinct()
+            ->whereNotNull('vehicle_type')
+            ->where('vehicle_type', '!=', '')
+            ->pluck('vehicle_type')
+            ->filter();
+        foreach ($usedTypes as $type) {
+            if (! array_key_exists($type, $configTypes)) {
+                $configTypes[$type] = $type;
+            }
+        }
+        ksort($configTypes, SORT_NATURAL);
+        $vehicleTypes = $configTypes;
+        $vehicleTypesForJs = collect($vehicleTypes)->map(fn ($label, $value) => ['id' => $value, 'name' => $label])->values()->all();
+
+        return view('fleet.vehicles.intake', compact('vehicleModels', 'vehicleTypes', 'vehicleTypesForJs'));
     }
 
     public function storeIntake(
@@ -111,7 +126,7 @@ class FleetVehicleController extends Controller
             'vehicle_model_id' => ['nullable', 'integer', 'exists:fleet_vehicle_models,id'],
             // For creating new model (nullable so when existing model is selected these can be empty)
             'make' => ['required_without:vehicle_model_id', 'nullable', 'string', 'max:100'],
-            'vehicle_type' => ['required_without:vehicle_model_id', 'nullable', 'string', Rule::in(array_keys(config('fleet.vehicle_types', [])))],
+            'vehicle_type' => ['required_without:vehicle_model_id', 'nullable', 'string', 'max:100'],
             'year_of_manufacture' => ['required_without:vehicle_model_id', 'nullable', 'integer', 'min:1950', 'max:' . (int) date('Y')],
             // Vehicle-specific fields
             'reg_no' => ['nullable', 'string', 'max:50'],

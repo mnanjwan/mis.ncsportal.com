@@ -711,6 +711,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/cd', [FleetDashboardController::class, 'cd'])->middleware('role:CD')->name('cd.dashboard');
         Route::get('/dashboard/oc-tl', [FleetDashboardController::class, 'ocTl'])->middleware('role:O/C T&L')->name('oc-tl.dashboard');
         Route::get('/dashboard/store-receiver', [FleetDashboardController::class, 'storeReceiver'])->middleware('role:Transport Store/Receiver')->name('store-receiver.dashboard');
+        Route::get('/dashboard/cgc', [FleetDashboardController::class, 'cgc'])->middleware('role:CGC')->name('cgc.dashboard');
 
         // Vehicles
         Route::get('/vehicles', [FleetVehicleController::class, 'index'])->middleware('role:CD|O/C T&L|Transport Store/Receiver|CC T&L|DCG FATS|ACG TS|Area Controller|CGC')->name('vehicles.index');

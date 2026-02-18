@@ -42,6 +42,11 @@ class FleetDashboardController extends Controller
         return $this->renderDashboard($request, $workflow, 'Transport Store/Receiver', 'Transport Store/Receiver Dashboard');
     }
 
+    public function cgc(Request $request, FleetWorkflowService $workflow)
+    {
+        return $this->renderDashboard($request, $workflow, 'CGC', 'CGC Fleet');
+    }
+
     private function renderDashboard(Request $request, FleetWorkflowService $workflow, string $roleName, string $title)
     {
         $user = $request->user();
@@ -90,7 +95,15 @@ class FleetDashboardController extends Controller
                     ->whereDoesntHave('returnRecord')
                     ->count();
 
+                $commandVehicles = FleetVehicle::where('current_command_id', $commandId);
+                $totalVehicles = (clone $commandVehicles)->count();
+                $serviceableCount = (clone $commandVehicles)->where('service_status', 'SERVICEABLE')->count();
+                $unserviceableCount = (clone $commandVehicles)->where('service_status', 'UNSERVICEABLE')->count();
+
                 $cards = [
+                    ['label' => 'Total Vehicles (Command)', 'value' => $totalVehicles, 'icon' => 'ki-car', 'tone' => 'primary'],
+                    ['label' => 'Serviceable', 'value' => $serviceableCount, 'icon' => 'ki-check-circle', 'tone' => 'success'],
+                    ['label' => 'Unserviceable', 'value' => $unserviceableCount, 'icon' => 'ki-information', 'tone' => 'warning'],
                     ['label' => 'My Draft Requests', 'value' => $draftCount, 'icon' => 'ki-file-up', 'tone' => 'primary'],
                     ['label' => 'Submitted Requests', 'value' => $submittedCount, 'icon' => 'ki-send', 'tone' => 'info'],
                     ['label' => 'KIV Requests', 'value' => $kivCount, 'icon' => 'ki-timer', 'tone' => 'warning'],
@@ -158,6 +171,9 @@ class FleetDashboardController extends Controller
                 break;
 
             case 'CC T&L':
+                $totalVehicles = FleetVehicle::count();
+                $serviceableCount = FleetVehicle::where('service_status', 'SERVICEABLE')->count();
+                $unserviceableCount = FleetVehicle::where('service_status', 'UNSERVICEABLE')->count();
                 $inStockCount = FleetVehicle::where('lifecycle_status', 'IN_STOCK')->whereNull('reserved_fleet_request_id')->count();
                 $reservedCount = FleetVehicle::whereNotNull('reserved_fleet_request_id')->count();
                 $kivCount = FleetRequest::where('status', 'KIV')->count();
@@ -165,6 +181,9 @@ class FleetDashboardController extends Controller
                 $pendingRelease = FleetRequest::where('current_step_order', 5)->count();
 
                 $cards = [
+                    ['label' => 'Total Vehicles', 'value' => $totalVehicles, 'icon' => 'ki-car', 'tone' => 'primary'],
+                    ['label' => 'Serviceable', 'value' => $serviceableCount, 'icon' => 'ki-check-circle', 'tone' => 'success'],
+                    ['label' => 'Unserviceable', 'value' => $unserviceableCount, 'icon' => 'ki-information', 'tone' => 'warning'],
                     ['label' => 'In Stock', 'value' => $inStockCount, 'icon' => 'ki-archive', 'tone' => 'primary'],
                     ['label' => 'Reserved', 'value' => $reservedCount, 'icon' => 'ki-lock', 'tone' => 'warning'],
                     ['label' => 'KIV Requests', 'value' => $kivCount, 'icon' => 'ki-timer', 'tone' => 'info'],
@@ -183,8 +202,14 @@ class FleetDashboardController extends Controller
             case 'DCG FATS':
             case 'CGC':
                 $pendingApproval = $inboxCount;
+                $totalVehicles = FleetVehicle::count();
+                $serviceableCount = FleetVehicle::where('service_status', 'SERVICEABLE')->count();
+                $unserviceableCount = FleetVehicle::where('service_status', 'UNSERVICEABLE')->count();
 
                 $cards = [
+                    ['label' => 'Total Vehicles', 'value' => $totalVehicles, 'icon' => 'ki-car', 'tone' => 'primary'],
+                    ['label' => 'Serviceable', 'value' => $serviceableCount, 'icon' => 'ki-check-circle', 'tone' => 'success'],
+                    ['label' => 'Unserviceable', 'value' => $unserviceableCount, 'icon' => 'ki-information', 'tone' => 'warning'],
                     ['label' => 'Inbox Requests', 'value' => $inboxCount, 'icon' => 'ki-inbox', 'tone' => 'primary'],
                     ['label' => 'Pending Approval', 'value' => $pendingApproval, 'icon' => 'ki-check-circle', 'tone' => 'success'],
                     ['label' => 'KIV Requests', 'value' => FleetRequest::where('status', 'KIV')->count(), 'icon' => 'ki-timer', 'tone' => 'warning'],
@@ -192,6 +217,7 @@ class FleetDashboardController extends Controller
 
                 $quickLinks = [
                     ['label' => 'Fleet Requests', 'href' => route('fleet.requests.index'), 'icon' => 'ki-file-up', 'tone' => 'primary'],
+                    ['label' => 'Fleet Vehicles', 'href' => route('fleet.vehicles.index'), 'icon' => 'ki-car', 'tone' => 'secondary'],
                 ];
                 break;
         }

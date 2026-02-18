@@ -31,7 +31,12 @@ class FleetIssuanceController extends Controller
             ->take(500)
             ->get();
 
-        return view('fleet.vehicles.issue', compact('vehicle', 'officers'));
+        $officersForJs = $officers->map(fn (Officer $o) => [
+            'id' => $o->id,
+            'label' => $o->full_name . ' (' . ($o->service_number ?? '') . ')',
+        ])->values()->all();
+
+        return view('fleet.vehicles.issue', compact('vehicle', 'officers', 'officersForJs'));
     }
 
     public function storeIssue(Request $request, FleetVehicle $vehicle, FleetWorkflowService $workflow)

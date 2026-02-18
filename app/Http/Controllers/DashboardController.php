@@ -33,6 +33,7 @@ use App\Models\Discipline;
 use App\Models\Qualification;
 use App\Models\EducationChangeRequest;
 use App\Models\FleetRequest;
+use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
 use App\Services\EducationMasterDataSync;
 
@@ -832,12 +833,19 @@ class DashboardController extends Controller
             ->get();
 
         $fleetPendingReceiptsCount = 0;
+        $fleetTotalVehicles = 0;
+        $fleetServiceableCount = 0;
+        $fleetUnserviceableCount = 0;
         if ($commandId) {
             $fleetPendingReceiptsCount = FleetVehicleAssignment::query()
                 ->where('assigned_to_command_id', $commandId)
                 ->whereNotNull('released_at')
                 ->whereNull('received_at')
                 ->count();
+            $commandVehicles = FleetVehicle::where('current_command_id', $commandId);
+            $fleetTotalVehicles = (clone $commandVehicles)->count();
+            $fleetServiceableCount = (clone $commandVehicles)->where('service_status', 'SERVICEABLE')->count();
+            $fleetUnserviceableCount = (clone $commandVehicles)->where('service_status', 'UNSERVICEABLE')->count();
         }
 
         // Get recent submitted manning requests (all commands - Area Controller oversees multiple units)
@@ -964,7 +972,10 @@ class DashboardController extends Controller
             'units',
             'fleetInboxCount',
             'fleetInboxItems',
-            'fleetPendingReceiptsCount'
+            'fleetPendingReceiptsCount',
+            'fleetTotalVehicles',
+            'fleetServiceableCount',
+            'fleetUnserviceableCount'
         ));
     }
 

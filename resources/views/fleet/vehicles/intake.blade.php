@@ -39,18 +39,32 @@
             <form method="POST" action="{{ route('fleet.vehicles.intake.store') }}" class="grid gap-4 max-w-2xl" id="vehicleIntakeForm">
                 @csrf
 
-                <!-- Vehicle Model Selection -->
+                <!-- Vehicle Model Selection (searchable) -->
                 <div>
-                    <label class="text-sm font-medium">Vehicle Model <span class="text-red-600">*</span></label>
-                    <select class="kt-select w-full" name="vehicle_model_id" id="vehicle_model_id" onchange="toggleModelFields()">
-                        <option value="">Select existing model or create new...</option>
-                        @foreach($vehicleModels as $model)
-                            <option value="{{ $model->id }}" @selected(old('vehicle_model_id') == $model->id)>
-                                {{ $model->display_name }}
-                            </option>
-                        @endforeach
-                        <option value="new" @selected(old('vehicle_model_id') === 'new')>+ Create New Model</option>
-                    </select>
+                    <label class="text-sm font-medium" for="vehicle_model_id_trigger">Vehicle Model <span class="text-red-600">*</span></label>
+                    <input type="hidden" name="vehicle_model_id" id="vehicle_model_id" value="{{ old('vehicle_model_id') }}" required>
+                    <div class="relative">
+                        <button type="button" id="vehicle_model_id_trigger" class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                            @php
+                                $oldModel = old('vehicle_model_id');
+                                $modelLabel = 'Search vehicle model or create new...';
+                                if ($oldModel === 'new') {
+                                    $modelLabel = '+ Create New Model';
+                                } elseif ($oldModel && $vehicleModels->contains('id', $oldModel)) {
+                                    $m = $vehicleModels->firstWhere('id', $oldModel);
+                                    $modelLabel = $m ? $m->display_name : $modelLabel;
+                                }
+                            @endphp
+                            <span id="vehicle_model_id_text">{{ $modelLabel }}</span>
+                            <i class="ki-filled ki-down text-muted-foreground"></i>
+                        </button>
+                        <div id="vehicle_model_id_dropdown" class="absolute z-50 w-full mt-1 bg-background border border-input rounded-lg shadow-lg hidden">
+                            <div class="p-2 border-b border-input">
+                                <input type="text" id="vehicle_model_id_search" class="kt-input w-full" placeholder="Search vehicle model..." autocomplete="off">
+                            </div>
+                            <div id="vehicle_model_id_options" class="max-h-60 overflow-y-auto"></div>
+                        </div>
+                    </div>
                     @error('vehicle_model_id')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                     <p class="text-xs text-secondary-foreground mt-1">Select an existing vehicle model (e.g., Toyota PickUp 2018) or create a new one</p>
                 </div>
@@ -65,8 +79,29 @@
                             @error('make')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label class="text-sm font-medium" for="vehicle_type">Vehicle Type <span class="text-red-600">*</span></label>
-                            <x-fleet-vehicle-type-select name="vehicle_type" id="vehicle_type" :required="true" />
+                            <label class="text-sm font-medium" for="vehicle_type_trigger">Vehicle Type <span class="text-red-600">*</span></label>
+                            <input type="hidden" name="vehicle_type" id="vehicle_type" value="{{ old('vehicle_type') }}">
+                            <div class="relative">
+                                <button type="button" id="vehicle_type_trigger" class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    @php
+                                        $ot = old('vehicle_type');
+                                        $typeDisplay = ($ot && isset($vehicleTypes[$ot])) ? $vehicleTypes[$ot] : ($ot ?: 'Search vehicle type...');
+                                    @endphp
+                                    <span id="vehicle_type_text">{{ $typeDisplay }}</span>
+                                    <i class="ki-filled ki-down text-muted-foreground"></i>
+                                </button>
+                                <div id="vehicle_type_dropdown" class="absolute z-50 w-full mt-1 bg-background border border-input rounded-lg shadow-lg hidden">
+                                    <div class="p-2 border-b border-input">
+                                        <input type="text" id="vehicle_type_search" class="kt-input w-full" placeholder="Search vehicle type..." autocomplete="off">
+                                    </div>
+                                    <div id="vehicle_type_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
+                            <div id="new_vehicle_type_fields" style="display: none;" class="mt-2">
+                                <label class="text-sm font-medium" for="new_vehicle_type_input">New vehicle type name <span class="text-red-600">*</span></label>
+                                <input type="text" class="kt-input w-full mt-1" id="new_vehicle_type_input" value="{{ old('vehicle_type') }}" placeholder="e.g., Amphibian, Tricycle" maxlength="100" autocomplete="off">
+                                <p class="text-xs text-secondary-foreground mt-1">Enter a type not in the list above</p>
+                            </div>
                             @error('vehicle_type')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
@@ -138,45 +173,212 @@
 
     @push('scripts')
     <script>
-        function toggleModelFields() {
-            const select = document.getElementById('vehicle_model_id');
-            const newModelFields = document.getElementById('newModelFields');
-            const makeInput = document.getElementById('make');
-            const typeInput = document.getElementById('vehicle_type');
-            const yearInput = document.getElementById('year_of_manufacture');
-            const modelPreview = document.getElementById('modelPreview');
+        (function() {
+            var vehicleModels = @json($vehicleModels->map(fn($m) => ['id' => (string)$m->id, 'label' => $m->display_name])->values()->all());
+            var modelOptions = vehicleModels.slice();
+            modelOptions.unshift({ id: '', label: 'Select existing model or create new...' });
+            modelOptions.push({ id: 'new', label: '+ Create New Model' });
 
-            if (select.value === 'new') {
-                newModelFields.style.display = 'block';
-                makeInput.required = true;
-                typeInput.required = true;
-                yearInput.required = true;
-            } else {
-                newModelFields.style.display = 'none';
-                makeInput.required = false;
-                typeInput.required = false;
-                yearInput.required = false;
+            var vehicleTypes = @json($vehicleTypesForJs ?? []);
+
+            function toggleModelFields() {
+                var hidden = document.getElementById('vehicle_model_id');
+                var newModelFields = document.getElementById('newModelFields');
+                var makeInput = document.getElementById('make');
+                var typeInput = document.getElementById('vehicle_type');
+                var yearInput = document.getElementById('year_of_manufacture');
+                if (!hidden || !newModelFields) return;
+                if (hidden.value === 'new') {
+                    newModelFields.style.display = 'block';
+                    if (makeInput) makeInput.required = true;
+                    if (typeInput) typeInput.required = true;
+                    if (yearInput) yearInput.required = true;
+                } else {
+                    newModelFields.style.display = 'none';
+                    if (makeInput) makeInput.required = false;
+                    if (typeInput) typeInput.required = false;
+                    if (yearInput) yearInput.required = false;
+                }
+                updateModelPreview();
             }
 
-            updateModelPreview();
-        }
+            function updateModelPreview() {
+                var makeEl = document.getElementById('make');
+                var typeEl = document.getElementById('vehicle_type');
+                var yearEl = document.getElementById('year_of_manufacture');
+                var make = makeEl ? makeEl.value : '';
+                var typeVal = typeEl ? typeEl.value : '';
+                var typeLabel = (vehicleTypes.find(function(t){ return t.id === typeVal; }) || {}).name || typeVal || 'VehicleType';
+                var year = yearEl ? yearEl.value : '';
+                var preview = document.getElementById('modelPreview');
+                if (preview) preview.textContent = (make || 'Make') + ' ' + (typeLabel || 'VehicleType') + ' ' + (year || 'Year');
+            }
 
-        function updateModelPreview() {
-            const make = document.getElementById('make').value || 'Make';
-            const type = document.getElementById('vehicle_type').value || 'VehicleType';
-            const year = document.getElementById('year_of_manufacture').value || 'Year';
-            document.getElementById('modelPreview').textContent = `${make} ${type} ${year}`;
-        }
+            // Vehicle Model searchable select
+            var modelTrigger = document.getElementById('vehicle_model_id_trigger');
+            var modelHidden = document.getElementById('vehicle_model_id');
+            var modelDropdown = document.getElementById('vehicle_model_id_dropdown');
+            var modelSearch = document.getElementById('vehicle_model_id_search');
+            var modelOptionsEl = document.getElementById('vehicle_model_id_options');
+            var modelText = document.getElementById('vehicle_model_id_text');
+            if (modelTrigger && modelHidden && modelDropdown && modelSearch && modelOptionsEl && modelText) {
+                var modelFiltered = modelOptions.slice();
+                function renderModelOpts(opts) {
+                    if (opts.length === 0) {
+                        modelOptionsEl.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+                        return;
+                    }
+                    modelOptionsEl.innerHTML = opts.map(function(o) {
+                        var label = (o.label || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                        return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 intake-model-opt" data-id="' + (o.id || '').replace(/"/g, '&quot;') + '" data-label="' + label + '"><div class="text-sm text-foreground">' + (o.label || '') + '</div></div>';
+                    }).join('');
+                    modelOptionsEl.querySelectorAll('.intake-model-opt').forEach(function(opt) {
+                        opt.addEventListener('click', function() {
+                            modelHidden.value = this.dataset.id || '';
+                            modelText.textContent = this.dataset.label || 'Search vehicle model or create new...';
+                            modelDropdown.classList.add('hidden');
+                            modelSearch.value = '';
+                            modelFiltered = modelOptions.slice();
+                            renderModelOpts(modelFiltered);
+                            toggleModelFields();
+                        });
+                    });
+                }
+                function openModelDropdown() {
+                    modelDropdown.classList.remove('hidden');
+                    var rect = modelTrigger.getBoundingClientRect();
+                    modelDropdown.style.cssText = 'position:fixed;z-index:99999;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;width:' + Math.max(rect.width, 260) + 'px;';
+                    setTimeout(function() { modelSearch.focus(); }, 100);
+                }
+                function closeModelDropdown() {
+                    modelDropdown.classList.add('hidden');
+                    modelDropdown.style.cssText = '';
+                }
+                renderModelOpts(modelFiltered);
+                modelSearch.addEventListener('input', function() {
+                    var term = this.value.toLowerCase();
+                    modelFiltered = modelOptions.filter(function(o) { return (o.label || '').toLowerCase().includes(term); });
+                    renderModelOpts(modelFiltered);
+                });
+                modelTrigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (modelDropdown.classList.contains('hidden')) openModelDropdown(); else closeModelDropdown();
+                });
+                document.addEventListener('click', function(e) {
+                    if (!modelTrigger.contains(e.target) && !modelDropdown.contains(e.target)) closeModelDropdown();
+                });
+            }
 
-        // Update preview on input
-        document.getElementById('make')?.addEventListener('input', updateModelPreview);
-        document.getElementById('vehicle_type')?.addEventListener('change', updateModelPreview);
-        document.getElementById('year_of_manufacture')?.addEventListener('input', updateModelPreview);
+            // Vehicle Type searchable select (in Create New Model) + Add new vehicle type
+            var typeTrigger = document.getElementById('vehicle_type_trigger');
+            var typeHidden = document.getElementById('vehicle_type');
+            var typeDropdown = document.getElementById('vehicle_type_dropdown');
+            var typeSearch = document.getElementById('vehicle_type_search');
+            var typeOptionsEl = document.getElementById('vehicle_type_options');
+            var typeText = document.getElementById('vehicle_type_text');
+            var newTypeFields = document.getElementById('new_vehicle_type_fields');
+            var newTypeInput = document.getElementById('new_vehicle_type_input');
+            var typeOptionsWithNew = (vehicleTypes || []).slice();
+            typeOptionsWithNew.push({ id: '__new__', name: 'Add new vehicle type' });
+            if (typeTrigger && typeHidden && typeDropdown && typeSearch && typeOptionsEl && typeText) {
+                var typeFiltered = typeOptionsWithNew.slice();
+                function showNewTypeFields(show) {
+                    if (newTypeFields) newTypeFields.style.display = show ? 'block' : 'none';
+                    if (show && newTypeInput) {
+                        newTypeInput.required = true;
+                        if (newTypeInput.value.trim()) {
+                            typeHidden.value = newTypeInput.value.trim();
+                            typeText.textContent = newTypeInput.value.trim();
+                        } else {
+                            typeHidden.value = '';
+                            typeText.textContent = 'Add new vehicle type';
+                        }
+                        setTimeout(function() { newTypeInput.focus(); }, 100);
+                    } else {
+                        if (newTypeInput) { newTypeInput.value = ''; newTypeInput.required = false; }
+                    }
+                }
+                function renderTypeOpts(opts) {
+                    if (opts.length === 0) {
+                        typeOptionsEl.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No types found</div>';
+                        return;
+                    }
+                    typeOptionsEl.innerHTML = opts.map(function(o) {
+                        var name = (o.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                        return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 intake-type-opt" data-id="' + (o.id || '').replace(/"/g, '&quot;') + '" data-name="' + name + '"><div class="text-sm text-foreground">' + (o.name || '') + '</div></div>';
+                    }).join('');
+                    typeOptionsEl.querySelectorAll('.intake-type-opt').forEach(function(opt) {
+                        opt.addEventListener('click', function() {
+                            var id = this.dataset.id || '';
+                            var name = this.dataset.name || 'Search vehicle type...';
+                            typeDropdown.classList.add('hidden');
+                            typeSearch.value = '';
+                            typeFiltered = typeOptionsWithNew.slice();
+                            renderTypeOpts(typeFiltered);
+                            if (id === '__new__') {
+                                typeHidden.value = (newTypeInput && newTypeInput.value.trim()) ? newTypeInput.value.trim() : '';
+                                typeText.textContent = typeHidden.value || 'Add new vehicle type';
+                                showNewTypeFields(true);
+                            } else {
+                                typeHidden.value = id;
+                                typeText.textContent = name;
+                                showNewTypeFields(false);
+                            }
+                            updateModelPreview();
+                        });
+                    });
+                }
+                function openTypeDropdown() {
+                    typeDropdown.classList.remove('hidden');
+                    var rect = typeTrigger.getBoundingClientRect();
+                    typeDropdown.style.cssText = 'position:fixed;z-index:99999;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;width:' + Math.max(rect.width, 260) + 'px;';
+                    setTimeout(function() { typeSearch.focus(); }, 100);
+                }
+                function closeTypeDropdown() {
+                    typeDropdown.classList.add('hidden');
+                    typeDropdown.style.cssText = '';
+                }
+                renderTypeOpts(typeFiltered);
+                typeSearch.addEventListener('input', function() {
+                    var term = this.value.toLowerCase();
+                    typeFiltered = typeOptionsWithNew.filter(function(o) { return (o.name || '').toLowerCase().includes(term); });
+                    renderTypeOpts(typeFiltered);
+                });
+                typeTrigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (typeDropdown.classList.contains('hidden')) openTypeDropdown(); else closeTypeDropdown();
+                });
+                document.addEventListener('click', function(e) {
+                    if (!typeTrigger.contains(e.target) && !typeDropdown.contains(e.target)) closeTypeDropdown();
+                });
+                if (newTypeInput) {
+                    newTypeInput.addEventListener('input', function() {
+                        typeHidden.value = this.value.trim();
+                        typeText.textContent = this.value.trim() || 'Add new vehicle type';
+                        updateModelPreview();
+                    });
+                    newTypeInput.addEventListener('change', function() {
+                        typeHidden.value = this.value.trim();
+                        typeText.textContent = this.value.trim() || 'Add new vehicle type';
+                    });
+                }
+                // On load: if current value is custom (not in config), show new type fields
+                var configIds = (vehicleTypes || []).map(function(t) { return t.id; });
+                var isCustomType = typeHidden.value && typeHidden.value !== '__new__' && configIds.indexOf(typeHidden.value) === -1;
+                if (isCustomType && newTypeFields && newTypeInput) {
+                    newTypeInput.value = typeHidden.value;
+                    newTypeFields.style.display = 'block';
+                    newTypeInput.required = true;
+                }
+            }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleModelFields();
-        });
+            document.getElementById('make')?.addEventListener('input', updateModelPreview);
+            document.getElementById('year_of_manufacture')?.addEventListener('input', updateModelPreview);
+
+            document.addEventListener('DOMContentLoaded', function() {
+                toggleModelFields();
+            });
+        })();
     </script>
     @endpush
 @endsection

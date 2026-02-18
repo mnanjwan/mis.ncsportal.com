@@ -115,6 +115,46 @@
                 </span>
             </div>
         </a>
+
+        <div class="kt-card">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Total Vehicles (Command)</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $fleetTotalVehicles ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
+                        <i class="ki-filled ki-car text-2xl text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="kt-card">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Serviceable</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $fleetServiceableCount ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-success/10">
+                        <i class="ki-filled ki-check-circle text-2xl text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="kt-card">
+            <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-normal text-secondary-foreground">Unserviceable</span>
+                        <span class="text-2xl font-semibold text-mono">{{ $fleetUnserviceableCount ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-center size-12 rounded-full bg-warning/10">
+                        <i class="ki-filled ki-information text-2xl text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Recent Activity -->

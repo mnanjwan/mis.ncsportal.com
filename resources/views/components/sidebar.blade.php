@@ -287,6 +287,7 @@
         case 'CGC':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('cgc.dashboard')],
+                ['icon' => 'ki-filled ki-car', 'title' => 'Fleet Dashboard', 'href' => route('fleet.cgc.dashboard')],
                 ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Fleet Requests', 'href' => route('fleet.requests.index')],
                 ['icon' => 'ki-filled ki-document', 'title' => 'Report by Type', 'href' => route('fleet.reports.by-type')],
