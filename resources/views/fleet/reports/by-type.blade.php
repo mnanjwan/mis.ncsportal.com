@@ -57,7 +57,13 @@
                     <div>
                         <label class="text-sm font-medium">Vehicles <span class="text-red-600">*</span></label>
                         <p class="text-xs text-secondary-foreground mb-1">Select specific vehicles (report will be sectioned by vehicle type when printed).</p>
-                        <input type="text" id="vehicles_filter" class="kt-input w-full mb-2" placeholder="Filter vehicles..." autocomplete="off">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <input type="text" id="vehicles_filter" class="kt-input flex-1 min-w-[180px]" placeholder="Filter vehicles..." autocomplete="off">
+                            <div class="flex gap-2">
+                                <button type="button" id="vehicles_select_all" class="kt-btn kt-btn-sm kt-btn-secondary">Select All</button>
+                                <button type="button" id="vehicles_deselect_all" class="kt-btn kt-btn-sm kt-btn-secondary">Deselect All</button>
+                            </div>
+                        </div>
                         <div class="border border-input rounded-lg p-3 max-h-60 overflow-y-auto bg-muted/20" id="vehicles_checkbox_list">
                             @php $avail = $availableVehicles ?? collect(); @endphp
                             @forelse($avail as $v)
@@ -174,6 +180,20 @@
                         var label = row.getAttribute('data-label') || '';
                         row.style.display = term === '' || label.indexOf(term) !== -1 ? '' : 'none';
                     });
+                });
+            }
+
+            // Select All / Deselect All for vehicles
+            var selectAllBtn = document.getElementById('vehicles_select_all');
+            var deselectAllBtn = document.getElementById('vehicles_deselect_all');
+            if (selectAllBtn && vList) {
+                selectAllBtn.addEventListener('click', function() {
+                    vList.querySelectorAll('.vehicle-checkbox-row input[type="checkbox"]').forEach(function(cb) { cb.checked = true; });
+                });
+            }
+            if (deselectAllBtn && vList) {
+                deselectAllBtn.addEventListener('click', function() {
+                    vList.querySelectorAll('.vehicle-checkbox-row input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
                 });
             }
 

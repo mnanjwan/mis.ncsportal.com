@@ -25,29 +25,7 @@
             position: relative;
             padding: 20px;
         }
-        body::after {
-            content: "NCS Management Information System (MIS)";
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 28pt;
-            font-weight: bold;
-            color: #228B22;
-            opacity: 0.20;
-            z-index: -1;
-            pointer-events: none;
-            white-space: nowrap;
-            font-family: 'Times New Roman', serif;
-            width: 80%;
-            text-align: center;
-        }
         @media print {
-            body::after {
-                opacity: 0.18;
-                font-size: 24pt;
-                width: 70%;
-            }
             .no-print {
                 display: none !important;
             }
@@ -113,9 +91,40 @@
             font-weight: bold;
             font-size: 11pt;
         }
+        /* Watermark as real element so it appears in PDF – visible but subtle */
+        .print-watermark {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 42pt;
+            font-weight: bold;
+            color: #999999;
+            opacity: 0.35;
+        }
+        .print-watermark__text {
+            transform: rotate(-45deg);
+            white-space: nowrap;
+            text-align: center;
+        }
+        @media print {
+            .print-watermark {
+                color: #888888;
+                opacity: 0.28;
+                font-size: 38pt;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="print-watermark" aria-hidden="true"><span class="print-watermark__text">NCS Management Information System (MIS)</span></div>
     <div class="no-print" style="text-align: center; margin-bottom: 20px; padding: 20px;">
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px;">
             Print Report
