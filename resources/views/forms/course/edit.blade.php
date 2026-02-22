@@ -3,12 +3,13 @@
 @section('title', 'Edit Course Nomination')
 @section('page-title', 'Edit Course Nomination')
 
+@php $coursePrefix = $courseRoutePrefix ?? 'hrd'; $breadcrumbLabel = $coursePrefix === 'staff-officer' ? 'Staff Officer' : 'HRD'; @endphp
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.dashboard') }}">{{ $breadcrumbLabel }}</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.courses') }}">Course Nominations</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.courses') }}">Course Nominations</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.courses.show', $course->id) }}">View Course</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.courses.show', $course->id) }}">View Course</a>
     <span>/</span>
     <span class="text-primary">Edit</span>
 @endsection
@@ -44,7 +45,7 @@
             <h3 class="kt-card-title">Edit Course Nomination</h3>
         </div>
         <div class="kt-card-content">
-            <form action="{{ route('hrd.courses.update', $course->id) }}" method="POST" class="space-y-6">
+            <form action="{{ route($coursePrefix . '.courses.update', $course->id) }}" method="POST" class="space-y-6">
                 @csrf
                 @method('PUT')
 
@@ -198,7 +199,7 @@
 
                 <!-- Form Actions -->
                 <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
-                    <a href="{{ route('hrd.courses.show', $course->id) }}" class="kt-btn kt-btn-ghost">
+                    <a href="{{ route($coursePrefix . '.courses.show', $course->id) }}" class="kt-btn kt-btn-ghost">
                         Cancel
                     </a>
                     <button type="submit" class="kt-btn kt-btn-primary">

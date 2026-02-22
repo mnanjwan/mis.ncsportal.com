@@ -135,6 +135,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show'])->name('pass-applications.show');
         Route::get('/application-history', [OfficerController::class, 'applicationHistory'])->name('application-history');
         Route::get('/course-nominations', [OfficerController::class, 'courseNominations'])->name('course-nominations');
+        Route::post('/course-nominations/{course}/upload-completion', [OfficerController::class, 'uploadCourseCompletion'])->name('course-nominations.upload-completion');
         Route::get('/next-of-kin', [NextOfKinChangeRequestController::class, 'index'])->name('next-of-kin.index');
         Route::get('/next-of-kin/create', [NextOfKinChangeRequestController::class, 'create'])->name('next-of-kin.create');
         Route::post('/next-of-kin', [NextOfKinChangeRequestController::class, 'store'])->name('next-of-kin.store');
@@ -330,6 +331,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/courses/{id}', [CourseController::class, 'update'])->name('courses.update');
         Route::post('/courses/{id}/complete', [CourseController::class, 'markComplete'])->name('courses.complete');
         Route::delete('/courses/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
+        Route::get('/courses/document-download/{document}', [CourseController::class, 'downloadCourseDocument'])->name('courses.document-download');
 
         // Course Management (CRUD for Course master data)
         Route::resource('course-management', CourseManagementController::class)->names([
@@ -486,6 +488,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/queries/{id}', [QueryController::class, 'show'])->name('queries.show');
         Route::post('/queries/{id}/accept', [QueryController::class, 'accept'])->name('queries.accept');
         Route::post('/queries/{id}/reject', [QueryController::class, 'reject'])->name('queries.reject');
+
+        // Course Nominations (command-scoped; same controller as HRD)
+        Route::get('/courses', [CourseController::class, 'index'])->name('courses');
+        Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
+        Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
+        Route::get('/courses/print', [CourseController::class, 'print'])->name('courses.print');
+        Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
+        Route::get('/courses/{id}/edit', [CourseController::class, 'edit'])->name('courses.edit');
+        Route::put('/courses/{id}', [CourseController::class, 'update'])->name('courses.update');
+        Route::post('/courses/{id}/complete', [CourseController::class, 'markComplete'])->name('courses.complete');
+        Route::delete('/courses/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
+        Route::get('/courses/document-download/{document}', [CourseController::class, 'downloadCourseDocument'])->name('courses.document-download');
     });
 
     // Assessor Routes

@@ -1909,6 +1909,49 @@ class NotificationService
     }
 
     /**
+     * Notify HRD and Staff Officer (for the officer's command) that an officer has submitted a completion document for review.
+     */
+    public function notifyCourseCompletionSubmitted(\App\Models\OfficerCourse $course): array
+    {
+        $course->load(['officer.presentStation']);
+        $officer = $course->officer;
+        if (!$officer) {
+            return [];
+        }
+
+        $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+        $message = "Officer {$officerName} has submitted a completion document for the course '{$course->course_name}'. Please review and mark as complete if satisfied.";
+
+        $hrdUsers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'HRD')->wherePivot('is_active', true);
+        })->where('is_active', true)->get();
+
+        $reviewers = $hrdUsers->keyBy('id');
+
+        $commandId = $officer->present_station;
+        if ($commandId) {
+            $staffOfficers = User::whereHas('roles', function ($q) use ($commandId) {
+                $q->where('name', 'Staff Officer')
+                    ->wherePivot('is_active', true)
+                    ->wherePivot('command_id', $commandId);
+            })->where('is_active', true)->get();
+            foreach ($staffOfficers as $u) {
+                $reviewers[$u->id] = $u;
+            }
+        }
+
+        return $this->notifyMany(
+            $reviewers->values()->all(),
+            'course_completion_submitted',
+            'Course completion submitted for review',
+            $message,
+            'officer_course',
+            $course->id,
+            true
+        );
+    }
+
+    /**
      * Notify officer about query issued
      */
     public function notifyQueryIssued($query, $officer): ?Notification

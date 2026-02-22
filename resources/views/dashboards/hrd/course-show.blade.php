@@ -3,10 +3,11 @@
 @section('title', 'Course Details')
 @section('page-title', 'Course Details')
 
+@php $coursePrefix = $courseRoutePrefix ?? 'hrd'; $breadcrumbLabel = $coursePrefix === 'staff-officer' ? 'Staff Officer' : 'HRD'; @endphp
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.dashboard') }}">{{ $breadcrumbLabel }}</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.courses') }}">Course Nominations</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.courses') }}">Course Nominations</a>
     <span>/</span>
     <span class="text-primary">View Course</span>
 @endsection
@@ -38,11 +39,11 @@
 
     <!-- Back Button -->
     <div class="flex items-center justify-between">
-        <a href="{{ route('hrd.courses') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
+        <a href="{{ route($coursePrefix . '.courses') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
             <i class="ki-filled ki-arrow-left"></i> Back to Courses
         </a>
         @if(!$course->is_completed)
-            <a href="{{ route('hrd.courses.edit', $course->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+            <a href="{{ route($coursePrefix . '.courses.edit', $course->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
                 <i class="ki-filled ki-notepad-edit"></i> Edit
             </a>
         @endif
@@ -129,6 +130,31 @@
         </div>
     </div>
 
+    <!-- Officer-submitted completion documents (for review before marking complete) -->
+    @if($course->completionDocuments && $course->completionDocuments->isNotEmpty())
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Officer-submitted completion documents</h3>
+                <span class="kt-badge kt-badge-info kt-badge-sm">Pending your review</span>
+            </div>
+            <div class="kt-card-content">
+                <p class="text-sm text-secondary-foreground mb-4">
+                    The officer has uploaded the following certificate(s) as proof of completion. Review and then mark the course as completed below.
+                </p>
+                <ul class="space-y-2">
+                    @foreach($course->completionDocuments as $doc)
+                        <li class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                            <span class="text-sm font-medium text-foreground">{{ $doc->file_name }}</span>
+                            <a href="{{ route($coursePrefix . '.courses.document-download', $doc->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost" target="_blank" rel="noopener">
+                                <i class="ki-filled ki-file-down"></i> Download
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
     <!-- Mark as Complete (if not completed) -->
     @if(!$course->is_completed)
         <div class="kt-card">
@@ -139,7 +165,7 @@
                 <p class="text-sm text-secondary-foreground mb-4">
                     Once marked as completed, this course will be permanently recorded in the officer's record and cannot be deleted.
                 </p>
-                <form action="{{ route('hrd.courses.complete', $course->id) }}" method="POST" class="space-y-4">
+                <form action="{{ route($coursePrefix . '.courses.complete', $course->id) }}" method="POST" class="space-y-4">
                     @csrf
                     
                     <div class="space-y-2">

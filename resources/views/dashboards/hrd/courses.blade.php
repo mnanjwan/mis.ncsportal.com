@@ -3,8 +3,12 @@
 @section('title', 'Course Nominations')
 @section('page-title', 'Course Nominations')
 
+@php
+    $coursePrefix = $courseRoutePrefix ?? 'hrd';
+    $breadcrumbLabel = $coursePrefix === 'staff-officer' ? 'Staff Officer' : 'HRD';
+@endphp
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.dashboard') }}">{{ $breadcrumbLabel }}</a>
     <span>/</span>
     <span class="text-primary">Course Nominations</span>
 @endsection
@@ -33,7 +37,7 @@
                         class="kt-btn kt-btn-sm kt-btn-primary">
                     <i class="ki-filled ki-printer"></i> Print
                 </button>
-                <a href="{{ route('hrd.courses.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                <a href="{{ route($coursePrefix . '.courses.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Nominate Officers
                 </a>
             </div>
@@ -163,12 +167,12 @@
                                     </td>
                                     <td class="py-3 px-4 text-right">
                                         <div class="flex items-center justify-end gap-2">
-                                            <a href="{{ route('hrd.courses.show', $course->id) }}" 
+                                            <a href="{{ route($coursePrefix . '.courses.show', $course->id) }}" 
                                                class="kt-btn kt-btn-sm kt-btn-ghost">
                                                 View
                                             </a>
                                             @if(!$course->is_completed)
-                                                <a href="{{ route('hrd.courses.edit', $course->id) }}" 
+                                                <a href="{{ route($coursePrefix . '.courses.edit', $course->id) }}" 
                                                    class="kt-btn kt-btn-sm kt-btn-ghost">
                                                     <i class="ki-filled ki-notepad-edit"></i>
                                                 </a>
@@ -186,7 +190,7 @@
                                     <td colspan="6" class="py-12 text-center">
                                         <i class="ki-filled ki-book text-4xl text-muted-foreground mb-4"></i>
                                         <p class="text-secondary-foreground mb-4">No course nominations found</p>
-                                        <a href="{{ route('hrd.courses.create') }}" class="kt-btn kt-btn-primary">
+                                        <a href="{{ route($coursePrefix . '.courses.create') }}" class="kt-btn kt-btn-primary">
                                             Nominate First Officer
                                         </a>
                                     </td>
@@ -226,7 +230,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <a href="{{ route('hrd.courses.show', $course->id) }}" 
+                                <a href="{{ route($coursePrefix . '.courses.show', $course->id) }}" 
                                    class="kt-btn kt-btn-sm kt-btn-ghost">
                                     View
                                 </a>
@@ -243,7 +247,7 @@
                         <div class="text-center py-12">
                             <i class="ki-filled ki-book text-4xl text-muted-foreground mb-4"></i>
                             <p class="text-secondary-foreground mb-4">No course nominations found</p>
-                            <a href="{{ route('hrd.courses.create') }}" class="kt-btn kt-btn-primary">
+                            <a href="{{ route($coursePrefix . '.courses.create') }}" class="kt-btn kt-btn-primary">
                                 Nominate First Officer
                             </a>
                         </div>
@@ -278,7 +282,7 @@
                     <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">
                         Cancel
                     </button>
-                    <form action="{{ route('hrd.courses.destroy', $course->id) }}" method="POST" class="inline">
+                    <form action="{{ route($coursePrefix . '.courses.destroy', $course->id) }}" method="POST" class="inline">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="kt-btn kt-btn-danger">
@@ -300,7 +304,7 @@
                 <i class="ki-filled ki-cross"></i>
             </button>
         </div>
-        <form action="{{ route('hrd.courses.print') }}" method="GET" target="_blank">
+        <form action="{{ route($coursePrefix . '.courses.print') }}" method="GET" target="_blank">
             <div class="kt-modal-body py-5 px-5 space-y-4">
                 <!-- Course Selection (Searchable) -->
                 <div class="space-y-2">

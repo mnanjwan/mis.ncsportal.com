@@ -324,6 +324,7 @@
                     'group' => 'Personnel Management',
                     'items' => [
                         ['icon' => 'ki-filled ki-people', 'title' => 'Officers', 'href' => route('staff-officer.officers')],
+                        ['icon' => 'ki-filled ki-book', 'title' => 'Course Nominations', 'href' => route('staff-officer.courses')],
                     ]
                 ],
                 [

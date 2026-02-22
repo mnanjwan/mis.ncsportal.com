@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\OfficerCourse;
 use App\Models\Officer;
 use App\Models\Course;
+use App\Models\OfficerDocument;
+use Illuminate\Support\Facades\Storage;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 
@@ -16,13 +18,71 @@ class CourseController extends Controller
     public function __construct(NotificationService $notificationService)
     {
         $this->middleware('auth');
-        $this->middleware('role:HRD');
+        $this->middleware('role:HRD|Staff Officer');
         $this->notificationService = $notificationService;
+    }
+
+    /**
+     * Route prefix for course/dashboard links: 'hrd' or 'staff-officer'.
+     */
+    protected function courseRoutePrefix(): string
+    {
+        return auth()->user()->hasRole('HRD') ? 'hrd' : 'staff-officer';
+    }
+
+    /**
+     * For Staff Officer: command_id from role pivot. For HRD: null (no scope).
+     */
+    protected function staffOfficerCommandId(): ?int
+    {
+        $user = auth()->user();
+        if (!$user->hasRole('Staff Officer')) {
+            return null;
+        }
+        $role = $user->roles()
+            ->where('name', 'Staff Officer')
+            ->wherePivot('is_active', true)
+            ->first();
+
+        return $role?->pivot?->command_id ?? null;
+    }
+
+    /**
+     * Officer IDs the current user is allowed to manage for courses.
+     * Returns null for HRD (all), or array of IDs for Staff Officer (command only).
+     */
+    protected function allowedOfficerIdsForCourses(): ?array
+    {
+        $commandId = $this->staffOfficerCommandId();
+        if ($commandId === null) {
+            return null;
+        }
+
+        return Officer::where('present_station', $commandId)->pluck('id')->toArray();
+    }
+
+    /**
+     * Ensure the given OfficerCourse is allowed for the current user (Staff Officer: officer in command).
+     */
+    protected function authorizeCourse(OfficerCourse $course): void
+    {
+        $allowedIds = $this->allowedOfficerIdsForCourses();
+        if ($allowedIds === null) {
+            return;
+        }
+        if (!in_array($course->officer_id, $allowedIds, true)) {
+            abort(403, 'You do not have access to this course nomination.');
+        }
     }
 
     public function index(Request $request)
     {
         $query = OfficerCourse::with(['officer', 'nominatedBy']);
+
+        $allowedIds = $this->allowedOfficerIdsForCourses();
+        if ($allowedIds !== null) {
+            $query->whereIn('officer_id', $allowedIds);
+        }
 
         // Filter by status tab
         $tab = $request->get('tab', 'all'); // 'all', 'in_progress', 'completed'
@@ -57,24 +117,38 @@ class CourseController extends Controller
             $query->orderBy($column, $order);
         }
 
+        if (auth()->user()->hasRole('Staff Officer') && $this->staffOfficerCommandId() === null) {
+            return redirect()->route('staff-officer.dashboard')->with('error', 'Command not found for Staff Officer role.');
+        }
+
         $courses = $query->select('officer_courses.*')->paginate(20)->withQueryString();
-        
-        return view('dashboards.hrd.courses', compact('courses', 'tab'));
+        $courseRoutePrefix = $this->courseRoutePrefix();
+
+        return view('dashboards.hrd.courses', compact('courses', 'tab', 'courseRoutePrefix'));
     }
 
     public function create()
     {
+        $commandId = $this->staffOfficerCommandId();
+        if ($commandId === null && auth()->user()->hasRole('Staff Officer')) {
+            return redirect()->route('staff-officer.dashboard')->with('error', 'Command not found for Staff Officer role.');
+        }
+
         $officers = Officer::where('is_active', true)
-            ->where('is_deceased', false)
-            ->orderBy('surname')
-            ->get();
-        
-        // Get active courses for dropdown
+            ->where('is_deceased', false);
+        $allowedIds = $this->allowedOfficerIdsForCourses();
+        if ($allowedIds !== null) {
+            $officers->whereIn('id', $allowedIds);
+        }
+        $officers = $officers->orderBy('surname')->get();
+
         $courses = \App\Models\Course::where('is_active', true)
             ->orderBy('name')
             ->get();
-        
-        return view('forms.course.create', compact('officers', 'courses'));
+
+        $courseRoutePrefix = $this->courseRoutePrefix();
+
+        return view('forms.course.create', compact('officers', 'courses', 'courseRoutePrefix'));
     }
 
     public function store(Request $request)
@@ -90,9 +164,17 @@ class CourseController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
+        $allowedIds = $this->allowedOfficerIdsForCourses();
+        if ($allowedIds !== null) {
+            $invalid = array_diff($validated['officer_ids'], $allowedIds);
+            if (!empty($invalid)) {
+                return redirect()->back()->withInput()->with('error', 'One or more selected officers are not in your command.');
+            }
+        }
+
         try {
             $officerIds = $validated['officer_ids'];
-            
+
             // Handle course_name: if it's "__NEW__", use course_name_custom instead
             $courseName = $validated['course_name'];
             if ($courseName === '__NEW__') {
@@ -129,11 +211,11 @@ class CourseController extends Controller
                 $createdCount++;
             }
 
-            $message = $createdCount === 1 
+            $message = $createdCount === 1
                 ? 'Officer nominated for course successfully!'
                 : "{$createdCount} officers nominated for course successfully!";
 
-            return redirect()->route('hrd.courses')
+            return redirect()->route($this->courseRoutePrefix() . '.courses')
                 ->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->back()
@@ -144,32 +226,42 @@ class CourseController extends Controller
 
     public function show($id)
     {
-        $course = OfficerCourse::with(['officer.presentStation', 'nominatedBy'])
+        $course = OfficerCourse::with(['officer.presentStation', 'nominatedBy', 'completionDocuments'])
             ->findOrFail($id);
-        
-        return view('dashboards.hrd.course-show', compact('course'));
+        $this->authorizeCourse($course);
+
+        $courseRoutePrefix = $this->courseRoutePrefix();
+
+        return view('dashboards.hrd.course-show', compact('course', 'courseRoutePrefix'));
     }
 
     public function edit($id)
     {
         $course = OfficerCourse::findOrFail($id);
+        $this->authorizeCourse($course);
+
         $officers = Officer::where('is_active', true)
-            ->where('is_deceased', false)
-            ->orderBy('surname')
-            ->get();
-        
-        // Get active courses for dropdown
+            ->where('is_deceased', false);
+        $allowedIds = $this->allowedOfficerIdsForCourses();
+        if ($allowedIds !== null) {
+            $officers->whereIn('id', $allowedIds);
+        }
+        $officers = $officers->orderBy('surname')->get();
+
         $courses = \App\Models\Course::where('is_active', true)
             ->orderBy('name')
             ->get();
-        
-        return view('forms.course.edit', compact('course', 'officers', 'courses'));
+
+        $courseRoutePrefix = $this->courseRoutePrefix();
+
+        return view('forms.course.edit', compact('course', 'officers', 'courses', 'courseRoutePrefix'));
     }
 
     public function update(Request $request, $id)
     {
         $course = OfficerCourse::findOrFail($id);
-        
+        $this->authorizeCourse($course);
+
         $validated = $request->validate([
             'officer_id' => 'required|exists:officers,id',
             'course_name' => 'required|string|max:255',
@@ -189,7 +281,7 @@ class CourseController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            return redirect()->route('hrd.courses.show', $id)
+            return redirect()->route($this->courseRoutePrefix() . '.courses.show', $id)
                 ->with('success', 'Course updated successfully!');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -201,6 +293,7 @@ class CourseController extends Controller
     public function markComplete(Request $request, $id)
     {
         $course = OfficerCourse::findOrFail($id);
+        $this->authorizeCourse($course);
         
         $validated = $request->validate([
             'completion_date' => 'required|date|after_or_equal:start_date',
@@ -222,7 +315,7 @@ class CourseController extends Controller
             // Send notification to officer
             $this->notificationService->notifyCourseCompleted($course);
 
-            return redirect()->route('hrd.courses.show', $id)
+            return redirect()->route($this->courseRoutePrefix() . '.courses.show', $id)
                 ->with('success', 'Course marked as completed! This has been recorded in the officer\'s record.');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -235,19 +328,20 @@ class CourseController extends Controller
     {
         try {
             $course = OfficerCourse::findOrFail($id);
-            
+            $this->authorizeCourse($course);
+
             // Only allow deletion if course is not completed
             if ($course->is_completed) {
-                return redirect()->route('hrd.courses')
+                return redirect()->route($this->courseRoutePrefix() . '.courses')
                     ->with('error', 'Cannot delete completed courses. They are part of the officer\'s permanent record.');
             }
-            
+
             $course->delete();
-            
-            return redirect()->route('hrd.courses')
+
+            return redirect()->route($this->courseRoutePrefix() . '.courses')
                 ->with('success', 'Course nomination deleted successfully!');
         } catch (\Exception $e) {
-            return redirect()->route('hrd.courses')
+            return redirect()->route($this->courseRoutePrefix() . '.courses')
                 ->with('error', 'Failed to delete course: ' . $e->getMessage());
         }
     }
@@ -257,7 +351,7 @@ class CourseController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->hasRole('HRD')) {
+        if (!$user->hasRole('HRD') && !$user->hasRole('Staff Officer')) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
@@ -273,10 +367,15 @@ class CourseController extends Controller
 
         // Build query
         $query = OfficerCourse::with(['officer.presentStation'])
-            ->whereHas('officer', function($q) {
+            ->whereHas('officer', function ($q) {
                 $q->where('is_active', true)
-                  ->where('is_deceased', false);
+                    ->where('is_deceased', false);
             });
+
+        $allowedIds = $this->allowedOfficerIdsForCourses();
+        if ($allowedIds !== null) {
+            $query->whereIn('officer_id', $allowedIds);
+        }
 
         // Apply course name filter if provided
         if ($courseName) {
@@ -327,7 +426,28 @@ class CourseController extends Controller
             $printData[] = $courseData;
         }
 
-        return view('prints.course-nominations', compact('printData', 'startDate', 'endDate', 'tab', 'courseName'));
+        $courseRoutePrefix = $this->courseRoutePrefix();
+
+        return view('prints.course-nominations', compact('printData', 'startDate', 'endDate', 'tab', 'courseName', 'courseRoutePrefix'));
+    }
+
+    /**
+     * Download a completion document uploaded by an officer for a course (HRD/Staff Officer only).
+     */
+    public function downloadCourseDocument(int $document)
+    {
+        $document = OfficerDocument::whereNotNull('officer_course_id')->findOrFail($document);
+        $course = $document->officerCourse;
+        if (!$course) {
+            abort(404);
+        }
+        $this->authorizeCourse($course);
+
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->file_name);
     }
 }
 

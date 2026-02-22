@@ -9,6 +9,7 @@ use App\Models\LeaveApplication;
 use App\Models\PassApplication;
 use App\Models\OfficerQuarter;
 use App\Models\OfficerCourse;
+use App\Models\OfficerDocument;
 use App\Models\Query;
 use App\Models\APERForm;
 use App\Models\Institution;
@@ -20,6 +21,7 @@ use App\Services\QuarterAddressFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class OfficerController extends Controller
 {
@@ -1559,7 +1561,7 @@ class OfficerController extends Controller
         }
 
         $query = OfficerCourse::where('officer_id', $officer->id)
-            ->with('nominatedBy.officer');
+            ->with(['nominatedBy.officer', 'completionDocuments']);
 
         // Filter by status
         if ($status = request('status')) {
@@ -1613,6 +1615,64 @@ class OfficerController extends Controller
             ->values();
 
         return view('dashboards.officer.course-nominations', compact('courses', 'years'));
+    }
+
+    /**
+     * Upload a completion certificate/document for a course nomination (officer's own, in progress).
+     * Sets completion_submitted_at so the course goes "for review" by HRD/Staff Officer.
+     */
+    public function uploadCourseCompletion(Request $request, int $course)
+    {
+        $user = auth()->user();
+        $officer = $user->officer;
+        if (!$officer) {
+            return redirect()->route('officer.dashboard')->with('error', 'Officer record not found.');
+        }
+
+        $courseModel = OfficerCourse::where('id', $course)->where('officer_id', $officer->id)->firstOrFail();
+        if ($courseModel->is_completed) {
+            return redirect()->route('officer.course-nominations')->with('error', 'This course is already marked completed.');
+        }
+
+        $request->validate([
+            'document' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png',
+        ], [
+            'document.required' => 'Please select a certificate or document to upload.',
+            'document.mimes' => 'The file must be a PDF or image (JPG, PNG).',
+            'document.max' => 'The file may not be greater than 10 MB.',
+        ]);
+
+        try {
+            $file = $request->file('document');
+            $path = $file->store('officer-documents', 'public');
+
+            OfficerDocument::create([
+                'officer_id' => $officer->id,
+                'officer_course_id' => $courseModel->id,
+                'document_type' => 'course_completed',
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_by' => $user->id,
+            ]);
+
+            if (!$courseModel->completion_submitted_at) {
+                $courseModel->update(['completion_submitted_at' => now()]);
+            }
+
+            // Notify HRD and Staff Officer (for this officer's command) that a completion document was submitted for review
+            try {
+                app(NotificationService::class)->notifyCourseCompletionSubmitted($courseModel);
+            } catch (\Exception $e) {
+                Log::warning('Course completion submission notification failed', ['course_id' => $courseModel->id, 'error' => $e->getMessage()]);
+            }
+
+            return redirect()->route('officer.course-nominations')->with('success', 'Certificate uploaded. Your course nomination has been submitted for review.');
+        } catch (\Exception $e) {
+            Log::error('Officer course completion upload failed', ['course_id' => $course, 'error' => $e->getMessage()]);
+            return redirect()->back()->with('error', 'Upload failed. Please try again.');
+        }
     }
 
     /**

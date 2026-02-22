@@ -212,6 +212,9 @@
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         Nominated By
                                     </th>
+                                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -237,9 +240,18 @@
                                             {{ $course->completion_date ? $course->completion_date->format('d/m/Y') : 'N/A' }}
                                         </td>
                                         <td class="py-3 px-4" style="white-space: nowrap;">
-                                            <span class="kt-badge kt-badge-{{ $course->is_completed ? 'success' : 'warning' }} kt-badge-sm">
-                                                {{ $course->is_completed ? 'Completed' : 'Pending' }}
-                                            </span>
+                                            @if($course->is_completed)
+                                                <span class="kt-badge kt-badge-success kt-badge-sm">Completed</span>
+                                            @elseif($course->completion_submitted_at)
+                                                <span class="kt-badge kt-badge-info kt-badge-sm">Pending review</span>
+                                            @else
+                                                <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
+                                            @endif
+                                            @if($course->completionDocuments->isNotEmpty())
+                                                <div class="text-xs text-secondary-foreground mt-1">
+                                                    {{ $course->completionDocuments->count() }} file(s) uploaded
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                             @if($course->nominatedBy)
@@ -252,10 +264,19 @@
                                                 N/A
                                             @endif
                                         </td>
+                                        <td class="py-3 px-4" style="white-space: nowrap;">
+                                            @if(!$course->is_completed)
+                                                <button type="button" class="kt-btn kt-btn-sm kt-btn-ghost" data-kt-modal-toggle="#upload-modal-{{ $course->id }}">
+                                                    <i class="ki-filled ki-file-up"></i> Upload certificate
+                                                </button>
+                                            @else
+                                                —
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="py-12 text-center">
+                                        <td colspan="8" class="py-12 text-center">
                                             <i class="ki-filled ki-information-2 text-4xl text-muted-foreground mb-4"></i>
                                             <p class="text-secondary-foreground">No course nominations found</p>
                                         </td>
@@ -310,10 +331,22 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <span class="kt-badge kt-badge-{{ $course->is_completed ? 'success' : 'warning' }} kt-badge-sm">
-                                        {{ $course->is_completed ? 'Completed' : 'Pending' }}
-                                    </span>
+                                    @if($course->is_completed)
+                                        <span class="kt-badge kt-badge-success kt-badge-sm">Completed</span>
+                                    @elseif($course->completion_submitted_at)
+                                        <span class="kt-badge kt-badge-info kt-badge-sm">Pending review</span>
+                                    @else
+                                        <span class="kt-badge kt-badge-warning kt-badge-sm">Pending</span>
+                                    @endif
                                 </div>
+                                @if(!$course->is_completed)
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" data-kt-modal-toggle="#upload-modal-{{ $course->id }}">
+                                        <i class="ki-filled ki-file-up"></i> Upload certificate
+                                    </button>
+                                @endif
+                                @if($course->completionDocuments->isNotEmpty())
+                                    <p class="text-xs text-secondary-foreground">{{ $course->completionDocuments->count() }} file(s) uploaded for review</p>
+                                @endif
                                 @if($course->notes)
                                 <div class="pt-2 border-t border-border">
                                     <p class="text-xs text-secondary-foreground">
@@ -339,6 +372,44 @@
                 @endif
             </div>
         </div>
+
+        <!-- Upload certificate modals (one per in-progress course on this page) -->
+        @foreach($courses as $course)
+            @if(!$course->is_completed)
+                <div class="kt-modal" data-kt-modal="true" id="upload-modal-{{ $course->id }}">
+                    <div class="kt-modal-content max-w-md">
+                        <div class="kt-modal-header py-4 px-5">
+                            <h3 class="kt-modal-title">Upload certificate of completion</h3>
+                            <button type="button" class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-modal-dismiss="true">
+                                <i class="ki-filled ki-cross"></i>
+                            </button>
+                        </div>
+                        <form action="{{ route('officer.course-nominations.upload-completion', $course->id) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <div class="kt-modal-body py-5 px-5 space-y-4">
+                                <p class="text-sm text-secondary-foreground">
+                                    Upload your certificate or proof of completion for <strong>{{ $course->course_name }}</strong>. Once submitted, your nomination will go to HRD/Staff Officer for review and formal completion.
+                                </p>
+                                <div>
+                                    <label for="document-{{ $course->id }}" class="block text-sm font-medium text-foreground mb-1">Certificate / document <span class="text-danger">*</span></label>
+                                    <input type="file" name="document" id="document-{{ $course->id }}" accept=".pdf,.jpg,.jpeg,.png" class="kt-input" required>
+                                    <p class="text-xs text-secondary-foreground mt-1">PDF or image (JPG, PNG). Max 10 MB.</p>
+                                    @error('document')
+                                        <p class="text-sm text-danger mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="kt-modal-footer py-4 px-5 flex justify-end gap-2">
+                                <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="true">Cancel</button>
+                                <button type="submit" class="kt-btn kt-btn-primary">
+                                    <i class="ki-filled ki-file-up"></i> Upload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
+        @endforeach
     </div>
 
     <style>

@@ -11,6 +11,7 @@ class OfficerDocument extends Model
 
     protected $fillable = [
         'officer_id',
+        'officer_course_id',
         'document_type',
         'file_name',
         'file_path',
@@ -31,6 +32,11 @@ class OfficerDocument extends Model
     public function officer()
     {
         return $this->belongsTo(Officer::class);
+    }
+
+    public function officerCourse()
+    {
+        return $this->belongsTo(\App\Models\OfficerCourse::class, 'officer_course_id');
     }
 
     public function uploadedBy()

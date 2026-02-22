@@ -184,6 +184,25 @@ Laravel's task scheduler needs to be set up to run all scheduled tasks. See `doc
 - **Laravel Setup**: `docs/LARAVEL_SETUP.md`
 - **Cron Jobs Setup**: `docs/CRONJOBS_SETUP.md`
 - **Fleet vehicle visibility by role**: `docs/FLEET_VEHICLE_VISIBILITY_BY_ROLE.md`
+- **Course Nominations (User Guide)**: `docs/USER_GUIDE_COURSE_NOMINATIONS.md`
+- **Staff Officer courses + officer uploads (Plan)**: `docs/PLAN_STAFF_OFFICER_COURSES_AND_OFFICER_UPLOADS.md`
+
+## Current development: Staff Officer course nominations + officer completion uploads
+
+**Plan doc:** `docs/PLAN_STAFF_OFFICER_COURSES_AND_OFFICER_UPLOADS.md`
+
+### Summary
+
+1. **Staff Officer — course nominations (command-only)**  
+   Staff Officer gets the same course nomination actions as HRD (list, nominate, view, edit, mark complete, delete, print) but **only for officers in their command** (`present_station` = Staff Officer’s `command_id`). HRD continues to see all. Shared routes/controller with role-based scoping; Staff Officer sidebar gains “Course Nominations”.
+
+2. **Officer — completion document uploads**  
+   Officers can **upload documents** (e.g. certificate, proof of completion) for **in-progress** course nominations. HRD/Staff Officer see these uploads when marking the course complete. Implementation: add `officer_course_id` (nullable) to `officer_documents`; officer UI “Upload completion document” per in-progress nomination; mark-complete view shows officer uploads.
+
+3. **Implementation order**  
+   - Part A: Staff Officer scoping (middleware, controller filter, sidebar).  
+   - Part B: Officer completion uploads (migration, officer upload UI, mark-complete view).  
+   - Part C: Update user guide and docs.
 
 ## Future possible updates
 

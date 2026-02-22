@@ -16,6 +16,7 @@ class OfficerCourse extends Model
         'start_date',
         'end_date',
         'is_completed',
+        'completion_submitted_at',
         'completion_date',
         'certificate_url',
         'nominated_by',
@@ -28,6 +29,7 @@ class OfficerCourse extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'completion_date' => 'date',
+            'completion_submitted_at' => 'datetime',
             'is_completed' => 'boolean',
         ];
     }
@@ -41,6 +43,12 @@ class OfficerCourse extends Model
     public function nominatedBy()
     {
         return $this->belongsTo(User::class, 'nominated_by');
+    }
+
+    /** Documents uploaded by the officer as proof of completion (before HRD/Staff Officer marks complete). */
+    public function completionDocuments()
+    {
+        return $this->hasMany(OfficerDocument::class, 'officer_course_id');
     }
 }
 

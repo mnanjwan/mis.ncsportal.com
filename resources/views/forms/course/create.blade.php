@@ -3,10 +3,11 @@
 @section('title', 'Nominate Officer for Course')
 @section('page-title', 'Nominate Officer for Course')
 
+@php $coursePrefix = $courseRoutePrefix ?? 'hrd'; $breadcrumbLabel = $coursePrefix === 'staff-officer' ? 'Staff Officer' : 'HRD'; @endphp
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.dashboard') }}">HRD</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.dashboard') }}">{{ $breadcrumbLabel }}</a>
     <span>/</span>
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('hrd.courses') }}">Course Nominations</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route($coursePrefix . '.courses') }}">Course Nominations</a>
     <span>/</span>
     <span class="text-primary">Nominate Officer</span>
 @endsection
@@ -42,7 +43,7 @@
             <h3 class="kt-card-title">Nominate Officer for Course</h3>
         </div>
         <div class="kt-card-content">
-            <form action="{{ route('hrd.courses.store') }}" method="POST" class="space-y-6">
+            <form action="{{ route($coursePrefix . '.courses.store') }}" method="POST" class="space-y-6">
                 @csrf
 
                 <!-- Officers (Multiple Selection with Search and Checkboxes) -->
@@ -189,7 +190,7 @@
 
                 <!-- Form Actions -->
                 <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
-                    <a href="{{ route('hrd.courses') }}" class="kt-btn kt-btn-ghost">
+                    <a href="{{ route($coursePrefix . '.courses') }}" class="kt-btn kt-btn-ghost">
                         Cancel
                     </a>
                     <button type="submit" class="kt-btn kt-btn-primary">
@@ -280,43 +281,28 @@
         });
     }
 
-    // Search functionality
-    officerSearchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        
-        if (searchTerm.length === 0) {
-            officerDropdown.classList.add('hidden');
-            return;
-        }
-
-        const filtered = officers.filter(officer => {
-            const nameMatch = officer.name.toLowerCase().includes(searchTerm);
-            const serviceMatch = officer.service_number.toLowerCase().includes(searchTerm);
-            const rankMatch = officer.rank.toLowerCase().includes(searchTerm);
-            return nameMatch || serviceMatch || rankMatch;
-        });
-
-        if (filtered.length > 0) {
-            officerDropdown.innerHTML = filtered.map(officer => {
-                const displayName = officer.name.trim();
-                const displayDetails = officer.service_number + (officer.rank !== 'N/A' ? ' - ' + officer.rank : '');
-                const isChecked = selectedOfficers.has(officer.id);
-                return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 flex items-center gap-3" ' +
-                            'data-id="' + officer.id + '">' +
-                            '<input type="checkbox" class="kt-checkbox officer-checkbox" data-officer-id="' + officer.id + '" ' + (isChecked ? 'checked' : '') + '>' +
-                            '<div class="flex-1" data-selectable="true">' +
-                            '<div class="text-sm font-medium text-foreground">' + displayName + '</div>' +
-                            '<div class="text-xs text-secondary-foreground">' + displayDetails + '</div>' +
-                            '</div>' +
-                        '</div>';
-            }).join('');
-            officerDropdown.classList.remove('hidden');
-        } else {
+    // Render officers list (full list or filtered)
+    function renderOfficersList(officerList) {
+        if (!officerList || officerList.length === 0) {
             officerDropdown.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No officers found</div>';
             officerDropdown.classList.remove('hidden');
+            return;
         }
+        officerDropdown.innerHTML = officerList.map(officer => {
+            const displayName = officer.name.trim();
+            const displayDetails = officer.service_number + (officer.rank !== 'N/A' ? ' - ' + officer.rank : '');
+            const isChecked = selectedOfficers.has(officer.id);
+            return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 flex items-center gap-3" ' +
+                'data-id="' + officer.id + '">' +
+                '<input type="checkbox" class="kt-checkbox officer-checkbox" data-officer-id="' + officer.id + '" ' + (isChecked ? 'checked' : '') + '>' +
+                '<div class="flex-1" data-selectable="true">' +
+                '<div class="text-sm font-medium text-foreground">' + displayName + '</div>' +
+                '<div class="text-xs text-secondary-foreground">' + displayDetails + '</div>' +
+                '</div>' +
+                '</div>';
+        }).join('');
+        officerDropdown.classList.remove('hidden');
 
-        // Attach checkbox event listeners
         officerDropdown.querySelectorAll('.officer-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', function(e) {
                 e.stopPropagation();
@@ -333,8 +319,6 @@
                 }
             });
         });
-
-        // Also allow clicking on the row to toggle checkbox
         officerDropdown.querySelectorAll('[data-id]').forEach(row => {
             row.addEventListener('click', function(e) {
                 if (e.target.type !== 'checkbox') {
@@ -342,23 +326,42 @@
                     if (checkbox) {
                         checkbox.checked = !checkbox.checked;
                         checkbox.dispatchEvent(new Event('change'));
-            }
-        }
-    });
+                    }
+                }
+            });
         });
+    }
+
+    // Search functionality: show full list when empty, filtered list when typing
+    officerSearchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const filtered = searchTerm.length === 0
+            ? officers
+            : officers.filter(officer => {
+                const nameMatch = officer.name.toLowerCase().includes(searchTerm);
+                const serviceMatch = officer.service_number.toLowerCase().includes(searchTerm);
+                const rankMatch = officer.rank.toLowerCase().includes(searchTerm);
+                return nameMatch || serviceMatch || rankMatch;
+            });
+        renderOfficersList(filtered);
+    });
+
+    // Show full officers list when focusing the search input (so user can browse without typing)
+    officerSearchInput.addEventListener('focus', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const list = searchTerm.length === 0 ? officers : officers.filter(officer => {
+            const nameMatch = officer.name.toLowerCase().includes(searchTerm);
+            const serviceMatch = officer.service_number.toLowerCase().includes(searchTerm);
+            const rankMatch = officer.rank.toLowerCase().includes(searchTerm);
+            return nameMatch || serviceMatch || rankMatch;
+        });
+        renderOfficersList(list);
     });
 
     // Hide dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (!officerSearchInput.contains(e.target) && !officerDropdown.contains(e.target) && !selectedOfficersDiv.contains(e.target)) {
             officerDropdown.classList.add('hidden');
-        }
-    });
-
-    // Show dropdown when focusing on search input
-    officerSearchInput.addEventListener('focus', function() {
-        if (this.value.trim().length > 0) {
-            this.dispatchEvent(new Event('input'));
         }
     });
 
