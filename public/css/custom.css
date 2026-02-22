@@ -263,6 +263,58 @@ header.bg-mono {
     --sidebar-text: #ffffff;
 }
 
+/* Desktop: ensure sidebar is always visible (lg and up) */
+@media (min-width: 1024px) {
+    #sidebar {
+        display: flex !important;
+    }
+}
+
+/* Sidebar on mobile when drawer is open: force scrollable menu so bottom content is reachable */
+@media (max-width: 1023px) {
+    #sidebar.kt-drawer,
+    #sidebar[data-sidebar-open="true"] {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: 100vh !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+    }
+    #sidebar.kt-drawer #sidebar_header,
+    #sidebar[data-sidebar-open="true"] #sidebar_header {
+        flex-shrink: 0;
+    }
+    #sidebar.kt-drawer #sidebar_menu,
+    #sidebar[data-sidebar-open="true"] #sidebar_menu {
+        flex: 1 1 0 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    /* Scrollable area: explicit max-height so it always scrolls on mobile (header ~70px + footer ~140px) */
+    #sidebar.kt-drawer #sidebar_menu > div,
+    #sidebar.kt-drawer #sidebar_menu [data-kt-scrollable="true"],
+    #sidebar[data-sidebar-open="true"] #sidebar_menu > div,
+    #sidebar[data-sidebar-open="true"] #sidebar_menu [data-kt-scrollable="true"] {
+        flex: 1 1 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: calc(100vh - 220px) !important;
+        max-height: calc(100dvh - 220px) !important;
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+    }
+    #sidebar.kt-drawer #sidebar_footer,
+    #sidebar[data-sidebar-open="true"] #sidebar_footer {
+        flex-shrink: 0;
+    }
+}
+
 /* Sidebar: default text white, icons green (PIS) */
 #sidebar .kt-menu-title,
 #sidebar .kt-menu-label,

@@ -13,6 +13,12 @@
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
+        @if(session('error'))
+            <div class="kt-alert kt-alert-error flex items-center gap-3 p-4 rounded-lg">
+                <i class="ki-filled ki-information-2 text-danger text-xl"></i>
+                <p class="text-sm font-medium text-danger">{{ session('error') }}</p>
+            </div>
+        @endif
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Assign Role to Officer</h3>

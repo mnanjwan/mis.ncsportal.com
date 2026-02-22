@@ -60,3 +60,8 @@ Schedule::command('queries:send-reminders')
 Schedule::command('pharmacy:move-expired-stock')
     ->daily()
     ->at('00:05');
+
+// Birthday greetings - send email to officers on their birthday
+Schedule::command('birthday:send-greetings')
+    ->daily()
+    ->at('08:00');

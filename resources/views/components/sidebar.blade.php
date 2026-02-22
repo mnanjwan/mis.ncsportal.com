@@ -698,8 +698,8 @@
     $primaryRoleDisplay = $roleDisplayNames[$primaryRole] ?? $primaryRole;
 @endphp
 
-<div class="flex-col fixed top-0 bottom-0 z-20 hidden lg:flex items-stretch shrink-0 w-(--sidebar-width) dark [--kt-drawer-enable:true] lg:[--kt-drawer-enable:false]"
-    data-kt-drawer="true" data-kt-drawer-class="kt-drawer kt-drawer-start flex top-0 bottom-0" id="sidebar">
+<div class="flex flex-col fixed top-0 bottom-0 z-20 hidden lg:flex items-stretch shrink-0 w-(--sidebar-width) dark [--kt-drawer-enable:true] lg:[--kt-drawer-enable:false] overflow-hidden"
+    data-kt-drawer="true" data-kt-drawer-class="kt-drawer kt-drawer-start flex flex-col top-0 bottom-0 overflow-hidden" id="sidebar">
     <!-- Sidebar Header -->
     <div class="flex flex-col gap-2.5" id="sidebar_header">
         <div class="flex items-center gap-2.5 px-3.5 h-[70px]">
@@ -768,8 +768,8 @@
     </div>
     <!-- End of Sidebar Header -->
     <!-- Sidebar menu -->
-    <div class="flex items-stretch grow shrink-0 justify-center my-5" id="sidebar_menu">
-        <div class="kt-scrollable-y-auto grow" data-kt-scrollable="true"
+    <div class="flex items-stretch grow min-h-0 justify-center my-5 overflow-hidden" id="sidebar_menu">
+        <div class="kt-scrollable-y-auto grow min-h-0 overflow-y-auto overflow-x-hidden" data-kt-scrollable="true"
             data-kt-scrollable-dependencies="#sidebar_header, #sidebar_footer" data-kt-scrollable-height="auto"
             data-kt-scrollable-offset="0px" data-kt-scrollable-wrappers="#sidebar_menu">
             <!-- Primary Menu -->

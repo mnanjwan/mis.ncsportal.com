@@ -500,6 +500,33 @@ class RoleAssignmentController extends Controller
                 ], 422);
             }
 
+            $commandId = $validated['command_id'] ?? null;
+
+            // Check if this officer already has this exact role for this command (avoid duplicate key)
+            $existingPivotQuery = DB::table('user_roles')
+                ->where('user_id', $user->id)
+                ->where('role_id', $role->id);
+            if ($commandId === null) {
+                $existingPivotQuery->whereNull('command_id');
+            } else {
+                $existingPivotQuery->where('command_id', $commandId);
+            }
+            $existingPivot = $existingPivotQuery->first();
+
+            if ($existingPivot && $existingPivot->is_active) {
+                $commandName = $commandId ? (Command::find($commandId)?->name ?? 'this command') : 'this command';
+                $message = "This officer already has the role \"{$role->name}\" for {$commandName}.";
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message,
+                    ], 422);
+                }
+                return redirect()->back()
+                    ->with('error', $message)
+                    ->withInput();
+            }
+
             // Use database transaction to ensure consistency
             DB::beginTransaction();
             try {
@@ -508,24 +535,18 @@ class RoleAssignmentController extends Controller
                     $this->deactivateOtherRoles($user, $role->id);
                 }
 
-                // Check if user already has this role
-                $existingRole = $user->roles()
-                    ->where('roles.id', $role->id)
-                    ->wherePivot('is_active', true)
-                    ->first();
-
-                if ($existingRole) {
-                    // Update existing role assignment
-                    $user->roles()->updateExistingPivot($role->id, [
-                        'command_id' => $validated['command_id'] ?? null,
+                if ($existingPivot && !$existingPivot->is_active) {
+                    // Reactivate existing assignment
+                    DB::table('user_roles')->where('id', $existingPivot->id)->update([
                         'assigned_by' => auth()->id(),
                         'assigned_at' => now(),
                         'is_active' => true,
+                        'updated_at' => now(),
                     ]);
                 } else {
                     // Attach new role
                     $user->roles()->attach($role->id, [
-                        'command_id' => $validated['command_id'] ?? null,
+                        'command_id' => $commandId,
                         'assigned_by' => auth()->id(),
                         'assigned_at' => now(),
                         'is_active' => true,
@@ -591,6 +612,25 @@ class RoleAssignmentController extends Controller
                 ->withErrors($e->errors())
                 ->withInput();
         } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            $isDuplicateRole = (
+                $e->getCode() === '23000' ||
+                str_contains($msg, '23000') ||
+                (str_contains($msg, 'Duplicate entry') && str_contains($msg, 'user_roles_user_id_role_id_command_id_unique'))
+            );
+            if ($isDuplicateRole) {
+                $message = 'This officer already has this role for this command.';
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message,
+                    ], 422);
+                }
+                return redirect()->back()
+                    ->with('error', $message)
+                    ->withInput();
+            }
+
             \Log::error('Role assignment error: ' . $e->getMessage(), [
                 'exception' => $e,
                 'request' => $request->all()
