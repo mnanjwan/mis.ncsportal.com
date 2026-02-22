@@ -263,10 +263,12 @@ header.bg-mono {
     --sidebar-text: #ffffff;
 }
 
-/* Desktop: ensure sidebar is always visible (lg and up) */
+/* Desktop: ensure sidebar is always visible (lg and up); override .hidden */
 @media (min-width: 1024px) {
-    #sidebar {
+    #sidebar,
+    #sidebar.hidden {
         display: flex !important;
+        flex-direction: column !important;
     }
 }
 
