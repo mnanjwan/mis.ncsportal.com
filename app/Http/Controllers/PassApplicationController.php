@@ -132,6 +132,13 @@ class PassApplicationController extends Controller
             return view('dashboards.area-controller.pass-show', compact('application'));
         }
         
+        // Check if user is DC Admin - they can view all minuted applications
+        if ($user->hasRole('DC Admin')) {
+            $application->load(['officer.presentStation']);
+            $application->refresh();
+            return view('dashboards.dc-admin.pass-show', compact('application'));
+        }
+        
         // Check if user is staff officer (has access to all applications in their command)
         if ($user->hasRole('Staff Officer')) {
             // Verify application is from Staff Officer's command
