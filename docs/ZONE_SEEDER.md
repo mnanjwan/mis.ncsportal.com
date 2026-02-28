@@ -202,4 +202,3 @@ php artisan db:seed
 - Test officers have different grade levels for testing posting restrictions
 - All passwords are set to `password123` for easy testing
 - The seeder uses `firstOrCreate` to avoid duplicates on re-runs
-

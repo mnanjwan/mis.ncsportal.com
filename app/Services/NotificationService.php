@@ -78,6 +78,8 @@ class NotificationService
             }
         }
 
+        // Push to mobile: handled by NotificationObserver (so every Notification::create anywhere triggers push)
+
         Log::info('Notification created', [
             'user_id' => $user->id,
             'type' => $type,

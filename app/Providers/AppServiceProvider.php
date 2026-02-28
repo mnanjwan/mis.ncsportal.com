@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Models\Emolument;
 use App\Models\LeaveApplication;
 use App\Models\ManningRequest;
+use App\Models\Notification;
 use App\Models\Officer;
+use App\Observers\NotificationObserver;
 use App\Policies\EmolumentPolicy;
 use App\Policies\LeaveApplicationPolicy;
 use App\Policies\ManningRequestPolicy;
@@ -39,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Notification::observe(NotificationObserver::class);
+
         // Register policies
         Gate::policy(Officer::class, OfficerPolicy::class);
         Gate::policy(Emolument::class, EmolumentPolicy::class);

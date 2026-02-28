@@ -1,0 +1,31 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": { "simulator": true },
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": { "simulator": false },
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://your-domain.com/api/v1" }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": { "resourceClass": "m1-medium" },
+      "android": { "buildType": "app-bundle" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://your-domain.com/api/v1" }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": { "appleId": "", "ascAppId": "" },
+      "android": { "serviceAccountKeyPath": "", "track": "internal" }
+    }
+  }
+}

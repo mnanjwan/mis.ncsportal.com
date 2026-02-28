@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Officer;
 use App\Mail\BirthdayGreetingMail;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -52,6 +53,28 @@ class SendBirthdayGreetingMailJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
+        }
+
+        // In-app notification (only if officer has a linked user)
+        $user = $this->officer->user;
+        if ($user) {
+            try {
+                app(NotificationService::class)->notify(
+                    $user,
+                    'birthday_greeting',
+                    'Happy Birthday!',
+                    'Wishing you a wonderful birthday filled with joy, good health, and success. Thank you for your dedication and service.',
+                    'officer',
+                    $this->officer->id,
+                    false // do not send extra email; we already sent the birthday email
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to create birthday in-app notification', [
+                    'officer_id' => $this->officer->id,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 }

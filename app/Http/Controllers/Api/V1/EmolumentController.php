@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Emolument;
 use App\Models\EmolumentTimeline;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EmolumentController extends BaseController
 {
@@ -307,6 +309,58 @@ class EmolumentController extends BaseController
         });
 
         return $this->successResponse($emoluments);
+    }
+
+    /**
+     * Resubmit rejected emolument (Officer) — for mobile after validation rejection
+     */
+    public function resubmit(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $emolument = Emolument::with(['officer', 'validation', 'audit'])->findOrFail($id);
+
+        if (!$user->officer || $user->officer->id !== $emolument->officer_id) {
+            return $this->errorResponse('You can only resubmit your own emoluments.', null, 403);
+        }
+
+        if ($emolument->status !== 'REJECTED') {
+            return $this->errorResponse('Only rejected emoluments can be resubmitted.', null, 400, 'WORKFLOW_ERROR');
+        }
+
+        if (!$emolument->validation || $emolument->validation->validation_status !== 'REJECTED') {
+            return $this->errorResponse('Only emoluments rejected during validation can be resubmitted.', null, 400, 'WORKFLOW_ERROR');
+        }
+
+        DB::beginTransaction();
+        try {
+            if ($emolument->validation) {
+                $emolument->validation->delete();
+            }
+            if ($emolument->audit) {
+                $emolument->audit->delete();
+            }
+
+            $emolument->update([
+                'status' => 'RAISED',
+                'submitted_at' => now(),
+                'validated_at' => null,
+                'audited_at' => null,
+            ]);
+
+            DB::commit();
+
+            app(NotificationService::class)->notifyEmolumentRaised($emolument);
+
+            return $this->successResponse([
+                'id' => $emolument->id,
+                'status' => $emolument->status,
+                'submitted_at' => $emolument->submitted_at?->toIso8601String(),
+            ], 'Emolument resubmitted successfully. It will be reviewed again by the Assessor.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            report($e);
+            return $this->errorResponse('Failed to resubmit emolument: ' . $e->getMessage(), null, 500);
+        }
     }
 }
 

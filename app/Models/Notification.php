@@ -17,6 +17,7 @@ class Notification extends Model
         'entity_type',
         'entity_id',
         'is_read',
+        'read_at',
     ];
 
     protected function casts(): array

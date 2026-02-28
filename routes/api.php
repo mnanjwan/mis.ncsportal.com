@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountChangeRequestController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ChatController;
 use App\Http\Controllers\Api\V1\CommandController;
+use App\Http\Controllers\Api\V1\EducationChangeRequestController;
 use App\Http\Controllers\Api\V1\DeceasedOfficerController;
 use App\Http\Controllers\Api\V1\DutyRosterController;
 use App\Http\Controllers\Api\V1\EmolumentController;
@@ -11,6 +13,7 @@ use App\Http\Controllers\Api\V1\LeaveApplicationController;
 use App\Http\Controllers\Api\V1\LeaveTypeController;
 use App\Http\Controllers\Api\V1\ManningRequestController;
 use App\Http\Controllers\Api\V1\MovementOrderController;
+use App\Http\Controllers\Api\V1\NextOfKinChangeRequestController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OfficerController;
 use App\Http\Controllers\Api\V1\OfficerCourseController;
@@ -45,13 +48,27 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Authentication routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+    Route::post('/auth/two-factor/verify', [AuthController::class, 'verifyTwoFactor']);
     Route::get('/auth/me', [AuthController::class, 'me']);
 
     // Officers
     Route::get('/officers', [OfficerController::class, 'index']);
     Route::get('/officers/{id}', [OfficerController::class, 'show']);
     Route::patch('/officers/{id}', [OfficerController::class, 'update']);
+    Route::post('/officers/{id}/profile-picture', [OfficerController::class, 'updateProfilePicture']);
     Route::patch('/officers/{id}/quartered-status', [OfficerController::class, 'updateQuarteredStatus']);
+    // Profile change requests (mobile)
+    Route::get('/account-change-requests', [AccountChangeRequestController::class, 'index']);
+    Route::get('/account-change-requests/options', [AccountChangeRequestController::class, 'options']);
+    Route::post('/account-change-requests', [AccountChangeRequestController::class, 'store']);
+    Route::get('/account-change-requests/{id}', [AccountChangeRequestController::class, 'show']);
+    Route::get('/next-of-kin-requests', [NextOfKinChangeRequestController::class, 'index']);
+    Route::post('/next-of-kin-requests', [NextOfKinChangeRequestController::class, 'store']);
+    Route::get('/next-of-kin-requests/{id}', [NextOfKinChangeRequestController::class, 'show']);
+    Route::get('/education-change-requests', [EducationChangeRequestController::class, 'index']);
+    Route::get('/education-change-requests/options', [EducationChangeRequestController::class, 'options']);
+    Route::post('/education-change-requests', [EducationChangeRequestController::class, 'store']);
+    Route::get('/education-change-requests/{id}', [EducationChangeRequestController::class, 'show']);
     Route::post('/officers/bulk-update-quartered-status', [OfficerController::class, 'bulkUpdateQuarteredStatus']);
     Route::get('/officers/{id}/emoluments', [EmolumentController::class, 'index']);
     Route::get('/officers/{id}/leave-applications', [LeaveApplicationController::class, 'index']);
@@ -70,6 +87,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/officers/{id}/emoluments', [EmolumentController::class, 'store']);
     Route::post('/emoluments/{id}/assess', [EmolumentController::class, 'assess']);
     Route::post('/emoluments/{id}/validate', [EmolumentController::class, 'validate']);
+    Route::post('/emoluments/{id}/resubmit', [EmolumentController::class, 'resubmit']);
     Route::get('/emoluments/validated', [EmolumentController::class, 'validated']);
 
     // Leave Types
@@ -99,9 +117,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/register-token', [NotificationController::class, 'registerToken']);
+    Route::get('/notifications/token-status', [NotificationController::class, 'tokenStatus']);
 
     // Pass Applications
     Route::get('/pass-applications', [PassApplicationController::class, 'index']);
+    Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show']);
     Route::post('/officers/{id}/pass-applications', [PassApplicationController::class, 'store']);
     Route::post('/pass-applications/{id}/approve', [PassApplicationController::class, 'approve']);
 
@@ -183,4 +204,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/chat/rooms', [ChatController::class, 'createRoom']);
     Route::get('/chat/rooms/{id}/messages', [ChatController::class, 'messages']);
     Route::post('/chat/rooms/{id}/messages', [ChatController::class, 'sendMessage']);
+    Route::get('/chat/rooms/{id}/members', [ChatController::class, 'members']);
+    Route::post('/chat/rooms/{id}/members', [ChatController::class, 'addMembers']);
+    Route::delete('/chat/rooms/{id}/members/{userId}', [ChatController::class, 'removeMember']);
+    Route::put('/chat/rooms/{id}', [ChatController::class, 'updateRoom']);
+    Route::post('/chat/rooms/{id}/leave', [ChatController::class, 'leave']);
 });

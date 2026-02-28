@@ -440,7 +440,10 @@
                                     @endif
                                     @if($doc->document_type)
                                     <div class="text-xs text-secondary-foreground">
-                                        Type: {{ ucfirst($doc->document_type) }}
+                                        Type: {{ config('document_categories')[$doc->document_type] ?? ucfirst(str_replace('_', ' ', $doc->document_type)) }}
+                                        @if(in_array($doc->document_type, ['course_completed', 'training_certificate']) && $doc->officerCourse)
+                                            <span class="block mt-0.5 font-medium text-foreground" title="{{ $doc->officerCourse->course_name }}">{{ \Illuminate\Support\Str::limit($doc->officerCourse->course_name, 28) }}</span>
+                                        @endif
                                     </div>
                                     @endif
                                     @if(!$fileExists)

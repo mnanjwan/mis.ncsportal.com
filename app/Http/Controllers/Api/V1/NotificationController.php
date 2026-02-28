@@ -67,5 +67,42 @@ class NotificationController extends BaseController
 
         return $this->successResponse(null, 'All notifications marked as read');
     }
+
+    /**
+     * Register or update Expo push token for mobile notifications.
+     * Token must start with ExponentPushToken[.
+     */
+    public function registerToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token' => 'required|string|max:512',
+        ]);
+
+        $token = $request->input('token');
+        if (!str_starts_with($token, 'ExponentPushToken[')) {
+            return $this->errorResponse(
+                'Invalid push token format. Expected ExponentPushToken[...]',
+                null,
+                422,
+                'VALIDATION_ERROR'
+            );
+        }
+
+        $request->user()->update(['push_token' => $token]);
+
+        return $this->successResponse(null, 'Push token registered successfully');
+    }
+
+    /**
+     * Check if current user has a push token (for mobile to know if registered).
+     */
+    public function tokenStatus(Request $request): JsonResponse
+    {
+        $hasToken = !empty($request->user()->push_token);
+
+        return $this->successResponse([
+            'has_token' => $hasToken,
+        ]);
+    }
 }
 

@@ -45,6 +45,55 @@ class PassApplicationController extends BaseController
     }
 
     /**
+     * Get pass application detail (for mobile detail screen)
+     */
+    public function show(Request $request, $id): JsonResponse
+    {
+        $application = PassApplication::with(['officer.presentStation', 'approval'])
+            ->findOrFail($id);
+
+        $user = $request->user();
+        $officer = $user->officer;
+
+        // Officers see only their own; Staff Officer / DC Admin see by command
+        if ($officer && $application->officer_id !== $officer->id) {
+            $canSee = $user->hasRole('Staff Officer') || $user->hasRole('DC Admin');
+            if ($canSee && $officer->present_station && $application->officer->present_station !== $officer->present_station) {
+                return $this->errorResponse('Pass application not found', null, 404);
+            }
+            if (!$canSee) {
+                return $this->errorResponse('Pass application not found', null, 404);
+            }
+        }
+
+        $data = [
+            'id' => $application->id,
+            'officer_id' => $application->officer_id,
+            'start_date' => $application->start_date,
+            'end_date' => $application->end_date,
+            'number_of_days' => $application->number_of_days,
+            'reason' => $application->reason,
+            'status' => $application->status,
+            'submitted_at' => $application->submitted_at?->toIso8601String(),
+            'minuted_at' => $application->minuted_at?->toIso8601String(),
+            'approved_at' => $application->approved_at?->toIso8601String(),
+            'rejected_at' => $application->rejected_at?->toIso8601String(),
+            'rejection_reason' => $application->rejection_reason,
+            'officer' => $application->officer ? [
+                'id' => $application->officer->id,
+                'service_number' => $application->officer->service_number,
+                'full_name' => $application->officer->full_name,
+                'present_station' => $application->officer->presentStation ? [
+                    'id' => $application->officer->presentStation->id,
+                    'name' => $application->officer->presentStation->name,
+                ] : null,
+            ] : null,
+        ];
+
+        return $this->successResponse($data);
+    }
+
+    /**
      * Apply for pass (Officer)
      */
     public function store(Request $request): JsonResponse

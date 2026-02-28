@@ -459,7 +459,7 @@ class OfficerController extends Controller
 
     public function show($id)
     {
-        $officer = \App\Models\Officer::with(['presentStation.zone', 'user', 'nextOfKin', 'documents', 'acceptedQueries.issuedBy'])
+        $officer = \App\Models\Officer::with(['presentStation.zone', 'user', 'nextOfKin', 'documents.officerCourse', 'acceptedQueries.issuedBy'])
             ->findOrFail($id);
 
         // Load accepted queries for display

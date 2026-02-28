@@ -17,6 +17,7 @@ class LoginRequest extends FormRequest
             'email' => 'required_without:service_number|email',
             'service_number' => 'required_without:email|string',
             'password' => 'required|string|min:8',
+            'push_token' => 'nullable|string|max:512',
         ];
     }
 

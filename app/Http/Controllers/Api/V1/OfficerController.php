@@ -258,6 +258,62 @@ class OfficerController extends BaseController
     }
 
     /**
+     * Update profile picture (Officer — own record only). For mobile upload.
+     * Accepts multipart: profile_picture (image, max 2MB).
+     */
+    public function updateProfilePicture(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $officer = Officer::findOrFail($id);
+
+        if (!$user->officer || $user->officer->id != $officer->id) {
+            return $this->errorResponse('You can only update your own profile picture.', null, 403, 'PERMISSION_DENIED');
+        }
+
+        $isOnboarded = $officer->date_of_birth && $officer->phone_number
+            && $officer->date_of_first_appointment
+            && $officer->nextOfKin()->where('is_primary', true)->exists();
+        $needsPromotionPictureUpdate = $officer->needsProfilePictureUpdateAfterPromotion();
+
+        if (!$isOnboarded && !$needsPromotionPictureUpdate) {
+            return $this->errorResponse(
+                'You can only change your profile picture after completing onboarding.',
+                null,
+                403,
+                'ONBOARDING_REQUIRED'
+            );
+        }
+
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+
+        try {
+            if ($officer->profile_picture_url) {
+                $oldPath = storage_path('app/public/' . $officer->profile_picture_url);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
+            }
+
+            $path = $request->file('profile_picture')->store('profiles', 'public');
+            $officer->update([
+                'profile_picture_url' => $path,
+                'profile_picture_updated_at' => now(),
+            ]);
+            $officer->refresh();
+
+            $profilePictureUrl = $officer->getProfilePictureUrlFull();
+
+            return $this->successResponse([
+                'profile_picture_url' => $profilePictureUrl,
+            ], 'Profile picture updated successfully.');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to update profile picture: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    /**
      * Update officer quartered status (Building Unit)
      */
     public function updateQuarteredStatus(Request $request, $id): JsonResponse
