@@ -160,35 +160,47 @@ class CommandDurationController extends Controller
         
         $request->validate([
             'zone_id' => 'required|exists:zones,id',
-            'command_id' => 'required|exists:commands,id',
+            'command_id' => 'nullable|exists:commands,id',
         ]);
 
         $zoneId = $request->zone_id;
-        $commandId = $request->command_id;
-
-        // Verify command belongs to zone
-        $command = Command::findOrFail($commandId);
-        if ($command->zone_id != $zoneId) {
-            return back()->withErrors(['command_id' => 'Selected command does not belong to the selected zone.']);
-        }
+        $commandId = $request->filled('command_id') ? $request->command_id : null;
 
         $validationService = app(ZonalPostingValidationService::class);
-        
-        // Build query
-        $query = Officer::with(['presentStation.zone', 'currentPosting'])
-            ->where('present_station', $commandId)
-            ->whereHas('currentPosting', function($q) use ($commandId) {
-                $q->where('command_id', $commandId)
-                  ->where('is_current', true);
-            });
-        
-        // Filter for Zone Coordinators
-        if ($isZoneCoordinator && !$isHRD) {
-            // Verify command is in zone
-            if (!$validationService->isCommandInZone($commandId, $user)) {
+
+        if ($commandId !== null) {
+            // Verify command belongs to zone
+            $command = Command::findOrFail($commandId);
+            if ($command->zone_id != $zoneId) {
+                return back()->withErrors(['command_id' => 'Selected command does not belong to the selected zone.']);
+            }
+            if ($isZoneCoordinator && !$isHRD && !$validationService->isCommandInZone($commandId, $user)) {
                 return back()->withErrors(['command_id' => 'Selected command is not in your zone.']);
             }
-            // GL 07 filtering will be done after query execution
+        }
+
+        $zoneCommandIds = Command::where('zone_id', $zoneId)->where('is_active', true)->pluck('id')->toArray();
+
+        if ($commandId !== null) {
+            // Search by command: officers in this command with at least one posting to this command
+            $query = Officer::with([
+                'presentStation.zone',
+                'currentPosting',
+                'postings' => function ($q) use ($commandId) {
+                    $q->where('command_id', $commandId)->orderByDesc('posting_date');
+                },
+            ])
+                ->where('present_station', $commandId)
+                ->whereHas('postings', function ($q) use ($commandId) {
+                    $q->where('command_id', $commandId);
+                });
+        } else {
+            // Search by zone only: officers in any command in this zone, with at least one posting to their present command
+            $query = Officer::with(['presentStation.zone', 'currentPosting', 'postings'])
+                ->whereIn('present_station', $zoneCommandIds)
+                ->whereHas('postings', function ($q) {
+                    $q->whereColumn('command_id', 'officers.present_station');
+                });
         }
 
         // Optional filters
@@ -197,7 +209,6 @@ class CommandDurationController extends Controller
         }
 
         if ($request->filled('sex') && $request->sex !== 'Any') {
-            // Convert "Male"/"Female" to "M"/"F" for database query
             $sexValue = $request->sex === 'Male' ? 'M' : ($request->sex === 'Female' ? 'F' : $request->sex);
             $query->where('sex', $sexValue);
         }
@@ -205,23 +216,18 @@ class CommandDurationController extends Controller
         // Command Duration Filter
         if ($request->filled('duration_years') && $request->duration_years !== '') {
             $durationYears = (int) $request->duration_years;
-            
-            $query->whereHas('currentPosting', function($q) use ($durationYears, $commandId) {
-                $q->where('command_id', $commandId)
-                  ->where('is_current', true);
-                
-                if ($durationYears == 10) {
-                    // 10+ years: >= 10 years
-                    $dateThreshold = now()->subYears(10);
-                    $q->where('posting_date', '<=', $dateThreshold);
-                } else {
-                    // Exact year: between X and X+1 years
-                    $dateThreshold = now()->subYears($durationYears);
-                    $nextYear = now()->subYears($durationYears + 1);
-                    $q->where('posting_date', '<=', $dateThreshold)
-                      ->where('posting_date', '>', $nextYear);
-                }
-            });
+
+            if ($commandId !== null) {
+                $query->whereHas('postings', function ($q) use ($durationYears, $commandId) {
+                    $q->where('command_id', $commandId);
+                    $this->applyDurationFilter($q, $durationYears);
+                });
+            } else {
+                $query->whereHas('postings', function ($q) use ($durationYears) {
+                    $q->whereColumn('command_id', 'officers.present_station');
+                    $this->applyDurationFilter($q, $durationYears);
+                });
+            }
         }
 
         // Get officers
@@ -235,9 +241,19 @@ class CommandDurationController extends Controller
         }
 
         // Calculate duration and status for each officer
-        $officers = $officers->map(function($officer) use ($isZoneCoordinator, $isHRD, $validationService) {
-            $posting = $officer->currentPosting;
-            
+        $officers = $officers->map(function ($officer) use ($commandId, $isZoneCoordinator, $isHRD, $validationService) {
+            $posting = null;
+            if ($commandId !== null) {
+                $posting = ($officer->currentPosting && $officer->currentPosting->command_id == $commandId)
+                    ? $officer->currentPosting
+                    : $officer->postings->first();
+            } else {
+                $postingsToCommand = $officer->postings->where('command_id', $officer->present_station)->sortByDesc('posting_date');
+                $posting = ($officer->currentPosting && $officer->currentPosting->command_id == $officer->present_station)
+                    ? $officer->currentPosting
+                    : $postingsToCommand->first();
+            }
+
             if ($posting && $posting->posting_date) {
                 $diff = $posting->posting_date->diff(now());
                 $officer->duration_years = $diff->y;
@@ -759,79 +775,89 @@ class CommandDurationController extends Controller
     {
         $request->validate([
             'zone_id' => 'required|exists:zones,id',
-            'command_id' => 'required|exists:commands,id',
+            'command_id' => 'nullable|exists:commands,id',
         ]);
 
         $zoneId = $request->zone_id;
-        $commandId = $request->command_id;
+        $commandId = $request->filled('command_id') ? $request->command_id : null;
 
         $zone = Zone::findOrFail($zoneId);
-        $command = Command::findOrFail($commandId);
+        $command = $commandId ? Command::findOrFail($commandId) : null;
 
         $user = auth()->user();
         $isZoneCoordinator = $user->hasRole('Zone Coordinator');
         $isHRD = $user->hasRole('HRD');
         $validationService = app(ZonalPostingValidationService::class);
 
-        // Build same query as search method
-        $query = Officer::with(['presentStation.zone', 'currentPosting'])
-            ->where('present_station', $commandId)
-            ->whereHas('currentPosting', function($q) use ($commandId) {
-                $q->where('command_id', $commandId)
-                  ->where('is_current', true);
-            });
+        $zoneCommandIds = Command::where('zone_id', $zoneId)->where('is_active', true)->pluck('id')->toArray();
 
-        // Filter for Zone Coordinators - verify command is in their zone
-        if ($isZoneCoordinator && !$isHRD) {
-            // Verify command is in zone
-            if (!$validationService->isCommandInZone($commandId, $user)) {
+        if ($commandId !== null) {
+            if ($isZoneCoordinator && !$isHRD && !$validationService->isCommandInZone($commandId, $user)) {
                 abort(403, 'Selected command is not in your zone.');
             }
+            $query = Officer::with([
+                'presentStation.zone',
+                'currentPosting',
+                'postings' => function ($q) use ($commandId) {
+                    $q->where('command_id', $commandId)->orderByDesc('posting_date');
+                },
+            ])
+                ->where('present_station', $commandId)
+                ->whereHas('postings', function ($q) use ($commandId) {
+                    $q->where('command_id', $commandId);
+                });
+        } else {
+            $query = Officer::with(['presentStation.zone', 'currentPosting', 'postings'])
+                ->whereIn('present_station', $zoneCommandIds)
+                ->whereHas('postings', function ($q) {
+                    $q->whereColumn('command_id', 'officers.present_station');
+                });
         }
 
-        // Apply same filters if provided
         if ($request->filled('rank')) {
             $query->where('substantive_rank', $request->rank);
         }
 
         if ($request->filled('sex') && $request->sex !== 'Any') {
-            // Convert "Male"/"Female" to "M"/"F" for database query
             $sexValue = $request->sex === 'Male' ? 'M' : ($request->sex === 'Female' ? 'F' : $request->sex);
             $query->where('sex', $sexValue);
         }
 
         if ($request->filled('duration_years') && $request->duration_years !== '') {
             $durationYears = (int) $request->duration_years;
-            
-            $query->whereHas('currentPosting', function($q) use ($durationYears, $commandId) {
-                $q->where('command_id', $commandId)
-                  ->where('is_current', true);
-                
-                if ($durationYears == 10) {
-                    $dateThreshold = now()->subYears(10);
-                    $q->where('posting_date', '<=', $dateThreshold);
-                } else {
-                    $dateThreshold = now()->subYears($durationYears);
-                    $nextYear = now()->subYears($durationYears + 1);
-                    $q->where('posting_date', '<=', $dateThreshold)
-                      ->where('posting_date', '>', $nextYear);
-                }
-            });
+            if ($commandId !== null) {
+                $query->whereHas('postings', function ($q) use ($durationYears, $commandId) {
+                    $q->where('command_id', $commandId);
+                    $this->applyDurationFilter($q, $durationYears);
+                });
+            } else {
+                $query->whereHas('postings', function ($q) use ($durationYears) {
+                    $q->whereColumn('command_id', 'officers.present_station');
+                    $this->applyDurationFilter($q, $durationYears);
+                });
+            }
         }
 
         $officers = $query->get();
 
-        // For Zone Coordinators, filter out officers above GL 07 (same as search method)
         if ($isZoneCoordinator && !$isHRD) {
-            $officers = $officers->filter(function($officer) use ($validationService) {
+            $officers = $officers->filter(function ($officer) use ($validationService) {
                 return $validationService->isOfficerGL07OrBelow($officer->id);
             })->values();
         }
 
-        // Calculate duration for each officer
-        $officers = $officers->map(function($officer) {
-            $posting = $officer->currentPosting;
-            
+        $officers = $officers->map(function ($officer) use ($commandId) {
+            if ($commandId !== null) {
+                $posting = ($officer->currentPosting && $officer->currentPosting->command_id == $commandId)
+                    ? $officer->currentPosting
+                    : $officer->postings->first();
+            } else {
+                $postingsToCommand = $officer->postings->where('command_id', $officer->present_station)->sortByDesc('posting_date');
+                $posting = ($officer->currentPosting && $officer->currentPosting->command_id == $officer->present_station)
+                    ? $officer->currentPosting
+                    : $postingsToCommand->first();
+            }
+
             if ($posting && $posting->posting_date) {
                 $diff = $posting->posting_date->diff(now());
                 $officer->duration_years = $diff->y;
@@ -855,6 +881,22 @@ class CommandDurationController extends Controller
     /**
      * Get officer status string
      */
+    /**
+     * Apply duration filter to a postings subquery (posting_date range).
+     */
+    private function applyDurationFilter($q, int $durationYears): void
+    {
+        if ($durationYears == 10) {
+            $dateThreshold = now()->subYears(10);
+            $q->where('posting_date', '<=', $dateThreshold);
+        } else {
+            $dateThreshold = now()->subYears($durationYears);
+            $nextYear = now()->subYears($durationYears + 1);
+            $q->where('posting_date', '<=', $dateThreshold)
+                ->where('posting_date', '>', $nextYear);
+        }
+    }
+
     /**
      * Check if officer is awaiting release (has pending posting with release letter not printed)
      * Only check postings that are not current (officers being posted OUT)

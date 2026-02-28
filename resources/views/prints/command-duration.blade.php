@@ -139,7 +139,7 @@
     <div class="criteria">
         <div class="criteria-title">Search Criteria:</div>
         <div class="criteria-item"><strong>Zone:</strong> {{ $zone->name ?? 'N/A' }}</div>
-        <div class="criteria-item"><strong>Command:</strong> {{ $command->name ?? 'N/A' }}</div>
+        <div class="criteria-item"><strong>Command:</strong> {{ $command ? $command->name : 'All commands in zone' }}</div>
         @if($request->filled('rank'))
             <div class="criteria-item"><strong>Rank:</strong> {{ $request->rank }}</div>
         @endif

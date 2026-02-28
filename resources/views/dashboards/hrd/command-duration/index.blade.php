@@ -97,13 +97,13 @@
                         @endif
                     </div>
 
-                    <!-- Command (Required) -->
+                    <!-- Command (Optional - leave empty to search entire zone) -->
                     <div>
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">
-                            Command <span class="text-danger">*</span>
+                            Command <span class="text-secondary-foreground font-normal">(optional)</span>
                         </label>
                         <div class="relative">
-                            <input type="hidden" name="command_id" id="command_id" value="{{ isset($selected_command_id) ? $selected_command_id : '' }}" required>
+                            <input type="hidden" name="command_id" id="command_id" value="{{ isset($selected_command_id) ? $selected_command_id : '' }}">
                             <button type="button" 
                                     id="command_select_trigger" 
                                     class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ (!isset($selected_zone_id) || empty($selected_zone_id)) && (!isset($zoneReadOnly) || !$zoneReadOnly) ? 'opacity-50 cursor-not-allowed' : '' }}"
