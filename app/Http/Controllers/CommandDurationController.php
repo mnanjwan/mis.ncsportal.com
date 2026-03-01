@@ -594,18 +594,23 @@ class CommandDurationController extends Controller
 
                 // Check if officer is already in ANY draft deployment (skip them)
                 $inDraftDeployment = ManningDeploymentAssignment::where('officer_id', $officer->id)
-                    ->whereHas('deployment', function($q) {
+                    ->with('deployment')
+                    ->whereHas('deployment', function ($q) {
                         $q->where('status', 'DRAFT');
                     })
                     ->first();
 
                 if ($inDraftDeployment) {
-                    $skipped[] = $officer->full_name . ' (already in draft)';
+                    $existingDraftNumber = $inDraftDeployment->deployment
+                        ? $inDraftDeployment->deployment->deployment_number
+                        : 'DEP-' . $inDraftDeployment->manning_deployment_id;
+                    $skipped[] = $officer->full_name . ' (already in draft ' . $existingDraftNumber . ')';
                     $skippedNames[] = $officer->full_name;
                     Log::info('Command Duration - Add to Draft: Officer already in draft deployment (skipping)', [
                         'officer_id' => $officer->id,
                         'officer_name' => $officer->full_name,
                         'existing_deployment_id' => $inDraftDeployment->manning_deployment_id,
+                        'existing_deployment_number' => $existingDraftNumber,
                         'existing_assignment_id' => $inDraftDeployment->id,
                     ]);
                     continue;
@@ -668,12 +673,16 @@ class CommandDurationController extends Controller
             if ($added > 0) {
                 $message = "{$added} officer(s) added to draft deployment.";
             }
-            
+
             if (!empty($skipped)) {
                 if ($message) {
                     $message .= ' ';
                 }
                 $message .= count($skipped) . ' officer(s) skipped: ' . implode(', ', $skipped);
+                $hasAlreadyInDraft = collect($skipped)->contains(fn ($s) => str_contains($s, 'already in draft'));
+                if ($hasAlreadyInDraft) {
+                    $message .= ' Officers shown as "already in draft DEP-…" are in that other draft; open it from Draft Deployment if you do not see them on this page.';
+                }
             }
 
             $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix);
