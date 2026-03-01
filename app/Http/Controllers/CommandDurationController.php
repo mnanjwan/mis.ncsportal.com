@@ -575,22 +575,7 @@ class CommandDurationController extends Controller
             foreach ($eligible as $officer) {
                 $fromCommand = $officer->presentStation;
 
-                // Check if officer is in a PUBLISHED deployment (they're actually posted)
-                $inPublishedDeployment = ManningDeploymentAssignment::where('officer_id', $officer->id)
-                    ->whereHas('deployment', function($q) {
-                        $q->where('status', 'PUBLISHED');
-                    })
-                    ->exists();
-
-                if ($inPublishedDeployment) {
-                    $skipped[] = $officer->full_name . ' (already posted)';
-                    $skippedNames[] = $officer->full_name;
-                    Log::info('Command Duration - Add to Draft: Officer in published deployment (already posted)', [
-                        'officer_id' => $officer->id,
-                        'officer_name' => $officer->full_name,
-                    ]);
-                    continue;
-                }
+                // Allow officers who are already posted (in a published deployment) to be reposted; add them to draft.
 
                 // Check if officer is already in ANY draft deployment (skip them)
                 $inDraftDeployment = ManningDeploymentAssignment::where('officer_id', $officer->id)
