@@ -356,6 +356,11 @@ class CommandDurationController extends Controller
             'has_officer_ids' => $request->has('officer_ids'),
         ]);
 
+        // Normalize empty command_id so validation does not run exists on ""
+        $request->merge([
+            'command_id' => $request->filled('command_id') ? $request->command_id : null,
+        ]);
+
         $request->validate([
             'officer_ids' => 'required|string', // JSON string
             'zone_id' => 'required|exists:zones,id',
