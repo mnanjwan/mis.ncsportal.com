@@ -58,6 +58,15 @@
         </div>
     @endif
 
+    @if(session('info'))
+        <div class="kt-alert bg-info/10 border border-info/20">
+            <div class="kt-alert-content">
+                <i class="ki-filled ki-information text-info"></i>
+                <span class="text-info font-medium">{{ session('info') }}</span>
+            </div>
+        </div>
+    @endif
+
     @if($activeDraft)
         @if(isset($manningRequest))
             <!-- Manning Request Info -->

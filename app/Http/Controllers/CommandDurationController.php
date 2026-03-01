@@ -687,8 +687,9 @@ class CommandDurationController extends Controller
 
             $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix);
 
+            $redirectRoute = $routePrefix . '.manning-deployments.draft';
+
             if ($added > 0) {
-                $redirectRoute = $routePrefix . '.manning-deployments.draft';
                 Log::info('Command Duration - Add to Draft: Redirecting to draft page', [
                     'route' => $redirectRoute,
                     'routePrefix' => $routePrefix,
@@ -696,24 +697,28 @@ class CommandDurationController extends Controller
                     'added' => $added,
                     'skipped_count' => count($skipped),
                 ]);
-                
+
                 return redirect()->route($redirectRoute)
                     ->with('success', $message);
-            } else {
-                Log::info('Command Duration - Add to Draft: No officers added, redirecting back to search', [
-                    'routePrefix' => $routePrefix,
-                    'skipped_count' => count($skipped),
-                    'skipped' => $skipped,
-                ]);
-                
-                // If all officers were skipped, show info message with details
-                $infoMessage = !empty($skipped) 
-                    ? 'No new officers added. ' . implode(', ', $skipped) . '.'
-                    : 'No new officers added. All selected officers are already in the draft.';
-                
-                return redirect()->route($routePrefix . '.command-duration.index', $redirectParams)
-                    ->with('info', $infoMessage);
             }
+
+            // Always redirect to draft page so user lands there; show why nothing was added
+            Log::info('Command Duration - Add to Draft: No officers added, redirecting to draft page with info', [
+                'routePrefix' => $routePrefix,
+                'skipped_count' => count($skipped),
+                'skipped' => $skipped,
+            ]);
+
+            $infoMessage = !empty($skipped)
+                ? 'No new officers added. ' . implode(', ', $skipped) . '.'
+                : 'No new officers added. All selected officers are already in the draft.';
+            $hasAlreadyInDraft = !empty($skipped) && collect($skipped)->contains(fn ($s) => str_contains($s, 'already in draft'));
+            if ($hasAlreadyInDraft) {
+                $infoMessage .= ' Officers shown as "already in draft DEP-…" are in that other draft.';
+            }
+
+            return redirect()->route($redirectRoute)
+                ->with('info', $infoMessage);
 
         } catch (\Exception $e) {
             DB::rollBack();

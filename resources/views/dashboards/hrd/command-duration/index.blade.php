@@ -34,6 +34,17 @@
         </div>
     @endif
 
+    @if(session('info'))
+        <div class="kt-card bg-info/10 border border-info/20">
+            <div class="kt-card-content p-4">
+                <div class="flex items-center gap-3">
+                    <i class="ki-filled ki-information text-info text-xl"></i>
+                    <p class="text-sm text-info font-medium">{{ session('info') }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if($errors->any())
         <div class="kt-card bg-danger/10 border border-danger/20">
             <div class="kt-card-content p-4">
