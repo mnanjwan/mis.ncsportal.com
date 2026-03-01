@@ -358,7 +358,8 @@ class CommandDurationController extends Controller
 
         $request->validate([
             'officer_ids' => 'required|string', // JSON string
-            'command_id' => 'required|exists:commands,id',
+            'zone_id' => 'required|exists:zones,id',
+            'command_id' => 'nullable|exists:commands,id',
         ]);
 
         $user = auth()->user();
@@ -389,11 +390,9 @@ class CommandDurationController extends Controller
                 Log::warning('Command Duration - Add to Draft: No officers selected', [
                     'routePrefix' => $routePrefix,
                 ]);
-                $command = Command::find($request->command_id);
-                return redirect()->route($routePrefix . '.command-duration.index', [
-                    'zone_id' => $command?->zone_id,
-                    'command_id' => $request->command_id,
-                ])->withErrors(['officers' => 'No officers selected.']);
+                $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix);
+                return redirect()->route($routePrefix . '.command-duration.index', $redirectParams)
+                    ->withErrors(['officers' => 'No officers selected.']);
             }
 
             // Validate officer IDs exist
@@ -404,11 +403,9 @@ class CommandDurationController extends Controller
                     'valid_count' => count($validOfficerIds),
                     'routePrefix' => $routePrefix,
                 ]);
-                $command = Command::find($request->command_id);
-                return redirect()->route($routePrefix . '.command-duration.index', [
-                    'zone_id' => $command?->zone_id,
-                    'command_id' => $request->command_id,
-                ])->withErrors(['officers' => 'Some selected officers are invalid.']);
+                $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix);
+                return redirect()->route($routePrefix . '.command-duration.index', $redirectParams)
+                    ->withErrors(['officers' => 'Some selected officers are invalid.']);
             }
 
             // For command duration search, officers are added to draft without a specific destination
@@ -494,16 +491,8 @@ class CommandDurationController extends Controller
                     'ineligible' => $ineligible,
                     'routePrefix' => $routePrefix,
                 ]);
-                
-                // Get zone_id from command to redirect back with proper parameters
-                $command = Command::find($request->command_id);
-                $redirectParams = [
-                    'command_id' => $request->command_id,
-                ];
-                
-                if ($command) {
-                    $redirectParams['zone_id'] = $command->zone_id;
-                }
+
+                $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix);
                 
                 // Build detailed error message
                 $errorMessage = 'Some officers are not eligible for movement: ' . implode(', ', $ineligible);
@@ -637,8 +626,8 @@ class CommandDurationController extends Controller
                 // HRD will change this in the draft view to the actual destination
                 $tempToCommandId = $fromCommand?->id;
                 
-                // If no from_command, we need a valid command - use the search command as fallback
-                if (!$tempToCommandId) {
+                // If no from_command, use search command as fallback when provided
+                if (!$tempToCommandId && $request->filled('command_id')) {
                     $searchCommand = Command::find($request->command_id);
                     $tempToCommandId = $searchCommand?->id;
                 }
@@ -697,15 +686,7 @@ class CommandDurationController extends Controller
                 $message .= count($skipped) . ' officer(s) skipped: ' . implode(', ', $skipped);
             }
 
-            // Get zone_id from command to redirect back with proper parameters
-            $command = Command::find($request->command_id);
-            $redirectParams = [
-                'command_id' => $request->command_id,
-            ];
-            
-            if ($command) {
-                $redirectParams['zone_id'] = $command->zone_id;
-            }
+            $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix);
 
             if ($added > 0) {
                 $redirectRoute = $routePrefix . '.manning-deployments.draft';
@@ -748,15 +729,7 @@ class CommandDurationController extends Controller
                 'line' => $e->getLine(),
             ]);
 
-            // Get zone_id from command to redirect back with proper parameters
-            $command = Command::find($request->command_id);
-            $redirectParams = [
-                'command_id' => $request->command_id,
-            ];
-            
-            if ($command) {
-                $redirectParams['zone_id'] = $command->zone_id;
-            }
+            $redirectParams = $this->addToDraftRedirectParams($request, $routePrefix ?? 'hrd');
 
             Log::info('Command Duration - Add to Draft: Exception - Redirecting back to search', [
                 'routePrefix' => $routePrefix ?? 'unknown',
@@ -881,6 +854,18 @@ class CommandDurationController extends Controller
     /**
      * Get officer status string
      */
+    /**
+     * Build redirect params for add-to-draft (zone_id required; command_id optional).
+     */
+    private function addToDraftRedirectParams(Request $request, string $routePrefix): array
+    {
+        $params = ['zone_id' => $request->zone_id];
+        if ($request->filled('command_id')) {
+            $params['command_id'] = $request->command_id;
+        }
+        return $params;
+    }
+
     /**
      * Apply duration filter to a postings subquery (posting_date range).
      */

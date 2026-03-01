@@ -376,6 +376,7 @@
 <!-- Add to Draft Form (Hidden) -->
 <form id="add-to-draft-form" method="POST" action="{{ route($routePrefix . '.command-duration.add-to-draft') }}" style="display: none;">
     @csrf
+    <input type="hidden" name="zone_id" id="draft-zone-id" value="{{ $selected_zone_id ?? request('zone_id') }}">
     <input type="hidden" name="command_id" id="draft-command-id" value="{{ $selected_command_id ?? (request('command_id') ?? '') }}">
     <input type="hidden" name="officer_ids" id="draft-officer-ids">
 </form>
@@ -677,32 +678,25 @@ function updateAddButton() {
 function prepareAddToDraftModal() {
     const checkboxes = document.querySelectorAll('.officer-checkbox:checked:not(:disabled)');
     const officerIds = Array.from(checkboxes).map(cb => cb.value);
-    
+
     if (officerIds.length === 0) {
         alert('Please select at least one eligible officer to add to draft.');
-        // Hide modal if no officers selected
         const modal = document.getElementById('add-to-draft-modal');
         if (modal) {
             modal.style.display = 'none';
         }
         return;
     }
-    
-    // Ensure command_id is set
-    const commandId = document.getElementById('command_id').value;
-    if (!commandId) {
-        alert('Please select a command first.');
-        return;
-    }
-    
+
     // Update modal content with count
     const countElement = document.getElementById('selected-officers-count');
     if (countElement) {
         countElement.textContent = officerIds.length;
     }
-    
-    // Store officer IDs and command ID for form submission
-    document.getElementById('draft-command-id').value = commandId;
+
+    // Zone is required for redirect; command is optional (add-to-draft works without command)
+    document.getElementById('draft-zone-id').value = document.getElementById('zone_id').value || '';
+    document.getElementById('draft-command-id').value = document.getElementById('command_id').value || '';
     document.getElementById('draft-officer-ids').value = JSON.stringify(officerIds);
 }
 
