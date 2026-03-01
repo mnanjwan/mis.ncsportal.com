@@ -525,8 +525,12 @@ class CommandDurationController extends Controller
                 }
                 // For Zone Coordinators, don't fall back to general drafts - create new one
             } else {
-                // HRD: Get any draft deployment
+                // HRD: Get the same draft the draft page shows (latest draft created by HRD, not Zone Coordinators)
+                $zoneCoordinatorUserIds = \App\Models\User::whereHas('roles', function ($q) {
+                    $q->where('name', 'Zone Coordinator');
+                })->pluck('id')->toArray();
                 $deployment = ManningDeployment::draft()
+                    ->whereNotIn('created_by', $zoneCoordinatorUserIds)
                     ->latest()
                     ->first();
             }
