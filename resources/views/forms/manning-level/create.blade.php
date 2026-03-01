@@ -493,12 +493,9 @@ function addItem() {
     const itemHtml = createItemTemplate(itemCount);
     container.insertAdjacentHTML('afterbegin', itemHtml);
     
-    // Initialize searchable selects for the new item
-    initializeItemSelects(itemCount);
-    
     itemCount++;
     
-    // Renumber all items: new item becomes #1, existing items get pushed down (#1->#2, #2->#3, etc.)
+    // Renumber all items and initialize searchable selects (only in updateItemNumbers to avoid double-init)
     updateItemNumbers();
     
     // No scrolling - items will push down naturally
@@ -634,7 +631,8 @@ function updateItemNumbers() {
         selectPatterns.forEach(pattern => {
             const oldId = `${pattern.prefix}${oldIndex}${pattern.suffix}`;
             const newId = `${pattern.prefix}${newIndex}${pattern.suffix}`;
-            const element = document.getElementById(oldId);
+            // Find element inside this item only to avoid updating the wrong row when IDs duplicate
+            const element = item.querySelector(`[id="${oldId}"]`);
             if (element) {
                 element.id = newId;
             }
