@@ -245,6 +245,9 @@
                 <div class="flex items-center justify-between">
                     <h3 class="kt-card-title">Search Results ({{ $officers->count() }} officer(s))</h3>
                     <div class="flex items-center gap-2">
+                        <button type="button" onclick="selectNotActive()" class="kt-btn kt-btn-sm kt-btn-ghost" title="Select only Awaiting Release / Awaiting Documentation">
+                            Select not active
+                        </button>
                         <button type="button" id="print-btn" onclick="printResults()" class="kt-btn kt-btn-sm kt-btn-secondary">
                             <i class="ki-filled ki-printer"></i> Print Results
                         </button>
@@ -262,7 +265,7 @@
                             <thead>
                                 <tr class="border-b border-border">
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground w-12">
-                                        <input type="checkbox" id="select-all" onchange="toggleAll(this)">
+                                        <input type="checkbox" id="select-all" onchange="toggleAll(this)" title="Select all">
                                     </th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Service Number</th>
                                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Full Name</th>
@@ -278,13 +281,14 @@
                                     @php
                                         $isDisabled = !$officer->is_eligible_for_movement;
                                     @endphp
-                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors {{ $isDisabled ? 'opacity-60' : '' }}">
+                                    <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors {{ $isDisabled ? 'opacity-60' : '' }}" data-current-status="{{ $officer->current_status }}">
                                         <td class="py-3 px-4">
                                             <input type="checkbox" 
                                                    class="officer-checkbox" 
                                                    value="{{ $officer->id }}"
                                                    {{ $isDisabled ? 'disabled' : '' }}
                                                    onchange="updateAddButton()">
+                                        </td>
                                         </td>
                                         <td class="py-3 px-4 text-sm text-foreground">{{ $officer->service_number }}</td>
                                         <td class="py-3 px-4 text-sm text-foreground">{{ $officer->full_name }}</td>
@@ -323,7 +327,7 @@
                                 @php
                                     $isDisabled = !$officer->is_eligible_for_movement;
                                 @endphp
-                                <div class="p-4 rounded-lg bg-muted/50 border border-input {{ $isDisabled ? 'opacity-60' : '' }}">
+                                <div class="p-4 rounded-lg bg-muted/50 border border-input {{ $isDisabled ? 'opacity-60' : '' }}" data-current-status="{{ $officer->current_status }}">
                                     <div class="flex items-start gap-3">
                                         <input type="checkbox" 
                                                class="officer-checkbox mt-1" 
@@ -661,6 +665,19 @@ function resetForm() {
 function toggleAll(checkbox) {
     const checkboxes = document.querySelectorAll('.officer-checkbox:not(:disabled)');
     checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateAddButton();
+}
+
+function selectNotActive() {
+    const notActiveStatuses = ['Awaiting Release', 'Awaiting Documentation'];
+    const selectAllEl = document.getElementById('select-all');
+    if (selectAllEl) selectAllEl.checked = false;
+
+    document.querySelectorAll('.officer-checkbox:not(:disabled)').forEach(cb => {
+        const row = cb.closest('tr, [data-current-status]');
+        const status = row ? row.getAttribute('data-current-status') : '';
+        cb.checked = notActiveStatuses.includes(status);
+    });
     updateAddButton();
 }
 

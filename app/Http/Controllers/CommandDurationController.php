@@ -442,28 +442,9 @@ class CommandDurationController extends Controller
                     ]);
                     continue;
                 }
-                
-                // Check for awaiting release or documentation
-                if ($this->isAwaitingRelease($officer)) {
-                    $ineligible[] = $officer->full_name . ' (Awaiting Release)';
-                    Log::info('Command Duration - Add to Draft: Officer awaiting release', [
-                        'officer_id' => $officer->id,
-                        'officer_name' => $officer->full_name,
-                        'reason' => 'Officer has pending posting awaiting release letter',
-                    ]);
-                    continue;
-                }
-                
-                if ($this->isAwaitingDocumentation($officer)) {
-                    $ineligible[] = $officer->full_name . ' (Awaiting Documentation)';
-                    Log::info('Command Duration - Add to Draft: Officer awaiting documentation', [
-                        'officer_id' => $officer->id,
-                        'officer_name' => $officer->full_name,
-                        'reason' => 'Officer has pending posting awaiting documentation',
-                    ]);
-                    continue;
-                }
-                
+
+                // Allow officers who are Awaiting Release or Awaiting Documentation to be reposted (added to draft).
+
                 // Additional validations for Zone Coordinators
                 if ($isZoneCoordinator && !$isHRD) {
                     // Check rank ceiling - only officers GL 07 and below are allowed
@@ -941,12 +922,8 @@ class CommandDurationController extends Controller
         if ($officer->suspended || $officer->dismissed || $officer->ongoing_investigation || $officer->interdicted || !$officer->is_active) {
             return false;
         }
-        
-        // Officers awaiting release or documentation should not be added for posting
-        if ($this->isAwaitingRelease($officer) || $this->isAwaitingDocumentation($officer)) {
-            return false;
-        }
-        
+
+        // Officers awaiting release or documentation are allowed to be reposted (added to draft).
         return true;
     }
 
