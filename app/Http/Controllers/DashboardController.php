@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -1556,7 +1557,7 @@ class DashboardController extends Controller
     // Onboarding Steps
     public function onboardingStep1(Request $request)
     {
-        // Validate token and authenticate user
+        // Validate token and authenticate user (HRD email link)
         if ($request->has('token')) {
             try {
                 $tokenData = base64_decode($request->token);
@@ -1564,10 +1565,7 @@ class DashboardController extends Controller
 
                 $user = User::find($userId);
                 if ($user && Hash::check($tempPassword, $user->password)) {
-                    // Auto-login the user (remember for the session)
                     Auth::login($user, true);
-
-                    // Redirect to remove token from URL for security
                     return redirect()->route('onboarding.step1');
                 } else {
                     return redirect()->route('login')->with('error', 'Invalid or expired onboarding link. Please contact HRD for a new link.');
@@ -1576,6 +1574,20 @@ class DashboardController extends Controller
                 Log::error('Onboarding token validation error: ' . $e->getMessage());
                 return redirect()->route('login')->with('error', 'Invalid onboarding link. Please contact HRD for a new link.');
             }
+        }
+
+        // Self-signup continue token (officer with uncompleted onboarding, no email sent)
+        if ($request->has('continue')) {
+            $userId = Cache::get('officer_signup_continue:' . $request->continue);
+            if ($userId) {
+                Cache::forget('officer_signup_continue:' . $request->continue);
+                $user = User::find($userId);
+                if ($user) {
+                    Auth::login($user, true);
+                    return redirect()->route('onboarding.step1');
+                }
+            }
+            return redirect()->route('login')->with('error', 'Invalid or expired signup link. Please try again from the sign-up page.');
         }
 
         // If no valid token, require authentication
@@ -1624,6 +1636,11 @@ class DashboardController extends Controller
                     $savedData[$key] = $value;
                 }
             }
+        }
+
+        // Pre-fill first_name from self-signup page if set (new officers)
+        if (!empty(session('signup_first_name'))) {
+            $savedData['first_name'] = session('signup_first_name');
         }
 
         return view('forms.onboarding.step1', compact('savedData'));

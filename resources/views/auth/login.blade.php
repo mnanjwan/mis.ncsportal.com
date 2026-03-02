@@ -436,8 +436,13 @@
                 </button>
             </form>
 
+            <!-- Sign up link -->
+            <div class="mt-6 text-center">
+                <a href="{{ route('officer-signup') }}" class="text-sm font-semibold text-primary hover:text-primary-hover">New to the portal? Sign up here</a>
+            </div>
+
             <!-- Footer Info -->
-            <div class="mt-8 pt-6 border-t border-gray-100">
+            <div class="mt-6 pt-6 border-t border-gray-100">
                 <div class="flex justify-center">
                     <span class="inline-flex items-center px-4 py-2 rounded-sm bg-gray-50 border border-gray-100 text-xs font-medium text-gray-600">
                         <i class="ki-filled ki-shield-tick text-primary mr-2"></i>

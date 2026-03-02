@@ -34,6 +34,7 @@ use App\Http\Controllers\TRADOCController;
 use App\Http\Controllers\ICTController;
 use App\Http\Controllers\EstablishmentController;
 use App\Http\Controllers\RecruitOnboardingController;
+use App\Http\Controllers\OfficerSelfSignupController;
 use App\Http\Controllers\CGCPreretirementLeaveController;
 use App\Http\Controllers\APERTimelineController;
 use App\Http\Controllers\APERFormController;
@@ -95,6 +96,10 @@ Route::prefix('recruit/onboarding')->name('recruit.onboarding.')->group(function
     Route::get('/document-preview', [RecruitOnboardingController::class, 'documentPreview'])->name('document-preview');
     Route::post('/final-submit', [RecruitOnboardingController::class, 'finalSubmit'])->name('final-submit');
 });
+
+// Officer self-signup (public): one link, no email — continue to onboarding
+Route::get('/officer-signup', [OfficerSelfSignupController::class, 'showForm'])->name('officer-signup');
+Route::post('/officer-signup', [OfficerSelfSignupController::class, 'submit'])->name('officer-signup.submit');
 
 // Protected Routes
 Route::middleware('auth')->group(function () {
