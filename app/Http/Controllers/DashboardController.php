@@ -1668,7 +1668,14 @@ class DashboardController extends Controller
             'marital_status' => 'required|string|max:50',
             'residential_address' => 'required|string',
             'permanent_home_address' => 'required|string',
+            'profile_picture_data' => 'required|string',
         ]);
+
+        if (empty($validated['profile_picture_data']) || !preg_match('/^data:image\//', $validated['profile_picture_data'])) {
+            return redirect()->back()
+                ->withErrors(['profile_picture_data' => 'Please upload your official passport photo before proceeding.'])
+                ->withInput();
+        }
 
         session(['onboarding_step1' => $validated]);
         return redirect()->route('onboarding.step2');
@@ -1889,12 +1896,6 @@ class DashboardController extends Controller
         }
         $savedData = session('onboarding_step4', []);
 
-        // Load existing profile picture if officer has one
-        $user = auth()->user();
-        if ($user && $user->officer && $user->officer->profile_picture_url) {
-            $savedData['profile_picture_preview'] = asset('storage/' . $user->officer->profile_picture_url);
-        }
-
         return view('forms.onboarding.step4', compact('savedData'));
     }
 
@@ -1939,7 +1940,7 @@ class DashboardController extends Controller
 
     public function submitOnboarding(Request $request)
     {
-        // First, save step 4 data to session
+        // First, save step 4 data to session (profile picture is in step 1)
         $validated = $request->validate([
             'next_of_kin' => 'required|array|min:1|max:5',
             'next_of_kin.*.name' => 'required|string|max:255',
@@ -1948,18 +1949,10 @@ class DashboardController extends Controller
             'next_of_kin.*.email' => 'nullable|email|max:255',
             'next_of_kin.*.address' => 'required|string',
             'next_of_kin.*.is_primary' => 'nullable|in:0,1',
-            'profile_picture_data' => 'required|string',
             'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:2048',
             'document_categories' => 'nullable|array',
             'document_categories.*' => 'nullable|string|in:' . implode(',', array_keys(config('document_categories'))),
         ]);
-
-        // Validate that profile picture data is not empty
-        if (empty($validated['profile_picture_data']) || !preg_match('/^data:image\//', $validated['profile_picture_data'])) {
-            return redirect()->back()
-                ->withErrors(['profile_picture_data' => 'Please upload your official passport photo before proceeding.'])
-                ->withInput();
-        }
 
         // Ensure at least one next of kin is marked as primary
         $hasPrimary = false;
@@ -2003,20 +1996,42 @@ class DashboardController extends Controller
             }
         }
 
+        // Merge with any existing document paths from session (so we don't lose previous uploads)
+        $existingStep4 = session('onboarding_step4', []);
+        $existingPaths = $existingStep4['document_paths'] ?? [];
+        $allDocumentPaths = array_merge(is_array($existingPaths) ? $existingPaths : [], $documentPaths);
+
+        // Validate required documents: Appointment Letter (1), Last 2 Promotion Letters (2)
+        $required = config('onboarding.required_document_categories', [
+            'appointment_letter' => 1,
+            'promotion_letter' => 2,
+        ]);
+        $countByCategory = [];
+        foreach ($allDocumentPaths as $doc) {
+            $cat = $doc['category'] ?? 'other';
+            $countByCategory[$cat] = ($countByCategory[$cat] ?? 0) + 1;
+        }
+        foreach ($required as $category => $minCount) {
+            $have = $countByCategory[$category] ?? 0;
+            if ($have < $minCount) {
+                $labels = config('document_categories', []);
+                $label = $labels[$category] ?? $category;
+                $msg = $minCount === 1
+                    ? "You must upload at least 1 document: {$label}."
+                    : "You must upload at least {$minCount} documents: {$label}.";
+                return redirect()->back()
+                    ->withErrors(['documents' => $msg])
+                    ->withInput();
+            }
+        }
+
         // Save step 4 to session (exclude uploaded files as they cannot be serialized)
         $step4 = $validated;
-        // Remove documents from session data - they are already stored
         unset($step4['documents']);
         $step4['interdicted'] = $request->has('interdicted');
         $step4['suspended'] = $request->has('suspended');
         $step4['quartered'] = $request->has('quartered');
-        if ($request->has('profile_picture_data')) {
-            $step4['profile_picture_data'] = $request->input('profile_picture_data');
-        }
-        // Store document paths (already saved to disk)
-        if (!empty($documentPaths)) {
-            $step4['document_paths'] = $documentPaths;
-        }
+        $step4['document_paths'] = $allDocumentPaths;
         session(['onboarding_step4' => $step4]);
 
         // Validate all steps are completed
@@ -2132,10 +2147,10 @@ class DashboardController extends Controller
                 'is_active' => true,
             ];
 
-            // Handle profile picture upload if provided (from step4 session)
-            if (isset($step4['profile_picture_data']) && !empty($step4['profile_picture_data'])) {
+            // Handle profile picture (stored in step 1)
+            if (isset($step1['profile_picture_data']) && !empty($step1['profile_picture_data'])) {
                 try {
-                    $base64Image = $step4['profile_picture_data'];
+                    $base64Image = $step1['profile_picture_data'];
 
                     // Extract base64 data
                     if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {

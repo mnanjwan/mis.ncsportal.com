@@ -231,6 +231,31 @@
                     <textarea name="permanent_home_address" class="kt-input" rows="3" required>{{ old('permanent_home_address', $savedData['permanent_home_address'] ?? '') }}</textarea>
                     <span class="error-message text-danger text-sm hidden"></span>
                 </div>
+
+                <!-- Profile Photo (required to proceed to Step 2) -->
+                <div id="profile-photo-section" class="flex flex-col gap-4 pt-5 border-t border-input">
+                    <h3 class="text-lg font-semibold">Profile Photo <span class="text-danger">*</span></h3>
+                    <div class="flex flex-col sm:flex-row items-start gap-5">
+                        <div class="relative bg-white rounded-lg p-3 lg:p-4 shadow-lg w-full max-w-[200px]" style="aspect-ratio: 4/5; border: 4px solid #068b57;">
+                            <div class="w-full h-full flex items-center justify-center bg-muted/10 rounded overflow-hidden">
+                                <div id="onboarding-profile-picture-icon" class="flex items-center justify-center w-full h-full">
+                                    <i class="ki-filled ki-user" style="font-size: 80px; color: #068b57;"></i>
+                                </div>
+                                <img id="onboarding-profile-picture" alt="Profile Photo" class="hidden" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;" src="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}" />
+                            </div>
+                            <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-white text-xs px-3 py-1 rounded whitespace-nowrap" style="background-color: #068b57;">Official Passport Photo</div>
+                        </div>
+                        <div class="flex flex-col gap-2 flex-1">
+                            <label for="onboarding-profile-picture-upload" class="kt-btn w-full cursor-pointer text-white max-w-xs" style="background-color: #068b57; border-color: #068b57;">
+                                <i class="ki-filled ki-camera" style="color: white;"></i> Upload Photo
+                            </label>
+                            <input type="file" id="onboarding-profile-picture-upload" class="hidden" accept="image/*">
+                            <input type="hidden" name="profile_picture_data" id="profile_picture_data" value="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}">
+                            <span id="profile_picture_error" class="error-message text-danger text-sm font-medium hidden" style="color: #dc3545 !important;"></span>
+                            <p class="text-xs text-muted">Required to continue. Recommended: 2x2 inches, white background. Max 5MB for cropping.</p>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-5 border-t border-input">
                     {{-- <a href="{{ route('hrd.dashboard') }}" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Cancel</a> --}}
@@ -241,7 +266,29 @@
     </div>
 </div>
 
+<!-- Image Cropper Modal -->
+<div id="onboarding-image-cropper-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-background rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-mono">Crop Profile Picture</h3>
+                <button type="button" id="onboarding-close-cropper-modal" class="text-secondary-foreground hover:text-foreground">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="mb-4">
+                <img id="onboarding-cropper-image" src="" alt="Crop" style="max-width: 100%; max-height: 400px;">
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" id="onboarding-cancel-crop" class="kt-btn kt-btn-dim">Cancel</button>
+                <button type="button" id="onboarding-save-crop" class="kt-btn text-white" style="background-color: #068b57; border-color: #068b57;">Save Picture</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('styles')
+<link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
 <style>
     /* Ensure all asterisks in onboarding forms are red */
     .kt-form-label span.text-danger,
@@ -254,7 +301,68 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
+// Profile Picture Upload (required on Step 1)
+function initStep1ProfilePictureUpload() {
+    const uploadInput = document.getElementById('onboarding-profile-picture-upload');
+    const modal = document.getElementById('onboarding-image-cropper-modal');
+    const cropperImage = document.getElementById('onboarding-cropper-image');
+    const closeModalBtn = document.getElementById('onboarding-close-cropper-modal');
+    const cancelBtn = document.getElementById('onboarding-cancel-crop');
+    const saveBtn = document.getElementById('onboarding-save-crop');
+    const profileImg = document.getElementById('onboarding-profile-picture');
+    const profileIcon = document.getElementById('onboarding-profile-picture-icon');
+    const profilePictureData = document.getElementById('profile_picture_data');
+    if (!uploadInput || !modal || !profilePictureData) return;
+    let cropper = null, selectedFile = null;
+    if (profileImg && profilePictureData.value && profilePictureData.value.startsWith('data:image/')) {
+        profileImg.src = profilePictureData.value;
+        profileImg.classList.remove('hidden');
+        if (profileIcon) profileIcon.classList.add('hidden');
+    }
+    function hideModal() {
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+        if (cropper) { cropper.destroy(); cropper = null; }
+        cropperImage.src = ''; selectedFile = null; uploadInput.value = '';
+    }
+    if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+    modal.addEventListener('click', function(e) { if (e.target === modal) hideModal(); });
+    uploadInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith('image/')) { if (file) alert('Please select an image file.'); return; }
+        if (file.size > 5 * 1024 * 1024) { alert('Image size must be less than 5MB.'); return; }
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            cropperImage.src = ev.target.result;
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(cropperImage, { aspectRatio: 0.8, viewMode: 1, dragMode: 'move', autoCropArea: 0.8 });
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        };
+        reader.readAsDataURL(file);
+    });
+    if (saveBtn) saveBtn.addEventListener('click', function() {
+        if (!cropper || !selectedFile) return;
+        const canvas = cropper.getCroppedCanvas({ width: 400, height: 500, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+        canvas.toBlob(function(blob) {
+            if (!blob) return;
+            const r = new FileReader();
+            r.onload = function() {
+                profilePictureData.value = r.result;
+                if (profileIcon) profileIcon.classList.add('hidden');
+                profileImg.classList.remove('hidden');
+                profileImg.src = r.result;
+                var err = document.getElementById('profile_picture_error');
+                if (err) { err.textContent = ''; err.classList.add('hidden'); }
+                hideModal();
+            };
+            r.readAsDataURL(blob);
+        }, 'image/jpeg', 0.9);
+    });
+}
+
 // Nigerian States and LGAs data
 const nigerianStatesLGAs = {
     'Abia': ['Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'],
@@ -759,6 +867,21 @@ function validateStep1() {
         isValid = false;
     }
 
+    // Validate profile picture (required to proceed to step 2)
+    const profilePictureData = document.getElementById('profile_picture_data');
+    const profilePictureError = document.getElementById('profile_picture_error');
+    if (!profilePictureData || !profilePictureData.value || !profilePictureData.value.trim() || !profilePictureData.value.startsWith('data:image/')) {
+        if (profilePictureError) {
+            profilePictureError.textContent = 'Please upload your official passport photo before proceeding.';
+            profilePictureError.classList.remove('hidden');
+        }
+        isValid = false;
+        document.getElementById('profile-photo-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (profilePictureError) {
+        profilePictureError.textContent = '';
+        profilePictureError.classList.add('hidden');
+    }
+
     return isValid;
 }
 
@@ -785,6 +908,8 @@ document.querySelectorAll('#onboarding-step1-form input, #onboarding-step1-form 
         clearError(this.name);
     });
 });
+
+initStep1ProfilePictureUpload();
 </script>
 @endpush
 @endsection

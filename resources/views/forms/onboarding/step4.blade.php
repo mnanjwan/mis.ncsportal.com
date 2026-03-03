@@ -51,9 +51,7 @@
             <form id="onboarding-step4-form" method="POST" action="{{ route('onboarding.submit') }}" enctype="multipart/form-data" class="flex flex-col gap-5 w-full overflow-hidden">
                 @csrf
                 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-7.5">
-                    <!-- Left Column: Form Content -->
-                    <div class="lg:col-span-2 flex flex-col gap-5 order-2 lg:order-1">
+                <div class="flex flex-col gap-5">
                         <!-- Next of Kin Section -->
                 <div class="flex flex-col gap-5 pt-5 border-t border-input">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -72,7 +70,8 @@
                 </div>
                 
                 <div class="flex flex-col gap-1 pt-5 border-t border-input">
-                    <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
+                    <label class="kt-form-label">Upload Documents <span class="text-danger">*</span></label>
+                    <p class="text-sm text-muted mb-1">Required: <strong>Appointment Letter</strong> (1), <strong>Last 2 Promotion Letters</strong> (2). Prefer JPEG format.</p>
                     <div class="flex flex-col gap-3">
                         <div class="relative">
                             <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png"/>
@@ -84,13 +83,10 @@
                         <div id="selected-files-list" class="flex flex-col gap-2 hidden">
                             <!-- Selected files will be displayed here -->
                         </div>
+                        <div id="documents-required-error" class="text-sm font-medium text-danger hidden"></div>
                         <!-- Hidden inputs to store document categories -->
                         <div id="document-categories-container"></div>
-                        <small class="text-muted">You can upload multiple documents. Select a category for each document. JPEG format is preferred to save space.</small>
-                        <span class="text-xs" style="color: red;">
-                            <strong>Document Type Allowed:</strong> JPEG, JPG, PNG (multiple files allowed)<br>
-                            <strong>Document Size Allowed:</strong> Maximum 5MB per file
-                        </span>
+                        <small class="text-muted">Select a category for each document. JPEG, JPG, PNG. Max 5MB per file.</small>
                     </div>
                 </div>
                 
@@ -109,60 +105,6 @@
                     <button type="button" onclick="window.location.href='{{ route('onboarding.step3') }}'" class="kt-btn kt-btn-secondary w-full sm:flex-1 whitespace-nowrap">Previous</button>
                     <button type="submit" class="kt-btn text-white w-full sm:flex-1 whitespace-nowrap" id="submit-btn" style="background-color: #068b57; border-color: #068b57;">Submit Onboarding</button>
                 </div>
-                    </div>
-                    
-                    <!-- Right Column: Profile Photo (Passport Style) -->
-                    <div class="lg:col-span-1 order-1 lg:order-2">
-                        <div class="kt-card lg:sticky lg:top-5">
-                            <div class="kt-card-header">
-                                <h3 class="kt-card-title">Profile Photo <span class="text-danger">*</span></h3>
-                            </div>
-                            <div class="kt-card-content p-4 lg:p-5">
-                                <div class="flex flex-col items-center gap-4">
-                                    <!-- Passport-style photo frame -->
-                                    <div class="relative bg-white rounded-lg p-3 lg:p-4 shadow-lg w-full max-w-[200px] mx-auto" style="aspect-ratio: 4/5; border: 4px solid #068b57;">
-                                        <div class="w-full h-full flex items-center justify-center bg-muted/10 rounded overflow-hidden" style="position: relative;">
-                                            <!-- User icon instead of image -->
-                                            <div id="onboarding-profile-picture-icon" class="flex items-center justify-center w-full h-full">
-                                                <i class="ki-filled ki-user" style="font-size: 80px; color: #068b57;"></i>
-                                            </div>
-                                            <!-- Image preview (hidden by default, shown when image is uploaded) -->
-                                            <img id="onboarding-profile-picture" 
-                                                 alt="Profile Photo"
-                                                 class="hidden"
-                                                 style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;"
-                                                 src="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}" />
-                                        </div>
-                                        <!-- Passport photo label -->
-                                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-white text-xs px-3 py-1 rounded whitespace-nowrap" style="background-color: #068b57;">
-                                            Official Passport Photo
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Upload button -->
-                                    <label for="onboarding-profile-picture-upload" class="kt-btn w-full cursor-pointer text-white" style="background-color: #068b57; border-color: #068b57;">
-                                        <i class="ki-filled ki-camera" style="color: white;"></i>
-                                        Upload Photo
-                                    </label>
-                                    <input type="file" id="onboarding-profile-picture-upload" class="hidden" accept="image/*">
-                                    <input type="hidden" name="profile_picture_data" id="profile_picture_data" value="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}" required>
-                                    
-                                    <!-- Error message for profile picture -->
-                                    <span id="profile_picture_error" class="error-message text-danger text-sm font-medium hidden" style="color: #dc3545 !important;"></span>
-                                    
-                                    <p class="text-xs text-center text-muted mt-2">
-                                        <span class="text-danger font-semibold">Required</span><br>
-                                        Recommended: 2x2 inches<br>
-                                        White background
-                                    </p>
-                                    <span class="text-xs text-center" style="color: red; display: block; margin-top: 0.5rem;">
-                                        <strong>Document Type Allowed:</strong> Images (all types)<br>
-                                        <strong>Document Size Allowed:</strong> 2MB (final), 5MB (for cropping)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 
                 @if(session('error'))
@@ -175,31 +117,7 @@
     </div>
 </div>
 
-<!-- Image Cropper Modal -->
-<div id="onboarding-image-cropper-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-background rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
-        <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-mono">Crop Profile Picture</h3>
-                <button id="onboarding-close-cropper-modal" class="text-secondary-foreground hover:text-foreground">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="mb-4">
-                <img id="onboarding-cropper-image" src="" alt="Crop" style="max-width: 100%; max-height: 400px;">
-            </div>
-            <div class="flex gap-3 justify-end">
-                <button id="onboarding-cancel-crop" class="kt-btn kt-btn-dim">Cancel</button>
-                    <button id="onboarding-save-crop" class="kt-btn text-white" style="background-color: #068b57; border-color: #068b57;">Save Picture</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @push('styles')
-    <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
     <style>
         /* Ensure all asterisks in onboarding forms are red */
         .kt-form-label span.text-danger,
@@ -283,7 +201,6 @@
 @endpush
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
 // Reusable function to create searchable select
 function createSearchableSelect(config) {
@@ -663,30 +580,6 @@ function clearError(field) {
 function validateStep4() {
     let isValid = true;
     
-    // Validate profile picture
-    const profilePictureData = document.getElementById('profile_picture_data');
-    const profilePictureError = document.getElementById('profile_picture_error');
-    
-    if (!profilePictureData || !profilePictureData.value || !profilePictureData.value.trim()) {
-        if (profilePictureError) {
-            profilePictureError.textContent = 'Please upload your official passport photo before proceeding.';
-            profilePictureError.classList.remove('hidden');
-            profilePictureError.style.color = '#dc3545';
-        }
-        isValid = false;
-        // Scroll to profile photo section
-        const profileSection = document.querySelector('.kt-card.sticky');
-        if (profileSection) {
-            profileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return false;
-    } else {
-        if (profilePictureError) {
-            profilePictureError.textContent = '';
-            profilePictureError.classList.add('hidden');
-        }
-    }
-    
     // Validate next of kin entries
     const nokCards = document.querySelectorAll('#nok-entries .kt-card');
     
@@ -778,6 +671,36 @@ function validateStep4() {
         }
     });
 
+    // Validate required documents: Appointment Letter (1), Promotion Letter (2)
+    const requiredDocs = @json(config('onboarding.required_document_categories', ['appointment_letter' => 1, 'promotion_letter' => 2]));
+    const docLabels = @json(config('document_categories', []));
+    const categoryCounts = {};
+    (fileCategories || []).forEach(cat => {
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+    let docsValid = true;
+    const requiredErrorEl = document.getElementById('documents-required-error');
+    for (const [cat, minCount] of Object.entries(requiredDocs)) {
+        const have = categoryCounts[cat] || 0;
+        if (have < minCount) {
+            const label = docLabels[cat] || cat;
+            if (requiredErrorEl) {
+                requiredErrorEl.textContent = minCount === 1
+                    ? `Required: upload at least 1 document — ${label}.`
+                    : `Required: upload at least ${minCount} documents — ${label}.`;
+                requiredErrorEl.classList.remove('hidden');
+            }
+            docsValid = false;
+            isValid = false;
+            document.getElementById('documents-input')?.closest('.flex.flex-col.gap-1')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            break;
+        }
+    }
+    if (docsValid && requiredErrorEl) {
+        requiredErrorEl.textContent = '';
+        requiredErrorEl.classList.add('hidden');
+    }
+
     // Validate disclaimer acceptance
     const acceptDisclaimer = document.getElementById('accept_disclaimer');
     if (!acceptDisclaimer.checked) {
@@ -802,7 +725,6 @@ function validateStep4() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeNOKSection();
-    initializeProfilePictureUpload();
     loadSavedDocuments();
     
     // Form submission handler (must be inside DOMContentLoaded)
@@ -861,208 +783,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-// Profile Picture Upload Functionality
-function initializeProfilePictureUpload() {
-    const uploadInput = document.getElementById('onboarding-profile-picture-upload');
-    const modal = document.getElementById('onboarding-image-cropper-modal');
-    const cropperImage = document.getElementById('onboarding-cropper-image');
-    const closeModalBtn = document.getElementById('onboarding-close-cropper-modal');
-    const cancelBtn = document.getElementById('onboarding-cancel-crop');
-    const saveBtn = document.getElementById('onboarding-save-crop');
-    const profileImg = document.getElementById('onboarding-profile-picture');
-    const profileIcon = document.getElementById('onboarding-profile-picture-icon');
-    const profilePictureData = document.getElementById('profile_picture_data');
-    let cropper = null;
-    let selectedFile = null;
-    
-    // Check if there's a saved image on load
-    if (profileImg) {
-        const imgSrc = profileImg.getAttribute('src');
-        // If there's base64 data (data:image), show the image
-        if (imgSrc && imgSrc.trim() !== '' && imgSrc.startsWith('data:image')) {
-            // Set up onload handler to show image when loaded
-            profileImg.onload = function() {
-                profileImg.classList.remove('hidden');
-                profileImg.style.display = 'block';
-                profileImg.style.visibility = 'visible';
-                profileImg.style.opacity = '1';
-                if (profileIcon) {
-                    profileIcon.classList.add('hidden');
-                    profileIcon.style.display = 'none';
-                }
-            };
-            profileImg.onerror = function() {
-                // If image fails to load, show icon
-                profileImg.classList.add('hidden');
-                profileImg.style.display = 'none';
-                if (profileIcon) {
-                    profileIcon.classList.remove('hidden');
-                    profileIcon.style.display = 'flex';
-                }
-            };
-            // Trigger load check
-            if (profileImg.complete && profileImg.naturalWidth > 0) {
-                profileImg.onload();
-            } else {
-                // Force reload to trigger onload
-                const currentSrc = profileImg.src;
-                profileImg.src = '';
-                profileImg.src = currentSrc;
-            }
-            // Also set the value in the hidden input
-            if (profilePictureData) {
-                profilePictureData.value = imgSrc;
-            }
-        } else {
-            // Otherwise show the icon
-            profileImg.classList.add('hidden');
-            if (profileIcon) profileIcon.classList.remove('hidden');
-        }
-    }
-
-    // Show modal
-    function showModal() {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    // Hide modal
-    function hideModal() {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        if (cropper) {
-            cropper.destroy();
-            cropper = null;
-        }
-        cropperImage.src = '';
-        selectedFile = null;
-        if (uploadInput) {
-            uploadInput.value = '';
-        }
-    }
-
-    // Close modal handlers
-    if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
-
-    // Click outside to close
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                hideModal();
-            }
-        });
-    }
-
-    // Initialize cropper when image is loaded
-    function initCropper(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            cropperImage.src = e.target.result;
-            
-            // Destroy existing cropper if any
-            if (cropper) {
-                cropper.destroy();
-            }
-
-                        // Initialize new cropper with passport photo aspect ratio (2:2.5 or 4:5)
-                        cropper = new Cropper(cropperImage, {
-                            aspectRatio: 0.8, // 2:2.5 aspect ratio (width:height)
-                            viewMode: 1,
-                            dragMode: 'move',
-                            autoCropArea: 0.8,
-                            restore: false,
-                            guides: true,
-                            center: true,
-                            highlight: false,
-                            cropBoxMovable: true,
-                            cropBoxResizable: true,
-                            toggleDragModeOnDblclick: false,
-                        });
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Handle file selection
-    if (uploadInput) {
-        uploadInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file.');
-                return;
-            }
-
-            // Validate file size (max 5MB for cropping, will be compressed after)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Image size must be less than 5MB.');
-                return;
-            }
-
-            selectedFile = file;
-            initCropper(file);
-            showModal();
-        });
-    }
-
-    // Handle save crop
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            if (!cropper || !selectedFile) {
-                return;
-            }
-
-            // Get cropped canvas - maintain passport photo aspect ratio (2x2.5 or 4:5)
-            // Standard passport photo is typically 2x2 inches or 51x51mm, but we'll use 2x2.5 for the frame
-            const canvas = cropper.getCroppedCanvas({
-                width: 400,
-                height: 500, // 2:2.5 aspect ratio to match the frame
-                imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'high',
-            });
-
-            // Convert canvas to blob and then to base64
-            canvas.toBlob((blob) => {
-                if (!blob) {
-                    alert('Failed to process image.');
-                    return;
-                }
-
-            // Convert blob to base64 for storage in hidden field
-            const reader = new FileReader();
-            reader.onload = function() {
-                const base64 = reader.result;
-                profilePictureData.value = base64;
-                
-                // Hide icon and show image
-                if (profileIcon) profileIcon.classList.add('hidden');
-                profileImg.classList.remove('hidden');
-                
-                // Clear any error message
-                const profilePictureError = document.getElementById('profile_picture_error');
-                if (profilePictureError) {
-                    profilePictureError.textContent = '';
-                    profilePictureError.classList.add('hidden');
-                }
-                
-                // Update preview image with fade effect
-                profileImg.style.opacity = '0.5';
-                profileImg.src = base64;
-                profileImg.onload = function() {
-                    this.style.opacity = '1';
-                };
-                
-                // Close modal
-                hideModal();
-            };
-            reader.readAsDataURL(blob);
-            }, 'image/jpeg', 0.9);
-        });
-    }
-}
 
 // Clear errors on input - use event delegation for dynamically added fields
 document.getElementById('onboarding-step4-form').addEventListener('input', function(e) {

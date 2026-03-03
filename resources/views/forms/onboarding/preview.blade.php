@@ -38,7 +38,7 @@
         <div class="kt-card-content">
             <form method="POST" action="{{ route('onboarding.final-submit') }}" enctype="multipart/form-data">
                 @csrf
-                <input type="hidden" name="profile_picture_data" value="{{ $step4['profile_picture_data'] ?? '' }}">
+                <input type="hidden" name="profile_picture_data" value="{{ $step1['profile_picture_data'] ?? '' }}">
                 
                 <div class="grid lg:grid-cols-2 gap-5 lg:gap-7.5">
                     <!-- Left Column -->
@@ -123,7 +123,7 @@
                     <!-- Right Column -->
                     <div class="flex flex-col gap-5">
                         <!-- Profile Photo -->
-                        @if(isset($step4['profile_picture_data']) && !empty($step4['profile_picture_data']))
+                        @if(isset($step1['profile_picture_data']) && !empty($step1['profile_picture_data']))
                         <div class="kt-card">
                             <div class="kt-card-header">
                                 <h4 class="kt-card-title">Profile Photo</h4>
@@ -132,7 +132,7 @@
                                 <div class="flex justify-center">
                                     <div class="relative bg-white rounded-lg p-4 shadow-lg" style="width: 200px; height: 250px; border: 4px solid #068b57;">
                                         <div class="w-full h-full flex items-center justify-center bg-muted/10 rounded overflow-hidden">
-                                            <img src="{{ $step4['profile_picture_data'] }}" 
+                                            <img src="{{ $step1['profile_picture_data'] }}" 
                                                  alt="Profile Photo"
                                                  style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
                                         </div>
