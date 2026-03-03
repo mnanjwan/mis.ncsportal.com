@@ -47,19 +47,23 @@ class OfficerSelfSignupController extends Controller
             if (!$officer->is_active || $officer->is_deceased) {
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'This officer record is not active or is marked as deceased. Please contact HRD.');
+                    ->with('error', 'This officer record is not active or is marked as deceased.')
+                    ->with('error_action', 'contact_hrd')
+                    ->with('error_action_hint', 'Contact HRD to verify your status before signing up.');
             }
         }
 
         if ($officer->user) {
             if ($officer->hasCompletedOnboarding()) {
                 return redirect()->route('login')
-                    ->with('info', 'You already have an account. Please sign in.');
+                    ->with('info', 'An account already exists for this service number and you have completed onboarding. Sign in below with your password. If you forgot your password, use "Forgot password?".');
             }
             if (strtolower($officer->user->email) !== strtolower($email)) {
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'The email entered does not match our records for this service number.');
+                    ->with('error', 'The email you entered does not match the one we have on file for service number ' . $serviceNumber . '.')
+                    ->with('error_action', 'email_mismatch')
+                    ->with('error_action_hint', 'Enter the email address we have for you, or contact HRD to update your registered email.');
             }
             $continueToken = Str::random(64);
             Cache::put('officer_signup_continue:' . $continueToken, $officer->user_id, now()->addMinutes(15));
@@ -67,10 +71,13 @@ class OfficerSelfSignupController extends Controller
             return redirect()->route('onboarding.step1', ['continue' => $continueToken]);
         }
 
-        if (User::where('email', $email)->exists()) {
+        $existingUser = User::where('email', $email)->first();
+        if ($existingUser) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'This email is already registered. Please sign in or use the correct service number.');
+                ->with('error', 'This email address is already registered to another account.')
+                ->with('error_action', 'email_taken')
+                ->with('error_action_hint', 'If you already have an account, sign in below. Otherwise use a different email or contact HRD if you believe this is an error.');
         }
 
         $user = User::create([
@@ -96,9 +103,11 @@ class OfficerSelfSignupController extends Controller
         $nameParts = preg_split('/\s+/', $name, 2);
         session(['signup_first_name' => $nameParts[0] ?? '']);
 
-        Auth::login($user, true);
+        // Use one-time token in URL so login survives the redirect (avoids session not persisting)
+        $continueToken = Str::random(64);
+        Cache::put('officer_signup_continue:' . $continueToken, $user->id, now()->addMinutes(15));
 
-        return redirect()->route('onboarding.step1');
+        return redirect()->route('onboarding.step1', ['continue' => $continueToken]);
     }
 
     private function createMinimalOfficer(string $serviceNumber, string $email, string $name): Officer

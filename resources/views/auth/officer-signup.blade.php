@@ -53,9 +53,22 @@
                     </div>
 
                     @if(session('error'))
-                        <div class="mb-6 bg-red-50 border border-red-100 rounded p-4 flex items-start gap-3">
-                            <i class="ki-filled ki-information-2 text-red-600 text-xl mt-0.5"></i>
-                            <p class="text-sm text-red-600 font-medium">{{ session('error') }}</p>
+                        <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-start gap-3">
+                                <i class="ki-filled ki-information-2 text-red-600 text-xl mt-0.5 flex-shrink-0"></i>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-red-800">{{ session('error') }}</p>
+                                    @if(session('error_action_hint'))
+                                        <p class="mt-2 text-sm text-red-700">{{ session('error_action_hint') }}</p>
+                                    @endif
+                                    @if(session('error_action') === 'email_taken' || session('error_action') === 'email_mismatch')
+                                        <a href="{{ route('login') }}" class="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-primary hover:text-primary-hover">
+                                            <i class="ki-filled ki-arrow-right text-base"></i>
+                                            Go to sign in
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     @endif
 

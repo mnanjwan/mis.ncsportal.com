@@ -374,6 +374,12 @@
                 </div>
             @endif
 
+            @if(session('info'))
+                <div class="mb-6 bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-start gap-3">
+                    <i class="ki-filled ki-information-2 text-primary text-xl mt-0.5 flex-shrink-0"></i>
+                    <p class="text-sm text-gray-800 font-medium">{{ session('info') }}</p>
+                </div>
+            @endif
 
             <form class="space-y-6" action="{{ route('login') }}" method="POST" id="sign_in_form">
                 @csrf
