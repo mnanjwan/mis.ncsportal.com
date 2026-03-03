@@ -117,7 +117,7 @@
                                 </div>
                                 <input type="text" name="name" id="name" required
                                     class="block w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all sm:text-sm font-medium"
-                                    placeholder="Full name"
+                                    placeholder="e.g., AB Cabel"
                                     value="{{ old('name') }}">
                             </div>
                         </div>
