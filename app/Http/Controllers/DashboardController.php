@@ -2001,30 +2001,6 @@ class DashboardController extends Controller
         $existingPaths = $existingStep4['document_paths'] ?? [];
         $allDocumentPaths = array_merge(is_array($existingPaths) ? $existingPaths : [], $documentPaths);
 
-        // Validate required documents: Appointment Letter (1), Last 2 Promotion Letters (2)
-        $required = config('onboarding.required_document_categories', [
-            'appointment_letter' => 1,
-            'promotion_letter' => 2,
-        ]);
-        $countByCategory = [];
-        foreach ($allDocumentPaths as $doc) {
-            $cat = $doc['category'] ?? 'other';
-            $countByCategory[$cat] = ($countByCategory[$cat] ?? 0) + 1;
-        }
-        foreach ($required as $category => $minCount) {
-            $have = $countByCategory[$category] ?? 0;
-            if ($have < $minCount) {
-                $labels = config('document_categories', []);
-                $label = $labels[$category] ?? $category;
-                $msg = $minCount === 1
-                    ? "You must upload at least 1 document: {$label}."
-                    : "You must upload at least {$minCount} documents: {$label}.";
-                return redirect()->back()
-                    ->withErrors(['documents' => $msg])
-                    ->withInput();
-            }
-        }
-
         // Save step 4 to session (exclude uploaded files as they cannot be serialized)
         $step4 = $validated;
         unset($step4['documents']);

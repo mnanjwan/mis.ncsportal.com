@@ -70,8 +70,7 @@
                 </div>
                 
                 <div class="flex flex-col gap-1 pt-5 border-t border-input">
-                    <label class="kt-form-label">Upload Documents <span class="text-danger">*</span></label>
-                    <p class="text-sm text-muted mb-1">Required: <strong>Appointment Letter</strong> (1), <strong>Last 2 Promotion Letters</strong> (2). Prefer JPEG format.</p>
+                    <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
                     <div class="flex flex-col gap-3">
                         <div class="relative">
                             <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png"/>
@@ -83,10 +82,13 @@
                         <div id="selected-files-list" class="flex flex-col gap-2 hidden">
                             <!-- Selected files will be displayed here -->
                         </div>
-                        <div id="documents-required-error" class="text-sm font-medium text-danger hidden"></div>
                         <!-- Hidden inputs to store document categories -->
                         <div id="document-categories-container"></div>
-                        <small class="text-muted">Select a category for each document. JPEG, JPG, PNG. Max 5MB per file.</small>
+                        <small class="text-muted">You can upload multiple documents. Select a category for each document. JPEG format is preferred to save space.</small>
+                        <span class="text-xs" style="color: red;">
+                            <strong>Document Type Allowed:</strong> JPEG, JPG, PNG (multiple files allowed)<br>
+                            <strong>Document Size Allowed:</strong> Maximum 5MB per file
+                        </span>
                     </div>
                 </div>
                 
@@ -670,36 +672,6 @@ function validateStep4() {
             isValid = false;
         }
     });
-
-    // Validate required documents: Appointment Letter (1), Promotion Letter (2)
-    const requiredDocs = @json(config('onboarding.required_document_categories', ['appointment_letter' => 1, 'promotion_letter' => 2]));
-    const docLabels = @json(config('document_categories', []));
-    const categoryCounts = {};
-    (fileCategories || []).forEach(cat => {
-        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-    });
-    let docsValid = true;
-    const requiredErrorEl = document.getElementById('documents-required-error');
-    for (const [cat, minCount] of Object.entries(requiredDocs)) {
-        const have = categoryCounts[cat] || 0;
-        if (have < minCount) {
-            const label = docLabels[cat] || cat;
-            if (requiredErrorEl) {
-                requiredErrorEl.textContent = minCount === 1
-                    ? `Required: upload at least 1 document — ${label}.`
-                    : `Required: upload at least ${minCount} documents — ${label}.`;
-                requiredErrorEl.classList.remove('hidden');
-            }
-            docsValid = false;
-            isValid = false;
-            document.getElementById('documents-input')?.closest('.flex.flex-col.gap-1')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            break;
-        }
-    }
-    if (docsValid && requiredErrorEl) {
-        requiredErrorEl.textContent = '';
-        requiredErrorEl.classList.add('hidden');
-    }
 
     // Validate disclaimer acceptance
     const acceptDisclaimer = document.getElementById('accept_disclaimer');
