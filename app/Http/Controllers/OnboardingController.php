@@ -113,15 +113,14 @@ class OnboardingController extends Controller
                     ->with('error', 'This officer already has an account. Onboarding is not needed.');
             }
 
-            // Generate random 8-digit password
-            $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
-            
+            $tempPassword = 'change123';
+
             // Create user account
             $currentUserId = Auth::id();
             $user = User::create([
                 'email' => $validated['email'],
                 'password' => Hash::make($tempPassword),
-                'temp_password' => $tempPassword, // Store plain password temporarily
+                'temp_password' => $tempPassword,
                 'is_active' => true,
                 'created_by' => $currentUserId,
             ]);
@@ -266,15 +265,14 @@ class OnboardingController extends Controller
                     continue;
                 }
 
-                // Generate random 8-digit password
-                $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
-                
+                $tempPassword = 'change123';
+
                 // Create user account
                 $currentUserId = Auth::id();
                 $user = User::create([
                     'email' => $entry['email'],
                     'password' => Hash::make($tempPassword),
-                    'temp_password' => $tempPassword, // Store plain password temporarily
+                    'temp_password' => $tempPassword,
                     'is_active' => true,
                     'created_by' => $currentUserId,
                 ]);
@@ -343,11 +341,10 @@ class OnboardingController extends Controller
                     ->with('error', 'Officer does not have a user account. Please initiate onboarding first.');
             }
 
-            // Generate new random 8-digit password
-            $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $tempPassword = 'change123';
             $officer->user->update([
                 'password' => Hash::make($tempPassword),
-                'temp_password' => $tempPassword, // Store plain password temporarily
+                'temp_password' => $tempPassword,
             ]);
 
             // Generate onboarding link
@@ -423,8 +420,7 @@ class OnboardingController extends Controller
                 'email' => $newEmail,
             ]);
 
-            // Generate new random 8-digit password
-            $tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+            $tempPassword = 'change123';
             $officer->user->update([
                 'password' => Hash::make($tempPassword),
                 'temp_password' => $tempPassword,

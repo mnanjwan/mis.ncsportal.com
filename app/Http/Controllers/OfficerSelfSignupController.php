@@ -80,9 +80,10 @@ class OfficerSelfSignupController extends Controller
                 ->with('error_action_hint', 'If you already have an account, sign in below. Otherwise use a different email or contact HRD if you believe this is an error.');
         }
 
+        $tempPassword = 'change123';
         $user = User::create([
             'email' => $email,
-            'password' => Hash::make($tempPassword = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT)),
+            'password' => Hash::make($tempPassword),
             'temp_password' => $tempPassword,
             'is_active' => true,
             'created_by' => null,
