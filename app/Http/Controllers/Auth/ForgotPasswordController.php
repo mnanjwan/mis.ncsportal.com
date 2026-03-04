@@ -55,6 +55,11 @@ class ForgotPasswordController extends Controller
             return back()->withErrors(['username' => 'Your account is inactive. Please contact HRD.']);
         }
 
+        if (empty($user->email)) {
+            Log::warning('Password reset requested but user has no email', ['user_id' => $user->id]);
+            return back()->with('success', 'If an account exists with that email or service number, a password reset link has been sent.');
+        }
+
         // Generate reset token
         $token = Str::random(64);
         
