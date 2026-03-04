@@ -545,7 +545,106 @@ const rankToGradeLevel = {
     'CA III': 'GL 03',
 };
 
-// Uses shared createSearchableSelect from app.js (window.createSearchableSelect)
+// Inline implementation so page works even when app.js (Vite) loads after this script
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+    } = config || {};
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let filteredOptions = [...(options || [])];
+
+    function renderOptions(opts) {
+        if (!opts || opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name ?? opt.id ?? opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            const safeDisplay = String(display).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" data-id="' + String(value).replace(/"/g, '&quot;') + '" data-name="' + safeDisplay + '"><div class="text-sm text-foreground">' + safeDisplay + '</div></div>';
+        }).join('');
+
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                const selectedOption = (options || []).find(o => {
+                    const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
+                    return String(optValue) === String(id);
+                });
+                if (selectedOption || id === '' || id === undefined) {
+                    hiddenInput.value = id ?? '';
+                    displayText.textContent = name ?? '';
+                    dropdown.classList.add('hidden');
+                    dropdown.style.cssText = '';
+                    searchInput.value = '';
+                    filteredOptions = [...(options || [])];
+                    renderOptions(filteredOptions);
+                    if (onSelect) onSelect(selectedOption ?? { id: id, name: name });
+                }
+            });
+        });
+    }
+
+    function openDropdown() {
+        dropdown.classList.remove('hidden');
+        const rect = trigger.getBoundingClientRect();
+        dropdown.style.cssText = 'position:fixed;z-index:99999;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;width:' + rect.width + 'px;min-width:' + rect.width + 'px;';
+        setTimeout(() => searchInput.focus(), 100);
+    }
+
+    function closeDropdown() {
+        dropdown.classList.add('hidden');
+        dropdown.style.cssText = '';
+    }
+
+    renderOptions(filteredOptions);
+    searchInput.addEventListener('input', function () {
+        const searchTerm = (this.value || '').toLowerCase();
+        filteredOptions = (options || []).filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name ?? opt.id ?? opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+    trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!dropdown.classList.contains('hidden')) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    });
+    document.addEventListener('click', function (e) {
+        setTimeout(() => {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        }, 0);
+    });
+}
+
 function initializeSearchableSelects() {
     // Sex options
     const sexOptions = [
@@ -790,17 +889,31 @@ function initializeSearchableSelects() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
-    // Initialize searchable selects
-    initializeSearchableSelects();
-    
-    // Initialize LGA dropdown
-    initializeLGASection();
-    
-    // Initialize Zone/Command selection
-    await initializeZoneCommandSection();
-    
-        // Initialize Education section
-    initializeEducationSection();
+    try {
+        initializeSearchableSelects();
+    } catch (e) {
+        console.error('Officer edit: initializeSearchableSelects failed', e);
+    }
+    try {
+        initializeLGASection();
+    } catch (e) {
+        console.error('Officer edit: initializeLGASection failed', e);
+    }
+    try {
+        await initializeZoneCommandSection();
+    } catch (e) {
+        console.error('Officer edit: initializeZoneCommandSection failed', e);
+    }
+    try {
+        initializeEducationSection();
+    } catch (e) {
+        console.error('Officer edit: initializeEducationSection failed', e);
+        // Ensure at least one empty education row so form can be submitted
+        const entriesContainer = document.getElementById('education-entries');
+        if (entriesContainer && entriesContainer.children.length === 0) {
+            addEducationEntry();
+        }
+    }
     
     // Initialize rank to grade level auto-selection
     initializeRankToGradeLevel();
