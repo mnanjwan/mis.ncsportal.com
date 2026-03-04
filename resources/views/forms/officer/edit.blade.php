@@ -1132,12 +1132,14 @@ function initializeEducationSection() {
     
     if (savedEducation && Array.isArray(savedEducation) && savedEducation.length > 0) {
         savedEducation.forEach(edu => {
-            if (edu && (edu.university || edu.qualification)) {
-                // Ensure university is a string, even if empty
-                if (!edu.hasOwnProperty('university')) {
-                    edu.university = '';
-                }
-                addEducationEntry(edu);
+            if (edu && typeof edu === 'object') {
+                // Normalize keys (backend may send institution vs university)
+                const normalized = {
+                    university: (edu.university ?? edu.institution ?? '').toString().trim(),
+                    qualification: (edu.qualification ?? edu.qualification_type ?? edu.degree ?? '').toString().trim(),
+                    discipline: (edu.discipline ?? edu.field ?? edu.course ?? '').toString().trim()
+                };
+                addEducationEntry(normalized);
             }
         });
     }
@@ -1159,9 +1161,9 @@ function addEducationEntry(data = null) {
     entryDiv.className = 'kt-card p-5 border border-input rounded-lg';
     entryDiv.dataset.entryId = entryId;
     
-    const savedUniversity = (data && data.university) ? String(data.university).trim() : '';
-    const savedQualification = (data && data.qualification) ? String(data.qualification) : '';
-    const savedDiscipline = (data && data.discipline) ? String(data.discipline) : '';
+    const savedUniversity = (data && (data.university ?? data.institution)) ? String(data.university ?? data.institution).trim() : '';
+    const savedQualification = (data && (data.qualification ?? data.qualification_type ?? data.degree)) ? String(data.qualification ?? data.qualification_type ?? data.degree).trim() : '';
+    const savedDiscipline = (data && (data.discipline ?? data.field ?? data.course)) ? String(data.discipline ?? data.field ?? data.course).trim() : '';
     const isCustomDiscipline = savedDiscipline && !disciplines.includes(savedDiscipline);
     
     // Escape HTML to prevent XSS and ensure proper display

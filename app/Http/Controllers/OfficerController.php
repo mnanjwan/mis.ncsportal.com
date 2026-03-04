@@ -646,54 +646,70 @@ class OfficerController extends Controller
             'GL 17'
         ];
 
-        // Prepare education data from officer
+        // Prepare education data from officer (robust for production: invalid JSON, alternate keys, legacy)
         $educationData = [];
+        $entryQualTrimmed = trim((string) ($officer->entry_qualification ?? ''));
 
-        // First, try to get all education entries from additional_qualification JSON
         if ($officer->additional_qualification) {
-            $allEducation = json_decode($officer->additional_qualification, true);
+            $raw = $officer->additional_qualification;
+            $allEducation = json_decode($raw, true);
+
+            // Handle invalid/malformed JSON (e.g. truncated column, or legacy plain string)
+            if ($allEducation === null && json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Officer edit: invalid additional_qualification JSON', [
+                    'officer_id' => $officer->id,
+                    'json_error' => json_last_error_msg(),
+                    'length' => strlen($raw),
+                ]);
+            }
+
             if (is_array($allEducation) && count($allEducation) > 0) {
-                // Check if first entry in JSON matches entry_qualification (new format with all entries)
-                $firstEntryMatches = isset($allEducation[0]) &&
-                    isset($allEducation[0]['qualification']) &&
-                    $allEducation[0]['qualification'] === $officer->entry_qualification;
+                $allEducation = array_values($allEducation); // reindex in case of string keys from JSON
+                $firstEntry = $allEducation[0];
+                $firstEntry = is_array($firstEntry) ? $firstEntry : [];
+                $firstQual = trim((string) ($firstEntry['qualification'] ?? $firstEntry['qualification_type'] ?? $firstEntry['degree'] ?? ''));
+                $firstEntryMatches = $firstQual !== '' && $firstQual === $entryQualTrimmed;
 
                 if ($firstEntryMatches) {
-                    // New format: All entries (including first) are in JSON with universities
                     $educationData = $allEducation;
                 } else {
-                    // Old format: JSON only has entries from index 1, need to prepend first entry
-                    // Try to get university from first entry in JSON if it exists and matches
                     $firstEntryUniversity = '';
-                    if (
-                        isset($allEducation[0]) && isset($allEducation[0]['qualification']) &&
-                        $allEducation[0]['qualification'] === $officer->entry_qualification
-                    ) {
-                        // First entry in JSON might be the same as our first entry, use its university
-                        $firstEntryUniversity = $allEducation[0]['university'] ?? '';
-                        // Remove it from the array since we're using it as the first entry
+                    if ($firstQual !== '' && $firstQual === $entryQualTrimmed) {
+                        $firstEntryUniversity = $firstEntry['university'] ?? $firstEntry['institution'] ?? $firstEntry['institution_name'] ?? $firstEntry['school'] ?? '';
                         array_shift($allEducation);
                     }
 
-                    $firstEntry = [
-                        'university' => $firstEntryUniversity, // Try to get from JSON if available
-                        'qualification' => $officer->entry_qualification,
-                        'discipline' => $officer->discipline ?? ''
-                    ];
-                    $educationData = array_merge([$firstEntry], $allEducation);
+                    $educationData = array_merge([
+                        [
+                            'university' => $firstEntryUniversity,
+                            'qualification' => $officer->entry_qualification,
+                            'discipline' => $officer->discipline ?? ''
+                        ]
+                    ], $allEducation);
                 }
             }
         }
 
-        // Fallback: If no JSON data, reconstruct from legacy fields only
-        if (empty($educationData) && $officer->entry_qualification) {
-            // First education entry from entry_qualification and discipline (no university available)
+        // Fallback: no valid JSON or empty — use legacy entry_qualification + discipline
+        if (empty($educationData) && $entryQualTrimmed !== '') {
             $educationData[] = [
-                'university' => '', // Not stored in legacy format
+                'university' => '',
                 'qualification' => $officer->entry_qualification,
                 'discipline' => $officer->discipline ?? ''
             ];
         }
+
+        // Normalize each entry: view expects university, qualification, discipline (production may use alternate keys)
+        $educationData = array_map(function ($entry) {
+            if (!is_array($entry)) {
+                return ['university' => '', 'qualification' => '', 'discipline' => ''];
+            }
+            return [
+                'university' => trim((string) ($entry['university'] ?? $entry['institution'] ?? $entry['institution_name'] ?? $entry['school'] ?? '')),
+                'qualification' => trim((string) ($entry['qualification'] ?? $entry['qualification_type'] ?? $entry['degree'] ?? '')),
+                'discipline' => trim((string) ($entry['discipline'] ?? $entry['field'] ?? $entry['course'] ?? '')),
+            ];
+        }, $educationData);
 
         $institutions = Institution::query()
             ->active()
