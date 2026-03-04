@@ -433,30 +433,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form[action="{{ route('onboarding.final-submit') }}"]');
     const submitBtn = document.getElementById('final-submit-btn');
     
+    function doSubmit() {
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Submitting...';
+        }
+        // Use native submit to bypass any overrides (e.g. that re-dispatch 'submit' and retrigger this handler)
+        HTMLFormElement.prototype.submit.call(form);
+    }
+    
     if (form && submitBtn) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Show confirmation dialog using SweetAlert2
-            Swal.fire({
-                title: 'Finalize Onboarding?',
-                text: 'Are you sure you want to finalize and submit your onboarding? This action cannot be undone. All your information will be saved permanently.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Submit',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#068b57',
-                cancelButtonColor: '#6c757d',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '⏳ Submitting...';
-                    
-                    // Submit the form
-                    form.submit();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Finalize Onboarding?',
+                    text: 'Are you sure you want to finalize and submit your onboarding? This action cannot be undone. All your information will be saved permanently.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Submit',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#068b57',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        doSubmit();
+                    }
+                });
+            } else {
+                if (confirm('Are you sure you want to finalize and submit your onboarding? This action cannot be undone.')) {
+                    doSubmit();
                 }
-            });
+            }
         });
     }
 });
