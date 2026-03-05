@@ -776,6 +776,7 @@ class OfficerController extends Controller
             'quartered' => 'nullable|boolean',
             'dismissed' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
+            'user_account_active' => 'nullable|boolean',
         ]);
 
         // Process education data
@@ -789,12 +790,12 @@ class OfficerController extends Controller
         $validated['additional_qualification'] = count($education) > 0 ? json_encode($education) : null; // Store ALL entries including first one
         unset($validated['education']);
 
-        // Convert checkbox values
+        // Convert checkbox values (use boolean() so "0" from hidden input = false, "1" from checkbox = true)
         $validated['interdicted'] = $request->has('interdicted');
         $validated['suspended'] = $request->has('suspended');
         $validated['quartered'] = $request->has('quartered');
         $validated['dismissed'] = $request->has('dismissed');
-        $validated['is_active'] = $request->has('is_active') ? true : ($request->has('is_active') === false ? false : $officer->is_active);
+        $validated['is_active'] = $request->boolean('is_active');
 
         // Update officer
         $officer->update($validated);
@@ -813,6 +814,14 @@ class OfficerController extends Controller
                     'old_email' => $originalEmail,
                     'new_email' => $officer->email,
                 ]);
+            }
+        }
+
+        // Sync user account active status (allow HRD to reactivate/deactivate login)
+        if ($officer->user_id) {
+            $linkedUser = \App\Models\User::find($officer->user_id);
+            if ($linkedUser) {
+                $linkedUser->update(['is_active' => $request->boolean('user_account_active')]);
             }
         }
 

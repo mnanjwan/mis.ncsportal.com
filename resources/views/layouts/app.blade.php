@@ -162,8 +162,10 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
 
+    @if(file_exists(public_path('favicon-animated.svg')))
     <link href="{{ asset('favicon-animated.svg') }}" rel="icon" type="image/svg+xml" />
-    <link href="{{ asset('logo.jpg') }}" rel="shortcut icon" />
+    @endif
+    <link href="{{ asset('logo.jpg') }}" rel="icon" />
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="{{ asset('ncs-employee-portal/dist/assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />
