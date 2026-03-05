@@ -59,7 +59,9 @@ class PharmacyProcurementController extends Controller
      */
     public function create()
     {
-        return view('pharmacy.procurements.create');
+        $existingDrugNames = \App\Models\PharmacyDrug::orderBy('name')->pluck('name')->values()->toArray();
+
+        return view('pharmacy.procurements.create', compact('existingDrugNames'));
     }
 
     /**

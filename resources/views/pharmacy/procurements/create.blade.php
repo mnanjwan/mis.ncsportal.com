@@ -59,9 +59,20 @@
     <!-- Item Row Template -->
     <template id="itemRowTemplate">
         <div class="item-row flex flex-wrap items-start gap-3 p-3 bg-muted/50 rounded-lg border border-input">
-            <div class="flex-grow min-w-[200px]">
+            <div class="flex-grow min-w-[200px] relative">
                 <label class="kt-label text-xs">Drug / Item Name *</label>
-                <input type="text" name="items[INDEX][drug_name]" class="kt-input kt-input-sm" placeholder="e.g., Paracetamol 500mg" required>
+                <input type="hidden" name="items[INDEX][drug_name]" id="proc_drug_name_INDEX_id" value="" required>
+                <button type="button" id="proc_drug_name_INDEX_trigger" class="kt-input kt-input-sm w-full text-left flex items-center justify-between cursor-pointer">
+                    <span id="proc_drug_name_INDEX_text">-- Search or add drug / item --</span>
+                    <i class="ki-filled ki-down text-gray-400"></i>
+                </button>
+                <div id="proc_drug_name_INDEX_dropdown" class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden" style="min-width: 200px;">
+                    <div class="p-2 border-b border-input">
+                        <input type="text" id="proc_drug_name_INDEX_search" class="kt-input kt-input-sm w-full" placeholder="Search..." autocomplete="off">
+                    </div>
+                    <div id="proc_drug_name_INDEX_options" class="max-h-48 overflow-y-auto"></div>
+                </div>
+                <input type="text" id="proc_drug_name_INDEX_custom" class="kt-input kt-input-sm mt-2 hidden w-full" placeholder="Type new name (e.g., Paracetamol 500mg)..." autocomplete="off">
             </div>
             <div class="w-32">
                 <label class="kt-label text-xs">Quantity *</label>
@@ -70,6 +81,7 @@
             <div class="w-32">
                 <label class="kt-label text-xs">Unit</label>
                 <select name="items[INDEX][unit]" class="kt-input kt-input-sm">
+                    <option value="others" selected>Others</option>
                     <option value="tablets">Tablets</option>
                     <option value="capsules">Capsules</option>
                     <option value="bottles">Bottles</option>
@@ -93,32 +105,77 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const ADD_NEW_VALUE = '__ADD_NEW__';
+    const existingNames = @json($existingDrugNames ?? []);
+    const drugOptions = [
+        { id: '', name: '-- Search or add drug / item --' },
+        { id: ADD_NEW_VALUE, name: '-- Add new (type below) --' },
+        ...existingNames.map(n => ({ id: n, name: n }))
+    ];
+
     const container = document.getElementById('itemsContainer');
     const template = document.getElementById('itemRowTemplate');
     const addBtn = document.getElementById('addItemBtn');
     let itemIndex = 0;
 
+    function initDrugSelect(row, idx) {
+        if (typeof window.createSearchableSelect !== 'function') return;
+        const prefix = 'proc_drug_name_' + idx;
+        window.createSearchableSelect({
+            triggerId: prefix + '_trigger',
+            hiddenInputId: prefix + '_id',
+            dropdownId: prefix + '_dropdown',
+            searchInputId: prefix + '_search',
+            optionsContainerId: prefix + '_options',
+            displayTextId: prefix + '_text',
+            options: drugOptions,
+            placeholder: '-- Search or add drug / item --',
+            searchPlaceholder: 'Search...',
+            onSelect: function(option) {
+                const hidden = document.getElementById(prefix + '_id');
+                const customInput = document.getElementById(prefix + '_custom');
+                const displayText = document.getElementById(prefix + '_text');
+                if (!hidden || !customInput || !displayText) return;
+                if (option && option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
+                    hidden.value = customInput.value.trim();
+                    displayText.textContent = '-- Add new (type below) --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                    if (option && option.id) hidden.value = option.id;
+                }
+            }
+        });
+        const customInput = document.getElementById(prefix + '_custom');
+        const hiddenInput = document.getElementById(prefix + '_id');
+        if (customInput && hiddenInput) {
+            customInput.addEventListener('input', function() {
+                hiddenInput.value = this.value.trim();
+            });
+        }
+    }
+
     function addItem() {
         const clone = template.content.cloneNode(true);
         const row = clone.querySelector('.item-row');
-        
-        // Update name attributes with current index
-        row.querySelectorAll('[name]').forEach(el => {
-            el.name = el.name.replace('INDEX', itemIndex);
-        });
+        const idx = itemIndex;
 
-        // Add remove handler
+        row.querySelectorAll('[name]').forEach(el => { el.name = el.name.replace('INDEX', idx); });
+        row.querySelectorAll('[id]').forEach(el => { el.id = el.id.replace('INDEX', idx); });
+
         row.querySelector('.remove-item-btn').addEventListener('click', function() {
             row.remove();
         });
 
         container.appendChild(clone);
+        initDrugSelect(row, idx);
         itemIndex++;
     }
 
     addBtn.addEventListener('click', addItem);
-
-    // Add first item by default
     addItem();
 });
 </script>

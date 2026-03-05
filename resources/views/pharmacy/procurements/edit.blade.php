@@ -71,6 +71,7 @@
             <div class="w-32">
                 <label class="kt-label text-xs">Unit</label>
                 <select name="items[INDEX][unit]" class="kt-input kt-input-sm unit-select">
+                    <option value="others">Others</option>
                     <option value="tablets">Tablets</option>
                     <option value="capsules">Capsules</option>
                     <option value="bottles">Bottles</option>
@@ -103,10 +104,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const existingItems = @json($procurement->items->map(fn($i) => [
         'drug_name' => $i->drug_name ?? ($i->drug ? $i->drug->name : ''),
         'quantity' => $i->quantity_requested,
-        'unit' => $i->unit_of_measure ?? ($i->drug ? $i->drug->unit_of_measure : 'units')
+        'unit' => $i->unit_of_measure ?? ($i->drug ? $i->drug->unit_of_measure : 'others')
     ]));
 
-    function addItem(drugName = '', quantity = '', unit = 'tablets') {
+    function addItem(drugName = '', quantity = '', unit = 'others') {
         const clone = template.content.cloneNode(true);
         const row = clone.querySelector('.item-row');
         
