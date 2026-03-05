@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Expiry Report')
-@section('page-title', 'Drug Expiry Report')
+@section('page-title', 'Drug / Item Expiry Report')
 @section('breadcrumbs')
     <span class="text-secondary-foreground">Pharmacy</span>
     <span>/</span>
@@ -109,7 +109,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Drug Name</th>
+                                    <th>Drug / Item Name</th>
                                     <th>Location</th>
                                     <th>Batch</th>
                                     <th>Quantity</th>

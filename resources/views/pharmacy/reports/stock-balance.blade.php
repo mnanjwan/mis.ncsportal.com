@@ -63,7 +63,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Drug Name</th>
+                                    <th>Drug / Item Name</th>
                                     <th>Category</th>
                                     <th>Unit</th>
                                     <th class="text-center">Central Store</th>

@@ -91,7 +91,7 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Drug</th>
+                                        <th>Drug / Item</th>
                                         <th>Unit</th>
                                         <th>Requested</th>
                                         @if($requisition->status === 'ISSUED' || $requisition->status === 'DISPENSED' || $requisition->status === 'APPROVED')

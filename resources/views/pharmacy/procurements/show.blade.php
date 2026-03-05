@@ -73,7 +73,7 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Drug</th>
+                                        <th>Drug / Item</th>
                                         <th>Unit</th>
                                         <th>Requested</th>
                                         @if($procurement->status === 'RECEIVED' || $procurement->status === 'APPROVED')

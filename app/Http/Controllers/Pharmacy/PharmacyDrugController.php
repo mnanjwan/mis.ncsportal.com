@@ -43,8 +43,9 @@ class PharmacyDrugController extends Controller
     public function create()
     {
         $categories = PharmacyDrug::distinct()->pluck('category')->filter()->sort();
-        
-        return view('pharmacy.drugs.create', compact('categories'));
+        $existingDrugNames = PharmacyDrug::orderBy('name')->pluck('name')->values()->toArray();
+
+        return view('pharmacy.drugs.create', compact('categories', 'existingDrugNames'));
     }
 
     /**
@@ -57,13 +58,15 @@ class PharmacyDrugController extends Controller
             'description' => 'nullable|string|max:1000',
             'unit_of_measure' => 'required|string|max:50',
             'category' => 'nullable|string|max:100',
+        ], [
+            'name.unique' => 'A drug / item with this name already exists. Search and select it from the list or use a different name.',
         ]);
 
         PharmacyDrug::create($request->only(['name', 'description', 'unit_of_measure', 'category']));
 
         return redirect()
             ->route('pharmacy.drugs.index')
-            ->with('success', 'Drug added successfully.');
+            ->with('success', 'Drug / item added successfully.');
     }
 
     /**
@@ -106,7 +109,7 @@ class PharmacyDrugController extends Controller
 
         return redirect()
             ->route('pharmacy.drugs.index')
-            ->with('success', 'Drug updated successfully.');
+            ->with('success', 'Drug / item updated successfully.');
     }
 
     /**
@@ -121,6 +124,6 @@ class PharmacyDrugController extends Controller
 
         return redirect()
             ->route('pharmacy.drugs.index')
-            ->with('success', "Drug {$status} successfully.");
+            ->with('success', "Drug / item {$status} successfully.");
     }
 }

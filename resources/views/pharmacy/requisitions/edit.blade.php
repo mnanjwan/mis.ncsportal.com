@@ -51,8 +51,8 @@
                             @else
                                 <div class="p-4 bg-warning/10 border border-warning/20 rounded-lg text-center">
                                     <i class="ki-filled ki-information text-2xl text-warning mb-2"></i>
-                                    <p class="text-sm text-secondary-foreground">No drugs available in the catalog yet.</p>
-                                    <p class="text-xs text-muted-foreground mt-1">Drugs are added when procurements are received at the Central Medical Store.</p>
+                                    <p class="text-sm text-secondary-foreground">No drugs / items available in the catalog yet.</p>
+                                    <p class="text-xs text-muted-foreground mt-1">Drugs / items are added when procurements are received at the Central Medical Store.</p>
                                 </div>
                             @endif
                         </div>
@@ -71,7 +71,7 @@
         <div class="item-row flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-input">
             <div class="flex-grow">
                 <select name="items[INDEX][drug_id]" class="kt-input kt-input-sm drug-select" required>
-                    <option value="">Select Drug</option>
+                    <option value="">Select Drug / Item</option>
                     @foreach($drugs as $drug)
                         @php
                             $centralQty = isset($centralStock[$drug->id]) ? $centralStock[$drug->id]->sum('quantity') : 0;

@@ -60,7 +60,7 @@
     <template id="itemRowTemplate">
         <div class="item-row flex flex-wrap items-start gap-3 p-3 bg-muted/50 rounded-lg border border-input">
             <div class="flex-grow min-w-[200px]">
-                <label class="kt-label text-xs">Drug Name *</label>
+                <label class="kt-label text-xs">Drug / Item Name *</label>
                 <input type="text" name="items[INDEX][drug_name]" class="kt-input kt-input-sm" placeholder="e.g., Paracetamol 500mg" required>
             </div>
             <div class="w-32">

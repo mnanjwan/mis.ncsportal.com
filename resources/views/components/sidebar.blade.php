@@ -637,7 +637,7 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-procurement.dashboard')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
-                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
             ];
             break;
@@ -646,7 +646,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.oc-pharmacy.dashboard')],
                 ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
-                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
                 [
                     'title' => 'Reports',
@@ -664,7 +664,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.central-medical-store.dashboard')],
                 ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
-                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
             ];
             break;
@@ -673,7 +673,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.command-pharmacist.dashboard')],
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Ready to Dispense', 'href' => route('pharmacy.command-pharmacist.ready-to-dispense')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
-                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug Catalog', 'href' => route('pharmacy.drugs.index')],
+                ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
             ];
             break;

@@ -75,7 +75,7 @@
                     <a href="{{ route('pharmacy.drugs.index') }}"
                        class="kt-btn kt-btn-outline w-full transition hover:-translate-y-0.5">
                         <i class="ki-filled ki-pill"></i>
-                        Drug Catalog
+                        Drug / Item Catalog
                     </a>
                 </div>
             </div>
@@ -165,7 +165,7 @@
                         <table class="kt-table kt-table-rounded">
                             <thead>
                                 <tr>
-                                    <th>Drug</th>
+                                    <th>Drug / Item</th>
                                     <th>Quantity</th>
                                     <th>Batch</th>
                                     <th>Expiry Date</th>

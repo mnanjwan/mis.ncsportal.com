@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Drug Catalog')
-@section('page-title', 'Drug Catalog')
+@section('title', 'Drug / Item Catalog')
+@section('page-title', 'Drug / Item Catalog')
 @section('breadcrumbs')
     <span class="text-secondary-foreground">Pharmacy</span>
     <span>/</span>
-    <span class="text-secondary-foreground">Drugs</span>
+    <span class="text-secondary-foreground">Drugs / Items</span>
 @endsection
 
 @section('content')
@@ -23,7 +23,7 @@
                 <form method="GET" class="flex flex-wrap items-end gap-4">
                     <div class="flex-grow">
                         <label class="kt-label text-xs">Search</label>
-                        <input type="text" name="search" class="kt-input kt-input-sm" value="{{ $search }}" placeholder="Search drug name...">
+                        <input type="text" name="search" class="kt-input kt-input-sm" value="{{ $search }}" placeholder="Search drug / item name...">
                     </div>
                     <div>
                         <label class="kt-label text-xs">Category</label>
@@ -48,7 +48,7 @@
                     @if(auth()->user()->hasRole('OC Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                         <div class="ml-auto">
                             <a href="{{ route('pharmacy.drugs.create') }}" class="kt-btn kt-btn-sm kt-btn-success">
-                                <i class="ki-filled ki-plus"></i> Add Drug
+                                <i class="ki-filled ki-plus"></i> Add Drug / Item
                             </a>
                         </div>
                     @endif
@@ -59,7 +59,7 @@
         <!-- Drug List -->
         <div class="kt-card">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Drug Catalog</h3>
+                <h3 class="kt-card-title">Drug / Item Catalog</h3>
             </div>
             <div class="kt-card-content">
                 @if($drugs->count() > 0)
@@ -111,10 +111,10 @@
                 @else
                     <div class="text-center py-12">
                         <i class="ki-filled ki-pill text-5xl text-muted-foreground mb-4"></i>
-                        <p class="text-secondary-foreground">No drugs found in the catalog.</p>
+                        <p class="text-secondary-foreground">No drugs / items found in the catalog.</p>
                         @if(auth()->user()->hasRole('OC Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                             <a href="{{ route('pharmacy.drugs.create') }}" class="kt-btn kt-btn-primary mt-4">
-                                Add First Drug
+                                Add First Drug / Item
                             </a>
                         @endif
                     </div>

@@ -28,8 +28,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="kt-label">Search Drug Name</label>
-                            <input type="text" name="search" class="kt-input" value="{{ $search }}" placeholder="Enter drug name...">
+                            <label class="kt-label">Search Drug / Item Name</label>
+                            <input type="text" name="search" class="kt-input" value="{{ $search }}" placeholder="Enter drug / item name...">
                         </div>
                     </div>
 
@@ -135,7 +135,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Drug</th>
+                                    <th>Drug / Item</th>
                                     <th>Location</th>
                                     <th>Quantity</th>
                                     <th>Batch</th>
@@ -175,7 +175,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Date</th>
-                                    <th>Drug</th>
+                                    <th>Drug / Item</th>
                                     <th>Type</th>
                                     <th>Location</th>
                                     <th>Quantity</th>

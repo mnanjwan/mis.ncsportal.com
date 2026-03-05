@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Drug')
-@section('page-title', 'Edit Drug')
+@section('title', 'Edit Drug / Item')
+@section('page-title', 'Edit Drug / Item')
 @section('breadcrumbs')
     <span class="text-secondary-foreground">Pharmacy</span>
     <span>/</span>
-    <a href="{{ route('pharmacy.drugs.index') }}" class="text-secondary-foreground hover:text-primary">Drugs</a>
+    <a href="{{ route('pharmacy.drugs.index') }}" class="text-secondary-foreground hover:text-primary">Drugs / Items</a>
     <span>/</span>
     <span class="text-secondary-foreground">Edit</span>
 @endsection
@@ -29,12 +29,12 @@
 
             <div class="kt-card">
                 <div class="kt-card-header">
-                    <h3 class="kt-card-title">Drug Information</h3>
+                    <h3 class="kt-card-title">Drug / Item Information</h3>
                 </div>
                 <div class="kt-card-content">
                     <div class="grid gap-5">
                         <div>
-                            <label class="kt-label">Drug Name *</label>
+                            <label class="kt-label">Drug / Item Name *</label>
                             <input type="text" name="name" class="kt-input" value="{{ old('name', $drug->name) }}" required>
                         </div>
 
@@ -47,8 +47,7 @@
                             <div>
                                 <label class="kt-label">Unit of Measure *</label>
                                 <select name="unit_of_measure" class="kt-input" required>
-                                    <option value="">Select Unit</option>
-                                    @foreach(['tablets', 'capsules', 'bottles', 'vials', 'ampoules', 'sachets', 'tubes', 'units', 'packs'] as $unit)
+                                    @foreach(['others', 'tablets', 'capsules', 'bottles', 'vials', 'ampoules', 'sachets', 'tubes', 'units', 'packs'] as $unit)
                                         <option value="{{ $unit }}" {{ old('unit_of_measure', $drug->unit_of_measure) === $unit ? 'selected' : '' }}>{{ ucfirst($unit) }}</option>
                                     @endforeach
                                 </select>
@@ -70,14 +69,14 @@
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" name="is_active" value="1" {{ old('is_active', $drug->is_active) ? 'checked' : '' }} class="kt-checkbox">
-                                <span class="text-sm">Active (Drug can be used in procurements and requisitions)</span>
+                                <span class="text-sm">Active (Drug / item can be used in procurements and requisitions)</span>
                             </label>
                         </div>
                     </div>
                 </div>
                 <div class="kt-card-footer flex justify-end gap-3">
                     <a href="{{ route('pharmacy.drugs.index') }}" class="kt-btn kt-btn-light">Cancel</a>
-                    <button type="submit" class="kt-btn kt-btn-primary">Update Drug</button>
+                    <button type="submit" class="kt-btn kt-btn-primary">Update Drug / Item</button>
                 </div>
             </div>
         </form>

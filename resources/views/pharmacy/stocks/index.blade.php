@@ -35,9 +35,9 @@
                         </div>
                     @endif
                     <div class="flex-grow">
-                        <label class="kt-label text-xs">Search Drug</label>
+                        <label class="kt-label text-xs">Search Drug / Item</label>
                         <input type="text" name="search" class="kt-input kt-input-sm" 
-                               value="{{ $search }}" placeholder="Search by drug name...">
+                               value="{{ $search }}" placeholder="Search by drug / item name...">
                     </div>
                     <div>
                         <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary">
@@ -68,7 +68,7 @@
                         <table class="kt-table kt-table-rounded">
                             <thead>
                                 <tr>
-                                    <th>Drug</th>
+                                    <th>Drug / Item</th>
                                     <th>Category</th>
                                     @if($locationType === 'COMMAND_PHARMACY')
                                         <th>Command</th>

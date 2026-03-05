@@ -38,7 +38,7 @@
                             <thead>
                                 <tr>
                                     <th>Reference</th>
-                                    <th>Drugs in this requisition</th>
+                                    <th>Drugs / items in this requisition</th>
                                     <th>Items</th>
                                     <th>Issued</th>
                                     <th>Actions</th>
