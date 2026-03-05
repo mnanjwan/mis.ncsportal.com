@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const unitOptions = [
             {id: '', name: 'Select Unit...'},
             {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-            {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+            {id: 'Support Staff (SS)', name: 'Support Staff (SS)'},
             {id: 'Transport', name: 'Transport'}
         ];
         
@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const checkbox = document.getElementById('assign_to_transport');
                 const unitInput = document.getElementById('unit_id');
                 if (container && checkbox && unitInput) {
-                    if (option.id === 'Support Services (SS)') {
+                    if (option.id === 'Support Staff (SS)') {
                         container.classList.remove('hidden');
                         checkbox.checked = false;
                     } else {
@@ -609,18 +609,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     unitInput.value = 'Transport';
                     unitText.textContent = 'Transport';
                 } else {
-                    unitInput.value = 'Support Services (SS)';
-                    unitText.textContent = 'Support Services (SS)';
+                    unitInput.value = 'Support Staff (SS)';
+                    unitText.textContent = 'Support Staff (SS)';
                 }
             }
         });
         
-        // Set initial value if saved
-        const savedUnit = '{{ old('unit', $savedData['unit'] ?? '') }}';
+        // Set initial value if saved (normalize legacy "Support Services (SS)" to "Support Staff (SS)")
+        let savedUnit = '{{ old('unit', $savedData['unit'] ?? '') }}';
+        if (savedUnit === 'Support Services (SS)') savedUnit = 'Support Staff (SS)';
         if (savedUnit) {
             document.getElementById('unit_id').value = savedUnit;
             document.getElementById('unit_select_text').textContent = savedUnit;
-            if (savedUnit === 'Support Services (SS)') {
+            if (savedUnit === 'Support Staff (SS)') {
                 document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
             }
             if (savedUnit === 'Transport') {

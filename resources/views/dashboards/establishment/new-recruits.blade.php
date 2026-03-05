@@ -427,7 +427,7 @@
                                 <p class="text-sm text-danger">{{ $message }}</p>
                             @enderror
                             <p class="text-xs text-secondary-foreground">
-                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>, <strong>date_of_first_appointment</strong>, <strong>date_of_present_appointment</strong>, <strong>date_posted_to_station</strong>, <strong>command_id</strong>, <strong>unit</strong> (optional: General Duty (GD), Support Services (SS), Transport). Maximum 10 entries per upload.
+                                CSV file must have columns: <strong>email</strong>, <strong>initials</strong>, <strong>surname</strong>, <strong>substantive_rank</strong>, <strong>salary_grade_level</strong>, <strong>date_of_first_appointment</strong>, <strong>date_of_present_appointment</strong>, <strong>date_posted_to_station</strong>, <strong>command_id</strong>, <strong>unit</strong> (optional: General Duty (GD), Support Staff (SS), Transport). Maximum 10 entries per upload.
                             </p>
                             <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
                                 <strong>Document Type Allowed:</strong> CSV, TXT<br>
@@ -1308,7 +1308,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                 const unitOptions = [
                     {id: '', name: 'Select...'},
                     {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-                    {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+                    {id: 'Support Staff (SS)', name: 'Support Staff (SS)'},
                     {id: 'Transport', name: 'Transport'}
                 ];
 
@@ -1635,11 +1635,11 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                     @endforeach
                 ];
 
-                // Unit options (Support Services (SS) = same as Support Staff per spec)
+                // Unit options (Support Staff (SS))
                 const unitOptions = [
                     {id: '', name: 'Select Unit...'},
                     {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-                    {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+                    {id: 'Support Staff (SS)', name: 'Support Staff (SS)'},
                     {id: 'Transport', name: 'Transport'}
                 ];
 
@@ -1687,7 +1687,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                     searchPlaceholder: 'Search grade level...'
                 });
 
-                // Initialize unit select with Assign to Transport logic (when Unit = Support Services (SS))
+                // Initialize unit select with Assign to Transport logic (when Unit = Support Staff (SS))
                 createSearchableSelect({
                     triggerId: 'unit_select_trigger',
                     hiddenInputId: 'unit',
@@ -1702,7 +1702,7 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                         const container = document.getElementById('assign_to_transport_container');
                         const checkbox = document.getElementById('assign_to_transport');
                         if (container && checkbox) {
-                            if (option.id === 'Support Services (SS)') {
+                            if (option.id === 'Support Staff (SS)') {
                                 container.classList.remove('hidden');
                                 checkbox.checked = false;
                             } else {
@@ -1722,12 +1722,12 @@ recruit2@example.com,M.K,Smith,IC,GL 07,2024-01-15,2024-01-15,2024-01-20,1,Suppo
                         unitInput.value = 'Transport';
                         if (unitText) unitText.textContent = 'Transport';
                     } else {
-                        unitInput.value = 'Support Services (SS)';
-                        if (unitText) unitText.textContent = 'Support Services (SS)';
+                        unitInput.value = 'Support Staff (SS)';
+                        if (unitText) unitText.textContent = 'Support Staff (SS)';
                     }
                 });
                 const initialUnit = document.getElementById('unit')?.value;
-                if (initialUnit === 'Support Services (SS)') {
+                if (initialUnit === 'Support Services (SS)' || initialUnit === 'Support Staff (SS)') {
                     document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
                 }
 

@@ -27,8 +27,8 @@ Officers with unit = Transport show their rank with a **(T)** suffix (e.g., "ASC
 
 ### Establishment New Recruits
 1. Go to **Establishment → New Recruits → Create**.
-2. In **Unit** dropdown, verify options: **General Duty (GD)**, **Support Services (SS)**, **Transport**.
-3. Select **Support Services (SS)** → an “Assign to Transport” checkbox should appear.
+2. In **Unit** dropdown, verify options: **General Duty (GD)**, **Support Staff (SS)**, **Transport**.
+3. Select **Support Staff (SS)** → an “Assign to Transport” checkbox should appear.
 4. Check “Assign to Transport” and save → officer unit should be stored as **Transport**.
 5. Create another recruit with **Transport** selected directly (no checkbox).
 6. Confirm both officers appear with rank (T) where applicable.
@@ -36,7 +36,7 @@ Officers with unit = Transport show their rank with a **(T)** suffix (e.g., "ASC
 ### HRD Officer Edit
 1. Go to **HRD → Officers → [select officer] → Edit**.
 2. In **Unit** dropdown, verify same options: GD, SS, Transport.
-3. Select **Support Services (SS)** → “Assign to Transport” checkbox appears.
+3. Select **Support Staff (SS)** → “Assign to Transport” checkbox appears.
 4. Check it → unit becomes Transport; save.
 5. Reload page and confirm unit and rank display are correct.
 

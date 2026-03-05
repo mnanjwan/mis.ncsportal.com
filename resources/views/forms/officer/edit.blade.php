@@ -723,11 +723,11 @@ function initializeSearchableSelects() {
         @endforeach
     ];
 
-    // Unit options (Support Services (SS) = same as Support Staff per spec)
+    // Unit options (Support Staff (SS))
     const unitOptions = [
         {id: '', name: 'Select Unit...'},
         {id: 'General Duty (GD)', name: 'General Duty (GD)'},
-        {id: 'Support Services (SS)', name: 'Support Services (SS)'},
+        {id: 'Support Staff (SS)', name: 'Support Staff (SS)'},
         {id: 'Transport', name: 'Transport'}
     ];
 
@@ -858,7 +858,7 @@ function initializeSearchableSelects() {
         }
     });
 
-    // Initialize unit select with Assign to Transport logic (when Unit = Support Services (SS))
+    // Initialize unit select with Assign to Transport logic (when Unit = Support Staff (SS))
     createSearchableSelect({
         triggerId: 'unit_select_trigger',
         hiddenInputId: 'unit_id',
@@ -874,7 +874,7 @@ function initializeSearchableSelects() {
             const checkbox = document.getElementById('assign_to_transport');
             const unitInput = document.getElementById('unit_id');
             if (container && checkbox && unitInput) {
-                if (option.id === 'Support Services (SS)') {
+                if (option.id === 'Support Staff (SS)') {
                     container.classList.remove('hidden');
                     checkbox.checked = false;
                 } else {
@@ -893,14 +893,14 @@ function initializeSearchableSelects() {
                 unitInput.name = 'unit';
                 unitText.textContent = 'Transport';
             } else {
-                unitInput.value = 'Support Services (SS)';
+                unitInput.value = 'Support Staff (SS)';
                 unitInput.name = 'unit';
-                unitText.textContent = 'Support Services (SS)';
+                unitText.textContent = 'Support Staff (SS)';
             }
         }
     });
     const initialUnit = document.getElementById('unit_id')?.value;
-    if (initialUnit === 'Support Services (SS)') {
+    if (initialUnit === 'Support Services (SS)' || initialUnit === 'Support Staff (SS)') {
         document.getElementById('assign_to_transport_container')?.classList.remove('hidden');
     }
     if (initialUnit === 'Transport') {
