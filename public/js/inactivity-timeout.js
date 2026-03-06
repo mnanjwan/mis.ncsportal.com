@@ -217,12 +217,10 @@
         }
     }
 
-    // Set animated favicon
+    // Set animated favicon (always from site root)
     function setAnimatedFavicon() {
         try {
-            // Use absolute path from root to handle subdirectories
-            const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
-            const animatedFaviconPath = basePath + '/favicon-animated.svg';
+            const animatedFaviconPath = window.location.origin + '/favicon-animated.svg';
             faviconLink.href = animatedFaviconPath;
         } catch (error) {
             console.error('Error setting animated favicon:', error);
