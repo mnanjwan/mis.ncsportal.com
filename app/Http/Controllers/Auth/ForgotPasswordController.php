@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Mail\PasswordResetMail;
+use App\Jobs\SendPasswordResetMailJob;
 use App\Models\Officer;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -72,37 +71,18 @@ class ForgotPasswordController extends Controller
             ]
         );
 
-        // Send reset email
+        // Send reset email via queue so it is rate-limited with other outbound mail
         $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
-        
-        // Load officer relationship for email
+
         $user->load('officer');
-        
-        // Log email attempt
+
         Log::info('Attempting to send password reset email', [
             'user_id' => $user->id,
             'email' => $user->email,
             'mail_driver' => config('mail.default'),
         ]);
-        
-        try {
-            $mailSent = Mail::to($user->email)->send(new PasswordResetMail($user, $resetUrl));
-            
-            Log::info('Password reset email sent successfully', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
-        } catch (\Exception $e) {
-            // Log the error but don't reveal it to the user for security
-            Log::error('Failed to send password reset email: ' . $e->getMessage(), [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'exception' => $e->getTraceAsString(),
-            ]);
-            
-            // Still return success message for security (don't reveal if email failed)
-            return back()->with('success', 'If an account exists with that email or service number, a password reset link has been sent.');
-        }
+
+        SendPasswordResetMailJob::dispatch($user, $resetUrl);
 
         return back()->with('success', 'If an account exists with that email or service number, a password reset link has been sent.');
     }
