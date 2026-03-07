@@ -256,7 +256,6 @@
                                 <option value="{{ $s->id }}" {{ (int)$selectedStateId === (int)$s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                             @endforeach
                         </select>
-                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-outline">View LGAs</button>
                     </form>
                     <button type="button" onclick="toggleLgaForm()" class="kt-btn kt-btn-sm kt-btn-primary" id="btn-add-lga" {{ !$selectedStateId ? 'disabled' : '' }}>
                         <i class="ki-filled ki-plus"></i> Add LGA
