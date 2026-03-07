@@ -119,9 +119,33 @@
                                 <span class="error-message text-danger text-sm hidden"></span>
                             </div>
                             <div class="flex flex-col gap-1">
+                                <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
+                                <div class="relative">
+                                    <input type="hidden" name="geopolitical_zone" id="geopolitical_zone_id" value="{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') }}">
+                                    <button type="button" 
+                                            id="geopolitical_zone_select_trigger" 
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                        <span id="geopolitical_zone_select_text">{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') ? old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') : 'Select Zone...' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="geopolitical_zone_dropdown" 
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text" 
+                                                   id="geopolitical_zone_search_input" 
+                                                   class="kt-input w-full pl-10" 
+                                                   placeholder="Search zone..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="geopolitical_zone_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                                <span class="error-message text-danger text-sm hidden"></span>
+                            </div>
+                            <div class="flex flex-col gap-1">
                                 <label class="kt-form-label">State of Origin <span class="text-danger">*</span></label>
                                 <div class="relative">
-                                    <input type="hidden" name="state_of_origin" id="state-select" value="{{ old('state_of_origin', $savedData['state_of_origin'] ?? $recruit->state_of_origin ?? '') }}" required>
+                                    <input type="hidden" name="state_of_origin" id="state-select" value="{{ old('state_of_origin', $savedData['state_of_origin'] ?? $recruit->state_of_origin ?? '') }}">
                                     <button type="button" 
                                             id="state_of_origin_select_trigger" 
                                             class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
@@ -148,14 +172,13 @@
                                     <input type="text" 
                                            id="lga_search" 
                                            class="kt-input w-full" 
-                                           placeholder="Select State first, then search LGA..."
+                                           placeholder="Select Zone and State first, then search LGA..."
                                            autocomplete="off"
                                            readonly>
                                     <input type="hidden" 
                                            name="lga" 
                                            id="lga_hidden" 
-                                           value="{{ old('lga', $savedData['lga'] ?? $recruit->lga ?? '') }}"
-                                           required>
+                                           value="{{ old('lga', $savedData['lga'] ?? $recruit->lga ?? '') }}">
                                     <div id="lga_dropdown" 
                                          class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
                                         <!-- Options will be populated by JavaScript -->
@@ -169,30 +192,6 @@
                                                 onclick="clearLgaSelection()">
                                             <i class="ki-filled ki-cross"></i>
                                         </button>
-                                    </div>
-                                </div>
-                                <span class="error-message text-danger text-sm hidden"></span>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
-                                <div class="relative">
-                                    <input type="hidden" name="geopolitical_zone" id="geopolitical_zone_id" value="{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') }}" required>
-                                    <button type="button" 
-                                            id="geopolitical_zone_select_trigger" 
-                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
-                                        <span id="geopolitical_zone_select_text">{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') ? old('geopolitical_zone', $savedData['geopolitical_zone'] ?? $recruit->geopolitical_zone ?? '') : 'Select Zone...' }}</span>
-                                        <i class="ki-filled ki-down text-gray-400"></i>
-                                    </button>
-                                    <div id="geopolitical_zone_dropdown" 
-                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
-                                        <div class="p-3 border-b border-input">
-                                            <input type="text" 
-                                                   id="geopolitical_zone_search_input" 
-                                                   class="kt-input w-full pl-10" 
-                                                   placeholder="Search zone..."
-                                                   autocomplete="off">
-                                        </div>
-                                        <div id="geopolitical_zone_options" class="max-h-60 overflow-y-auto"></div>
                                     </div>
                                 </div>
                                 <span class="error-message text-danger text-sm hidden"></span>
@@ -287,11 +286,13 @@
 @php
     $locationDataForJs = $locationData ?? ['zoneNames' => [], 'stateNames' => [], 'stateToZoneMap' => [], 'stateLgas' => []];
 @endphp
-const locationData = @json($locationDataForJs);
+const _locationDataRaw = @json($locationDataForJs);
+const locationData = (_locationDataRaw && typeof _locationDataRaw === 'object') ? _locationDataRaw : { zoneNames: [], stateNames: [], stateToZoneMap: {}, stateLgas: {} };
 const nigerianStatesLGAs = locationData.stateLgas || {};
 const stateToZoneMap = locationData.stateToZoneMap || {};
 
-// Reusable function to create searchable select
+(function() {
+// Reusable function (options can be array or getter function for dynamic state-by-zone)
 function createSearchableSelect(config) {
     const {
         triggerId,
@@ -300,12 +301,17 @@ function createSearchableSelect(config) {
         searchInputId,
         optionsContainerId,
         displayTextId,
-        options,
+        options: optionsOrGetter,
         displayFn,
         onSelect,
         placeholder = 'Select...',
         searchPlaceholder = 'Search...'
     } = config;
+
+    const getOptions = () => {
+        const raw = typeof optionsOrGetter === 'function' ? optionsOrGetter() : optionsOrGetter;
+        return Array.isArray(raw) ? raw : [];
+    };
 
     const trigger = document.getElementById(triggerId);
     const hiddenInput = document.getElementById(hiddenInputId);
@@ -319,7 +325,7 @@ function createSearchableSelect(config) {
     }
 
     let selectedOption = null;
-    let filteredOptions = [...options];
+    let filteredOptions = [...getOptions()];
 
     // Render options
     function renderOptions(opts) {
@@ -345,7 +351,8 @@ function createSearchableSelect(config) {
             option.addEventListener('click', function() {
                 const id = this.dataset.id;
                 const name = this.dataset.name;
-                selectedOption = options.find(o => {
+                const currentOptions = getOptions();
+                selectedOption = currentOptions.find(o => {
                     const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
                     return String(optValue) === String(id);
                 });
@@ -355,7 +362,7 @@ function createSearchableSelect(config) {
                     displayText.textContent = name;
                     dropdown.classList.add('hidden');
                     searchInput.value = '';
-                    filteredOptions = [...options];
+                    filteredOptions = [...getOptions()];
                     renderOptions(filteredOptions);
                     
                     if (onSelect) onSelect(selectedOption || {id: id, name: name});
@@ -370,16 +377,21 @@ function createSearchableSelect(config) {
     // Search functionality
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
-        filteredOptions = options.filter(opt => {
+        const currentOptions = getOptions();
+        filteredOptions = currentOptions.filter(opt => {
             const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
             return String(display).toLowerCase().includes(searchTerm);
         });
         renderOptions(filteredOptions);
     });
 
-    // Toggle dropdown
+    // Toggle dropdown - when opening, refresh options (for dynamic getters e.g. state by zone)
     trigger.addEventListener('click', function(e) {
         e.stopPropagation();
+        if (dropdown.classList.contains('hidden')) {
+            filteredOptions = [...getOptions()];
+            renderOptions(filteredOptions);
+        }
         dropdown.classList.toggle('hidden');
         if (!dropdown.classList.contains('hidden')) {
             setTimeout(() => searchInput.focus(), 100);
@@ -394,7 +406,7 @@ function createSearchableSelect(config) {
     });
 }
 
-// Function to set geopolitical zone based on state
+// Function to set geopolitical zone based on state (keeps zone in sync when state is selected)
 function setGeopoliticalZoneFromState(state) {
     const zone = stateToZoneMap[state];
     if (zone) {
@@ -407,9 +419,41 @@ function setGeopoliticalZoneFromState(state) {
     }
 }
 
+// States in the currently selected zone (for dynamic state dropdown)
+function getStateOptionsForCurrentZone() {
+    const zoneInput = document.getElementById('geopolitical_zone_id');
+    const selectedZone = zoneInput ? zoneInput.value.trim() : '';
+    const stateNames = (locationData && Array.isArray(locationData.stateNames)) ? locationData.stateNames : Object.keys(nigerianStatesLGAs || {});
+    const allStates = stateNames;
+    const baseOptions = [{ id: '', name: 'Select State...' }];
+    if (!selectedZone) {
+        return baseOptions.concat(allStates.map(s => ({ id: s, name: s })));
+    }
+    const statesInZone = allStates.filter(state => stateToZoneMap[state] === selectedZone);
+    return baseOptions.concat(statesInZone.map(s => ({ id: s, name: s })));
+}
+
+// When zone changes: clear state and LGA if current state is not in the new zone
+function onGeopoliticalZoneChange(selectedZone) {
+    const stateInput = document.getElementById('state-select');
+    const stateDisplay = document.getElementById('state_of_origin_select_text');
+    const currentState = stateInput ? stateInput.value.trim() : '';
+    if (!currentState) return;
+    const stateZone = stateToZoneMap[currentState];
+    if (selectedZone && stateZone !== selectedZone) {
+        stateInput.value = '';
+        if (stateDisplay) stateDisplay.textContent = 'Select State...';
+        clearLgaSelection();
+    }
+    if (!selectedZone) {
+        stateInput.value = '';
+        if (stateDisplay) stateDisplay.textContent = 'Select State...';
+        clearLgaSelection();
+    }
+}
+
 // Load Nigerian states (from database)
 document.addEventListener('DOMContentLoaded', () => {
-    const states = locationData.stateNames || Object.keys(nigerianStatesLGAs);
     const savedState = '{{ old('state_of_origin', $savedData['state_of_origin'] ?? $recruit->state_of_origin ?? '') }}';
     const savedLga = '{{ old('lga', $savedData['lga'] ?? $recruit->lga ?? '') }}';
     
@@ -420,16 +464,11 @@ document.addEventListener('DOMContentLoaded', () => {
         {id: 'F', name: 'Female'}
     ];
     
-    // State options
-    const stateOptions = [
-        {id: '', name: 'Select State...'},
-        ...states.map(state => ({id: state, name: state}))
-    ];
-    
-    // Geopolitical zone options (from database)
+    // Geopolitical zone options (from database) - init first so state can filter by zone
+    const zoneNames = (locationData && Array.isArray(locationData.zoneNames)) ? locationData.zoneNames : [];
     const zoneOptions = [
         {id: '', name: 'Select Zone...'},
-        ...(locationData.zoneNames || []).map(z => ({id: z, name: z}))
+        ...zoneNames.map(z => ({id: z, name: z}))
     ];
     
     // Marital status options
@@ -456,39 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Initialize state of origin select
-    if (document.getElementById('state_of_origin_select_trigger')) {
-        createSearchableSelect({
-            triggerId: 'state_of_origin_select_trigger',
-            hiddenInputId: 'state-select',
-            dropdownId: 'state_of_origin_dropdown',
-            searchInputId: 'state_of_origin_search_input',
-            optionsContainerId: 'state_of_origin_options',
-            displayTextId: 'state_of_origin_select_text',
-            options: stateOptions,
-            placeholder: 'Select State...',
-            searchPlaceholder: 'Search state...',
-            onSelect: function(option) {
-                // Load LGAs when state is selected
-                if (option.id) {
-                    loadLGAsForState(option.id);
-                    // Automatically set geopolitical zone based on state
-                    setGeopoliticalZoneFromState(option.id);
-                } else {
-                    clearLgaSelection();
-                    // Clear zone if state is cleared
-                    const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
-                    const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
-                    if (zoneHiddenInput && zoneDisplayText) {
-                        zoneHiddenInput.value = '';
-                        zoneDisplayText.textContent = 'Select Zone...';
-                    }
-                }
-            }
-        });
-    }
-    
-    // Initialize geopolitical zone select
+    // Initialize geopolitical zone select first (before state, so state can filter by zone)
     if (document.getElementById('geopolitical_zone_select_trigger')) {
         createSearchableSelect({
             triggerId: 'geopolitical_zone_select_trigger',
@@ -499,7 +506,33 @@ document.addEventListener('DOMContentLoaded', () => {
             displayTextId: 'geopolitical_zone_select_text',
             options: zoneOptions,
             placeholder: 'Select Zone...',
-            searchPlaceholder: 'Search zone...'
+            searchPlaceholder: 'Search zone...',
+            onSelect: function(option) {
+                onGeopoliticalZoneChange(option.id || '');
+            }
+        });
+    }
+    
+    // Initialize state of origin select (options dynamic by selected zone)
+    if (document.getElementById('state_of_origin_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'state_of_origin_select_trigger',
+            hiddenInputId: 'state-select',
+            dropdownId: 'state_of_origin_dropdown',
+            searchInputId: 'state_of_origin_search_input',
+            optionsContainerId: 'state_of_origin_options',
+            displayTextId: 'state_of_origin_select_text',
+            options: getStateOptionsForCurrentZone,
+            placeholder: 'Select State...',
+            searchPlaceholder: 'Search state...',
+            onSelect: function(option) {
+                if (option.id) {
+                    loadLGAsForState(option.id);
+                    setGeopoliticalZoneFromState(option.id);
+                } else {
+                    clearLgaSelection();
+                }
+            }
         });
     }
     
@@ -566,7 +599,7 @@ function clearLgaSelection() {
     lgaSearch.value = '';
     lgaHidden.value = '';
     lgaSearch.readOnly = true;
-    lgaSearch.placeholder = 'Select State first, then search LGA...';
+    lgaSearch.placeholder = 'Select Zone and State first, then search LGA...';
     lgaDropdown.classList.add('hidden');
     selectedLga.classList.add('hidden');
     window.currentLGAs = [];
@@ -693,6 +726,7 @@ document.getElementById('createRecruitForm').addEventListener('submit', function
         return false;
     }
 });
+})();
 </script>
 @endpush
 @endsection
