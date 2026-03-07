@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 class SendAPERTimelineClosingMailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use \App\Jobs\Concerns\RateLimitsOutboundMail;
 
     public $tries = 3;
     public $backoff = [60, 300, 900];

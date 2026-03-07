@@ -116,4 +116,16 @@ return [
         'name' => env('MAIL_FROM_NAME', 'NCS Employee Portal'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Outbound rate limit (queued mail)
+    |--------------------------------------------------------------------------
+    |
+    | Max emails sent per minute to avoid SMTP provider limits (e.g. Hostinger
+    | 451 hostinger_out_ratelimit). Jobs that exceed this are released back
+    | to the queue and retried later.
+    |
+    */
+    'rate_limit_per_minute' => (int) env('MAIL_RATE_LIMIT_PER_MINUTE', 15),
+
 ];

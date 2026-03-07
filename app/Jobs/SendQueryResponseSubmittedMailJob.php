@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 class SendQueryResponseSubmittedMailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use \App\Jobs\Concerns\RateLimitsOutboundMail;
 
     public $tries = 3;
     public $backoff = [60, 300, 900]; // Retry after 1min, 5min, 15min

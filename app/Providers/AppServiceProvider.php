@@ -12,7 +12,9 @@ use App\Policies\EmolumentPolicy;
 use App\Policies\LeaveApplicationPolicy;
 use App\Policies\ManningRequestPolicy;
 use App\Policies\OfficerPolicy;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -41,6 +43,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Limit outbound SMTP to avoid Hostinger "451 hostinger_out_ratelimit" errors
+        RateLimiter::for('smtp', function () {
+            return Limit::perMinute(config('mail.rate_limit_per_minute', 15));
+        });
+
         Notification::observe(NotificationObserver::class);
 
         // Register policies

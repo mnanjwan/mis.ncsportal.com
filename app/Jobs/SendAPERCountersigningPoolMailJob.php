@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 class SendAPERCountersigningPoolMailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use \App\Jobs\Concerns\RateLimitsOutboundMail;
 
     public function __construct(public APERForm $form)
     {
