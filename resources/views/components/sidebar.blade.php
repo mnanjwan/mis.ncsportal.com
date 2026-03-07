@@ -274,6 +274,7 @@
                             'title' => 'Settings',
                             'icon' => 'ki-filled ki-setting-2',
                             'submenu' => [
+                                ['title' => 'Zones, States & LGAs', 'href' => route('hrd.location-data.index')],
                                 ['title' => 'Zones', 'href' => route('hrd.zones.index')],
                                 ['title' => 'Commands', 'href' => route('hrd.commands.index')],
                                 ['title' => 'Courses', 'href' => route('hrd.course-management.index')],

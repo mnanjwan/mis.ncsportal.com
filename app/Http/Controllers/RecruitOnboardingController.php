@@ -13,6 +13,7 @@ use App\Models\Institution;
 use App\Models\Qualification;
 use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
+use App\Helpers\LocationFormData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -190,7 +191,8 @@ class RecruitOnboardingController extends Controller
             'has_saved_data' => !empty($savedData),
         ]);
         
-        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels', 'recruit', 'savedData'));
+        $locationData = LocationFormData::getForForms();
+        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels', 'recruit', 'savedData', 'locationData'));
     }
 
     /**

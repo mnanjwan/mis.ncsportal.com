@@ -38,6 +38,7 @@ use App\Models\FleetRequest;
 use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
 use App\Services\EducationMasterDataSync;
+use App\Helpers\LocationFormData;
 
 class DashboardController extends Controller
 {
@@ -1645,7 +1646,8 @@ class DashboardController extends Controller
             $savedData['first_name'] = session('signup_first_name');
         }
 
-        return view('forms.onboarding.step1', compact('savedData'));
+        $locationData = LocationFormData::getForForms();
+        return view('forms.onboarding.step1', compact('savedData', 'locationData'));
     }
 
     public function saveOnboardingStep1(Request $request)

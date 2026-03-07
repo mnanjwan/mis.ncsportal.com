@@ -59,18 +59,18 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Initials <span class="text-danger">*</span></label>
-                        <input type="text" name="initials" class="kt-input" value="{{ old('initials', $savedData['initials'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <input type="text" name="initials" class="kt-input {{ $errors->has('initials') ? 'border-danger' : '' }}" value="{{ old('initials', $savedData['initials'] ?? '') }}" required/>
+                        <span class="error-message text-danger text-sm {{ $errors->has('initials') ? '' : 'hidden' }}">{{ $errors->first('initials') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Surname <span class="text-danger">*</span></label>
-                        <input type="text" name="surname" class="kt-input" value="{{ old('surname', $savedData['surname'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <input type="text" name="surname" class="kt-input {{ $errors->has('surname') ? 'border-danger' : '' }}" value="{{ old('surname', $savedData['surname'] ?? '') }}" required/>
+                        <span class="error-message text-danger text-sm {{ $errors->has('surname') ? '' : 'hidden' }}">{{ $errors->first('surname') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">First Name <span class="text-danger">*</span></label>
-                        <input type="text" name="first_name" class="kt-input" value="{{ old('first_name', $savedData['first_name'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <input type="text" name="first_name" class="kt-input {{ $errors->has('first_name') ? 'border-danger' : '' }}" value="{{ old('first_name', $savedData['first_name'] ?? '') }}" required/>
+                        <span class="error-message text-danger text-sm {{ $errors->has('first_name') ? '' : 'hidden' }}">{{ $errors->first('first_name') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Middle Name</label>
@@ -82,7 +82,7 @@
                             <input type="hidden" name="gender" id="gender_id" value="{{ old('gender', $savedData['gender'] ?? '') }}" required>
                             <button type="button" 
                                     id="gender_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('gender') ? 'border-danger' : '' }}">
                                 <span id="gender_select_text">{{ old('gender', $savedData['gender'] ?? '') ? old('gender', $savedData['gender'] ?? '') : 'Select...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
@@ -98,12 +98,36 @@
                                 <div id="gender_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('gender') ? '' : 'hidden' }}">{{ $errors->first('gender') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Date of Birth <span class="text-danger">*</span></label>
-                        <input type="date" name="date_of_birth" class="kt-input" value="{{ old('date_of_birth', $savedData['date_of_birth'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <input type="date" name="date_of_birth" class="kt-input {{ $errors->has('date_of_birth') ? 'border-danger' : '' }}" value="{{ old('date_of_birth', $savedData['date_of_birth'] ?? '') }}" required/>
+                        <span class="error-message text-danger text-sm {{ $errors->has('date_of_birth') ? '' : 'hidden' }}">{{ $errors->first('date_of_birth') }}</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <input type="hidden" name="geopolitical_zone" id="geopolitical_zone_id" value="{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') }}" required>
+                            <button type="button" 
+                                    id="geopolitical_zone_select_trigger" 
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('geopolitical_zone') ? 'border-danger' : '' }}">
+                                <span id="geopolitical_zone_select_text">{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') ? old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') : 'Select Zone...' }}</span>
+                                <i class="ki-filled ki-down text-gray-400"></i>
+                            </button>
+                            <div id="geopolitical_zone_dropdown" 
+                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                <div class="p-3 border-b border-input">
+                                    <input type="text" 
+                                           id="geopolitical_zone_search_input" 
+                                           class="kt-input w-full pl-10" 
+                                           placeholder="Search zone..."
+                                           autocomplete="off">
+                                </div>
+                                <div id="geopolitical_zone_options" class="max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                        <span class="error-message text-danger text-sm {{ $errors->has('geopolitical_zone') ? '' : 'hidden' }}">{{ $errors->first('geopolitical_zone') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">State of Origin <span class="text-danger">*</span></label>
@@ -111,7 +135,7 @@
                             <input type="hidden" name="state_of_origin" id="state-select" value="{{ old('state_of_origin', $savedData['state_of_origin'] ?? '') }}" required>
                             <button type="button" 
                                     id="state_of_origin_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('state_of_origin') ? 'border-danger' : '' }}">
                                 <span id="state_of_origin_select_text">{{ old('state_of_origin', $savedData['state_of_origin'] ?? '') ? old('state_of_origin', $savedData['state_of_origin'] ?? '') : 'Select State...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
@@ -127,15 +151,15 @@
                                 <div id="state_of_origin_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('state_of_origin') ? '' : 'hidden' }}">{{ $errors->first('state_of_origin') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">LGA <span class="text-danger">*</span></label>
                         <div class="relative">
                             <input type="text" 
                                    id="lga_search" 
-                                   class="kt-input w-full" 
-                                   placeholder="Select State first, then search LGA..."
+                                   class="kt-input w-full {{ $errors->has('lga') ? 'border-danger' : '' }}" 
+                                   placeholder="Select Zone and State first, then search LGA..."
                                    autocomplete="off"
                                    readonly>
                             <input type="hidden" 
@@ -158,31 +182,7 @@
                                 </button>
                             </div>
                         </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Geopolitical Zone <span class="text-danger">*</span></label>
-                        <div class="relative">
-                            <input type="hidden" name="geopolitical_zone" id="geopolitical_zone_id" value="{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') }}" required>
-                            <button type="button" 
-                                    id="geopolitical_zone_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
-                                <span id="geopolitical_zone_select_text">{{ old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') ? old('geopolitical_zone', $savedData['geopolitical_zone'] ?? '') : 'Select Zone...' }}</span>
-                                <i class="ki-filled ki-down text-gray-400"></i>
-                            </button>
-                            <div id="geopolitical_zone_dropdown" 
-                                 class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
-                                <div class="p-3 border-b border-input">
-                                    <input type="text" 
-                                           id="geopolitical_zone_search_input" 
-                                           class="kt-input w-full pl-10" 
-                                           placeholder="Search zone..."
-                                           autocomplete="off">
-                                </div>
-                                <div id="geopolitical_zone_options" class="max-h-60 overflow-y-auto"></div>
-                            </div>
-                        </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('lga') ? '' : 'hidden' }}">{{ $errors->first('lga') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Marital Status <span class="text-danger">*</span></label>
@@ -190,7 +190,7 @@
                             <input type="hidden" name="marital_status" id="marital_status_id" value="{{ old('marital_status', $savedData['marital_status'] ?? '') }}" required>
                             <button type="button" 
                                     id="marital_status_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('marital_status') ? 'border-danger' : '' }}">
                                 <span id="marital_status_select_text">{{ old('marital_status', $savedData['marital_status'] ?? '') ? old('marital_status', $savedData['marital_status'] ?? '') : 'Select...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
@@ -206,30 +206,30 @@
                                 <div id="marital_status_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('marital_status') ? '' : 'hidden' }}">{{ $errors->first('marital_status') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Phone Number <span class="text-danger">*</span></label>
-                        <input type="tel" name="phone" class="kt-input" value="{{ old('phone', $savedData['phone'] ?? '') }}" required/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <input type="tel" name="phone" class="kt-input {{ $errors->has('phone') ? 'border-danger' : '' }}" value="{{ old('phone', $savedData['phone'] ?? '') }}" required/>
+                        <span class="error-message text-danger text-sm {{ $errors->has('phone') ? '' : 'hidden' }}">{{ $errors->first('phone') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Email Address</label>
-                        <input type="email" name="email" class="kt-input" value="{{ old('email', $savedData['email'] ?? '') }}"/>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <input type="email" name="email" class="kt-input {{ $errors->has('email') ? 'border-danger' : '' }}" value="{{ old('email', $savedData['email'] ?? '') }}"/>
+                        <span class="error-message text-danger text-sm {{ $errors->has('email') ? '' : 'hidden' }}">{{ $errors->first('email') }}</span>
                     </div>
                 </div>
                 
                 <div class="flex flex-col gap-1">
                     <label class="kt-form-label">Residential Address <span class="text-danger">*</span></label>
-                    <textarea name="residential_address" class="kt-input" rows="3" required>{{ old('residential_address', $savedData['residential_address'] ?? '') }}</textarea>
-                    <span class="error-message text-danger text-sm hidden"></span>
+                    <textarea name="residential_address" class="kt-input {{ $errors->has('residential_address') ? 'border-danger' : '' }}" rows="3" required>{{ old('residential_address', $savedData['residential_address'] ?? '') }}</textarea>
+                    <span class="error-message text-danger text-sm {{ $errors->has('residential_address') ? '' : 'hidden' }}">{{ $errors->first('residential_address') }}</span>
                 </div>
                 
                 <div class="flex flex-col gap-1">
                     <label class="kt-form-label">Permanent Home Address <span class="text-danger">*</span></label>
-                    <textarea name="permanent_home_address" class="kt-input" rows="3" required>{{ old('permanent_home_address', $savedData['permanent_home_address'] ?? '') }}</textarea>
-                    <span class="error-message text-danger text-sm hidden"></span>
+                    <textarea name="permanent_home_address" class="kt-input {{ $errors->has('permanent_home_address') ? 'border-danger' : '' }}" rows="3" required>{{ old('permanent_home_address', $savedData['permanent_home_address'] ?? '') }}</textarea>
+                    <span class="error-message text-danger text-sm {{ $errors->has('permanent_home_address') ? '' : 'hidden' }}">{{ $errors->first('permanent_home_address') }}</span>
                 </div>
 
                 <!-- Profile Photo (required to proceed to Step 2) -->
@@ -251,7 +251,7 @@
                             </label>
                             <input type="file" id="onboarding-profile-picture-upload" class="hidden" accept="image/*">
                             <input type="hidden" name="profile_picture_data" id="profile_picture_data" value="{{ old('profile_picture_data', $savedData['profile_picture_data'] ?? '') }}">
-                            <span id="profile_picture_error" class="error-message text-danger text-sm font-medium hidden" style="color: #dc3545 !important;"></span>
+                            <span id="profile_picture_error" class="error-message text-danger text-sm font-medium {{ $errors->has('profile_picture_data') ? '' : 'hidden' }}" style="color: #dc3545 !important;">{{ $errors->first('profile_picture_data') }}</span>
                             <p class="text-xs text-muted">Required to continue. Recommended: 2x2 inches, white background. Max 5MB for cropping.</p>
                         </div>
                     </div>
@@ -363,48 +363,17 @@ function initStep1ProfilePictureUpload() {
     });
 }
 
-// Nigerian States and LGAs data
-const nigerianStatesLGAs = {
-    'Abia': ['Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'],
-    'Adamawa': ['Demsa', 'Fufure', 'Ganye', 'Gayuk', 'Gombi', 'Grie', 'Hong', 'Jada', 'Larmurde', 'Madagali', 'Maiha', 'Mayo Belwa', 'Michika', 'Mubi North', 'Mubi South', 'Numan', 'Shelleng', 'Song', 'Toungo', 'Yola North', 'Yola South'],
-    'Akwa Ibom': ['Abak', 'Eastern Obolo', 'Eket', 'Esit Eket', 'Essien Udim', 'Etim Ekpo', 'Etinan', 'Ibeno', 'Ibesikpo Asutan', 'Ibiono-Ibom', 'Ika', 'Ikono', 'Ikot Abasi', 'Ikot Ekpene', 'Ini', 'Itu', 'Mbo', 'Mkpat-Enin', 'Nsit-Atai', 'Nsit-Ibom', 'Nsit-Ubium', 'Obot Akara', 'Okobo', 'Onna', 'Oron', 'Oruk Anam', 'Udung-Uko', 'Ukanafun', 'Uruan', 'Urue-Offong/Oruko', 'Uyo'],
-    'Anambra': ['Aguata', 'Anambra East', 'Anambra West', 'Anaocha', 'Awka North', 'Awka South', 'Ayamelum', 'Dunukofia', 'Ekwusigo', 'Idemili North', 'Idemili South', 'Ihiala', 'Njikoka', 'Nnewi North', 'Nnewi South', 'Ogbaru', 'Onitsha North', 'Onitsha South', 'Orumba North', 'Orumba South', 'Oyi'],
-    'Bauchi': ['Alkaleri', 'Bauchi', 'Bogoro', 'Damban', 'Darazo', 'Dass', 'Gamawa', 'Ganjuwa', 'Giade', 'Itas/Gadau', 'Jama\'are', 'Katagum', 'Kirfi', 'Misau', 'Ningi', 'Shira', 'Tafawa Balewa', 'Toro', 'Warji', 'Zaki'],
-    'Bayelsa': ['Brass', 'Ekeremor', 'Kolokuma/Opokuma', 'Nembe', 'Ogbia', 'Sagbama', 'Southern Ijaw', 'Yenagoa'],
-    'Benue': ['Ado', 'Agatu', 'Apa', 'Buruku', 'Gboko', 'Guma', 'Gwer East', 'Gwer West', 'Katsina-Ala', 'Konshisha', 'Kwande', 'Logo', 'Makurdi', 'Obi', 'Ogbadibo', 'Ohimini', 'Oju', 'Okpokwu', 'Otukpo', 'Tarka', 'Ukum', 'Ushongo', 'Vandeikya'],
-    'Borno': ['Abadam', 'Askira/Uba', 'Bama', 'Bayo', 'Biu', 'Chibok', 'Damboa', 'Dikwa', 'Gubio', 'Guzamala', 'Gwoza', 'Hawul', 'Jere', 'Kaga', 'Kala/Balge', 'Konduga', 'Kukawa', 'Kwaya Kusar', 'Mafa', 'Magumeri', 'Maiduguri', 'Marte', 'Mobbar', 'Monguno', 'Ngala', 'Nganzai', 'Shani'],
-    'Cross River': ['Abi', 'Akamkpa', 'Akpabuyo', 'Bakassi', 'Bekwarra', 'Biase', 'Boki', 'Calabar Municipal', 'Calabar South', 'Etung', 'Ikom', 'Obanliku', 'Obubra', 'Obudu', 'Odukpani', 'Ogoja', 'Yakuur', 'Yala'],
-    'Delta': ['Aniocha North', 'Aniocha South', 'Bomadi', 'Burutu', 'Ethiope East', 'Ethiope West', 'Ika North East', 'Ika South', 'Isoko North', 'Isoko South', 'Ndokwa East', 'Ndokwa West', 'Okpe', 'Oshimili North', 'Oshimili South', 'Patani', 'Sapele', 'Udu', 'Ughelli North', 'Ughelli South', 'Ukwuani', 'Uvwie', 'Warri North', 'Warri South', 'Warri South West'],
-    'Ebonyi': ['Abakaliki', 'Afikpo North', 'Afikpo South', 'Ebonyi', 'Ezza North', 'Ezza South', 'Ikwo', 'Ishielu', 'Ivo', 'Ohaozara', 'Ohaukwu', 'Onicha'],
-    'Edo': ['Akoko-Edo', 'Egor', 'Esan Central', 'Esan North-East', 'Esan South-East', 'Esan West', 'Etsako Central', 'Etsako East', 'Etsako West', 'Igueben', 'Ikpoba Okha', 'Orhionmwon', 'Oredo', 'Ovia North-East', 'Ovia South-West', 'Owan East', 'Owan West', 'Uhunmwonde'],
-    'Ekiti': ['Ado Ekiti', 'Efon', 'Ekiti East', 'Ekiti South-West', 'Ekiti West', 'Emure', 'Gbonyin', 'Ido Osi', 'Ijero', 'Ikere', 'Ikole', 'Ilejemeje', 'Irepodun/Ifelodun', 'Ise/Orun', 'Moba', 'Oye'],
-    'Enugu': ['Aninri', 'Awgu', 'Enugu East', 'Enugu North', 'Enugu South', 'Ezeagu', 'Igbo Etiti', 'Igbo Eze North', 'Igbo Eze South', 'Isi Uzo', 'Nkanu East', 'Nkanu West', 'Nsukka', 'Oji River', 'Udenu', 'Udi', 'Uzo Uwani'],
-    'FCT': ['Abaji', 'Bwari', 'Gwagwalada', 'Kuje', 'Kwali', 'Municipal Area Council'],
-    'Gombe': ['Akko', 'Balanga', 'Billiri', 'Dukku', 'Funakaye', 'Gombe', 'Kaltungo', 'Kwami', 'Nafada', 'Shongom', 'Yamaltu/Deba'],
-    'Imo': ['Aboh Mbaise', 'Ahiazu Mbaise', 'Ehime Mbano', 'Ezinihitte', 'Ideato North', 'Ideato South', 'Ihitte/Uboma', 'Ikeduru', 'Isiala Mbano', 'Isu', 'Mbaitoli', 'Ngor Okpala', 'Njaba', 'Nkwerre', 'Nwangele', 'Obowo', 'Oguta', 'Ohaji/Egbema', 'Okigwe', 'Orlu', 'Orsu', 'Oru East', 'Oru West', 'Owerri Municipal', 'Owerri North', 'Owerri West', 'Unuimo'],
-    'Jigawa': ['Auyo', 'Babura', 'Biriniwa', 'Birnin Kudu', 'Buji', 'Dutse', 'Gagarawa', 'Garki', 'Gumel', 'Guri', 'Gwaram', 'Gwiwa', 'Hadejia', 'Jahun', 'Kafin Hausa', 'Kazaure', 'Kiri Kasama', 'Kiyawa', 'Kaugama', 'Maigatari', 'Malam Madori', 'Miga', 'Ringim', 'Roni', 'Sule Tankarkar', 'Taura', 'Yankwashi'],
-    'Kaduna': ['Birnin Gwari', 'Chikun', 'Giwa', 'Igabi', 'Ikara', 'Jaba', 'Jema\'a', 'Kachia', 'Kaduna North', 'Kaduna South', 'Kagarko', 'Kajuru', 'Kaura', 'Kauru', 'Kubau', 'Kudan', 'Lere', 'Makarfi', 'Sabon Gari', 'Sanga', 'Soba', 'Zangon Kataf', 'Zaria'],
-    'Kano': ['Ajingi', 'Albasu', 'Bagwai', 'Bebeji', 'Bichi', 'Bunkure', 'Dala', 'Dambatta', 'Dawakin Kudu', 'Dawakin Tofa', 'Doguwa', 'Fagge', 'Gabasawa', 'Garko', 'Garun Mallam', 'Gaya', 'Gezawa', 'Gwale', 'Gwarzo', 'Kabo', 'Kano Municipal', 'Karaye', 'Kibiya', 'Kiru', 'Kumbotso', 'Kunchi', 'Kura', 'Madobi', 'Makoda', 'Minjibir', 'Nasarawa', 'Rano', 'Rimin Gado', 'Rogo', 'Shanono', 'Sumaila', 'Takai', 'Tarauni', 'Tofa', 'Tsanyawa', 'Tudun Wada', 'Ungogo', 'Warawa', 'Wudil'],
-    'Katsina': ['Bakori', 'Batagarawa', 'Batsari', 'Baure', 'Bindawa', 'Charanchi', 'Dandume', 'Danja', 'Dan Musa', 'Daura', 'Dutsi', 'Dutsin Ma', 'Faskari', 'Funtua', 'Ingawa', 'Jibia', 'Kafur', 'Kaita', 'Kankara', 'Kankia', 'Katsina', 'Kurfi', 'Kusada', 'Mai\'Adua', 'Malumfashi', 'Mani', 'Mashi', 'Matazu', 'Musawa', 'Rimi', 'Sabuwa', 'Safana', 'Sandamu', 'Zango'],
-    'Kebbi': ['Aleiro', 'Arewa Dandi', 'Argungu', 'Augie', 'Bagudo', 'Birnin Kebbi', 'Bunza', 'Dandi', 'Fakai', 'Gwandu', 'Jega', 'Kalgo', 'Koko/Besse', 'Maiyama', 'Ngaski', 'Sakaba', 'Shanga', 'Suru', 'Wasagu/Danko', 'Yauri', 'Zuru'],
-    'Kogi': ['Adavi', 'Ajaokuta', 'Ankpa', 'Bassa', 'Dekina', 'Ibaji', 'Idah', 'Igalamela Odolu', 'Ijumu', 'Kabba/Bunu', 'Kogi', 'Lokoja', 'Mopa Muro', 'Ofu', 'Ogori/Magongo', 'Okehi', 'Okene', 'Olamaboro', 'Omala', 'Yagba East', 'Yagba West'],
-    'Kwara': ['Asa', 'Baruten', 'Edu', 'Ekiti', 'Ifelodun', 'Ilorin East', 'Ilorin South', 'Ilorin West', 'Irepodun', 'Isin', 'Kaiama', 'Moro', 'Offa', 'Oke Ero', 'Oyun', 'Pategi'],
-    'Lagos': ['Agege', 'Ajeromi-Ifelodun', 'Alimosho', 'Amuwo-Odofin', 'Apapa', 'Badagry', 'Epe', 'Eti Osa', 'Ibeju-Lekki', 'Ifako-Ijaiye', 'Ikeja', 'Ikorodu', 'Kosofe', 'Lagos Island', 'Lagos Mainland', 'Mushin', 'Ojo', 'Oshodi-Isolo', 'Shomolu', 'Surulere'],
-    'Nasarawa': ['Akwanga', 'Awe', 'Doma', 'Karu', 'Keana', 'Keffi', 'Kokona', 'Lafia', 'Nasarawa', 'Nasarawa Egon', 'Obi', 'Toto', 'Wamba'],
-    'Niger': ['Agaie', 'Agwara', 'Bida', 'Borgu', 'Bosso', 'Chanchaga', 'Edati', 'Gbako', 'Gurara', 'Katcha', 'Kontagora', 'Lapai', 'Lavun', 'Magama', 'Mariga', 'Mashegu', 'Mokwa', 'Moya', 'Paikoro', 'Rafi', 'Rijau', 'Shiroro', 'Suleja', 'Tafa', 'Wushishi'],
-    'Ogun': ['Abeokuta North', 'Abeokuta South', 'Ado-Odo/Ota', 'Egbado North', 'Egbado South', 'Ewekoro', 'Ifo', 'Ijebu East', 'Ijebu North', 'Ijebu North East', 'Ijebu Ode', 'Ikenne', 'Imeko Afon', 'Ipokia', 'Obafemi Owode', 'Odeda', 'Odogbolu', 'Ogun Waterside', 'Remo North', 'Shagamu', 'Yewa North', 'Yewa South'],
-    'Ondo': ['Akoko North-East', 'Akoko North-West', 'Akoko South-West', 'Akoko South-East', 'Akure North', 'Akure South', 'Ese Odo', 'Idanre', 'Ifedore', 'Ilaje', 'Ile Oluji/Okeigbo', 'Irele', 'Odigbo', 'Okitipupa', 'Ondo East', 'Ondo West', 'Ose', 'Owo'],
-    'Osun': ['Atakunmosa East', 'Atakunmosa West', 'Aiyedaade', 'Aiyedire', 'Boluwaduro', 'Boripe', 'Ede North', 'Ede South', 'Ife Central', 'Ife East', 'Ife North', 'Ife South', 'Ifedayo', 'Ifelodun', 'Ila', 'Ilesa East', 'Ilesa West', 'Irepodun', 'Irewole', 'Isokan', 'Iwo', 'Obokun', 'Odo Otin', 'Ola Oluwa', 'Olorunda', 'Oriade', 'Orolu', 'Osogbo'],
-    'Oyo': ['Afijio', 'Akinyele', 'Atiba', 'Atisbo', 'Egbeda', 'Ibadan North', 'Ibadan North-East', 'Ibadan North-West', 'Ibadan South-East', 'Ibadan South-West', 'Ibarapa Central', 'Ibarapa East', 'Ibarapa North', 'Ido', 'Irepo', 'Iseyin', 'Itesiwaju', 'Iwajowa', 'Kajola', 'Lagelu', 'Ogbomoso North', 'Ogbomoso South', 'Ogo Oluwa', 'Olorunsogo', 'Oluyole', 'Ona Ara', 'Orelope', 'Ori Ire', 'Oyo', 'Oyo East', 'Saki East', 'Saki West', 'Surulere'],
-    'Plateau': ['Bokkos', 'Barkin Ladi', 'Bassa', 'Jos East', 'Jos North', 'Jos South', 'Kanam', 'Kanke', 'Langtang North', 'Langtang South', 'Mangu', 'Mikang', 'Pankshin', 'Qua\'an Pan', 'Riyom', 'Shendam', 'Wase'],
-    'Rivers': ['Abua/Odual', 'Ahoada East', 'Ahoada West', 'Akuku-Toru', 'Andoni', 'Asari-Toru', 'Bonny', 'Degema', 'Eleme', 'Emuoha', 'Etche', 'Gokana', 'Ikwerre', 'Khana', 'Obio/Akpor', 'Ogba/Egbema/Ndoni', 'Ogu/Bolo', 'Okrika', 'Omuma', 'Opobo/Nkoro', 'Oyigbo', 'Port Harcourt', 'Tai'],
-    'Sokoto': ['Binji', 'Bodinga', 'Dange Shuni', 'Gada', 'Goronyo', 'Gudu', 'Gwadabawa', 'Illela', 'Isa', 'Kebbe', 'Kware', 'Rabah', 'Sabon Birni', 'Shagari', 'Silame', 'Sokoto North', 'Sokoto South', 'Tambuwal', 'Tangaza', 'Tureta', 'Wamako', 'Wurno', 'Yabo'],
-    'Taraba': ['Ardo Kola', 'Bali', 'Donga', 'Gashaka', 'Gassol', 'Ibi', 'Jalingo', 'Karim Lamido', 'Kumi', 'Lau', 'Sardauna', 'Takum', 'Ussa', 'Wukari', 'Yorro', 'Zing'],
-    'Yobe': ['Bade', 'Bursari', 'Damaturu', 'Fika', 'Fune', 'Geidam', 'Gujba', 'Gulani', 'Jakusko', 'Karasuwa', 'Machina', 'Nangere', 'Nguru', 'Potiskum', 'Tarmuwa', 'Yunusari', 'Yusufari'],
-    'Zamfara': ['Anka', 'Bakura', 'Birnin Magaji/Kiyaw', 'Bukkuyum', 'Bungudu', 'Gusau', 'Gummi', 'Kaura Namoda', 'Maradun', 'Maru', 'Shinkafi', 'Talata Mafara', 'Chafe', 'Zurmi']
-};
+// Location data from database (HRD → Zones, States & LGAs) — add once, show everywhere
+@php
+    $locationDataForJs = $locationData ?? ['zoneNames' => [], 'stateNames' => [], 'stateToZoneMap' => [], 'stateLgas' => []];
+@endphp
+const _locationDataRaw = @json($locationDataForJs);
+const locationData = (_locationDataRaw && typeof _locationDataRaw === 'object') ? _locationDataRaw : { zoneNames: [], stateNames: [], stateToZoneMap: {}, stateLgas: {} };
+const nigerianStatesLGAs = locationData.stateLgas || {};
+const stateToZoneMap = locationData.stateToZoneMap || {};
 
-// Reusable function to create searchable select
+(function() {
+// Reusable function (local so Vite app.js cannot overwrite it and break options-as-getter)
 function createSearchableSelect(config) {
     const {
         triggerId,
@@ -413,12 +382,17 @@ function createSearchableSelect(config) {
         searchInputId,
         optionsContainerId,
         displayTextId,
-        options,
+        options: optionsOrGetter,
         displayFn,
         onSelect,
         placeholder = 'Select...',
         searchPlaceholder = 'Search...'
     } = config;
+
+    const getOptions = () => {
+        const raw = typeof optionsOrGetter === 'function' ? optionsOrGetter() : optionsOrGetter;
+        return Array.isArray(raw) ? raw : [];
+    };
 
     const trigger = document.getElementById(triggerId);
     const hiddenInput = document.getElementById(hiddenInputId);
@@ -432,7 +406,7 @@ function createSearchableSelect(config) {
     }
 
     let selectedOption = null;
-    let filteredOptions = [...options];
+    let filteredOptions = [...getOptions()];
 
     // Render options
     function renderOptions(opts) {
@@ -458,7 +432,8 @@ function createSearchableSelect(config) {
             option.addEventListener('click', function() {
                 const id = this.dataset.id;
                 const name = this.dataset.name;
-                selectedOption = options.find(o => {
+                const currentOptions = getOptions();
+                selectedOption = currentOptions.find(o => {
                     const optValue = o.id !== undefined ? o.id : (o.value !== undefined ? o.value : o);
                     return String(optValue) === String(id);
                 });
@@ -468,7 +443,7 @@ function createSearchableSelect(config) {
                     displayText.textContent = name;
                     dropdown.classList.add('hidden');
                     searchInput.value = '';
-                    filteredOptions = [...options];
+                    filteredOptions = [...getOptions()];
                     renderOptions(filteredOptions);
                     
                     if (onSelect) onSelect(selectedOption || {id: id, name: name});
@@ -483,16 +458,21 @@ function createSearchableSelect(config) {
     // Search functionality
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
-        filteredOptions = options.filter(opt => {
+        const currentOptions = getOptions();
+        filteredOptions = currentOptions.filter(opt => {
             const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
             return String(display).toLowerCase().includes(searchTerm);
         });
         renderOptions(filteredOptions);
     });
 
-    // Toggle dropdown
+    // Toggle dropdown - when opening, refresh options (for dynamic getters e.g. state by zone)
     trigger.addEventListener('click', function(e) {
         e.stopPropagation();
+        if (dropdown.classList.contains('hidden')) {
+            filteredOptions = [...getOptions()];
+            renderOptions(filteredOptions);
+        }
         dropdown.classList.toggle('hidden');
         if (!dropdown.classList.contains('hidden')) {
             setTimeout(() => searchInput.focus(), 100);
@@ -507,54 +487,7 @@ function createSearchableSelect(config) {
     });
 }
 
-// State to Geopolitical Zone mapping
-const stateToZoneMap = {
-    // North Central
-    'Benue': 'North Central',
-    'Kogi': 'North Central',
-    'Kwara': 'North Central',
-    'Nasarawa': 'North Central',
-    'Niger': 'North Central',
-    'Plateau': 'North Central',
-    'FCT': 'North Central',
-    // North East
-    'Adamawa': 'North East',
-    'Bauchi': 'North East',
-    'Borno': 'North East',
-    'Gombe': 'North East',
-    'Taraba': 'North East',
-    'Yobe': 'North East',
-    // North West
-    'Kaduna': 'North West',
-    'Kano': 'North West',
-    'Katsina': 'North West',
-    'Kebbi': 'North West',
-    'Jigawa': 'North West',
-    'Sokoto': 'North West',
-    'Zamfara': 'North West',
-    // South East
-    'Abia': 'South East',
-    'Anambra': 'South East',
-    'Ebonyi': 'South East',
-    'Enugu': 'South East',
-    'Imo': 'South East',
-    // South South
-    'Akwa Ibom': 'South South',
-    'Bayelsa': 'South South',
-    'Cross River': 'South South',
-    'Delta': 'South South',
-    'Edo': 'South South',
-    'Rivers': 'South South',
-    // South West
-    'Ekiti': 'South West',
-    'Lagos': 'South West',
-    'Ogun': 'South West',
-    'Ondo': 'South West',
-    'Osun': 'South West',
-    'Oyo': 'South West'
-};
-
-// Function to set geopolitical zone based on state
+// Function to set geopolitical zone based on state (keeps zone in sync when state is selected)
 function setGeopoliticalZoneFromState(state) {
     const zone = stateToZoneMap[state];
     if (zone) {
@@ -567,9 +500,41 @@ function setGeopoliticalZoneFromState(state) {
     }
 }
 
-// Load Nigerian states
+// States in the currently selected zone (for dynamic state dropdown)
+function getStateOptionsForCurrentZone() {
+    const zoneInput = document.getElementById('geopolitical_zone_id');
+    const selectedZone = zoneInput ? zoneInput.value.trim() : '';
+    const stateNames = (locationData && Array.isArray(locationData.stateNames)) ? locationData.stateNames : Object.keys(nigerianStatesLGAs || {});
+    const allStates = stateNames;
+    const baseOptions = [{ id: '', name: 'Select State...' }];
+    if (!selectedZone) {
+        return baseOptions.concat(allStates.map(s => ({ id: s, name: s })));
+    }
+    const statesInZone = allStates.filter(state => stateToZoneMap[state] === selectedZone);
+    return baseOptions.concat(statesInZone.map(s => ({ id: s, name: s })));
+}
+
+// When zone changes: clear state and LGA if current state is not in the new zone
+function onGeopoliticalZoneChange(selectedZone) {
+    const stateInput = document.getElementById('state-select');
+    const stateDisplay = document.getElementById('state_of_origin_select_text');
+    const currentState = stateInput ? stateInput.value.trim() : '';
+    if (!currentState) return;
+    const stateZone = stateToZoneMap[currentState];
+    if (selectedZone && stateZone !== selectedZone) {
+        stateInput.value = '';
+        if (stateDisplay) stateDisplay.textContent = 'Select State...';
+        clearLgaSelection();
+    }
+    if (!selectedZone) {
+        stateInput.value = '';
+        if (stateDisplay) stateDisplay.textContent = 'Select State...';
+        clearLgaSelection();
+    }
+}
+
+// Load Nigerian states (from database)
 document.addEventListener('DOMContentLoaded', () => {
-    const states = Object.keys(nigerianStatesLGAs);
     const savedState = '{{ old('state_of_origin', $savedData['state_of_origin'] ?? '') }}';
     const savedLga = '{{ old('lga', $savedData['lga'] ?? '') }}';
     
@@ -580,21 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
         {id: 'Female', name: 'Female'}
     ];
     
-    // State options
-    const stateOptions = [
-        {id: '', name: 'Select State...'},
-        ...states.map(state => ({id: state, name: state}))
-    ];
-    
-    // Geopolitical zone options
+    // Geopolitical zone options (from database) - init first so state can filter by zone
+    const zoneNames = (locationData && Array.isArray(locationData.zoneNames)) ? locationData.zoneNames : [];
     const zoneOptions = [
         {id: '', name: 'Select Zone...'},
-        {id: 'North Central', name: 'North Central'},
-        {id: 'North East', name: 'North East'},
-        {id: 'North West', name: 'North West'},
-        {id: 'South East', name: 'South East'},
-        {id: 'South South', name: 'South South'},
-        {id: 'South West', name: 'South West'}
+        ...zoneNames.map(z => ({id: z, name: z}))
     ];
     
     // Marital status options
@@ -621,39 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Initialize state of origin select
-    if (document.getElementById('state_of_origin_select_trigger')) {
-        createSearchableSelect({
-            triggerId: 'state_of_origin_select_trigger',
-            hiddenInputId: 'state-select',
-            dropdownId: 'state_of_origin_dropdown',
-            searchInputId: 'state_of_origin_search_input',
-            optionsContainerId: 'state_of_origin_options',
-            displayTextId: 'state_of_origin_select_text',
-            options: stateOptions,
-            placeholder: 'Select State...',
-            searchPlaceholder: 'Search state...',
-            onSelect: function(option) {
-                // Load LGAs when state is selected
-                if (option.id) {
-                    loadLGAsForState(option.id);
-                    // Automatically set geopolitical zone based on state
-                    setGeopoliticalZoneFromState(option.id);
-                } else {
-                    clearLgaSelection();
-                    // Clear zone if state is cleared
-                    const zoneHiddenInput = document.getElementById('geopolitical_zone_id');
-                    const zoneDisplayText = document.getElementById('geopolitical_zone_select_text');
-                    if (zoneHiddenInput && zoneDisplayText) {
-                        zoneHiddenInput.value = '';
-                        zoneDisplayText.textContent = 'Select Zone...';
-                    }
-                }
-            }
-        });
-    }
-    
-    // Initialize geopolitical zone select
+    // Initialize geopolitical zone select first (before state, so state can filter by zone)
     if (document.getElementById('geopolitical_zone_select_trigger')) {
         createSearchableSelect({
             triggerId: 'geopolitical_zone_select_trigger',
@@ -664,7 +587,33 @@ document.addEventListener('DOMContentLoaded', () => {
             displayTextId: 'geopolitical_zone_select_text',
             options: zoneOptions,
             placeholder: 'Select Zone...',
-            searchPlaceholder: 'Search zone...'
+            searchPlaceholder: 'Search zone...',
+            onSelect: function(option) {
+                onGeopoliticalZoneChange(option.id || '');
+            }
+        });
+    }
+    
+    // Initialize state of origin select (options dynamic by selected zone)
+    if (document.getElementById('state_of_origin_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'state_of_origin_select_trigger',
+            hiddenInputId: 'state-select',
+            dropdownId: 'state_of_origin_dropdown',
+            searchInputId: 'state_of_origin_search_input',
+            optionsContainerId: 'state_of_origin_options',
+            displayTextId: 'state_of_origin_select_text',
+            options: getStateOptionsForCurrentZone,
+            placeholder: 'Select State...',
+            searchPlaceholder: 'Search state...',
+            onSelect: function(option) {
+                if (option.id) {
+                    loadLGAsForState(option.id);
+                    setGeopoliticalZoneFromState(option.id);
+                } else {
+                    clearLgaSelection();
+                }
+            }
         });
     }
     
@@ -731,7 +680,7 @@ function clearLgaSelection() {
     lgaSearch.value = '';
     lgaHidden.value = '';
     lgaSearch.readOnly = true;
-    lgaSearch.placeholder = 'Select State first, then search LGA...';
+    lgaSearch.placeholder = 'Select Zone and State first, then search LGA...';
     lgaDropdown.classList.add('hidden');
     selectedLga.classList.add('hidden');
     window.currentLGAs = [];
@@ -790,25 +739,31 @@ function initializeLGASearch() {
     });
 }
 
-// Validation function
+// Validation function - find error span in field wrapper (works for normal inputs and custom selects with nested divs)
 function showError(field, message) {
     const input = document.querySelector(`[name="${field}"]`);
-    const errorSpan = input?.parentElement?.querySelector('.error-message');
+    if (!input) return;
+    const wrapper = input.parentElement;
+    const errorSpan = wrapper?.querySelector('.error-message') || wrapper?.parentElement?.querySelector('.error-message');
     if (errorSpan) {
         errorSpan.textContent = message;
         errorSpan.classList.remove('hidden');
-        input?.classList.add('border-danger');
     }
+    const visibleControl = input.type === 'hidden' ? (input.closest('.flex-col')?.querySelector('.kt-input, [id$="_select_trigger"]') || input) : input;
+    visibleControl?.classList?.add?.('border-danger');
 }
 
 function clearError(field) {
     const input = document.querySelector(`[name="${field}"]`);
-    const errorSpan = input?.parentElement?.querySelector('.error-message');
+    if (!input) return;
+    const wrapper = input.parentElement;
+    const errorSpan = wrapper?.querySelector('.error-message') || wrapper?.parentElement?.querySelector('.error-message');
     if (errorSpan) {
         errorSpan.textContent = '';
         errorSpan.classList.add('hidden');
-        input?.classList.remove('border-danger');
     }
+    const visibleControl = input.type === 'hidden' ? (input.closest('.flex-col')?.querySelector('.kt-input, [id$="_select_trigger"]') || input) : input;
+    visibleControl?.classList?.remove?.('border-danger');
 }
 
 function validateStep1() {
@@ -910,6 +865,7 @@ document.querySelectorAll('#onboarding-step1-form input, #onboarding-step1-form 
 });
 
 initStep1ProfilePictureUpload();
+})();
 </script>
 @endpush
 @endsection

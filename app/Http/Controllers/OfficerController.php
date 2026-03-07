@@ -556,55 +556,8 @@ class OfficerController extends Controller
         $commands = \App\Models\Command::where('is_active', true)->with('zone')->orderBy('name')->get();
         $zones = \App\Models\Zone::where('is_active', true)->orderBy('name')->get();
 
-        // Nigerian states and LGAs (same as onboarding)
-        $nigerianStates = [
-            'Abia',
-            'Adamawa',
-            'Akwa Ibom',
-            'Anambra',
-            'Bauchi',
-            'Bayelsa',
-            'Benue',
-            'Borno',
-            'Cross River',
-            'Delta',
-            'Ebonyi',
-            'Edo',
-            'Ekiti',
-            'Enugu',
-            'FCT',
-            'Gombe',
-            'Imo',
-            'Jigawa',
-            'Kaduna',
-            'Kano',
-            'Katsina',
-            'Kebbi',
-            'Kogi',
-            'Kwara',
-            'Lagos',
-            'Nasarawa',
-            'Niger',
-            'Ogun',
-            'Ondo',
-            'Osun',
-            'Oyo',
-            'Plateau',
-            'Rivers',
-            'Sokoto',
-            'Taraba',
-            'Yobe',
-            'Zamfara'
-        ];
-
-        $geopoliticalZones = [
-            'North Central',
-            'North East',
-            'North West',
-            'South East',
-            'South South',
-            'South West'
-        ];
+        // Location data from database (HRD → Zones, States & LGAs)
+        $locationData = \App\Helpers\LocationFormData::getForForms();
 
         // Use standard rank abbreviations (same as manning level)
         $ranks = [
@@ -729,7 +682,7 @@ class OfficerController extends Controller
             ->pluck('name')
             ->values();
 
-        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'nigerianStates', 'geopoliticalZones', 'ranks', 'gradeLevels', 'educationData', 'institutions', 'disciplines', 'qualifications'));
+        return view('forms.officer.edit', compact('officer', 'commands', 'zones', 'locationData', 'ranks', 'gradeLevels', 'educationData', 'institutions', 'disciplines', 'qualifications'));
     }
 
     public function update(Request $request, $id)

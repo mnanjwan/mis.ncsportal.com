@@ -30,6 +30,7 @@ use App\Http\Controllers\RetirementController;
 use App\Http\Controllers\StaffOrderController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\CommandController;
+use App\Http\Controllers\LocationDataController;
 use App\Http\Controllers\TRADOCController;
 use App\Http\Controllers\ICTController;
 use App\Http\Controllers\EstablishmentController;
@@ -375,6 +376,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/zones/{id}', [ZoneController::class, 'show'])->name('zones.show');
         Route::get('/zones/{id}/edit', [ZoneController::class, 'edit'])->name('zones.edit');
         Route::put('/zones/{id}', [ZoneController::class, 'update'])->name('zones.update');
+
+        // Location Data (Geopolitical Zones, States, LGAs) - single page
+        Route::get('/location-data', [LocationDataController::class, 'index'])->name('location-data.index');
+        Route::post('/location-data/zones', [LocationDataController::class, 'storeZone'])->name('location-data.zones.store');
+        Route::put('/location-data/zones/{zone}', [LocationDataController::class, 'updateZone'])->name('location-data.zones.update');
+        Route::delete('/location-data/zones/{zone}', [LocationDataController::class, 'destroyZone'])->name('location-data.zones.destroy');
+        Route::post('/location-data/states', [LocationDataController::class, 'storeState'])->name('location-data.states.store');
+        Route::put('/location-data/states/{state}', [LocationDataController::class, 'updateState'])->name('location-data.states.update');
+        Route::delete('/location-data/states/{state}', [LocationDataController::class, 'destroyState'])->name('location-data.states.destroy');
+        Route::post('/location-data/lgas', [LocationDataController::class, 'storeLga'])->name('location-data.lgas.store');
+        Route::put('/location-data/lgas/{lga}', [LocationDataController::class, 'updateLga'])->name('location-data.lgas.update');
+        Route::delete('/location-data/lgas/{lga}', [LocationDataController::class, 'destroyLga'])->name('location-data.lgas.destroy');
 
         // Command Management Routes
         Route::get('/commands', [CommandController::class, 'index'])->name('commands.index');

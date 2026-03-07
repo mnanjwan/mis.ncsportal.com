@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             LeaveTypeSeeder::class,
             ZoneAndCommandSeeder::class, // Zones and all commands
+            LocationDataSeeder::class, // Geopolitical zones, states, LGAs (for forms)
             BankSeeder::class,
             PfaSeeder::class,
             InstitutionSeeder::class,

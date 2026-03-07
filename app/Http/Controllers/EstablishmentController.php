@@ -15,6 +15,7 @@ use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
 use App\Helpers\AppointmentNumberHelper;
 use App\Helpers\ServiceNumberHelper;
+use App\Helpers\LocationFormData;
 use App\Jobs\SendRecruitOnboardingLinkJob;
 use App\Jobs\SendBulkRecruitOnboardingLinksJob;
 use App\Models\Institution;
@@ -349,7 +350,9 @@ class EstablishmentController extends Controller
 
         extract($this->getRanksAndGradeLevels());
         $recruit = null; // No recruit object for new creation
-        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels', 'recruit'));
+        $savedData = [];
+        $locationData = LocationFormData::getForForms();
+        return view('forms.establishment.recruit-step1', compact('ranks', 'gradeLevels', 'recruit', 'savedData', 'locationData'));
     }
 
     /**

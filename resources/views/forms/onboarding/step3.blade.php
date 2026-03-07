@@ -55,10 +55,10 @@
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Bank Name <span class="text-danger">*</span></label>
                         <div class="relative">
-                            <input type="hidden" name="bank_name" id="bank_name" value="{{ old('bank_name', $savedData['bank_name'] ?? '') }}" required>
+                            <input type="hidden" name="bank_name" id="bank_name" value="{{ old('bank_name', $savedData['bank_name'] ?? '') }}">
                             <button type="button" 
                                     id="bank_name_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('bank_name') ? 'border-danger' : '' }}">
                                 <span id="bank_name_select_text">{{ old('bank_name', $savedData['bank_name'] ?? '') ? old('bank_name', $savedData['bank_name'] ?? '') : 'Select Bank...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
@@ -74,13 +74,13 @@
                                 <div id="bank_name_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('bank_name') ? '' : 'hidden' }}">{{ $errors->first('bank_name') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Bank Account Number <span class="text-danger">*</span></label>
-                        <input type="text" id="bank_account_number" name="bank_account_number" class="kt-input" value="{{ old('bank_account_number', $savedData['bank_account_number'] ?? '') }}" maxlength="50" required/>
+                        <input type="text" id="bank_account_number" name="bank_account_number" class="kt-input {{ $errors->has('bank_account_number') ? 'border-danger' : '' }}" value="{{ old('bank_account_number', $savedData['bank_account_number'] ?? '') }}" maxlength="50"/>
                         <small id="bank_account_help" class="text-muted">Select a bank to see the required account number digits.</small>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('bank_account_number') ? '' : 'hidden' }}">{{ $errors->first('bank_account_number') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Sort Code (Optional)</label>
@@ -89,10 +89,10 @@
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">Name of PFA (Pension Fund Administrator) <span class="text-danger">*</span></label>
                         <div class="relative">
-                            <input type="hidden" name="pfa_name" id="pfa_name" value="{{ old('pfa_name', $savedData['pfa_name'] ?? '') }}" required>
+                            <input type="hidden" name="pfa_name" id="pfa_name" value="{{ old('pfa_name', $savedData['pfa_name'] ?? '') }}">
                             <button type="button" 
                                     id="pfa_name_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer {{ $errors->has('pfa_name') ? 'border-danger' : '' }}">
                                 <span id="pfa_name_select_text">{{ old('pfa_name', $savedData['pfa_name'] ?? '') ? old('pfa_name', $savedData['pfa_name'] ?? '') : 'Select PFA...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
@@ -108,13 +108,13 @@
                                 <div id="pfa_name_options" class="max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('pfa_name') ? '' : 'hidden' }}">{{ $errors->first('pfa_name') }}</span>
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label">RSA Number <span class="text-danger">*</span></label>
-                        <input type="text" id="rsa_number" name="rsa_number" class="kt-input" value="{{ old('rsa_number', $savedData['rsa_number'] ?? '') }}" maxlength="50" placeholder="" required/>
+                        <input type="text" id="rsa_number" name="rsa_number" class="kt-input {{ $errors->has('rsa_number') ? 'border-danger' : '' }}" value="{{ old('rsa_number', $savedData['rsa_number'] ?? '') }}" maxlength="50" placeholder=""/>
                         <small id="rsa_help" class="text-muted">Select a PFA to see the required RSA format.</small>
-                        <span class="error-message text-danger text-sm hidden"></span>
+                        <span class="error-message text-danger text-sm {{ $errors->has('rsa_number') ? '' : 'hidden' }}">{{ $errors->first('rsa_number') }}</span>
                     </div>
                 </div>
                 
