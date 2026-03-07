@@ -1753,4 +1753,26 @@ class OfficerController extends Controller
             $document->file_name
         );
     }
+
+    /**
+     * Serve an officer document inline (for img preview on profile, etc.).
+     * Uses a route so images work even when public/storage symlink is missing.
+     */
+    public function documentPreview(int $documentId)
+    {
+        $document = OfficerDocument::findOrFail($documentId);
+        if (! Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'File not found');
+        }
+        $fullPath = Storage::disk('public')->path($document->file_path);
+        $mimeType = $document->mime_type && str_starts_with($document->mime_type, 'image/')
+            ? $document->mime_type
+            : (function_exists('mime_content_type') ? mime_content_type($fullPath) : 'application/octet-stream');
+        $fileName = $document->file_name ?? basename($document->file_path);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.addslashes($fileName).'"',
+        ]);
+    }
 }

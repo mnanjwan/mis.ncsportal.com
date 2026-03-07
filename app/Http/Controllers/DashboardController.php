@@ -2141,10 +2141,10 @@ class DashboardController extends Controller
                 'geopolitical_zone' => $step1['geopolitical_zone'],
                 'marital_status' => $step1['marital_status'],
                 'entry_qualification' => isset($step2['education']) && count($step2['education']) > 0
-                    ? $step2['education'][0]['qualification']
+                    ? (array_values($step2['education'])[0]['qualification'] ?? null)
                     : null, // Use first education entry's qualification as primary
                 'discipline' => isset($step2['education']) && count($step2['education']) > 0
-                    ? ($step2['education'][0]['discipline'] ?? null)
+                    ? (array_values($step2['education'])[0]['discipline'] ?? null)
                     : null, // Use first education entry's discipline
                 'additional_qualification' => isset($step2['education']) && count($step2['education']) > 0
                     ? json_encode($step2['education'])

@@ -215,6 +215,7 @@ Route::middleware('auth')->group(function () {
         // Officer Uploads (Document Browser)
         Route::get('/uploads', [OfficerController::class, 'uploads'])->name('uploads');
         Route::get('/uploads/download/{id}', [OfficerController::class, 'downloadDocument'])->name('uploads.download');
+        Route::get('/uploads/preview/{id}', [OfficerController::class, 'documentPreview'])->name('uploads.preview');
 
         // Education Qualification Requests
         Route::get('/education-requests', [EducationChangeRequestController::class, 'pending'])->name('education-requests.pending');

@@ -414,17 +414,24 @@
                             @foreach($documents as $doc)
                                 @php
                                     $isImage = str_starts_with($doc->mime_type ?? '', 'image/');
-                                    $fileUrl = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) : null;
                                     $fileExists = $doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->exists($doc->file_path) : false;
+                                    $fileUrl = $fileExists && $isImage
+                                        ? route('hrd.uploads.preview', $doc->id)
+                                        : ($doc->file_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->file_path) : null);
                                 @endphp
                                 <div class="border border-border rounded-lg p-3 hover:border-primary/50 transition-colors cursor-pointer document-item {{ !$fileExists ? 'border-danger/50 bg-danger/5' : '' }}"
                                      data-file-url="{{ $fileUrl }}"
                                      data-file-name="{{ $doc->file_name }}"
                                      data-is-image="{{ $isImage ? '1' : '0' }}">
-                                    @if($isImage && $fileUrl && $fileExists)
-                                        <img src="{{ $fileUrl }}" 
+                                    @if($isImage && $fileExists)
+                                        <img src="{{ route('hrd.uploads.preview', $doc->id) }}"
                                              alt="{{ $doc->file_name ?? 'Document' }}"
-                                             class="w-full h-32 object-cover rounded mb-2">
+                                             class="w-full h-32 object-cover rounded mb-2"
+                                             loading="lazy"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-full h-32 hidden items-center justify-center bg-muted rounded mb-2" style="display: none;">
+                                            <i class="ki-filled ki-file text-primary text-3xl"></i>
+                                        </div>
                                     @else
                                         <div class="w-full h-32 flex items-center justify-center bg-muted rounded mb-2 {{ !$fileExists ? 'bg-danger/10' : '' }}">
                                             <i class="ki-filled ki-file text-primary text-3xl"></i>
@@ -433,19 +440,12 @@
                                     <div class="text-xs font-medium text-foreground truncate" title="{{ $doc->file_name }}">
                                         {{ $doc->file_name ?? 'Document' }}
                                     </div>
-                                    @if($doc->file_size)
                                     <div class="text-xs text-secondary-foreground">
-                                        {{ number_format($doc->file_size / 1024, 2) }} KB
-                                    </div>
-                                    @endif
-                                    @if($doc->document_type)
-                                    <div class="text-xs text-secondary-foreground">
-                                        Type: {{ config('document_categories')[$doc->document_type] ?? ucfirst(str_replace('_', ' ', $doc->document_type)) }}
-                                        @if(in_array($doc->document_type, ['course_completed', 'training_certificate']) && $doc->officerCourse)
+                                        Type: {{ $doc->document_type ? (config('document_categories')[$doc->document_type] ?? ucfirst(str_replace('_', ' ', $doc->document_type))) : 'Other' }}
+                                        @if($doc->document_type && in_array($doc->document_type, ['course_completed', 'training_certificate']) && $doc->officerCourse)
                                             <span class="block mt-0.5 font-medium text-foreground" title="{{ $doc->officerCourse->course_name }}">{{ \Illuminate\Support\Str::limit($doc->officerCourse->course_name, 28) }}</span>
                                         @endif
                                     </div>
-                                    @endif
                                     @if(!$fileExists)
                                     <div class="text-xs text-danger mt-1">
                                         <i class="ki-filled ki-information"></i> File not found on disk
