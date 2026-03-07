@@ -169,9 +169,9 @@
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Unit</label>
+                        <label class="kt-form-label">Unit <span class="text-danger">*</span></label>
                         <div class="relative">
-                            <input type="hidden" name="unit" id="unit_id" value="{{ old('unit', $savedData['unit'] ?? '') }}">
+                            <input type="hidden" name="unit" id="unit_id" value="{{ old('unit', $savedData['unit'] ?? '') }}" required>
                             <button type="button" 
                                     id="unit_select_trigger" 
                                     class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
@@ -196,6 +196,7 @@
                                 </label>
                             </div>
                         </div>
+                        <span class="error-message text-sm hidden"></span>
                     </div>
                 </div>
                 
@@ -1240,20 +1241,30 @@ function loadCommandsForZone(zoneId, savedCommandId = null) {
 // Validation functions
 function showError(field, message) {
     const input = document.querySelector(`[name="${field}"]`);
-    const errorSpan = input?.parentElement?.querySelector('.error-message');
+    const errorSpan = input?.parentElement?.querySelector('.error-message') ?? input?.parentElement?.parentElement?.querySelector('.error-message');
+    const trigger = input?.parentElement?.querySelector('button');
     if (errorSpan) {
         errorSpan.textContent = message;
         errorSpan.classList.remove('hidden');
+    }
+    if (trigger) {
+        trigger.classList.add('border-danger');
+    } else {
         input?.classList.add('border-danger');
     }
 }
 
 function clearError(field) {
     const input = document.querySelector(`[name="${field}"]`);
-    const errorSpan = input?.parentElement?.querySelector('.error-message');
+    const errorSpan = input?.parentElement?.querySelector('.error-message') ?? input?.parentElement?.parentElement?.querySelector('.error-message');
+    const trigger = input?.parentElement?.querySelector('button');
     if (errorSpan) {
         errorSpan.textContent = '';
         errorSpan.classList.add('hidden');
+    }
+    if (trigger) {
+        trigger.classList.remove('border-danger');
+    } else {
         input?.classList.remove('border-danger');
     }
 }
@@ -1268,7 +1279,8 @@ function validateStep2() {
         'salary_grade_level': 'Salary Grade Level is required',
         'zone_id': 'Zone is required',
         'command_id': 'Command/Present Station is required',
-        'date_posted_to_station': 'Date Posted to Station is required'
+        'date_posted_to_station': 'Date Posted to Station is required',
+        'unit': 'Unit is required'
     };
     
     // Validate education entries

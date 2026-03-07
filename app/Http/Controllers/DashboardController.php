@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Emolument;
 use App\Models\Command;
@@ -54,6 +55,7 @@ class DashboardController extends Controller
             'submitOnboarding',
             'onboardingPreview',
             'finalSubmitOnboarding',
+            'documentPreviewOnboarding',
         ]);
     }
 
@@ -1772,7 +1774,7 @@ class DashboardController extends Controller
             'zone_id' => 'required|exists:zones,id',
             'command_id' => 'required|exists:commands,id',
             'date_posted_to_station' => 'required|date',
-            'unit' => 'nullable|string|max:255',
+            'unit' => 'required|string|max:255',
             'education' => 'required|array|min:1',
             'education.*.university' => 'required|string|max:255',
             'education.*.qualification' => 'required|string|max:255',
@@ -1949,9 +1951,15 @@ class DashboardController extends Controller
             'next_of_kin.*.email' => 'nullable|email|max:255',
             'next_of_kin.*.address' => 'required|string',
             'next_of_kin.*.is_primary' => 'nullable|in:0,1',
-            'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:2048',
+            'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:5120',
             'document_categories' => 'nullable|array',
             'document_categories.*' => 'nullable|string|in:' . implode(',', array_keys(config('document_categories'))),
+            'document_paths_to_keep' => 'nullable|array',
+            'document_paths_to_keep.*' => 'nullable|string',
+        ], [
+            'documents.*.uploaded' => 'One or more documents could not be uploaded. Please ensure each file is JPEG, JPG or PNG and under 5MB. If the file is valid, the server may have rejected it due to upload size limits.',
+            'documents.*.max' => 'Each document must not be larger than 5MB.',
+            'documents.*.mimes' => 'Each document must be a JPEG, JPG or PNG image.',
         ]);
 
         // Ensure at least one next of kin is marked as primary
@@ -1996,9 +2004,18 @@ class DashboardController extends Controller
             }
         }
 
-        // Merge with any existing document paths from session (so we don't lose previous uploads)
+        // Merge existing document paths from session with new uploads; respect document_paths_to_keep when user removed some (or all) from step 4
         $existingStep4 = session('onboarding_step4', []);
         $existingPaths = $existingStep4['document_paths'] ?? [];
+        $pathsToKeep = $request->input('document_paths_to_keep', []);
+        if ($request->has('document_paths_keep_sent') && is_array($existingPaths)) {
+            // Form sent the document list: keep only paths in document_paths_to_keep (empty = user removed all)
+            $keepSet = array_flip(array_values($pathsToKeep));
+            $existingPaths = array_values(array_filter($existingPaths, function ($doc) use ($keepSet) {
+                $path = $doc['path'] ?? null;
+                return $path && isset($keepSet[$path]);
+            }));
+        }
         $allDocumentPaths = array_merge(is_array($existingPaths) ? $existingPaths : [], $documentPaths);
 
         // Save step 4 to session (exclude uploaded files as they cannot be serialized)
@@ -2051,6 +2068,33 @@ class DashboardController extends Controller
         }
 
         return view('forms.onboarding.preview', compact('step1', 'step2', 'step3', 'step4', 'zone', 'command'));
+    }
+
+    /**
+     * Preview an uploaded document image during onboarding (temp storage).
+     * Ensures the user can see their uploaded documents when returning to step 4.
+     */
+    public function documentPreviewOnboarding(Request $request)
+    {
+        $path = $request->query('path');
+        if (! $path || ! is_string($path)) {
+            abort(404);
+        }
+        $path = ltrim($path, '/');
+        if (str_contains($path, '..') || ! str_starts_with($path, 'officer-documents-temp/')) {
+            abort(403, 'Invalid file path');
+        }
+        if (! Storage::disk('public')->exists($path)) {
+            abort(404, 'File not found');
+        }
+        $fullPath = Storage::disk('public')->path($path);
+        $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
+        $fileName = basename($path);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="'.addslashes($fileName).'"',
+        ]);
     }
 
     public function finalSubmitOnboarding(Request $request)

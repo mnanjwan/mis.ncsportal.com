@@ -82,8 +82,10 @@
                         <div id="selected-files-list" class="flex flex-col gap-2 hidden">
                             <!-- Selected files will be displayed here -->
                         </div>
-                        <!-- Hidden inputs to store document categories -->
+                        <!-- Hidden inputs to store document categories and which saved paths to keep -->
+                        <input type="hidden" name="document_paths_keep_sent" value="1">
                         <div id="document-categories-container"></div>
+                        <div id="document-paths-to-keep-container"></div>
                         <small class="text-muted">You can upload multiple documents. Select a category for each document. JPEG format is preferred to save space.</small>
                         <span class="text-xs" style="color: red;">
                             <strong>Document Type Allowed:</strong> JPEG, JPG, PNG (multiple files allowed)<br>
@@ -802,12 +804,20 @@ let fileCategories = []; // Store category selections
 // Document categories from config
 const documentCategories = @json(config('document_categories'));
 
-// Load saved documents from session
+// Load saved documents from session (stored as document_paths when returning from preview)
 function loadSavedDocuments() {
-    const savedDocuments = @json($savedData['documents'] ?? []);
-    
-    if (savedDocuments && Array.isArray(savedDocuments) && savedDocuments.length > 0) {
-        console.log('Loading saved documents:', savedDocuments);
+    const documentPaths = @json($savedData['document_paths'] ?? []);
+    const savedDocuments = documentPaths.map(function(doc) {
+        return {
+            temp_path: doc.path || null,
+            name: doc.name || 'Document',
+            size: doc.size || 0,
+            type: doc.mime || null,
+            category: doc.category || 'other'
+        };
+    });
+
+    if (savedDocuments && savedDocuments.length > 0) {
         savedDocuments.forEach((doc, index) => {
             if (doc.temp_path || doc.name) {
                 // Determine MIME type from file extension if not provided
@@ -822,7 +832,7 @@ function loadSavedDocuments() {
                         mimeType = 'image/gif';
                     }
                 }
-                
+
                 // Create a placeholder file object for display
                 const fileInfo = {
                     name: doc.name || 'Document',
@@ -832,31 +842,43 @@ function loadSavedDocuments() {
                     isSaved: true, // Mark as saved document
                     index: index
                 };
-                
-                console.log('Document info:', fileInfo);
-                
+
                 // Add to selectedFiles array
                 selectedFiles.push(fileInfo);
-                
+
                 // Load saved category or default to 'other'
                 fileCategories.push(doc.category || 'other');
-                
+
                 // For images, create preview URL from server
                 if (mimeType.startsWith('image/') && doc.temp_path) {
-                    // Use server endpoint to preview saved document
                     const previewUrl = `/onboarding/document-preview?path=${encodeURIComponent(doc.temp_path)}`;
                     filePreviewUrls.push(previewUrl);
-                    console.log('Added preview URL for image:', previewUrl);
                 } else {
                     filePreviewUrls.push(null);
                 }
             }
         });
-        
+
         if (selectedFiles.length > 0) {
             updateFileDisplay();
         }
     }
+}
+
+// Remove file: use event delegation so the correct index is always used (avoids issues when one remove refuses to work)
+if (selectedFilesList) {
+    selectedFilesList.addEventListener('click', function(e) {
+        const removeBtn = e.target.closest('button[data-remove-file]');
+        if (!removeBtn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const card = removeBtn.closest('[data-file-index]');
+        if (!card) return;
+        const index = parseInt(card.getAttribute('data-file-index'), 10);
+        if (!Number.isNaN(index) && index >= 0 && index < selectedFiles.length) {
+            removeFile(index);
+        }
+    });
 }
 
 if (documentsInput) {
@@ -887,6 +909,10 @@ function updateFileDisplay() {
         selectedFilesList.classList.add('hidden');
         uploadButtonText.textContent = 'Choose Files';
         documentsInput.value = '';
+        // Clear hidden inputs so submit sends "keep no documents" (server will clear session paths)
+        documentCategoriesContainer.innerHTML = '';
+        const pathsToKeepContainer = document.getElementById('document-paths-to-keep-container');
+        if (pathsToKeepContainer) pathsToKeepContainer.innerHTML = '';
     } else {
         selectedFilesList.classList.remove('hidden');
         uploadButtonText.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`;
@@ -923,22 +949,22 @@ function updateFileDisplay() {
                 const selected = fileCategories[index] === key ? 'selected' : '';
                 return `<option value="${key}" ${selected}>${label}</option>`;
             }).join('');
-            
+            const imageSrcAttr = imageSrc ? imageSrc.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+            const fileNameEscaped = (file.name || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return `
                 <div class="relative p-3 bg-muted/50 rounded-lg border border-input" data-file-index="${index}">
                     <div class="flex items-start gap-3">
                         ${isImage && imageSrc ? `
-                            <div class="flex-shrink-0 relative">
-                                <img src="${imageSrc}" 
-                                     alt="${file.name}" 
-                                     class="w-20 h-20 object-cover rounded-lg border border-input cursor-pointer hover:opacity-80 transition-opacity"
-                                     style="display: block !important; max-width: 80px !important; max-height: 80px !important; min-width: 80px !important; min-height: 80px !important; width: 80px !important; height: 80px !important; visibility: visible !important; opacity: 1 !important;"
-                                     onclick="window.open('${imageSrc}', '_blank')"
+                            <div class="flex-shrink-0 relative w-20 h-20 rounded-lg border border-input overflow-hidden bg-muted">
+                                <img src="${imageSrcAttr}"
+                                     alt="Preview: ${fileNameEscaped}"
+                                     class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                     loading="eager"
+                                     onclick="window.open(this.src, '_blank')"
                                      title="Click to view full size"
-                                     onerror="console.error('Image failed to load:', '${imageSrc}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                     onload="console.log('Image loaded successfully:', '${file.name}'); this.style.display='block'; this.style.visibility='visible'; this.style.opacity='1';">
-                                <div class="w-20 h-20 hidden items-center justify-center bg-muted rounded-lg border border-input" style="display: none;">
-                                    <i class="ki-filled ki-file text-primary text-2xl"></i>
+                                     onerror="this.style.display='none'; var fallback = this.nextElementSibling; if (fallback) { fallback.classList.remove('hidden'); fallback.style.display='flex'; }">
+                                <div class="w-full h-full hidden absolute inset-0 items-center justify-center bg-muted text-primary text-2xl" style="display: none;">
+                                    <i class="ki-filled ki-file"></i>
                                 </div>
                             </div>
                         ` : `
@@ -948,10 +974,10 @@ function updateFileDisplay() {
                         `}
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2 mb-1">
-                                <span class="text-sm font-medium truncate" title="${file.name}">${file.name}</span>
+                                <span class="text-sm font-medium truncate" title="${fileNameEscaped}">${fileNameEscaped}</span>
                                 <button type="button" 
                                         class="kt-btn kt-btn-sm kt-btn-ghost text-danger flex-shrink-0" 
-                                        onclick="removeFile(${index})"
+                                        data-remove-file
                                         title="Remove file">
                                     <i class="ki-filled ki-cross"></i>
                                 </button>
@@ -1001,10 +1027,23 @@ function updateFileCategory(index, category) {
 }
 
 function updateCategoryHiddenInputs() {
-    // Update hidden inputs for document categories
-    documentCategoriesContainer.innerHTML = fileCategories.map((category, index) => {
-        return `<input type="hidden" name="document_categories[]" value="${category}">`;
-    }).join('');
+    // Document categories for NEW files only (same order as documents[]), so server index matches
+    documentCategoriesContainer.innerHTML = selectedFiles
+        .map((file, index) => file.isSaved ? null : { category: fileCategories[index] })
+        .filter(Boolean)
+        .map(({ category }) => `<input type="hidden" name="document_categories[]" value="${category}">`)
+        .join('');
+    // For saved documents still in the list, tell the server which paths to keep (so removed ones are dropped)
+    const pathsToKeepContainer = document.getElementById('document-paths-to-keep-container');
+    if (pathsToKeepContainer) {
+        pathsToKeepContainer.innerHTML = selectedFiles
+            .filter(f => f.isSaved && f.temp_path)
+            .map(f => {
+                const path = (f.temp_path || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<input type="hidden" name="document_paths_to_keep[]" value="${path}">`;
+            })
+            .join('');
+    }
 }
 
 function updateFileInput() {

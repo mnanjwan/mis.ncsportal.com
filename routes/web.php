@@ -1055,6 +1055,7 @@ Route::prefix('onboarding')->name('onboarding.')->group(function () {
     Route::post('/submit', [DashboardController::class, 'submitOnboarding'])->name('submit');
     Route::get('/preview', [DashboardController::class, 'onboardingPreview'])->name('preview');
     Route::post('/final-submit', [DashboardController::class, 'finalSubmitOnboarding'])->name('final-submit');
+    Route::get('/document-preview', [DashboardController::class, 'documentPreviewOnboarding'])->name('document-preview');
 });
 
 // Print Routes - Available to authenticated users
