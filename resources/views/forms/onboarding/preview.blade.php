@@ -82,7 +82,7 @@
                                     <div><strong>Zone:</strong> {{ $zone->name ?? ($step2['zone_id'] ?? 'N/A') }}</div>
                                     <div><strong>Command/Present Station:</strong> {{ $command->name ?? ($step2['command_id'] ?? 'N/A') }}</div>
                                     <div><strong>Date Posted to Station:</strong> {{ $step2['date_posted_to_station'] ?? 'N/A' }}</div>
-                                    <div><strong>Unit:</strong> {{ $step2['unit'] ?? 'N/A' }}</div>
+                                    <div><strong>Category:</strong> {{ $step2['unit'] ?? 'N/A' }}</div>
                                     @if(isset($step2['education']) && is_array($step2['education']))
                                     <div>
                                         <strong>Education:</strong>

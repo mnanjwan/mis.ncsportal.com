@@ -41,7 +41,7 @@
                                     Rank
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
-                                    Unit
+                                    Category
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Status

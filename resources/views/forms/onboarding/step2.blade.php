@@ -169,13 +169,13 @@
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Unit <span class="text-danger">*</span></label>
+                        <label class="kt-form-label">Category <span class="text-danger">*</span></label>
                         <div class="relative">
                             <input type="hidden" name="unit" id="unit_id" value="{{ old('unit', $savedData['unit'] ?? '') }}" required>
                             <button type="button" 
                                     id="unit_select_trigger" 
                                     class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
-                                <span id="unit_select_text">{{ old('unit', $savedData['unit'] ?? '') ? old('unit', $savedData['unit'] ?? '') : 'Select Unit...' }}</span>
+                                <span id="unit_select_text">{{ old('unit', $savedData['unit'] ?? '') ? old('unit', $savedData['unit'] ?? '') : 'Select Category...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
                             <div id="unit_dropdown" 
@@ -184,7 +184,7 @@
                                     <input type="text" 
                                            id="unit_search_input" 
                                            class="kt-input w-full pl-10" 
-                                           placeholder="Search unit..."
+                                           placeholder="Search category..."
                                            autocomplete="off">
                                 </div>
                                 <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
@@ -567,10 +567,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error initializing rank/grade level selects:', error);
     }
     
-    // Initialize unit select (GD, SS, Transport with Assign to Transport when SS)
+    // Initialize category select (GD, SS, Transport with Assign to Transport when SS)
     try {
         const unitOptions = [
-            {id: '', name: 'Select Unit...'},
+            {id: '', name: 'Select Category...'},
             {id: 'General Duty (GD)', name: 'General Duty (GD)'},
             {id: 'Support Staff (SS)', name: 'Support Staff (SS)'},
             {id: 'Transport', name: 'Transport'}
@@ -584,8 +584,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             optionsContainerId: 'unit_options',
             displayTextId: 'unit_select_text',
             options: unitOptions,
-            placeholder: 'Select Unit...',
-            searchPlaceholder: 'Search unit...',
+            placeholder: 'Select Category...',
+            searchPlaceholder: 'Search category...',
             onSelect: function(option) {
                 const container = document.getElementById('assign_to_transport_container');
                 const checkbox = document.getElementById('assign_to_transport');
@@ -632,7 +632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (error) {
-        console.error('Error initializing unit select:', error);
+        console.error('Error initializing category select:', error);
     }
     
     // Initialize education entries (must happen regardless of other initializations)
@@ -1280,7 +1280,7 @@ function validateStep2() {
         'zone_id': 'Zone is required',
         'command_id': 'Command/Present Station is required',
         'date_posted_to_station': 'Date Posted to Station is required',
-        'unit': 'Unit is required'
+        'unit': 'Category is required'
     };
     
     // Validate education entries

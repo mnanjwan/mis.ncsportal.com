@@ -115,6 +115,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::post('/notifications/register-token', [NotificationController::class, 'registerToken']);
@@ -178,32 +179,41 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/quarters', [QuarterController::class, 'store']);
     Route::post('/quarters/allocate', [QuarterController::class, 'allocate']);
     Route::post('/quarters/{id}/deallocate', [QuarterController::class, 'deallocate']);
-    
+
     // Quarter Requests (Officers)
     Route::post('/quarters/request', [QuarterController::class, 'submitRequest']);
     Route::get('/quarters/my-requests', [QuarterController::class, 'myRequests']);
-    
+
     // Quarter Allocations (Officers)
     Route::get('/quarters/my-allocations', [QuarterController::class, 'myAllocations']);
     Route::post('/quarters/allocations/{id}/accept', [QuarterController::class, 'acceptAllocation']);
     Route::post('/quarters/allocations/{id}/reject', [QuarterController::class, 'rejectAllocation']);
-    
+
     // Quarter Requests (Building Unit)
     Route::get('/quarters/requests', [QuarterController::class, 'requests']);
     Route::post('/quarters/requests/{id}/approve', [QuarterController::class, 'approveRequest']);
     Route::post('/quarters/requests/{id}/reject', [QuarterController::class, 'rejectRequest']);
-    
+
     // Pending Allocations (Building Unit)
     Route::get('/quarters/pending-allocations', [QuarterController::class, 'pendingAllocations']);
-    
+
     // Rejected Allocations (Building Unit)
     Route::get('/quarters/rejected-allocations', [QuarterController::class, 'rejectedAllocations']);
 
     // Chat
+    Route::get('/chat/officers/search', [ChatController::class, 'searchOfficers']);
     Route::get('/chat/rooms', [ChatController::class, 'rooms']);
     Route::post('/chat/rooms', [ChatController::class, 'createRoom']);
+    Route::post('/chat/sync', [ChatController::class, 'sync']);
     Route::get('/chat/rooms/{id}/messages', [ChatController::class, 'messages']);
     Route::post('/chat/rooms/{id}/messages', [ChatController::class, 'sendMessage']);
+    Route::delete('/chat/rooms/{id}/messages/{messageId}', [ChatController::class, 'deleteMessage']);
+    Route::post('/chat/rooms/{id}/messages/{messageId}/react', [ChatController::class, 'toggleReaction']);
+    Route::post('/chat/rooms/{id}/messages/{messageId}/pin', [ChatController::class, 'togglePin']);
+    Route::post('/chat/rooms/{id}/messages/{messageId}/broadcast', [ChatController::class, 'toggleBroadcast']);
+    Route::get('/chat/rooms/{id}/messages/{messageId}/info', [ChatController::class, 'getMessageInfo']);
+    Route::post('/chat/rooms/{id}/messages/attachment', [ChatController::class, 'sendAttachment']);
+    Route::post('/chat/rooms/{id}/mark-read', [ChatController::class, 'markRead']);
     Route::get('/chat/rooms/{id}/members', [ChatController::class, 'members']);
     Route::post('/chat/rooms/{id}/members', [ChatController::class, 'addMembers']);
     Route::delete('/chat/rooms/{id}/members/{userId}', [ChatController::class, 'removeMember']);

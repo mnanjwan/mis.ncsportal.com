@@ -132,7 +132,7 @@
                         <span class="error-message text-sm hidden"></span>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Unit</label>
+                        <label class="kt-form-label">Category</label>
                         @php
                             $unitValue = old('unit', $savedData['unit'] ?? ($recruit && $recruit->unit ? $recruit->unit : ''));
                         @endphp

@@ -330,13 +330,13 @@
                         <input type="date" name="date_posted_to_station" class="kt-input" value="{{ old('date_posted_to_station', $officer->date_posted_to_station?->format('Y-m-d')) }}" required/>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="kt-form-label">Unit</label>
+                        <label class="kt-form-label">Category</label>
                         <div class="relative">
                             <input type="hidden" name="unit" id="unit_id" value="{{ old('unit', $officer->unit) ?? '' }}">
                             <button type="button" 
                                     id="unit_select_trigger" 
                                     class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
-                                <span id="unit_select_text">{{ old('unit', $officer->unit) ? old('unit', $officer->unit) : 'Select Unit...' }}</span>
+                                <span id="unit_select_text">{{ old('unit', $officer->unit) ? old('unit', $officer->unit) : 'Select Category...' }}</span>
                                 <i class="ki-filled ki-down text-gray-400"></i>
                             </button>
                             <div id="unit_dropdown" 
@@ -345,7 +345,7 @@
                                     <input type="text" 
                                            id="unit_search_input" 
                                            class="kt-input w-full pl-10" 
-                                           placeholder="Search unit..."
+                                           placeholder="Search category..."
                                            autocomplete="off">
                                 </div>
                                 <div id="unit_options" class="max-h-60 overflow-y-auto"></div>
@@ -638,9 +638,9 @@ function initializeSearchableSelects() {
         @endforeach
     ];
 
-    // Unit options (Support Staff (SS))
+    // Category options (GD, SS, Transport)
     const unitOptions = [
-        {id: '', name: 'Select Unit...'},
+        {id: '', name: 'Select Category...'},
         {id: 'General Duty (GD)', name: 'General Duty (GD)'},
         {id: 'Support Staff (SS)', name: 'Support Staff (SS)'},
         {id: 'Transport', name: 'Transport'}
@@ -773,7 +773,7 @@ function initializeSearchableSelects() {
         }
     });
 
-    // Initialize unit select with Assign to Transport logic (when Unit = Support Staff (SS))
+    // Initialize category select with Assign to Transport logic (when Category = Support Staff (SS))
     createSearchableSelect({
         triggerId: 'unit_select_trigger',
         hiddenInputId: 'unit_id',
@@ -782,8 +782,8 @@ function initializeSearchableSelects() {
         optionsContainerId: 'unit_options',
         displayTextId: 'unit_select_text',
         options: unitOptions,
-        placeholder: 'Select Unit...',
-        searchPlaceholder: 'Search unit...',
+        placeholder: 'Select Category...',
+        searchPlaceholder: 'Search category...',
         onSelect: function(option) {
             const container = document.getElementById('assign_to_transport_container');
             const checkbox = document.getElementById('assign_to_transport');

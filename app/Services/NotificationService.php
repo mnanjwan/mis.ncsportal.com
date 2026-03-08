@@ -43,8 +43,6 @@ class NotificationService
         // This is especially important for manning requests which may send many emails
         if ($sendEmail && $user->email) {
             try {
-                // Queue email job for asynchronous processing
-                // This prevents blocking the request and allows better error handling
                 SendNotificationEmailJob::dispatch($user, $notification);
                 Log::info('Notification email job dispatched', [
                     'user_id' => $user->id,
@@ -57,24 +55,7 @@ class NotificationService
                     'notification_id' => $notification->id,
                     'error' => $e->getMessage(),
                 ]);
-                
-                // Fallback: Try synchronous sending if queue fails (for development/testing)
-                // In production, queue should always be available
-                try {
-                    Mail::to($user->email)->send(new NotificationMail($user, $notification));
-                    Log::info('Notification email sent synchronously as fallback', [
-                        'user_id' => $user->id,
-                        'email' => $user->email,
-                        'notification_id' => $notification->id,
-                    ]);
-                } catch (\Exception $syncException) {
-                    Log::error('Failed to send notification email (both queue and sync failed)', [
-                        'user_id' => $user->id,
-                        'notification_id' => $notification->id,
-                        'queue_error' => $e->getMessage(),
-                        'sync_error' => $syncException->getMessage(),
-                    ]);
-                }
+                // No sync fallback: all mail must go through the queue to respect SMTP rate limiting
             }
         }
 
@@ -1399,18 +1380,18 @@ class NotificationService
     public function notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $movementOrder): array
     {
         $notifications = [];
-        
+
         if (!$fromCommand) {
             return $notifications;
         }
 
         // Get Staff Officers, Area Controllers, and DC Admins for the FROM command
         // These are the authorized personnel who receive release letters
-        $authorizedUsers = User::whereHas('roles', function($q) use ($fromCommand) {
-                $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
-                  ->where('role_user.command_id', $fromCommand->id)
-                  ->where('role_user.is_active', true);
-            })
+        $authorizedUsers = User::whereHas('roles', function ($q) use ($fromCommand) {
+            $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
+                ->where('role_user.command_id', $fromCommand->id)
+                ->where('role_user.is_active', true);
+        })
             ->get();
 
         $officerName = ($officer->initials ?? '') . ' ' . ($officer->surname ?? '');
@@ -1418,13 +1399,13 @@ class NotificationService
         $officerRank = $officer->substantive_rank ?? 'N/A';
         $toCommandName = $toCommand ? $toCommand->name : 'New Command';
         $orderNumber = $movementOrder ? $movementOrder->order_number : 'N/A';
-        $orderDate = $movementOrder && $movementOrder->created_at 
-            ? $movementOrder->created_at->format('d M Y') 
+        $orderDate = $movementOrder && $movementOrder->created_at
+            ? $movementOrder->created_at->format('d M Y')
             : now()->format('d M Y');
 
         foreach ($authorizedUsers as $user) {
             $message = "RELEASE LETTER: Officer {$officerServiceNumber} {$officerRank} {$officerName} has been officially released from {$fromCommand->name} for posting to {$toCommandName}. Movement Order: {$orderNumber} dated {$orderDate}. The officer is to report accordingly.";
-            
+
             $notification = $this->notify(
                 $user,
                 'officer_release',
@@ -1434,7 +1415,7 @@ class NotificationService
                 $officer->id,
                 true
             );
-            
+
             if ($notification) {
                 $notifications[] = $notification;
             }
@@ -1495,18 +1476,18 @@ class NotificationService
     public function notifyStaffOfficerPendingArrival($officer, $fromCommand, $toCommand, $movementOrder): array
     {
         $notifications = [];
-        
+
         if (!$toCommand) {
             return $notifications;
         }
 
         // Get Staff Officers, Area Controllers, and DC Admins for the TO command
         // These are the authorized personnel who need to accept incoming officers
-        $authorizedUsers = User::whereHas('roles', function($q) use ($toCommand) {
-                $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
-                  ->where('role_user.command_id', $toCommand->id)
-                  ->where('role_user.is_active', true);
-            })
+        $authorizedUsers = User::whereHas('roles', function ($q) use ($toCommand) {
+            $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
+                ->where('role_user.command_id', $toCommand->id)
+                ->where('role_user.is_active', true);
+        })
             ->get();
 
         $officerName = ($officer->initials ?? '') . ' ' . ($officer->surname ?? '');
@@ -1514,13 +1495,13 @@ class NotificationService
         $officerRank = $officer->substantive_rank ?? 'N/A';
         $fromCommandName = $fromCommand ? $fromCommand->name : 'Previous Command';
         $orderNumber = $movementOrder ? $movementOrder->order_number : 'N/A';
-        $orderDate = $movementOrder && $movementOrder->created_at 
-            ? $movementOrder->created_at->format('d M Y') 
+        $orderDate = $movementOrder && $movementOrder->created_at
+            ? $movementOrder->created_at->format('d M Y')
             : now()->format('d M Y');
 
         foreach ($authorizedUsers as $user) {
             $message = "PENDING ARRIVAL: Officer {$officerServiceNumber} {$officerRank} {$officerName} from {$fromCommandName} is being posted to {$toCommand->name}. Movement Order: {$orderNumber} dated {$orderDate}. Please wait for the release letter to be printed by the previous command before accepting the officer.";
-            
+
             $notification = $this->notify(
                 $user,
                 'officer_pending_arrival',
@@ -1530,7 +1511,7 @@ class NotificationService
                 $officer->id,
                 true
             );
-            
+
             if ($notification) {
                 $notifications[] = $notification;
             }
@@ -1753,35 +1734,22 @@ class NotificationService
             $officer->id
         );
 
-        // Also send security notification to the OLD email address
-        // This helps detect unauthorized changes
-        try {
-            Mail::to($oldEmail)->send(new NotificationMail(
-                $officer->user,
-                new Notification([
-                    'user_id' => $officer->user->id,
-                    'notification_type' => 'email_changed_security',
-                    'title' => 'Email Address Changed - Security Alert',
-                    'message' => "Your email address on the NCS Employee Portal has been changed from {$oldEmail} to {$newEmail}. If you did not authorize this change, please contact HRD immediately.",
-                    'entity_type' => 'officer',
-                    'entity_id' => $officer->id,
-                    'is_read' => false,
-                ])
-            ));
-
-            Log::info('Email change security notification sent to old email', [
-                'officer_id' => $officer->id,
-                'old_email' => $oldEmail,
-                'new_email' => $newEmail,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to send email change security notification to old email', [
-                'officer_id' => $officer->id,
-                'old_email' => $oldEmail,
-                'new_email' => $newEmail,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // Send security notification to the OLD email address via queue (rate-limited)
+        $securityNotification = Notification::create([
+            'user_id' => $officer->user->id,
+            'notification_type' => 'email_changed_security',
+            'title' => 'Email Address Changed - Security Alert',
+            'message' => "Your email address on the NCS Employee Portal has been changed from {$oldEmail} to {$newEmail}. If you did not authorize this change, please contact HRD immediately.",
+            'entity_type' => 'officer',
+            'entity_id' => $officer->id,
+            'is_read' => false,
+        ]);
+        \App\Jobs\SendNotificationToEmailJob::dispatch($oldEmail, $officer->user, $securityNotification);
+        Log::info('Email change security notification job dispatched to old email', [
+            'officer_id' => $officer->id,
+            'old_email' => $oldEmail,
+            'new_email' => $newEmail,
+        ]);
 
         return $notification;
     }
@@ -3226,5 +3194,65 @@ class NotificationService
         }
 
         return $notifications;
+    }
+
+    /**
+     * Notify officer about being added to a chat room
+     */
+    public function notifyAddedToChatRoom(\App\Models\Officer $officer, \App\Models\ChatRoom $room): ?Notification
+    {
+        if (!$officer->user) {
+            return null;
+        }
+
+        $roomName = $room->name;
+        $title = "Added to Chat Room: {$roomName}";
+        $message = "You have been added to the '{$roomName}' chat room.";
+
+        return $this->notify(
+            $officer->user,
+            'chat_room_added',
+            $title,
+            $message,
+            'chat_room',
+            $room->id
+        );
+    }
+
+    /**
+     * Notify Staff Officers (Admins) about a new member in an official room
+     */
+    public function notifyChatRoomAdmins(\App\Models\ChatRoom $room, \App\Models\Officer $newMember): array
+    {
+        if ($room->room_type === 'custom' || $room->room_type === 'dm') {
+            return []; // Only notify for official rooms
+        }
+
+        $commandId = $room->command_id;
+        if (!$commandId && $newMember->present_station) {
+            $commandId = $newMember->present_station;
+        }
+
+        if (!$commandId) {
+            return [];
+        }
+
+        $staffOfficers = User::whereHas('roles', function ($q) use ($commandId) {
+            $q->where('name', 'Staff Officer')
+                ->where('user_roles.command_id', $commandId)
+                ->where('user_roles.is_active', true);
+        })->where('is_active', true)->get();
+
+        $memberName = "{$newMember->initials} {$newMember->surname}";
+        $roomName = $room->name;
+
+        return $this->notifyMany(
+            $staffOfficers,
+            'chat_member_added_admin',
+            "New Member in {$roomName}",
+            "Officer {$memberName} ({$newMember->service_number}) has joined the '{$roomName}' chat room.",
+            'chat_room',
+            $room->id
+        );
     }
 }

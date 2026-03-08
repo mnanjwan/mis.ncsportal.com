@@ -155,7 +155,7 @@ export function CreateGroupScreen() {
                                                 onPress={() => toggleMember(m)}
                                             >
                                                 <Text style={styles.chipText} numberOfLines={1}>
-                                                    {m.rank ? `${m.rank} ` : ''}{m.name.split(' ')[0]}
+                                                    {m.substantive_rank ? `${m.substantive_rank} ` : ''}{m.full_name?.split(' ')[0] || m.surname || m.initials}
                                                 </Text>
                                                 <Ionicons name="close" size={14} color="#ffffff" />
                                             </TouchableOpacity>
@@ -191,15 +191,15 @@ export function CreateGroupScreen() {
                             >
                                 <View style={[styles.officerAvatar, { backgroundColor: selected ? themeColors.primary : themeColors.surfaceTertiary }]}>
                                     <Text style={[styles.officerAvatarText, { color: selected ? '#ffffff' : themeColors.text }]}>
-                                        {item.name.charAt(0).toUpperCase()}
+                                        {(item.full_name || item.surname || String(item.id)).charAt(0).toUpperCase()}
                                     </Text>
                                 </View>
                                 <View style={styles.officerInfo}>
                                     <Text style={[styles.officerName, { color: themeColors.text }]}>
-                                        {item.rank ? `${item.rank} ` : ''}{item.name}
+                                        {item.substantive_rank ? `${item.substantive_rank} ` : ''}{item.full_name || `${item.initials || ''} ${item.surname || ''}`.trim()}
                                     </Text>
                                     <Text style={[styles.officerSN, { color: themeColors.textMuted }]}>
-                                        {item.service_number}{item.command?.name ? ` · ${item.command.name}` : ''}
+                                        {item.service_number}{item.presentStation?.name ? ` · ${item.presentStation.name}` : ''}
                                     </Text>
                                 </View>
                                 <Ionicons

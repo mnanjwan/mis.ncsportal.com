@@ -1198,7 +1198,7 @@ class OfficerController extends Controller
         $user->temp_password = null;
         $user->save();
 
-        // Send notification (in-app)
+        // Send notification (in-app) and queue email (rate-limited)
         $notificationService = app(\App\Services\NotificationService::class);
         $notification = $notificationService->notify(
             $user,
@@ -1207,31 +1207,8 @@ class OfficerController extends Controller
             'Your password has been changed successfully. If you did not make this change, please contact support immediately.',
             null,
             null,
-            false // Don't queue email, we'll send it synchronously below
+            true // Queue email so it is rate-limited
         );
-
-        // Send email immediately (synchronously) for password changes since it's critical
-        try {
-            if ($user->email) {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(
-                    new \App\Mail\NotificationMail($user, $notification)
-                );
-                \Log::info('Password change email sent synchronously', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                ]);
-            } else {
-                \Log::warning('Cannot send password change email: user has no email', [
-                    'user_id' => $user->id,
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to send password change email', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-            // Don't fail the password change if email fails
-        }
 
         // Clear session flag if it exists
         session()->forget('must_change_password');

@@ -10,6 +10,8 @@ import { TwoFactorScreen } from '../screens/auth/TwoFactorScreen';
 import { BiometricPromptScreen } from '../screens/auth/BiometricPromptScreen';
 import { BottomTabs } from './BottomTabs';
 import { NotificationStack } from './NotificationStack';
+import { TransportStack } from './TransportStack';
+import { ApprovalsStack } from './ApprovalsStack';
 import { PushRegistration } from '../components/PushRegistration';
 import { colors } from '../theme';
 
@@ -29,7 +31,7 @@ export function RootNavigator() {
   if (isRestoring) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.light.primary} />
       </View>
     );
   }
@@ -46,6 +48,8 @@ export function RootNavigator() {
           <>
             <Stack.Screen name="Main" component={BottomTabs} />
             <Stack.Screen name="Notifications" component={NotificationStack} />
+            <Stack.Screen name="Transport" component={TransportStack} />
+            <Stack.Screen name="Approvals" component={ApprovalsStack} />
           </>
         ) : showBiometric ? (
           <Stack.Screen name="Biometric" component={BiometricPromptScreen} />
@@ -71,6 +75,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.light.background,
   },
 });

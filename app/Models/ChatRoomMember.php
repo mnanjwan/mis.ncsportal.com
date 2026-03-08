@@ -14,6 +14,7 @@ class ChatRoomMember extends Model
         'officer_id',
         'added_by',
         'is_active',
+        'last_read_at',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class ChatRoomMember extends Model
         return [
             'joined_at' => 'datetime',
             'left_at' => 'datetime',
+            'last_read_at' => 'datetime',
             'is_active' => 'boolean',
         ];
     }

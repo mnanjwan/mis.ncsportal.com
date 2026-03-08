@@ -8,6 +8,7 @@ use App\Models\ManningRequest;
 use App\Models\Notification;
 use App\Models\Officer;
 use App\Observers\NotificationObserver;
+use App\Observers\OfficerObserver;
 use App\Policies\EmolumentPolicy;
 use App\Policies\LeaveApplicationPolicy;
 use App\Policies\ManningRequestPolicy;
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Notification::observe(NotificationObserver::class);
+        Officer::observe(OfficerObserver::class);
 
         // Register policies
         Gate::policy(Officer::class, OfficerPolicy::class);

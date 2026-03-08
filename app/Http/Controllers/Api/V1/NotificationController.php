@@ -69,6 +69,18 @@ class NotificationController extends BaseController
     }
 
     /**
+     * Get unread notification count
+     */
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $count = Notification::where('user_id', $request->user()->id)
+            ->where('is_read', false)
+            ->count();
+
+        return $this->successResponse(['count' => $count], 'Unread count fetched');
+    }
+
+    /**
      * Register or update Expo push token for mobile notifications.
      * Token must start with ExponentPushToken[.
      */

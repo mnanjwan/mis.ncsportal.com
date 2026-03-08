@@ -685,47 +685,17 @@ class EstablishmentController extends Controller
             $notificationService = app(NotificationService::class);
             $notificationService->notifyNewRecruit($recruit);
 
-            // Send email to recruit
-            Log::info('NewRecruitCreatedMail: Starting email send process', [
-                'recruit_id' => $recruit->id,
-                'recruit_email' => $recruit->email,
-                'email_empty_check' => empty($recruit->email),
-                'appointment_number' => $appointmentNumber,
-                'method' => 'direct_send', // Using Mail::send() - synchronous, not queued
-            ]);
-
+            // Send email via queue (rate-limited with all outbound mail)
             if (!empty($recruit->email)) {
-                try {
-                    Log::info('NewRecruitCreatedMail: Attempting to send email', [
-                        'recruit_id' => $recruit->id,
-                        'email' => $recruit->email,
-                        'appointment_number' => $appointmentNumber,
-                        'mail_class' => \App\Mail\NewRecruitCreatedMail::class,
-                    ]);
-
-                    $mailInstance = new \App\Mail\NewRecruitCreatedMail($recruit);
-                    Mail::to($recruit->email)->send($mailInstance);
-
-                    Log::info('NewRecruitCreatedMail: Email sent successfully', [
-                        'recruit_id' => $recruit->id,
-                        'email' => $recruit->email,
-                        'appointment_number' => $appointmentNumber,
-                        'timestamp' => now()->toDateTimeString(),
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('NewRecruitCreatedMail: Failed to send email', [
-                        'recruit_id' => $recruit->id,
-                        'email' => $recruit->email,
-                        'appointment_number' => $appointmentNumber,
-                        'error_message' => $e->getMessage(),
-                        'error_trace' => $e->getTraceAsString(),
-                        'timestamp' => now()->toDateTimeString(),
-                    ]);
-                }
+                \App\Jobs\SendNewRecruitCreatedMailJob::dispatch($recruit);
+                Log::info('NewRecruitCreatedMail: Job dispatched', [
+                    'recruit_id' => $recruit->id,
+                    'email' => $recruit->email,
+                    'appointment_number' => $appointmentNumber,
+                ]);
             } else {
                 Log::warning('NewRecruitCreatedMail: Email not sent - recruit email is empty', [
                     'recruit_id' => $recruit->id,
-                    'recruit_email' => $recruit->email,
                     'appointment_number' => $appointmentNumber,
                 ]);
             }

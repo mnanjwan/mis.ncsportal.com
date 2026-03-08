@@ -8,8 +8,6 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\OnboardingLinkMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -142,37 +140,23 @@ class OnboardingController extends Controller
             // Generate onboarding link
             $onboardingLink = route('onboarding.step1') . '?token=' . base64_encode($user->id . '|' . $tempPassword);
 
-            // Send email notification
-            $emailSent = false;
-            $emailDelivered = false;
-            try {
-                $officerName = $validated['name'] ?? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                Mail::to($validated['email'])->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $validated['email']));
-                $emailSent = true;
-                $emailDelivered = true;
-            } catch (\Exception $e) {
-                Log::error("Failed to send onboarding email: " . $e->getMessage());
-                $emailSent = false;
-                $emailDelivered = false;
-            }
+            // Send email via queue (rate-limited with all outbound mail)
+            $officerName = $validated['name'] ?? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+            \App\Jobs\SendOnboardingLinkMailJob::dispatch(
+                $validated['email'],
+                $onboardingLink,
+                $tempPassword,
+                $officerName
+            );
+            $user->update(['email_verified_at' => null]); // Will be set when email is delivered (optional: track via job)
 
-            // Store email delivery status in user meta or session
-            $user->update([
-                'email_verified_at' => $emailDelivered ? now() : null,
-            ]);
-
-            $message = "Onboarding initiated for " . ($validated['name'] ?? $officer->service_number) . ".";
-            if ($emailSent) {
-                $message .= " Email has been sent to {$validated['email']}.";
-            } else {
-                $message .= " Email failed to send. Onboarding link: {$onboardingLink}";
-            }
+            $message = "Onboarding initiated for " . ($validated['name'] ?? $officer->service_number) . ". Email will be sent to {$validated['email']}.";
 
             return redirect()->route('hrd.onboarding')
                 ->with('success', $message)
                 ->with('onboarding_link', $onboardingLink)
                 ->with('temp_password', $tempPassword)
-                ->with('email_sent', $emailSent);
+                ->with('email_sent', true);
         } catch (\Exception $e) {
             Log::error('Onboarding initiation error: ' . $e->getMessage());
             return redirect()->back()
@@ -294,23 +278,22 @@ class OnboardingController extends Controller
                 // Generate onboarding link
                 $onboardingLink = route('onboarding.step1') . '?token=' . base64_encode($user->id . '|' . $tempPassword);
 
-                // Send email notification
-                $emailSent = false;
-                try {
-                    $officerName = $entry['name'] ?? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                    Mail::to($entry['email'])->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $entry['email']));
-                    $emailSent = true;
-                    $user->update(['email_verified_at' => now()]);
-                } catch (\Exception $e) {
-                    Log::error("Failed to send onboarding email for {$entry['service_number']}: " . $e->getMessage());
-                }
+                // Send email via queue (rate-limited)
+                $officerName = $entry['name'] ?? trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+                \App\Jobs\SendOnboardingLinkMailJob::dispatch(
+                    $entry['email'],
+                    $onboardingLink,
+                    $tempPassword,
+                    $officerName
+                );
+                $user->update(['email_verified_at' => null]);
 
                 $results[] = [
                     'service_number' => $entry['service_number'],
                     'email' => $entry['email'],
                     'status' => 'success',
-                    'email_sent' => $emailSent,
-                    'message' => $emailSent ? 'Email sent successfully' : 'Email failed to send'
+                    'email_sent' => true,
+                    'message' => 'Email will be sent shortly'
                 ];
                 $successCount++;
             } catch (\Exception $e) {
@@ -350,40 +333,24 @@ class OnboardingController extends Controller
             // Generate onboarding link
             $onboardingLink = route('onboarding.step1') . '?token=' . base64_encode($officer->user->id . '|' . $tempPassword);
 
-            // Send email notification
-            $emailSent = false;
-            $emailDelivered = false;
-            try {
-                $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                Mail::to($officer->user->email)->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $officer->user->email));
-                $emailSent = true;
-                $emailDelivered = true;
-            } catch (\Exception $e) {
-                Log::error("Failed to send onboarding email: " . $e->getMessage());
-                $emailSent = false;
-                $emailDelivered = false;
-            }
-            
-            // Update email delivery status
-            $officer->user->update([
-                'email_verified_at' => $emailDelivered ? now() : null,
-            ]);
-            
-            // Refresh the relationship to ensure updated data is available
+            // Send email via queue (rate-limited)
+            $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+            \App\Jobs\SendOnboardingLinkMailJob::dispatch(
+                $officer->user->email,
+                $onboardingLink,
+                $tempPassword,
+                $officerName
+            );
+            $officer->user->update(['email_verified_at' => null]);
             $officer->load('user');
 
-            $message = "Onboarding link regenerated for {$officer->initials} {$officer->surname}.";
-            if ($emailSent) {
-                $message .= " Link has been sent to {$officer->user->email}.";
-            } else {
-                $message .= " Link: {$onboardingLink}";
-            }
+            $message = "Onboarding link regenerated for {$officer->initials} {$officer->surname}. Link will be sent to {$officer->user->email}.";
 
             return redirect()->route('hrd.onboarding')
                 ->with('success', $message)
                 ->with('onboarding_link', $onboardingLink)
                 ->with('temp_password', $tempPassword)
-                ->with('email_sent', $emailSent);
+                ->with('email_sent', true);
         } catch (\Exception $e) {
             Log::error('Resend onboarding link error: ' . $e->getMessage());
             return redirect()->back()
@@ -429,37 +396,18 @@ class OnboardingController extends Controller
             // Generate new onboarding link
             $onboardingLink = route('onboarding.step1') . '?token=' . base64_encode($officer->user->id . '|' . $tempPassword);
 
-            // Send email notification to new email
-            $emailSent = false;
-            $emailDelivered = false;
-            try {
-                $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
-                Mail::to($newEmail)->send(new OnboardingLinkMail($onboardingLink, $tempPassword, $officerName, $newEmail));
-                $emailSent = true;
-                $emailDelivered = true;
-            } catch (\Exception $e) {
-                Log::error("Failed to send onboarding email to updated address: " . $e->getMessage());
-                $emailSent = false;
-                $emailDelivered = false;
-            }
+            // Send email to new address via queue (rate-limited)
+            $officerName = trim(($officer->initials ?? '') . ' ' . ($officer->surname ?? ''));
+            \App\Jobs\SendOnboardingLinkMailJob::dispatch($newEmail, $onboardingLink, $tempPassword, $officerName);
+            $officer->user->update(['email_verified_at' => null]);
 
-            // Update email delivery status
-            $officer->user->update([
-                'email_verified_at' => $emailDelivered ? now() : null,
-            ]);
-
-            $message = "Email updated from {$oldEmail} to {$newEmail} for {$officer->initials} {$officer->surname}.";
-            if ($emailSent) {
-                $message .= " New onboarding link has been sent to {$newEmail}.";
-            } else {
-                $message .= " Failed to send email. Onboarding link: {$onboardingLink}";
-            }
+            $message = "Email updated from {$oldEmail} to {$newEmail} for {$officer->initials} {$officer->surname}. New onboarding link will be sent to {$newEmail}.";
 
             return redirect()->route('hrd.onboarding')
                 ->with('success', $message)
                 ->with('onboarding_link', $onboardingLink)
                 ->with('temp_password', $tempPassword)
-                ->with('email_sent', $emailSent);
+                ->with('email_sent', true);
         } catch (\Exception $e) {
             Log::error('Update onboarding email error: ' . $e->getMessage());
             return redirect()->back()

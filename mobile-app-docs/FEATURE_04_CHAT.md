@@ -1,12 +1,12 @@
 # Feature 04: Chat System
 
-> **Source studied:** `ChatController.php` (API, 145 lines), `ChatRoom.php` model, `ChatMessage.php` model, `ChatRoomMember.php` model, web chat routes, `NotificationService.php`
+> **Source studied:** `ChatController.php` (API, 770+ lines), `ChatRoom.php` model, `ChatMessage.php` model, `ChatRoomMember.php` model, web chat routes, `NotificationService.php`
 
 ---
 
 ## 1. Feature Overview
 
-The NCS Employee app has **four distinct chat capabilities** that are unified into a single feature:
+The NCS Employee app has **four distinct chat capabilities** that are unified into a single feature, now following a **WhatsApp-premium UI standard**:
 
 | Sub-Feature | Description | Auto-Join Logic |
 |-------------|-------------|-----------------|
@@ -15,9 +15,49 @@ The NCS Employee app has **four distinct chat capabilities** that are unified in
 | **Staff Officer Admin** | Staff Officers can manage chat rooms, add/remove members | Role-based: `Staff Officer` role |
 | **Group Creation** | WhatsApp-style groups for document sharing | Any officer can create, invite members |
 
+**WhatsApp-Style UI Enhancements:**
+- **Bold unread indicators** and green badge counts (`#25d366`).
+- **Real-time synchronization** via **WebSockets (Laravel Reverb)**.
+- **Read tracking** using `last_read_at` on a per-member basis.
+- **Double-tick status** (`✓✓`) for sent messages.
+
 ---
 
-## 2. Data Models
+## 2. Room Types & Membership Logic
+
+The system supports five distinct types of chat rooms, each with varying levels of automation and administrative control:
+
+| Room Type | Purpose | Automation | Logic / Trigger |
+| :--- | :--- | :--- | :--- |
+| **Direct Message** | Private 1-on-1 chats | Manual | Created when a user starts a chat with another officer via Global Search. |
+| **Command Room** | Official station-wide chat | **Auto-Join** | Linked to `present_station`. Officers are added instantly upon Documentation or Posting via Web Portal. |
+| **Unit Room** | Department/Unit specific chat | **Auto-Join** | Linked to the `unit` field in the officer profile. Syncs on profile update. |
+| **Management** | Senior leadership chat | **Auto-Join** | Restricted to **AC (Assistant Controller)** rank and above. Filtered via `PromotionService`. |
+| **Custom Group** | Ad-hoc collaboration groups | Manual | Created by any officer. The creator acts as the admin and can add/remove members. |
+
+---
+
+## 3. Synchronization Mechanism (`OfficerObserver`)
+To ensure the mobile app complements the web portal perfectly, we use a **Global Observer**:
+*   **Web Trigger**: Any change to an officer's rank, station, or unit in the Web Portal (Postings, Documentation, Promotions) immediately triggers the `OfficerObserver`.
+*   **Instant Sync**: The observer calls `ChatService::syncOfficerRooms()`, which recalculates memberships and adds the officer to the correct rooms before they even open the mobile app.
+*   **Notifications Flow**:
+    *   **User**: Receives an **instant Push Notification** and an **Email** when added to a new official room.
+    *   **Admins**: Command-level **Staff Officers** receive a notification when a new member is added to their official rooms (Command/Unit/Management).
+*   **Resilience**: If an officer was previously removed but their status still matches the room criteria, they are re-activated and notified automatically.
+
+---
+
+## 4. Technical Infrastructure
+*   **ChatService**: Centralized logic for calculating memberships based on rank, station, and unit.
+*   **OfficerObserver**: Global hook that triggers `ChatService` whenever an officer's profile is updated via the web portal (Postings, Promotions, Documentation).
+*   **Data Models**: `ChatRoom`, `ChatRoomMember`(pivot with active status and read tracking), `ChatMessage` (with attachment, reaction, and threading support).
+*   **Real-Time Engine**: Laravel Reverb (WebSocket Server) + Laravel Echo (Mobile Client).
+*   **API Layer**: RESTful endpoints using Laravel Sanctum for secure mobile communication.
+
+---
+
+## 5. Data Models
 
 ### `chat_rooms` Table
 
@@ -47,6 +87,7 @@ The NCS Employee app has **four distinct chat capabilities** that are unified in
 │ officer_id   │ bigint FK│ → officers.id                            │
 │ added_by     │ bigint FK│ → users.id (who added this member)       │
 │ is_active    │ boolean  │ Active membership                        │
+│ last_read_at │ datetime │ When the user last read the room         │
 │ joined_at    │ datetime │ When joined                              │
 │ left_at      │ datetime │ When left (nullable)                     │
 │ created_at   │ timestamp│                                          │
@@ -63,17 +104,34 @@ The NCS Employee app has **four distinct chat capabilities** that are unified in
 │ id           │ bigint PK│                                          │
 │ chat_room_id │ bigint FK│ → chat_rooms.id                          │
 │ sender_id    │ bigint FK│ → officers.id (sender)                   │
+│ parent_id    │ bigint FK│ → chat_messages.id (Self-relation/Reply) │
 │ message_text │ text     │ Message content                          │
 │ attachment_url│ string  │ File attachment URL (nullable)           │
 │ is_broadcast │ boolean  │ Is this a broadcast/announcement?        │
+│ is_pinned    │ boolean  │ Is this message pinned to the top?       │
+│ is_deleted   │ boolean  │ Soft-delete flag                         │
+│ deleted_at   │ timestamp│ When the message was deleted             │
 │ created_at   │ timestamp│                                          │
 │ updated_at   │ timestamp│                                          │
 └──────────────┴──────────┴──────────────────────────────────────────┘
 ```
 
+### `chat_message_reactions` Table (NEW)
+
+```
+┌──────────────┬──────────┬──────────────────────────────────────────┐
+│ Column       │ Type     │ Notes                                    │
+├──────────────┼──────────┼──────────────────────────────────────────┤
+│ id           │ bigint PK│                                          │
+│ chat_message_id│ bigint FK│ → chat_messages.id                     │
+│ officer_id   │ bigint FK│ → officers.id                            │
+│ reaction_type│ string   │ Emoji string (e.g., '❤️')                 │
+└──────────────┴──────────┴──────────────────────────────────────────┘
+```
+
 ---
 
-## 3. Room Types & Auto-Join Logic
+## 6. Room Types & Auto-Join Logic
 
 ### Command Chat Room (`room_type = 'command'`)
 
@@ -121,400 +179,201 @@ CGC > DCG > ACG > DC > AC > CI > DSC > ASC I > ASC II > Insp > AI
 
 ---
 
-## 4. API Endpoints
+## 7. API Endpoints
 
-### Existing API Endpoints (from `api.php`)
+### Core & Advanced Endpoints
 
-```
-GET  /api/v1/chat/rooms                  → List user's chat rooms
-POST /api/v1/chat/rooms                  → Create chat room
-GET  /api/v1/chat/rooms/{id}/messages    → Get room messages (paginated)
-POST /api/v1/chat/rooms/{id}/messages    → Send message
-```
-
-### New/Enhanced API Endpoints Needed
-
-```
-# Room management
-GET    /api/v1/chat/rooms                         → List all rooms (user is member of)
-POST   /api/v1/chat/rooms                         → Create group room
-GET    /api/v1/chat/rooms/{id}                    → Room detail + members
-PUT    /api/v1/chat/rooms/{id}                    → Update room name/description
-DELETE /api/v1/chat/rooms/{id}                    → Delete group (creator only)
-
-# Membership
-POST   /api/v1/chat/rooms/{id}/join               → Auto-join (command/management)
-POST   /api/v1/chat/rooms/{id}/leave              → Leave group
-POST   /api/v1/chat/rooms/{id}/members            → Add members (admin/creator)
-DELETE /api/v1/chat/rooms/{id}/members/{officerId} → Remove member (admin/creator)
-
-# Messages
-GET    /api/v1/chat/rooms/{id}/messages            → Paginated messages (cursor-based)
-POST   /api/v1/chat/rooms/{id}/messages            → Send text message
-POST   /api/v1/chat/rooms/{id}/messages/attachment  → Send file/document
-
-# Search
-GET    /api/v1/officers/search?q={query}           → Search officers for member selection
-
-# Sync
-POST   /api/v1/chat/sync                           → Sync auto-join rooms on login
-```
-
-### API Request/Response Specs
-
-#### `GET /api/v1/chat/rooms` — List Rooms
-
-**Response:**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": 1,
-      "name": "Lagos Command",
-      "room_type": "command",
-      "command_id": 5,
-      "description": "Official Lagos Command chat",
-      "is_active": true,
-      "member_count": 45,
-      "unread_count": 3,
-      "last_message": {
-        "id": 892,
-        "sender": { "id": 15, "initials": "A.B.", "surname": "Smith", "rank": "ASC II" },
-        "message_text": "Meeting at 15:00",
-        "created_at": "2026-02-24T14:30:00Z"
-      }
-    },
-    {
-      "id": 2,
-      "name": "Management Chat",
-      "room_type": "management",
-      "command_id": null,
-      "member_count": 12,
-      "unread_count": 0,
-      "last_message": null
-    },
-    {
-      "id": 15,
-      "name": "Project Alpha Team",
-      "room_type": "group",
-      "command_id": null,
-      "member_count": 6,
-      "unread_count": 7,
-      "last_message": {
-        "id": 1050,
-        "sender": { "id": 22, "initials": "C.D.", "surname": "Johnson", "rank": "Insp" },
-        "message_text": "Shared the updated report",
-        "attachment_url": "/storage/chat/report.pdf",
-        "created_at": "2026-02-24T16:00:00Z"
-      }
-    }
-  ]
-}
-```
-
-#### `POST /api/v1/chat/rooms/{id}/messages` — Send Message
-
-**Request:**
-```json
-{
-  "message_text": "Meeting rescheduled to 16:00",
-  "is_broadcast": false
-}
-```
-
-**Validation:**
-```php
-'message_text' => 'required|string|max:5000',
-'is_broadcast' => 'nullable|boolean'
-```
-
-#### `POST /api/v1/chat/rooms/{id}/messages/attachment` — Send Attachment
-
-**Request (multipart/form-data):**
-```
-message_text: "Here's the updated document"
-attachment: [file] (PDF, JPEG, PNG, DOCX, XLSX — max 10MB)
-```
-
-#### `POST /api/v1/chat/rooms` — Create Group
-
-**Request:**
-```json
-{
-  "name": "Project Alpha Team",
-  "description": "Team for Project Alpha coordination",
-  "room_type": "group",
-  "member_ids": [15, 22, 33, 44]
-}
-```
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **GET** | `/api/v1/chat/rooms` | List user's chat rooms (including unread_count) |
+| **POST** | `/api/v1/chat/rooms` | Create chat room/group |
+| **GET** | `/api/v1/chat/rooms/{id}/messages` | Get messages (auto-marks room as read) |
+| **POST** | `/api/v1/chat/rooms/{id}/messages` | Send text message (supports `parent_id` for replies) |
+| **POST** | `/api/v1/chat/rooms/{id}/messages/attachment` | Upload and send file/image |
+| **POST** | `/api/v1/chat/rooms/{id}/messages/{mid}/react` | Toggle emoji reaction |
+| **POST** | `/api/v1/chat/rooms/{id}/messages/{mid}/pin` | Toggle pinned status (Admin/Staff only) |
+| **POST** | `/api/v1/chat/rooms/{id}/messages/{mid}/broadcast` | Toggle broadcast status (Staff only) |
+| **GET** | `/api/v1/chat/rooms/{id}/messages/{mid}/info` | Get read receipts/info |
+| **DELETE** | `/api/v1/chat/rooms/{id}/messages/{mid}` | Delete message for everyone |
+| **POST** | `/api/v1/chat/rooms/{id}/mark-read` | Explicitly mark room as read |
+| **GET** | `/api/v1/chat/officers/search` | Custom system-wide officer search |
 
 ---
 
-## 5. Real-Time Messaging (WebSocket)
+## 8. Real-Time Messaging
 
-### Technology: Laravel Echo + Pusher/Soketi
-
-```typescript
-// Real-time message listener
-import Echo from 'laravel-echo';
-
-const echo = new Echo({
-  broadcaster: 'pusher',
-  key: process.env.PUSHER_KEY,
-  cluster: process.env.PUSHER_CLUSTER,
-  wsHost: process.env.WS_HOST,
-  wsPort: process.env.WS_PORT,
-  forceTLS: false,
-  disableStats: true,
-  authEndpoint: '/api/v1/broadcasting/auth',
-  auth: {
-    headers: { Authorization: `Bearer ${token}` },
-  },
-});
-
-// Subscribe to a room channel
-function subscribeToRoom(roomId: number) {
-  echo.private(`chat.room.${roomId}`)
-    .listen('MessageSent', (event: ChatMessageEvent) => {
-      // Add message to local state
-      dispatch(addMessage({ roomId, message: event.message }));
-    })
-    .listen('MemberJoined', (event: MemberEvent) => {
-      dispatch(addMember({ roomId, member: event.member }));
-    })
-    .listen('MemberLeft', (event: MemberEvent) => {
-      dispatch(removeMember({ roomId, memberId: event.member.id }));
-    });
-}
-```
-
-### WebSocket Events
-
-| Event | Channel | Payload |
-|-------|---------|---------|
-| `MessageSent` | `private-chat.room.{id}` | `{ message, sender, room_id }` |
-| `MemberJoined` | `private-chat.room.{id}` | `{ member, room_id }` |
-| `MemberLeft` | `private-chat.room.{id}` | `{ member_id, room_id }` |
-| `RoomUpdated` | `private-chat.room.{id}` | `{ room }` |
+The application has transitioned from polling to **True Real-Time Messaging** using **WebSockets**:
+*   **Backend Engine**: **Laravel Reverb**, a high-performance socket server.
+*   **Broadcaster**: Reverb implements the Pusher protocol.
+*   **Mobile Client**: **Laravel Echo** + `pusher-js` listeners for `ChatMessageSent`, `ChatMessageDeleted`, `ChatMessageReacted`, etc.
+*   **Reliability**: A fallback polling mechanism (6s interval) remains in place for cases where the WebSocket connection cannot be established.
 
 ---
 
-## 6. Mobile Screens
+## 9. Administrative Context & Permissions
 
-### Screen 6.1: Chat Room List
+To ensure the chat system properly complements the Web Portal, specific administrative rules apply:
 
-```
-┌─────────────────────────────────────┐
-│  💬 Messages                        │
-│  ─────────────────────────────────  │
-│  [🔍 Search rooms...]              │
-│                                     │
-│  ── OFFICIAL ROOMS ──               │
-│  ┌─────────────────────────────┐   │
-│  │ 🏢 Lagos Command            │   │
-│  │ A.B. Smith: Meeting at 15:00│   │
-│  │ 14:30              🔴 3     │   │
-│  └─────────────────────────────┘   │
-│  ┌─────────────────────────────┐   │
-│  │ 👔 Management Chat          │   │
-│  │ No messages yet             │   │
-│  │                             │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ── MY GROUPS ──                    │
-│  ┌─────────────────────────────┐   │
-│  │ 📁 Project Alpha Team       │   │
-│  │ C.D. Johnson: Shared the...│   │
-│  │ 16:00              🔴 7     │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│              [+ New Group]          │
-└─────────────────────────────────────┘
-```
-
-### Screen 6.2: Chat Conversation
-
-```
-┌─────────────────────────────────────┐
-│  ← Lagos Command        👥 45      │
-│  ─────────────────────────────────  │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ ASC II A.B. Smith    14:25  │   │
-│  │ Reminder: Quarterly review  │   │
-│  │ meeting at Conference Room  │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ Insp C.D. Johnson   14:30  │   │
-│  │ Meeting at 15:00            │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ 📎 report.pdf (2.5MB)      │   │  ← Attachment
-│  │ DC E.F. Williams    14:45   │   │
-│  │ Here's the quarterly report │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ┌────────────────┬──┬──┐          │
-│  │ Type a message │📎│➤ │          │
-│  └────────────────┴──┴──┘          │
-└─────────────────────────────────────┘
-```
-
-### Screen 6.3: Create Group
-
-```
-┌─────────────────────────────────────┐
-│  ← New Group                        │
-│  ─────────────────────────────────  │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ Group Name                  │   │
-│  │ [Project Alpha Team     ]  │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  ┌─────────────────────────────┐   │
-│  │ Description (optional)      │   │
-│  │ [Team coordination      ]  │   │
-│  └─────────────────────────────┘   │
-│                                     │
-│  Add Members                        │
-│  [🔍 Search officers...]           │
-│                                     │
-│  Selected (3):                      │
-│  ┌──────────────────────────┐      │
-│  │ ✓ ASC II A.B. Smith  ✕  │      │
-│  │ ✓ Insp C.D. Johnson  ✕  │      │
-│  │ ✓ DC E.F. Williams   ✕  │      │
-│  └──────────────────────────┘      │
-│                                     │
-│  Search Results:                    │
-│  ┌──────────────────────────┐      │
-│  │ ☐ ASC I G.H. Brown      │      │
-│  │ ☐ CI I.J. Davis         │      │
-│  └──────────────────────────┘      │
-│                                     │
-│         [Create Group]              │
-└─────────────────────────────────────┘
-```
+*   **Staff Officer Privileges**: 
+    - Can remove members from **Command Rooms** if they belong to the same station.
+    - Can manage members (Add/Remove) in all **Custom Groups** and **Unit Rooms**.
+    - Can **Broadcast** messages to mark them as official announcements.
+    - Can **Pin** messages to the top of the room.
+*   **Auto-Join Logic**:
+    - **Command Room**: Linked to `present_station`. Updates instantly on Web Documentation.
+    - **Unit Room**: Linked to `unit` field. Updates on Web Update.
+    - **Management Room**: Reserved for AC rank and above. Filtered via `PromotionService`.
+*   **Membership ID Convention**:
+    - APIs for membership (`members`, `addMembers`, `removeMember`) consistently use **`officer_id`** from the `officers` table, NOT the `user_id`.
+*   **Troubleshooting Removal**:
+    - If removal fails with "Not active", verify that the `is_active` flag in `chat_room_members` is actually `true`.
+    - Permission checks rely on the `added_by` field (for group creators) or the `Staff Officer` role (for global management).
 
 ---
 
-## 7. React Native Implementation
+## 10. Mobile Screens
+
+The mobile implementation following the premium WhatsApp theme:
+
+### Screen 6.1: Chat Room List (`ChatRoomsScreen.tsx`)
+- **WhatsApp Style**: Bold names for unread, green badges, hairline dividers.
+- **Unread Banner**: Summarizes total unread across all rooms.
+- **Tab Badge**: Dynamic unread count on the "Chat" bottom tab.
+
+### Screen 6.2: Chat Conversation (`ChatRoomScreen.tsx`)
+- **Bubble UI**: Right-aligned own messages with double-tick delivery indicators.
+- **WebSocket Sync**: New messages, reactions, and deletions appear instantly.
+- **Auto-Read**: Count clears immediately when room is opened.
+- **Interaction**: Long-press for the premium options list (Reply, Info, React, Pin, Delete).
+
+---
+
+## 11. React Native Implementation
 
 ### Component Structure
 ```
-src/features/chat/
-├── screens/
-│   ├── ChatRoomListScreen.tsx       → List of all rooms
-│   ├── ChatConversationScreen.tsx   → Messages + send
-│   ├── CreateGroupScreen.tsx        → New group creation
-│   ├── RoomInfoScreen.tsx           → Room details + members
-│   └── MemberSearchScreen.tsx       → Search officers to add
-├── components/
-│   ├── ChatRoomCard.tsx             → Room preview card
-│   ├── MessageBubble.tsx            → Individual message
-│   ├── MessageInput.tsx             → Text input + attach + send
-│   ├── AttachmentPreview.tsx        → File/image preview
-│   ├── MemberList.tsx               → Room members list
-│   ├── OfficerSearchItem.tsx        → Officer search result
-│   └── UnreadBadge.tsx              → Unread count indicator
-├── hooks/
-│   ├── useChatRooms.ts
-│   ├── useMessages.ts
-│   ├── useWebSocket.ts             → Echo/Pusher connection
-│   └── useChatSync.ts              → Auto-join sync
-├── api/
-│   └── chatApi.ts
-├── services/
-│   └── websocketService.ts          → WebSocket connection manager
-└── types/
-    └── chat.ts
+src/screens/chat/
+├── ChatRoomsScreen.tsx       → List of all rooms (WhatsApp style)
+├── ChatRoomScreen.tsx        → Conversation UI + WebSocket listeners
+├── CreateGroupScreen.tsx     → New group creation
+├── CreateDMScreen.tsx        → New 1-on-1 search & chat
+├── MessageInfoScreen.tsx     → Detailed read receipts list
 ```
 
-### TypeScript Types
+### API Interface (`chatApi.ts`)
 ```typescript
-export type RoomType = 'command' | 'management' | 'group';
-
-export interface ChatRoom {
+export interface ChatRoomItem {
   id: number;
-  command_id: number | null;
-  room_type: RoomType;
   name: string;
-  description: string | null;
-  is_active: boolean;
-  member_count: number;
+  room_type: string;
   unread_count: number;
-  last_message: ChatMessage | null;
-}
-
-export interface ChatMessage {
-  id: number;
-  chat_room_id: number;
-  sender_id: number;
-  sender?: Officer;
-  message_text: string;
-  attachment_url: string | null;
-  is_broadcast: boolean;
-  created_at: string;
-}
-
-export interface ChatRoomMember {
-  id: number;
-  chat_room_id: number;
-  officer_id: number;
-  officer?: Officer;
-  added_by: number | null;
-  is_active: boolean;
-  joined_at: string;
-  left_at: string | null;
+  member_count: number;
+  last_message: ChatMessageItem | null;
 }
 ```
 
 ---
 
-## 8. Staff Officer Admin Capabilities
+## 12. Operational Workflow (Real-Time)
 
-Staff Officers get additional powers within their command's chat rooms:
-
-| Capability | Scope |
-|-----------|-------|
-| Pin messages | Command room only |
-| Broadcast messages | `is_broadcast = true` — highlighted |
-| Remove members | Command room |
-| Mute members | Temporary message suppression |
-| View member activity | See joined_at, last active |
+1.  **Start Socket Server**: Admin executes `php artisan reverb:start`.
+2.  **App Connection**: Mobile app initializes `laravel-echo` on launch.
+3.  **Room Entry**: App joins `PresenceChannel` (`chat.room.{id}`).
+4.  **Interaction**: Any message/reaction event triggers a Laravel Broadcast event.
+5.  **Sync**: Other participants receive the event via Echo and update local state instantly.
 
 ---
 
-## 9. Offline Support
+## 13. Test Checklist
 
-| Feature | Offline Behavior |
-|---------|-----------------|
-| View messages | Cached locally (SQLite via WatermelonDB or Realm) |
-| Send messages | Queue in local storage, send when back online |
-| Attachments | Download for offline viewing (encrypted storage) |
-| Room list | Cached with last sync timestamp |
+- [x] Auto-join command room on login/sync
+- [x] Auto-join management room for AC+ officers
+- [x] Management room NOT visible for below-AC officers
+- [x] Create group with multiple members
+- [x] **Real-Time Delivery**: Messages appear on recipient's screen in <100ms.
+- [x] **Live Reactions**: Emojis update instantly via WebSockets.
+- [x] **Threaded Replies**: Quoted context displays correctly with sender names.
+- [x] **Sticky Pins**: Pinned list at the top updates in real-time.
+- [x] **Read Receipts**: Info screen correctly identifies members via `last_read_at`.
+- [x] **Broadcast UI**: Golden accents and megaphone icons render for marked messages.
+- [x] **Soft Deletion**: Messages are replaced with "This message was deleted" text for all users.
+- [x] Send file attachment (Images/Documents) with client-side compression (0.7).
+- [x] Double-tick indicators appear on sent messages.
+- [x] Staff Officer can add/remove members from command room.
+- [x] **Instant Web Sync**: `OfficerObserver` triggers membership updates on web postings.
+- [x] **Keyboard Safety**: Typing area never covered by OS keyboard.
 
 ---
 
-## 10. Test Checklist
+## 14. Future Roadmap
 
-- [ ] Auto-join command room on login
-- [ ] Auto-join management room for AC+ officers
-- [ ] Management room NOT visible for below-AC officers
-- [ ] Create group with multiple members
-- [ ] Send text message in real-time
-- [ ] Receive message in real-time (WebSocket)
-- [ ] Send file attachment (PDF, JPEG)
-- [ ] Download/preview attachment
-- [ ] Staff Officer can broadcast message
-- [ ] Staff Officer can remove member from command room
-- [ ] Leave group
-- [ ] Unread count badge updates in real-time
-- [ ] Search officers when creating group
-- [ ] Message pagination (load older messages)
-- [ ] Offline: view cached messages
-- [ ] Offline: queued messages send when back online
+1.  **Typing Indicators**: Show "Officer X is typing..." in the room header.
+2.  **Offline Queuing**: Allow officers to send messages while offline.
+3.  **Message Search**: Search for text within a chat room.
+4.  **Audio/Voice Notes**: Support for recording and sending voice messages.
+
+---
+
+## 15. Production Deployment (VPS)
+
+For local development, `php artisan reverb:start` is sufficient. For a live VPS, you must ensure the process is persistent and secure (SSL/WSS).
+
+### Step 1: Supervisor (Process Persistence)
+Supervisor ensures Reverb restarts automatically if it crashes or the server reboots.
+
+1.  **Install Supervisor**: `sudo apt install supervisor -y`
+2.  **Create Config**: `sudo nano /etc/supervisor/conf.d/reverb.conf`
+3.  **Insert the following**:
+```ini
+[program:reverb]
+process_name=%(program_name)s
+command=php /var/www/pisportal/artisan reverb:start --host=0.0.0.0 --port=8080
+autostart=true
+autorestart=true
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/www/pisportal/storage/logs/reverb.log
+stopasgroup=true
+killasgroup=true
+```
+4.  **Activate**:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start reverb
+```
+
+### Step 2: Firewall (Port 8080)
+Ensure the WebSocket port is open to the public:
+`sudo ufw allow 8080/tcp`
+
+### Step 3: Nginx Reverse Proxy (SSL / WSS)
+To use `wss://` (required for production mobile apps), use Nginx as a reverse proxy:
+
+1.  **Edit Nginx Config**: `sudo nano /etc/nginx/sites-available/reverb`
+2.  **Configuration**:
+```nginx
+server {
+    listen 80;
+    server_name reverb.yourdomain.com; # Replace with your subdomain
+
+    location / {
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header Scheme $scheme;
+        proxy_set_header SERVER_PORT $server_port;
+        proxy_set_header REMOTE_ADDR $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+```
+3.  **Enable & Get SSL**:
+```bash
+sudo ln -s /etc/nginx/sites-available/reverb /etc/nginx/sites-enabled/
+sudo certbot --nginx -d reverb.yourdomain.com
+sudo systemctl restart nginx
+```

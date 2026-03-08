@@ -34,4 +34,9 @@ export const notificationApi = {
     const { data } = await apiClient.patch<{ success: boolean }>('/notifications/read-all', {});
     return data;
   },
+
+  async unreadCount(): Promise<{ success: boolean; data?: { count: number } }> {
+    const { data } = await apiClient.get<{ success: boolean; data?: { count: number } }>('/notifications/unread-count');
+    return data;
+  },
 };

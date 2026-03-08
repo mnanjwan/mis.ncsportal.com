@@ -156,7 +156,7 @@
                         </div>
                         @if($officer->unit)
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-secondary-foreground">Unit</span>
+                            <span class="text-sm text-secondary-foreground">Category</span>
                             <span class="text-sm font-semibold text-mono">{{ $officer->unit }}</span>
                         </div>
                         @endif

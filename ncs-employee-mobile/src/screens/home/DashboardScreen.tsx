@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { passApi } from '../../api/passApi';
 import { leaveApi } from '../../api/leaveApi';
 import { emolumentApi } from '../../api/emolumentApi';
+import { notificationApi } from '../../api/notificationApi';
 
 // Define the type for a Feature
 type FeatureItem = {
@@ -18,13 +19,10 @@ type FeatureItem = {
 
 // Strictly aligned to mobile-app-docs features with role-based access
 const FEATURES: FeatureItem[] = [
-  { id: 'pass', title: 'Pass', icon: 'card' },
-  { id: 'leave', title: 'Leave', icon: 'calendar' },
-  { id: 'emolument', title: 'Emolument', icon: 'cash' },
   { id: 'chat', title: 'Chat', icon: 'chatbubbles' },
-  { id: 'transport', title: 'Fleet', icon: 'car', roles: ['CD', 'Transport Admin', 'Staff Officer'] },
-  { id: 'health', title: 'Health', icon: 'medkit', roles: ['Pharmacy Officer', 'Medical Officer'] },
-  { id: 'reports', title: 'Reports', icon: 'document-text', roles: ['Commandant', 'Staff Officer', 'HRD', 'DC Admin'] },
+  { id: 'transport', title: 'Fleet', icon: 'car', roles: ['CD', 'CC T&L', 'O/C T&L', 'T&L Officer', 'Staff Officer T&L', 'Staff Officer', 'Transport Store/Receiver'] },
+  { id: 'health', title: 'Health', icon: 'medkit', roles: ['OC Pharmacy', 'Command Pharmacist', 'Central Medical Store'] },
+  { id: 'reports', title: 'Reports', icon: 'document-text', roles: ['Area Controller', 'Staff Officer', 'HRD', 'DC Admin'] },
   // Optional: A unified Approvals module that only appears for approver roles
   {
     id: 'approvals',
@@ -46,6 +44,16 @@ export function DashboardScreen() {
 
   const [recentRequests, setRecentRequests] = React.useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = React.useState(true);
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await notificationApi.unreadCount();
+      if (res.success && res.data) {
+        setUnreadCount(res.data.count);
+      }
+    } catch { }
+  };
 
   const fetchRecentRequests = async () => {
     setLoadingRequests(true);
@@ -94,6 +102,7 @@ export function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchRecentRequests();
+      fetchUnreadCount();
     }, [])
   );
 
@@ -151,10 +160,10 @@ export function DashboardScreen() {
         navigation.navigate('Transport', { screen: 'Health' });
         break;
       case 'reports':
-        navigation.navigate('Transport', { screen: 'MyReports' });
+        navigation.navigate('Transport', { screen: 'ReportsMenu' });
         break;
       case 'approvals':
-        navigation.navigate('MyRequests');
+        navigation.navigate('Approvals');
         break;
     }
   };
@@ -184,9 +193,11 @@ export function DashboardScreen() {
                 onPress={() => navigation.navigate('Notifications')}
               >
                 <Ionicons name="notifications-outline" size={24} color={themeColors.text} />
-                <Animated.View style={[styles.notificationDot, { opacity: pulseAnim, borderColor: themeColors.background }]}>
-                  <Text style={styles.notificationText}>2</Text>
-                </Animated.View>
+                {unreadCount > 0 && (
+                  <Animated.View style={[styles.notificationDot, { opacity: pulseAnim, borderColor: themeColors.background }]}>
+                    <Text style={styles.notificationText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </Animated.View>
+                )}
               </TouchableOpacity>
               <TouchableOpacity style={styles.primaryPillBtn} activeOpacity={0.8}>
                 <Ionicons name="flash" size={14} color="#ffffff" style={styles.flashIcon} />
@@ -246,7 +257,6 @@ export function DashboardScreen() {
                       title={req.title}
                       date={formatDate(req.date)}
                       status={req.status}
-                      statusIcon={req.status.toUpperCase() === 'APPROVED' ? 'checkmark-circle' : req.status.toUpperCase() === 'REJECTED' ? 'close-circle' : 'time-outline'}
                       statusColor={req.status.toUpperCase() === 'APPROVED' ? '#16a34a' : req.status.toUpperCase() === 'REJECTED' ? '#ef4444' : themeColors.textMuted}
                       themeColors={themeColors}
                     />
@@ -271,7 +281,7 @@ export function DashboardScreen() {
   );
 }
 
-function ListItem({ icon, title, date, status, statusIcon, statusColor, themeColors }: any) {
+function ListItem({ icon, title, date, status, statusColor, themeColors }: any) {
   return (
     <View style={styles.listItem}>
       <View style={[styles.listIconBox, { backgroundColor: themeColors.iconBackground }]}>
@@ -285,7 +295,6 @@ function ListItem({ icon, title, date, status, statusIcon, statusColor, themeCol
         <Text style={[styles.listAmount, { color: statusColor }]}>
           {status}
         </Text>
-        <Ionicons name={statusIcon} size={14} color={statusColor} style={{ marginTop: 2 }} />
       </View>
     </View>
   );
