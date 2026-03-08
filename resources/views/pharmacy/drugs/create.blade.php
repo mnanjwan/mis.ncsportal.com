@@ -69,7 +69,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="kt-label">Unit of Measure *</label>
+                                <label class="kt-label">Unit of Measurement *</label>
                                 <div class="relative">
                                     <input type="hidden" name="unit_of_measure" id="unit_of_measure_id" value="{{ old('unit_of_measure') }}" required>
                                     <button type="button"
