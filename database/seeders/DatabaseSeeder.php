@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             InstitutionSeeder::class,
             DisciplineSeeder::class,
             QualificationSeeder::class,
+            PharmacyUnitOfMeasurementSeeder::class,
         ]);
         
         // Step 2: Create system users (CGC, TRADOC, ICT, Admin users)

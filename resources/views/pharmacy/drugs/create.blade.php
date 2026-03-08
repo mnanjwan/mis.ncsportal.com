@@ -70,18 +70,32 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="kt-label">Unit of Measure *</label>
-                                <select name="unit_of_measure" class="kt-input" required>
-                                    <option value="others" {{ old('unit_of_measure', 'others') === 'others' ? 'selected' : '' }}>Others</option>
-                                    <option value="tablets" {{ old('unit_of_measure') === 'tablets' ? 'selected' : '' }}>Tablets</option>
-                                    <option value="capsules" {{ old('unit_of_measure') === 'capsules' ? 'selected' : '' }}>Capsules</option>
-                                    <option value="bottles" {{ old('unit_of_measure') === 'bottles' ? 'selected' : '' }}>Bottles</option>
-                                    <option value="vials" {{ old('unit_of_measure') === 'vials' ? 'selected' : '' }}>Vials</option>
-                                    <option value="ampoules" {{ old('unit_of_measure') === 'ampoules' ? 'selected' : '' }}>Ampoules</option>
-                                    <option value="sachets" {{ old('unit_of_measure') === 'sachets' ? 'selected' : '' }}>Sachets</option>
-                                    <option value="tubes" {{ old('unit_of_measure') === 'tubes' ? 'selected' : '' }}>Tubes</option>
-                                    <option value="units" {{ old('unit_of_measure') === 'units' ? 'selected' : '' }}>Units</option>
-                                    <option value="packs" {{ old('unit_of_measure') === 'packs' ? 'selected' : '' }}>Packs</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="hidden" name="unit_of_measure" id="unit_of_measure_id" value="{{ old('unit_of_measure') }}" required>
+                                    <button type="button"
+                                            id="unit_of_measure_select_trigger"
+                                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                        <span id="unit_of_measure_select_text">{{ old('unit_of_measure') ? old('unit_of_measure') : '-- Select or add unit of measure --' }}</span>
+                                        <i class="ki-filled ki-down text-gray-400"></i>
+                                    </button>
+                                    <div id="unit_of_measure_dropdown"
+                                         class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
+                                        <div class="p-3 border-b border-input">
+                                            <input type="text"
+                                                   id="unit_of_measure_search_input"
+                                                   class="kt-input w-full pl-10"
+                                                   placeholder="Search unit..."
+                                                   autocomplete="off">
+                                        </div>
+                                        <div id="unit_of_measure_options" class="max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                    <input type="text"
+                                           id="unit_of_measure_custom"
+                                           class="kt-input mt-2 hidden"
+                                           placeholder="Type new unit of measure (e.g., Tablet (Tab))..."
+                                           autocomplete="off">
+                                </div>
+                                <p class="text-xs text-secondary-foreground mt-1">Search to select from the list or add a new unit.</p>
                             </div>
 
                             <div>
@@ -210,6 +224,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         customInput.addEventListener('input', function() {
             hiddenInput.value = this.value.trim();
+        });
+    }
+
+    // Unit of Measure: select or add (like institution in onboarding)
+    const unitOptionsList = @json($unitOptions ?? []);
+    const unitOfMeasureOptions = [
+        { id: '', name: '-- Select or add unit of measure --' },
+        { id: ADD_NEW_VALUE, name: '-- Add new unit (type below) --' },
+        ...unitOptionsList.map(function(u) { return { id: u, name: u }; })
+    ];
+    createSearchableSelect({
+        triggerId: 'unit_of_measure_select_trigger',
+        hiddenInputId: 'unit_of_measure_id',
+        dropdownId: 'unit_of_measure_dropdown',
+        searchInputId: 'unit_of_measure_search_input',
+        optionsContainerId: 'unit_of_measure_options',
+        displayTextId: 'unit_of_measure_select_text',
+        options: unitOfMeasureOptions,
+        placeholder: '-- Select or add unit of measure --',
+        searchPlaceholder: 'Search unit...',
+        onSelect: function(option) {
+            const hidden = document.getElementById('unit_of_measure_id');
+            const customInput = document.getElementById('unit_of_measure_custom');
+            const displayText = document.getElementById('unit_of_measure_select_text');
+            if (!hidden || !customInput || !displayText) return;
+            if (option && option.id === ADD_NEW_VALUE) {
+                customInput.classList.remove('hidden');
+                customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
+                hidden.value = customInput.value.trim();
+                displayText.textContent = '-- Add new unit (type below) --';
+                setTimeout(function() { customInput.focus(); }, 0);
+            } else {
+                customInput.classList.add('hidden');
+                customInput.value = '';
+                if (option && option.id) hidden.value = option.id;
+            }
+        }
+    });
+    const unitCustomInput = document.getElementById('unit_of_measure_custom');
+    const unitHiddenInput = document.getElementById('unit_of_measure_id');
+    if (unitCustomInput && unitHiddenInput) {
+        var initialUnit = unitHiddenInput.value;
+        if (initialUnit && initialUnit !== ADD_NEW_VALUE && unitOptionsList.indexOf(initialUnit) === -1) {
+            unitCustomInput.classList.remove('hidden');
+            unitCustomInput.value = initialUnit;
+        }
+        unitCustomInput.addEventListener('input', function() {
+            unitHiddenInput.value = this.value.trim();
         });
     }
 });
