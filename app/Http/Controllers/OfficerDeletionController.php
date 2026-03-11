@@ -233,7 +233,6 @@ class OfficerDeletionController extends Controller
 
         try {
             $request->validate([
-                'confirmation_text' => 'required|in:DELETE',
                 'reason' => 'nullable|string|max:1000',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -412,6 +411,9 @@ class OfficerDeletionController extends Controller
 
             // 26. Promotion eligibility list items
             \App\Models\PromotionEligibilityListItem::where('officer_id', $officer->id)->delete();
+
+            // 26b. Manning deployment assignments (FK: manning_deployment_assignments.officer_id -> officers.id)
+            \App\Models\ManningDeploymentAssignment::where('officer_id', $officer->id)->delete();
 
             // 27. Notifications (for the user)
             if ($officer->user) {

@@ -267,18 +267,6 @@
                 <form id="deleteForm" method="POST" action="{{ auth()->user()->hasRole('HRD') ? route('hrd.officers.delete.destroy', $officer->id) : route('establishment.officers.delete.destroy', $officer->id) }}">
                     @csrf
                     @method('DELETE')
-                    
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-secondary-foreground mb-2">
-                            Type <strong>DELETE</strong> to confirm:
-                        </label>
-                        <input type="text" 
-                               name="confirmation_text" 
-                               id="confirmation_text"
-                               class="kt-input w-full" 
-                               placeholder="Type DELETE here"
-                               required>
-                    </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-secondary-foreground mb-2">
@@ -336,7 +324,6 @@
             const deleteButton = document.getElementById('deleteButton');
             const deleteButtonText = document.getElementById('deleteButtonText');
             const cancelButton = document.getElementById('cancelButton');
-            const confirmationInput = document.getElementById('confirmation_text');
             const errorMessage = document.getElementById('errorMessage');
             
             deleteModal.classList.add('hidden');
@@ -361,16 +348,14 @@
             
             // Re-enable form elements
             if (cancelButton) cancelButton.disabled = false;
-            if (confirmationInput) confirmationInput.disabled = false;
             const reasonInput = document.getElementById('reason');
             if (reasonInput) reasonInput.disabled = false;
             const understandCheckbox = document.getElementById('understand');
             if (understandCheckbox) understandCheckbox.disabled = false;
         }
 
-        // Enable delete button only when DELETE is typed and checkbox is checked
+        // Enable delete button only when checkbox is checked
         document.addEventListener('DOMContentLoaded', function() {
-            const confirmationInput = document.getElementById('confirmation_text');
             const understandCheckbox = document.getElementById('understand');
             const deleteButton = document.getElementById('deleteButton');
             const deleteButtonText = document.getElementById('deleteButtonText');
@@ -378,14 +363,9 @@
             const cancelButton = document.getElementById('cancelButton');
 
             function checkDeleteConditions() {
-                const confirmationText = confirmationInput.value.trim();
-                const isConfirmed = confirmationText === 'DELETE';
-                const isUnderstood = understandCheckbox.checked;
-                
-                deleteButton.disabled = !(isConfirmed && isUnderstood);
+                deleteButton.disabled = !understandCheckbox.checked;
             }
 
-            confirmationInput.addEventListener('input', checkDeleteConditions);
             understandCheckbox.addEventListener('change', checkDeleteConditions);
 
             // Handle form submission via AJAX
@@ -400,19 +380,12 @@
 
                 // Get form data BEFORE disabling fields (disabled fields don't submit)
                 const formData = new FormData(deleteForm);
-                // Explicitly ensure confirmation_text is included
-                const confirmationValue = confirmationInput.value.trim();
-                if (confirmationValue) {
-                    formData.set('confirmation_text', confirmationValue);
-                }
-                // Ensure _method is set for DELETE
                 formData.set('_method', 'DELETE');
                 const url = deleteForm.action;
 
                 // Now disable form elements during deletion
                 deleteButton.disabled = true;
                 cancelButton.disabled = true;
-                confirmationInput.disabled = true;
                 document.getElementById('reason').disabled = true;
                 document.getElementById('understand').disabled = true;
 
@@ -515,7 +488,6 @@
                     // Re-enable form elements
                     deleteButton.disabled = false;
                     cancelButton.disabled = false;
-                    confirmationInput.disabled = false;
                     document.getElementById('reason').disabled = false;
                     document.getElementById('understand').disabled = false;
 
