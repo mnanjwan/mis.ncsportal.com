@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-export type FleetRequestType = 'new_vehicle' | 'reallocation' | 'requisition' | 'repair';
+export type FleetRequestType = 'FLEET_NEW_VEHICLE' | 'FLEET_RE_ALLOCATION' | 'FLEET_OPE' | 'FLEET_REPAIR' | 'FLEET_USE' | 'FLEET_REQUISITION';
 
 export type FleetRequest = {
     id: number;
@@ -52,20 +52,20 @@ export type FleetVehicle = {
 
 export const fleetApi = {
     /** My assigned vehicles (regular officers) */
-    async myVehicles(): Promise<{ success: boolean; data?: FleetVehicle[] }> {
-        const { data } = await apiClient.get<{ success: boolean; data?: FleetVehicle[] }>('/fleet/my-vehicles');
+    async myVehicles(): Promise<{ success: boolean; data?: FleetVehicle[], message: string }> {
+        const { data } = await apiClient.get<{ success: boolean; data?: FleetVehicle[], message: string }>('/fleet/my-vehicles');
         return data;
     },
 
-    /** Fleet requests in command (T&L officer) */
-    async requests(page = 1): Promise<{ success: boolean; data?: FleetRequest[]; meta?: any }> {
-        const { data } = await apiClient.get<{ success: boolean; data?: FleetRequest[]; meta?: any }>(
-            '/fleet/requests', { params: { page, per_page: 20 } }
+    /** Fleet requests overview (My Requests & Inbox) */
+    async requests(): Promise<{ success: boolean; data?: { myRequests: FleetRequest[], inbox: FleetRequest[] }, message: string }> {
+        const { data } = await apiClient.get<{ success: boolean; data?: { myRequests: FleetRequest[], inbox: FleetRequest[] }, message: string }>(
+            '/fleet/requests'
         );
         return data;
     },
 
-    /** Create a fleet request */
+    /** Create a draft fleet request */
     async createRequest(payload: {
         request_type: FleetRequestType;
         requested_vehicle_type?: string;
@@ -74,43 +74,60 @@ export const fleetApi = {
         requested_year?: number;
         requested_quantity?: number;
         amount?: number;
-        target_command_id?: number;
         fleet_vehicle_id?: number;
         notes?: string;
+        document?: { uri: string; name: string; type: string };
     }): Promise<{ success: boolean; data?: FleetRequest; message?: string }> {
+        const formData = new FormData();
+        formData.append('request_type', payload.request_type);
+        if (payload.requested_vehicle_type) formData.append('requested_vehicle_type', payload.requested_vehicle_type);
+        if (payload.requested_make) formData.append('requested_make', payload.requested_make);
+        if (payload.requested_model) formData.append('requested_model', payload.requested_model);
+        if (payload.requested_year) formData.append('requested_year', payload.requested_year.toString());
+        if (payload.requested_quantity) formData.append('requested_quantity', payload.requested_quantity.toString());
+        if (payload.amount) formData.append('amount', payload.amount.toString());
+        if (payload.fleet_vehicle_id) formData.append('fleet_vehicle_id', payload.fleet_vehicle_id.toString());
+        if (payload.notes) formData.append('notes', payload.notes);
+
+        if (payload.document) {
+            formData.append('document', {
+                uri: payload.document.uri,
+                name: payload.document.name,
+                type: payload.document.type || 'application/pdf',
+            } as any);
+        }
+
         const { data } = await apiClient.post<{ success: boolean; data?: FleetRequest; message?: string }>(
-            '/fleet/requests', payload
+            '/fleet/requests',
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        return data;
+    },
+
+    /** Submit a drafted request */
+    async submitRequest(id: number): Promise<{ success: boolean; data?: FleetRequest; message?: string }> {
+        const { data } = await apiClient.post<{ success: boolean; data?: FleetRequest; message?: string }>(
+            `/fleet/requests/${id}/submit`
         );
         return data;
     },
 
     /** Single request with steps */
-    async requestDetail(id: number): Promise<{ success: boolean; data?: FleetRequest }> {
-        const { data } = await apiClient.get<{ success: boolean; data?: FleetRequest }>(`/fleet/requests/${id}`);
+    async requestDetail(id: number): Promise<{ success: boolean; data?: FleetRequest, message: string }> {
+        const { data } = await apiClient.get<{ success: boolean; data?: FleetRequest, message: string }>(`/fleet/requests/${id}`);
         return data;
     },
 
-    /** All vehicles in command */
-    async vehicles(): Promise<{ success: boolean; data?: FleetVehicle[] }> {
-        const { data } = await apiClient.get<{ success: boolean; data?: FleetVehicle[] }>('/fleet/vehicles');
+    /** All vehicles in command (T&L Officer) */
+    async commandVehicles(): Promise<{ success: boolean; data?: FleetVehicle[], message: string }> {
+        const { data } = await apiClient.get<{ success: boolean; data?: FleetVehicle[], message: string }>('/fleet/command-vehicles');
         return data;
     },
 
-    /** Pending approvals for current approver role */
-    async pendingApprovals(): Promise<{ success: boolean; data?: FleetRequest[] }> {
-        const { data } = await apiClient.get<{ success: boolean; data?: FleetRequest[] }>('/fleet/pending-approvals');
-        return data;
-    },
-
-    /** Approve a request step */
-    async approve(id: number, remarks?: string): Promise<{ success: boolean; message?: string }> {
-        const { data } = await apiClient.post<{ success: boolean; message?: string }>(`/fleet/requests/${id}/approve`, { remarks });
-        return data;
-    },
-
-    /** Reject a request */
-    async reject(id: number, reason: string): Promise<{ success: boolean; message?: string }> {
-        const { data } = await apiClient.post<{ success: boolean; message?: string }>(`/fleet/requests/${id}/reject`, { reason });
+    /** Act on a request step (Approve/Reject/Forward) */
+    async act(id: number, payload: { decision: 'FORWARDED' | 'APPROVED' | 'REJECTED' | 'REVIEWED' | 'KIV', comment?: string }): Promise<{ success: boolean; data?: FleetRequest, message?: string }> {
+        const { data } = await apiClient.post<{ success: boolean; data?: FleetRequest, message?: string }>(`/fleet/requests/${id}/act`, payload);
         return data;
     },
 };

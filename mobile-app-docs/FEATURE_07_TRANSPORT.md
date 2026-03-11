@@ -6,7 +6,10 @@
 
 ## 1. Feature Overview
 
-The **Transport & Fleet** module handles vehicle management for NCS. Officers who are **T&L (Transport & Logistics) Officers** manage the entire fleet lifecycle — from new vehicle requests to vehicle assignments, returns, and audits. Regular officers can only **view assigned vehicles**.
+The **Transport & Fleet** module handles vehicle management for NCS. Access and permissions perfectly mirror the web backend:
+- **`T&L Officer` / `O/C T&L` (Command-Level Originators)**: They manage the fleet lifecycle at a specific command. They can view assigned command vehicles and **submit** fleet requests for their command.
+- **`Staff Officer T&L` / `CC T&L` (Central Approvers)**: They act as reviewers and approvers on pending fleet requests. `CC T&L` holds headquarters-level global clearance to manipulate master inventory records.
+- **`Regular Officers`**: Can only **view vehicles directly assigned** to themselves.
 
 There are **4 request types**:
 1. **New Vehicle** — Request a brand new vehicle for the command
@@ -139,7 +142,24 @@ POST   /api/v1/fleet/vehicles/{id}/audit            → Record audit
 
 ---
 
-## 7. React Native Structure
+## 7. Dashboard & Notification Integration (UI/UX Flow)
+
+To match the site concept and premium UI patterns previously established, the Transport module tightly integrates with the user's dashboard and notification system.
+
+### Role-Based Dashboard Quick Actions
+- **Regular Officers**: A sleek "My Vehicle" quick-glance card on the main dashboard showing current assigned vehicle, plate number, and maintenance status. Tap to view full details.
+- **T&L Officers**: A "Fleet Management" quick-action widget to instantly "Request New Vehicle" or "Log Maintenance" directly from the home dashboard.
+- **Approvers (CGC, DCG FATS, ACG TS)**: A high-priority **"Pending Approvals"** badge/card on their dashboard. They can tap to perform **Quick Actions (Approve/Reject)** directly from the dashboard without navigating deep into the app.
+
+### Actionable Notifications (Deep Linking)
+- Notifications are tied directly to action requirements. When a fleet request needs approval (e.g., `notifyFleetRequestSubmitted`), the push notification will **navigate directly to the Request Detail Screen** with the Approve/Reject bottom sheet ready.
+- When a vehicle is assigned or returned, tapping the notification opens the relevant **Vehicle Detail Screen** instantly.
+- All actions taken via notifications or quick-actions are instantly logged to `fleet_vehicle_audits` and request steps for a perfect paper trail.
+- Seamless and efficient transitions ensure officers spend minimal time navigating menus.
+
+---
+
+## 8. React Native Structure
 
 ```
 src/features/transport/
@@ -163,7 +183,7 @@ src/features/transport/
 
 ---
 
-## 8. Testing Checklist
+## 9. Testing Checklist
 
 - [ ] Officer views assigned vehicles
 - [ ] T&L Officer creates New Vehicle request
@@ -176,3 +196,28 @@ src/features/transport/
 - [ ] Vehicle assigned to officer → notification
 - [ ] Vehicle returned → status updated
 - [ ] Notifications at each approval step
+
+---
+
+## 10. User Guide (Fleet & Transport)
+
+### For Regular Officers
+1. **Dashboard Overview**: Open the app and view your home dashboard. If a vehicle is officially assigned to you, you will see a "**My Vehicle**" card right on the dashboard showing the Make, Model, and Registration Number.
+2. **Vehicle Details**: Tap the "My Vehicle" card to view full details including Engine Number, Chassis Number, and real-time Service Status (e.g., Active, Maintenance).
+3. **Notifications**: You will receive instant push notifications if a new vehicle is assigned to you or if your vehicle is recalled/returned.
+
+### For T&L Officers and O/C T&L (Command-Level Originators)
+1. **Fleet Hub**: Tap the "**Fleet**" shortcut on your dashboard grid to open the **Fleet Dashboard**. 
+2. **Metrics & My Requests**: View high-level metrics of all command vehicles (Total, Active, Repair) at the top. You will see a list of your submitted requests ("My Requests").
+3. **Creating Requests**: Tap the `+` action button at the bottom right of the Fleet Dashboard to create a new request on behalf of your command.
+    - **Step 1**: Select the Request Type (`New Vehicle`, `Re-Allocation`, `Requisition`, `Repair`).
+    - **Step 2**: Fill in the vehicle details, required quantities, estimated budget, and any supporting justification/notes.
+    - **Submit**: Once submitted, it automatically routes to the central HQ approvers.
+
+### For Approvers (Staff Officer T&L, CC T&L, CGC, DCG FATS, ACG TS)
+1. **Pending Approvals**: Your dashboard immediately flags if you have pending requests with a red alert badge on the "**Pending Fleet Approvals**" widget.
+2. **Actionable Alerts**: If you receive a push notification for a Fleet Request, tapping it instantly opens the specific request, bypassing manual navigation.
+3. **Review & Act**: 
+    - Open any pending request to view the full details and the complete **Action Timeline** of who has approved it so far.
+    - At the bottom of the screen, you will see a **"YOUR ACTION REQUIRED"** section. 
+    - Enter your remarks/justification and tap **Approve** or **Reject**. The system instantly records your decision, updates the timeline, and notifies the next actor or the creator.

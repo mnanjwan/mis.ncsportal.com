@@ -127,6 +127,8 @@ class RoleMiddleware
             'ACG TS' => 'fleet.acg-ts.dashboard',
             'CD' => 'fleet.cd.dashboard',
             'O/C T&L' => 'fleet.oc-tl.dashboard',
+            'Staff Officer T&L' => 'fleet.staff-officer-tl.dashboard',
+            'T&L Officer' => 'fleet.staff-officer-tl.dashboard',
             'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
             'OC Workshop' => 'fleet.requests.index',
             'Welfare' => 'welfare.dashboard',

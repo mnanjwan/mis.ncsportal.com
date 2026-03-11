@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\DeceasedOfficerController;
 use App\Http\Controllers\Api\V1\DutyRosterController;
 use App\Http\Controllers\Api\V1\EmolumentController;
 use App\Http\Controllers\Api\V1\EmolumentTimelineController;
+use App\Http\Controllers\Api\V1\FleetController;
 use App\Http\Controllers\Api\V1\LeaveApplicationController;
 use App\Http\Controllers\Api\V1\LeaveTypeController;
 use App\Http\Controllers\Api\V1\ManningRequestController;
@@ -219,4 +220,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::delete('/chat/rooms/{id}/members/{userId}', [ChatController::class, 'removeMember']);
     Route::put('/chat/rooms/{id}', [ChatController::class, 'updateRoom']);
     Route::post('/chat/rooms/{id}/leave', [ChatController::class, 'leave']);
+
+    // Fleet & Transport
+    Route::prefix('fleet')->group(function () {
+        Route::get('/my-vehicles', [FleetController::class, 'myVehicles']);
+        Route::get('/command-vehicles', [FleetController::class, 'commandVehicles']);
+        Route::get('/requests', [FleetController::class, 'index']);
+        Route::post('/requests', [FleetController::class, 'store']);
+        Route::get('/requests/{id}', [FleetController::class, 'show']);
+        Route::post('/requests/{id}/submit', [FleetController::class, 'submit']);
+        Route::post('/requests/{id}/act', [FleetController::class, 'act']);
+    });
 });

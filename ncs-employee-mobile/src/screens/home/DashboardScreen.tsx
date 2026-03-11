@@ -8,6 +8,7 @@ import { passApi } from '../../api/passApi';
 import { leaveApi } from '../../api/leaveApi';
 import { emolumentApi } from '../../api/emolumentApi';
 import { notificationApi } from '../../api/notificationApi';
+import { fleetApi } from '../../api/fleetApi';
 
 // Define the type for a Feature
 type FeatureItem = {
@@ -45,6 +46,8 @@ export function DashboardScreen() {
   const [recentRequests, setRecentRequests] = React.useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = React.useState(true);
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [myVehicles, setMyVehicles] = React.useState<any[]>([]);
+  const [fleetInbox, setFleetInbox] = React.useState<any[]>([]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -97,6 +100,22 @@ export function DashboardScreen() {
     } finally {
       setLoadingRequests(false);
     }
+  };
+
+  const fetchFleetWidgets = async () => {
+    try {
+      const vRes = await fleetApi.myVehicles();
+      if (vRes.success && vRes.data) {
+        setMyVehicles(vRes.data);
+      }
+      // If user has approver roles, fetch requests inbox
+      if (userRoles.some(r => ['CGC', 'DCG FATS', 'ACG TS', 'CC T&L', 'Staff Officer T&L'].includes(r))) {
+        const rRes = await fleetApi.requests();
+        if (rRes.success && rRes.data) {
+          setFleetInbox(rRes.data.inbox);
+        }
+      }
+    } catch { }
   };
 
   useFocusEffect(
@@ -234,6 +253,47 @@ export function DashboardScreen() {
               </View>
             ))}
           </View>
+
+          {/* Role-Based Fleet Widgets */}
+          {myVehicles.length > 0 && (
+            <TouchableOpacity
+              style={[styles.widgetCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Transport', { screen: 'MyVehicle' })}
+            >
+              <View style={[styles.widgetIconBox, { backgroundColor: '#fef3c7' }]}>
+                <Ionicons name="car" size={20} color="#d97706" />
+              </View>
+              <View style={styles.widgetContent}>
+                <Text style={[styles.widgetTitle, { color: themeColors.text }]}>My Vehicle</Text>
+                <Text style={[styles.widgetSub, { color: themeColors.textSecondary }]}>
+                  {myVehicles[0].make} • {myVehicles[0].reg_no || 'No Plate'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={themeColors.textMuted} />
+            </TouchableOpacity>
+          )}
+
+          {fleetInbox.length > 0 && (
+            <TouchableOpacity
+              style={[styles.widgetCard, { backgroundColor: themeColors.surface, borderColor: themeColors.primary }]}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Transport', { screen: 'FleetDashboard' })}
+            >
+              <View style={[styles.widgetIconBox, { backgroundColor: '#fee2e2' }]}>
+                <Ionicons name="alert-circle" size={20} color="#dc2626" />
+              </View>
+              <View style={styles.widgetContent}>
+                <Text style={[styles.widgetTitle, { color: themeColors.text }]}>Pending Fleet Approvals</Text>
+                <Text style={[styles.widgetSub, { color: themeColors.textSecondary }]}>
+                  You have {fleetInbox.length} requests waiting for your action
+                </Text>
+              </View>
+              <View style={[styles.widgetBadge, { backgroundColor: '#dc2626' }]}>
+                <Text style={styles.widgetBadgeText}>{fleetInbox.length}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* Recent Requests List */}
           <View style={styles.recentSection}>
@@ -501,6 +561,44 @@ const styles = StyleSheet.create({
     height: 1,
     marginLeft: 76,
     marginRight: spacing.lg,
+  },
+  widgetCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  widgetIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  widgetContent: {
+    flex: 1,
+  },
+  widgetTitle: {
+    fontSize: 15,
+    fontWeight: fontWeights.semibold,
+    marginBottom: 2,
+  },
+  widgetSub: {
+    fontSize: 13,
+  },
+  widgetBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: spacing.sm,
+  },
+  widgetBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   bottomBuffer: {
     height: 30, // Firm spacing above safe zones

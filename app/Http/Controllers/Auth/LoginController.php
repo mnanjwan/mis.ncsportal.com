@@ -181,6 +181,15 @@ class LoginController extends Controller
             'Building Unit' => 'building.dashboard',
             'Establishment' => 'establishment.dashboard',
             'Welfare' => 'welfare.dashboard',
+            'CC T&L' => 'fleet.cc-tl.dashboard',
+            'DCG FATS' => 'fleet.dcg-fats.dashboard',
+            'ACG TS' => 'fleet.acg-ts.dashboard',
+            'CD' => 'fleet.cd.dashboard',
+            'O/C T&L' => 'fleet.oc-tl.dashboard',
+            'Staff Officer T&L' => 'fleet.staff-officer-tl.dashboard',
+            'T&L Officer' => 'fleet.staff-officer-tl.dashboard',
+            'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
+            'OC Workshop' => 'fleet.requests.index',
         ];
 
         return $routes[$role] ?? 'officer.dashboard';

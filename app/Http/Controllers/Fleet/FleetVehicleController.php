@@ -48,6 +48,16 @@ class FleetVehicleController extends Controller
             if ($commandId) {
                 $query->where('current_command_id', $commandId);
             }
+        } elseif ($user->hasRole('Staff Officer T&L')) {
+            $commandId = $workflow->getActiveCommandIdForRole($user, 'Staff Officer T&L');
+            if ($commandId) {
+                $query->where('current_command_id', $commandId);
+            }
+        } elseif ($user->hasRole('T&L Officer')) {
+            $commandId = $workflow->getActiveCommandIdForRole($user, 'T&L Officer');
+            if ($commandId) {
+                $query->where('current_command_id', $commandId);
+            }
         }
 
         $vehicles = $query->orderByDesc('updated_at')->take(200)->get();
@@ -59,11 +69,22 @@ class FleetVehicleController extends Controller
     {
         $user = $request->user();
 
-        // Area Controller may only view vehicles in their assigned command
-        if ($user->hasRole('Area Controller')) {
-            $commandId = $workflow->getActiveCommandIdForRole($user, 'Area Controller');
-            if ($commandId !== null && (int) $vehicle->current_command_id !== (int) $commandId) {
-                abort(403, 'You can only view vehicles in your command.');
+        // Command-scoped roles may only view vehicles in their assigned command
+        $commandScopedChecks = [
+            'Area Controller' => 'Area Controller',
+            'CD' => 'CD',
+            'O/C T&L' => 'O/C T&L',
+            'Transport Store/Receiver' => 'Transport Store/Receiver',
+            'Staff Officer T&L' => 'Staff Officer T&L',
+            'T&L Officer' => 'T&L Officer',
+        ];
+        foreach ($commandScopedChecks as $role => $roleName) {
+            if ($user->hasRole($role)) {
+                $commandId = $workflow->getActiveCommandIdForRole($user, $roleName);
+                if ($commandId !== null && (int) $vehicle->current_command_id !== (int) $commandId) {
+                    abort(403, 'You can only view vehicles in your command.');
+                }
+                break;
             }
         }
 

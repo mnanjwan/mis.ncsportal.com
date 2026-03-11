@@ -8,7 +8,9 @@ use App\Models\Zone;
 use App\Models\Command;
 use App\Models\OfficerDeletionAuditLog;
 use App\Models\LeaveApplication;
+use App\Models\LeaveApproval;
 use App\Models\PassApplication;
+use App\Models\PassApproval;
 use App\Models\StaffOrder;
 use App\Models\InternalStaffOrder;
 use App\Models\OfficerPosting;
@@ -465,10 +467,70 @@ class OfficerDeletionController extends Controller
                     ->update(['hrd_graded_by' => null]);
             }
 
-            // 31. User account
+            // 30b. Leave/Pass approvals where this user is staff_officer (FK blocks user delete if not handled)
+            // Reassign to the user performing the deletion so the approval records remain valid
             if ($officer->user) {
                 $userId = $officer->user->id;
-                $officer->user->delete();
+                LeaveApproval::where('staff_officer_id', $userId)->update(['staff_officer_id' => $deletedBy->id]);
+                PassApproval::where('staff_officer_id', $userId)->update(['staff_officer_id' => $deletedBy->id]);
+            }
+
+            // 30c. Other tables that reference users without ON DELETE CASCADE/SET NULL — reassign to deleting user
+            // Force-clear every user reference so the user can always be deleted, regardless of where they appear
+            if ($officer->user) {
+                $userId = $officer->user->id;
+                $reassignId = $deletedBy->id;
+                \App\Models\RetirementList::where('generated_by', $userId)->update(['generated_by' => $reassignId]);
+                \App\Models\OfficerQuarter::where('allocated_by', $userId)->update(['allocated_by' => $reassignId]);
+                \App\Models\DeceasedOfficer::where('reported_by', $userId)->update(['reported_by' => $reassignId]);
+                \App\Models\DeceasedOfficer::where('validated_by', $userId)->update(['validated_by' => null]);
+                InternalStaffOrder::where('prepared_by', $userId)->update(['prepared_by' => $reassignId]);
+                StaffOrder::where('created_by', $userId)->update(['created_by' => $reassignId]);
+                \App\Models\PromotionEligibilityList::where('generated_by', $userId)->update(['generated_by' => $reassignId]);
+                \App\Models\PromotionEligibilityCriterion::where('created_by', $userId)->update(['created_by' => $reassignId]);
+                OfficerCourse::where('nominated_by', $userId)->update(['nominated_by' => $reassignId]);
+                \App\Models\ReleaseLetter::where('prepared_by', $userId)->update(['prepared_by' => $reassignId]);
+                \App\Models\TrainingResult::where('uploaded_by', $userId)->update(['uploaded_by' => $reassignId]);
+                DutyRoster::where('prepared_by', $userId)->update(['prepared_by' => $reassignId]);
+                \App\Models\ManningRequest::where('requested_by', $userId)->update(['requested_by' => $reassignId]);
+                \App\Models\MovementOrder::where('created_by', $userId)->update(['created_by' => $reassignId]);
+                \App\Models\EmolumentTimeline::where('created_by', $userId)->update(['created_by' => $reassignId]);
+                \App\Models\APERTimeline::where('created_by', $userId)->update(['created_by' => $reassignId]);
+                \App\Models\EmolumentAudit::where('auditor_id', $userId)->update(['auditor_id' => $reassignId]);
+                \App\Models\ManningDeployment::where('created_by', $userId)->update(['created_by' => $reassignId]);
+                \App\Models\ManningDeployment::where('published_by', $userId)->update(['published_by' => null]);
+            }
+
+            // 30d. Sanctum personal access tokens (API tokens) for this user — force delete
+            if ($officer->user) {
+                $userId = $officer->user->id;
+                DB::table('personal_access_tokens')
+                    ->where('tokenable_type', 'App\\Models\\User')
+                    ->where('tokenable_id', $userId)
+                    ->delete();
+            }
+
+            // 30e. Audit logs and any remaining user_id references (nullable columns)
+            if ($officer->user) {
+                $userId = $officer->user->id;
+                \App\Models\AuditLog::where('user_id', $userId)->update(['user_id' => null]);
+                \App\Models\Officer::where('created_by', $userId)->update(['created_by' => null]);
+                DB::table('user_roles')->where('assigned_by', $userId)->update(['assigned_by' => null]);
+            }
+
+            // 31. User account — force delete: disable FK checks on MySQL so user is always removed
+            if ($officer->user) {
+                $userId = $officer->user->id;
+                if (DB::getDriverName() === 'mysql') {
+                    DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+                }
+                try {
+                    $officer->user->delete();
+                } finally {
+                    if (DB::getDriverName() === 'mysql') {
+                        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
+                    }
+                }
             }
 
             // 32. Finally, delete the officer record

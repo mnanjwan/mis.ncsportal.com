@@ -12,7 +12,8 @@ import {
   StatusBar,
   useColorScheme,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { notificationApi } from '../../api/notificationApi';
 import type { NotificationItem } from '../../api/notificationApi';
 import { useThemeColor, spacing, fontSizes, fontWeights } from '../../theme';
@@ -64,6 +65,7 @@ function formatSmartTime(dateStr: string): string {
 export function NotificationListScreen() {
   const themeColors = useThemeColor();
   const theme = useColorScheme() ?? 'light';
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,6 +101,15 @@ export function NotificationListScreen() {
         await notificationApi.markAsRead(item.id);
         setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n)));
       } catch { }
+    }
+
+    // Actionable Deep Linking
+    const type = item.entity_type || item.notification_type;
+    if (type?.startsWith('fleet_request') && item.entity_id) {
+      navigation.navigate('TransportStack', {
+        screen: 'FleetRequestDetail',
+        params: { id: Number(item.entity_id) }
+      });
     }
   };
 

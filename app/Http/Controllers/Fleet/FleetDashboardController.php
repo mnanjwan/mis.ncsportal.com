@@ -42,6 +42,17 @@ class FleetDashboardController extends Controller
         return $this->renderDashboard($request, $workflow, 'Transport Store/Receiver', 'Transport Store/Receiver Dashboard');
     }
 
+    /**
+     * Dashboard for Staff Officer T&L and T&L Officer (command-level).
+     */
+    public function staffOfficerTl(Request $request, FleetWorkflowService $workflow)
+    {
+        $user = $request->user();
+        $roleName = $user->hasRole('Staff Officer T&L') ? 'Staff Officer T&L' : 'T&L Officer';
+        $title = $roleName . ' Dashboard';
+        return $this->renderDashboard($request, $workflow, $roleName, $title);
+    }
+
     public function cgc(Request $request, FleetWorkflowService $workflow)
     {
         return $this->renderDashboard($request, $workflow, 'CGC', 'CGC Fleet');
@@ -59,7 +70,7 @@ class FleetDashboardController extends Controller
                     ->where('fleet_request_steps.role_name', $roleName);
             });
 
-        $commandScopedRoles = ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller', 'OC Workshop', 'Staff Officer T&L'];
+        $commandScopedRoles = ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'T&L Officer'];
         if (in_array($roleName, $commandScopedRoles, true) && $commandId) {
             $inboxQuery->where('fleet_requests.origin_command_id', $commandId);
         }
@@ -147,6 +158,8 @@ class FleetDashboardController extends Controller
                 break;
 
             case 'O/C T&L':
+            case 'Staff Officer T&L':
+            case 'T&L Officer':
             case 'Transport Store/Receiver':
                 $commandVehicles = FleetVehicle::where('current_command_id', $commandId);
                 $inStockCount = (clone $commandVehicles)->where('lifecycle_status', 'IN_STOCK')->count();

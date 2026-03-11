@@ -12,11 +12,11 @@ use Illuminate\Validation\ValidationException;
 
 class FleetRequestController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, FleetWorkflowService $workflow)
     {
         $user = $request->user();
 
-        // Requests created by the user (CD)
+        // Requests created by the user
         $myRequests = FleetRequest::query()
             ->where('created_by', $user->id)
             ->with(['originCommand', 'steps'])
@@ -30,12 +30,26 @@ class FleetRequestController extends Controller
             ->pluck('name')
             ->toArray();
 
-        $inbox = FleetRequest::query()
+        $inboxQuery = FleetRequest::query()
             ->whereNotNull('current_step_order')
             ->whereHas('steps', function ($q) use ($userRoleNames) {
                 $q->whereColumn('fleet_request_steps.step_order', 'fleet_requests.current_step_order')
                     ->whereIn('fleet_request_steps.role_name', $userRoleNames);
-            })
+            });
+
+        // Command-scoped roles only see inbox requests from their command
+        $commandScopedRoles = ['CD', 'O/C T&L', 'Transport Store/Receiver', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'T&L Officer'];
+        foreach ($commandScopedRoles as $roleName) {
+            if ($user->hasRole($roleName)) {
+                $commandId = $workflow->getActiveCommandIdForRole($user, $roleName);
+                if ($commandId) {
+                    $inboxQuery->where('fleet_requests.origin_command_id', $commandId);
+                }
+                break;
+            }
+        }
+
+        $inbox = $inboxQuery
             ->with(['originCommand', 'createdBy', 'steps'])
             ->orderByDesc('updated_at')
             ->take(50)
@@ -47,7 +61,7 @@ class FleetRequestController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
-        $roles = ['CD', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'CC T&L'];
+        $roles = ['CD', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'T&L Officer', 'CC T&L'];
         $hasRole = false;
         foreach ($roles as $role) {
             if ($user->hasRole($role)) {

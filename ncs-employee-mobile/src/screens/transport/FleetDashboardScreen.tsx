@@ -45,8 +45,12 @@ export function FleetDashboardScreen() {
     const theme = useColorScheme() ?? 'light';
     const { user } = useAppSelector((s) => s.auth);
 
+    const isApprover = user?.roles?.some(role => ['CGC', 'DCG FATS', 'ACG TS', 'CC T&L', 'Staff Officer T&L'].includes(role));
     const isTLOfficer = user?.roles?.some(role => ['CC T&L', 'O/C T&L', 'T&L Officer', 'Staff Officer T&L'].includes(role));
+    const [activeTab, setActiveTab] = useState<'my_requests' | 'inbox'>(isApprover ? 'inbox' : 'my_requests');
     const [requests, setRequests] = useState<FleetRequest[]>([]);
+    const [inbox, setInbox] = useState<FleetRequest[]>([]);
+    const [stats, setStats] = useState({ total: 0, active: 0, maintenance: 0 });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -54,17 +58,32 @@ export function FleetDashboardScreen() {
     const load = useCallback(async () => {
         setError(null);
         try {
+            // Fetch requests
             const res = await fleetApi.requests();
             if (res.success && res.data) {
-                setRequests(res.data);
+                setRequests(res.data.myRequests || []);
+                setInbox(res.data.inbox || []);
+            }
+
+            // Fetch vehicles for stats if T&L officer
+            if (isTLOfficer) {
+                const vRes = await fleetApi.commandVehicles();
+                if (vRes.success && vRes.data) {
+                    const vehicles = vRes.data;
+                    setStats({
+                        total: vehicles.length,
+                        active: vehicles.filter(v => v.service_status === 'active').length,
+                        maintenance: vehicles.filter(v => v.service_status === 'maintenance').length,
+                    });
+                }
             }
         } catch {
-            setError('Failed to load fleet requests');
+            setError('Failed to load fleet dashboard');
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [isTLOfficer]);
 
     useFocusEffect(
         useCallback(() => {
@@ -124,6 +143,8 @@ export function FleetDashboardScreen() {
         );
     }
 
+    const currentList = activeTab === 'inbox' ? inbox : requests;
+
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>
             <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
@@ -136,13 +157,55 @@ export function FleetDashboardScreen() {
                         <Text style={styles.headerSubtitle}>{user?.officer?.command?.name} Command</Text>
                     </View>
                 </View>
+
+                {isTLOfficer && (
+                    <View style={styles.statsContainer}>
+                        <View style={styles.statBox}>
+                            <Text style={styles.statValue}>{stats.total}</Text>
+                            <Text style={styles.statLabel}>Total</Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                        <View style={styles.statBox}>
+                            <Text style={styles.statValue}>{stats.active}</Text>
+                            <Text style={styles.statLabel}>Active</Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                        <View style={styles.statBox}>
+                            <Text style={styles.statValue}>{stats.maintenance}</Text>
+                            <Text style={styles.statLabel}>Repair</Text>
+                        </View>
+                    </View>
+                )}
             </View>
+
+            {isApprover && (
+                <View style={[styles.tabContainer, { backgroundColor: themeColors.surface }]}>
+                    <TouchableOpacity
+                        style={[styles.tabBtn, activeTab === 'my_requests' && { borderBottomColor: themeColors.primary, borderBottomWidth: 2 }]}
+                        onPress={() => setActiveTab('my_requests')}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.tabText, { color: activeTab === 'my_requests' ? themeColors.primary : themeColors.textMuted }]}>
+                            My Requests
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tabBtn, activeTab === 'inbox' && { borderBottomColor: themeColors.primary, borderBottomWidth: 2 }]}
+                        onPress={() => setActiveTab('inbox')}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.tabText, { color: activeTab === 'inbox' ? themeColors.primary : themeColors.textMuted }]}>
+                            Inbox ({inbox.length})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <View style={styles.listContainer}>
                 {error ? <Text style={[styles.error, { color: themeColors.danger }]}>{error}</Text> : null}
 
                 <FlatList
-                    data={requests}
+                    data={currentList}
                     keyExtractor={(item) => String(item.id)}
                     renderItem={renderItem}
                     contentContainerStyle={styles.list}
@@ -176,6 +239,14 @@ const styles = StyleSheet.create({
     headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     headerTitle: { fontSize: 20, fontWeight: fontWeights.bold, color: '#ffffff' },
     headerSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+    statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xl, backgroundColor: 'rgba(0,0,0,0.15)', padding: spacing.md, borderRadius: 16 },
+    statBox: { flex: 1, alignItems: 'center' },
+    statValue: { fontSize: 24, fontWeight: fontWeights.bold, color: '#ffffff' },
+    statLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+    statDivider: { width: 1, height: '80%', alignSelf: 'center' },
+    tabContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+    tabBtn: { flex: 1, paddingVertical: spacing.md, alignItems: 'center' },
+    tabText: { fontSize: 14, fontWeight: fontWeights.semibold },
     listContainer: { flex: 1 },
     list: { padding: spacing.xl, paddingBottom: 100 },
     error: { fontSize: 13, padding: spacing.base, textAlign: 'center' },

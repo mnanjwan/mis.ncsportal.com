@@ -4,7 +4,7 @@
  * Override with EXPO_PUBLIC_API_URL in .env or EAS env.
  */
 
-const DEV_API_URL = 'http://127.0.0.1:8000/api/v1';
+const DEV_API_URL = 'http://192.168.1.54:8000/api/v1';
 const PROD_API_URL = 'http://mis.ncsportal.com/api/v1';
 
 const envUrl =

@@ -38,6 +38,8 @@
         // Fleet command-level roles
         'CD',
         'O/C T&L',
+        'Staff Officer T&L',
+        'T&L Officer',
         'Transport Store/Receiver',
         'Admin',
         'Zone Coordinator',
@@ -597,6 +599,15 @@
                 ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
                 ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
                 ['icon' => 'ki-filled ki-chart-simple', 'title' => 'Returns Report', 'href' => route('fleet.reports.returns')],
+            ];
+            break;
+        case 'Staff Officer T&L':
+        case 'T&L Officer':
+            $menuItems = [
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('fleet.staff-officer-tl.dashboard')],
+                ['icon' => 'ki-filled ki-delivery', 'title' => 'Vehicles', 'href' => route('fleet.vehicles.index')],
+                ['icon' => 'ki-filled ki-file-up', 'title' => 'Requests', 'href' => route('fleet.requests.index')],
+                ['icon' => 'ki-filled ki-plus', 'title' => 'New Request', 'href' => route('fleet.requests.create')],
             ];
             break;
         case 'Transport Store/Receiver':

@@ -47,7 +47,7 @@
                 <h3 class="kt-card-title">Inbox</h3>
                 @php
                     $user = auth()->user();
-                    $creatorRoles = ['CD', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'CC T&L'];
+                    $creatorRoles = ['CD', 'Area Controller', 'OC Workshop', 'Staff Officer T&L', 'T&L Officer', 'CC T&L'];
                     $canCreate = false;
                     foreach($creatorRoles as $r) { if($user->hasRole($r)) { $canCreate = true; break; } }
                 @endphp
