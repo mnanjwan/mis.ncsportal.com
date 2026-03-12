@@ -881,9 +881,12 @@ class DutyRosterController extends Controller
             return redirect()->back()->with('error', 'Only DRAFT rosters can be submitted.');
         }
 
-        // Check if roster has assignments
-        if ($roster->assignments->count() === 0) {
-            return redirect()->back()->with('error', 'Please add at least one officer assignment before submitting.');
+        // Check if roster has at least one officer (OIC, 2IC, or assignment) — single officer is allowed
+        $hasOfficer = $roster->assignments->count() > 0
+            || $roster->oic_officer_id
+            || $roster->second_in_command_officer_id;
+        if (!$hasOfficer) {
+            return redirect()->back()->with('error', 'Please add at least one officer (OIC, 2IC, or team member) before submitting.');
         }
 
         try {

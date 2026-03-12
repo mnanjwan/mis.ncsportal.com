@@ -144,79 +144,100 @@ class DcAdminInternalStaffOrderController extends Controller
         try {
             DB::beginTransaction();
 
-            // Get target roster
+            // Get target roster (or create new one if unit has no approved roster)
             $targetRoster = DutyRoster::where('command_id', $order->command_id)
                 ->where('unit', $order->target_unit)
                 ->where('status', 'APPROVED')
                 ->first();
 
-            if (!$targetRoster) {
-                DB::rollBack();
-                return redirect()->back()
-                    ->with('error', 'Target unit does not have an active approved roster. Please ensure a roster exists for the target unit.');
-            }
-
             $outgoingOfficer = null;
 
-            // Handle role takeover if OIC/2IC
-            if (in_array($order->target_role, ['OIC', '2IC'])) {
-                if ($order->target_role === 'OIC' && $targetRoster->oic_officer_id) {
-                    $outgoingOfficer = Officer::find($targetRoster->oic_officer_id);
-                    
-                    // Remove from OIC position
-                    $targetRoster->oic_officer_id = null;
+            if (!$targetRoster) {
+                // Create new roster for target unit and assign officer (Staff Officer can create new unit with officer)
+                $year = (int) date('Y');
+                $approvingOfficer = $user->officer;
+                $targetRoster = DutyRoster::create([
+                    'command_id' => $order->command_id,
+                    'unit' => $order->target_unit,
+                    'roster_period_start' => "{$year}-01-01",
+                    'roster_period_end' => "{$year}-12-31",
+                    'prepared_by' => $order->prepared_by,
+                    'status' => 'APPROVED',
+                    'approved_at' => now(),
+                    'approved_by' => $approvingOfficer?->id,
+                ]);
+                if ($order->target_role === 'OIC') {
+                    $targetRoster->oic_officer_id = $order->officer_id;
                     $targetRoster->save();
-                    
-                    // Add as regular member if not already in assignments
-                    $existingAssignment = RosterAssignment::where('roster_id', $targetRoster->id)
-                        ->where('officer_id', $outgoingOfficer->id)
-                        ->first();
-                    
-                    if (!$existingAssignment) {
-                        RosterAssignment::create([
-                            'roster_id' => $targetRoster->id,
-                            'officer_id' => $outgoingOfficer->id,
-                        ]);
-                    }
-                } elseif ($order->target_role === '2IC' && $targetRoster->second_in_command_officer_id) {
-                    $outgoingOfficer = Officer::find($targetRoster->second_in_command_officer_id);
-                    
-                    // Remove from 2IC position
-                    $targetRoster->second_in_command_officer_id = null;
+                } elseif ($order->target_role === '2IC') {
+                    $targetRoster->second_in_command_officer_id = $order->officer_id;
                     $targetRoster->save();
-                    
-                    // Add as regular member if not already in assignments
-                    $existingAssignment = RosterAssignment::where('roster_id', $targetRoster->id)
-                        ->where('officer_id', $outgoingOfficer->id)
-                        ->first();
-                    
-                    if (!$existingAssignment) {
-                        RosterAssignment::create([
-                            'roster_id' => $targetRoster->id,
-                            'officer_id' => $outgoingOfficer->id,
-                        ]);
-                    }
-                }
-            }
-
-            // Assign new officer to target unit
-            if ($order->target_role === 'OIC') {
-                $targetRoster->oic_officer_id = $order->officer_id;
-                $targetRoster->save();
-            } elseif ($order->target_role === '2IC') {
-                $targetRoster->second_in_command_officer_id = $order->officer_id;
-                $targetRoster->save();
-            } else {
-                // Add as regular member
-                $existingAssignment = RosterAssignment::where('roster_id', $targetRoster->id)
-                    ->where('officer_id', $order->officer_id)
-                    ->first();
-                
-                if (!$existingAssignment) {
+                } else {
                     RosterAssignment::create([
                         'roster_id' => $targetRoster->id,
                         'officer_id' => $order->officer_id,
                     ]);
+                }
+            } else {
+                // Existing roster: handle role takeover and assign new officer
+                if (in_array($order->target_role, ['OIC', '2IC'])) {
+                    if ($order->target_role === 'OIC' && $targetRoster->oic_officer_id) {
+                        $outgoingOfficer = Officer::find($targetRoster->oic_officer_id);
+                        
+                        // Remove from OIC position
+                        $targetRoster->oic_officer_id = null;
+                        $targetRoster->save();
+                        
+                        // Add as regular member if not already in assignments
+                        $existingAssignment = RosterAssignment::where('roster_id', $targetRoster->id)
+                            ->where('officer_id', $outgoingOfficer->id)
+                            ->first();
+                        
+                        if (!$existingAssignment) {
+                            RosterAssignment::create([
+                                'roster_id' => $targetRoster->id,
+                                'officer_id' => $outgoingOfficer->id,
+                            ]);
+                        }
+                    } elseif ($order->target_role === '2IC' && $targetRoster->second_in_command_officer_id) {
+                        $outgoingOfficer = Officer::find($targetRoster->second_in_command_officer_id);
+                        
+                        // Remove from 2IC position
+                        $targetRoster->second_in_command_officer_id = null;
+                        $targetRoster->save();
+                        
+                        // Add as regular member if not already in assignments
+                        $existingAssignment = RosterAssignment::where('roster_id', $targetRoster->id)
+                            ->where('officer_id', $outgoingOfficer->id)
+                            ->first();
+                        
+                        if (!$existingAssignment) {
+                            RosterAssignment::create([
+                                'roster_id' => $targetRoster->id,
+                                'officer_id' => $outgoingOfficer->id,
+                            ]);
+                        }
+                    }
+                }
+
+                // Assign new officer to target unit
+                if ($order->target_role === 'OIC') {
+                    $targetRoster->oic_officer_id = $order->officer_id;
+                    $targetRoster->save();
+                } elseif ($order->target_role === '2IC') {
+                    $targetRoster->second_in_command_officer_id = $order->officer_id;
+                    $targetRoster->save();
+                } else {
+                    $existingAssignment = RosterAssignment::where('roster_id', $targetRoster->id)
+                        ->where('officer_id', $order->officer_id)
+                        ->first();
+                    
+                    if (!$existingAssignment) {
+                        RosterAssignment::create([
+                            'roster_id' => $targetRoster->id,
+                            'officer_id' => $order->officer_id,
+                        ]);
+                    }
                 }
             }
 

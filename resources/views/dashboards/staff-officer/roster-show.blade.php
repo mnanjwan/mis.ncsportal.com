@@ -238,7 +238,7 @@
                                     <i class="ki-filled ki-pencil"></i> Request to Edit
                                 </button>
                             @endif
-                            @if($roster->status === 'DRAFT' && $roster->assignments->count() > 0)
+                            @if($roster->status === 'DRAFT' && ($roster->assignments->count() > 0 || $roster->oic_officer_id || $roster->second_in_command_officer_id))
                                 <button type="button" class="kt-btn kt-btn-success w-full" data-kt-modal-toggle="#submit-modal">
                                         <i class="ki-filled ki-check"></i> Submit for Approval
                                     </button>
