@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Ready to Dispense')
-@section('page-title', 'Ready to Dispense')
+@section('title', 'Command Stock')
+@section('page-title', 'Command Stock')
 @section('breadcrumbs')
     <span class="text-secondary-foreground">Pharmacy</span>
     <span>/</span>
     <a href="{{ route('pharmacy.command-pharmacist.dashboard') }}" class="text-secondary-foreground hover:text-primary">Dashboard</a>
     <span>/</span>
-    <span class="text-secondary-foreground">Ready to Dispense</span>
+    <span class="text-secondary-foreground">Command Stock</span>
 @endsection
 
 @section('content')
@@ -28,7 +28,7 @@
 
         <div class="kt-card">
             <div class="kt-card-header">
-                <h3 class="kt-card-title">Requisitions Ready to Dispense</h3>
+                <h3 class="kt-card-title">Requisitions in Command Stock</h3>
                 <p class="text-sm text-secondary-foreground">Issued requisitions for {{ $commandName ?? 'your command' }}. Click Dispense to open the requisition and dispense items to patients.</p>
             </div>
             <div class="kt-card-content">
@@ -77,7 +77,7 @@
                 @else
                     <div class="text-center py-12">
                         <i class="ki-filled ki-pill text-5xl text-muted-foreground mb-4"></i>
-                        <p class="text-secondary-foreground">No requisitions ready to dispense.</p>
+                        <p class="text-secondary-foreground">No requisitions in command stock.</p>
                         <p class="text-sm text-muted-foreground mt-1">Issued requisitions will appear here. Go to Requisitions to view all.</p>
                         <a href="{{ route('pharmacy.command-pharmacist.dashboard') }}" class="kt-btn kt-btn-light mt-4">
                             <i class="ki-filled ki-home-3"></i> Back to Dashboard

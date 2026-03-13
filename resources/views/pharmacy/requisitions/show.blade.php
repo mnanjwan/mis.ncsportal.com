@@ -206,7 +206,7 @@
                     <div class="kt-card border-success" id="dispense-form">
                         <div class="kt-card-header">
                             <h3 class="kt-card-title">Dispense Items — Dispense Again</h3>
-                            <span class="text-sm text-secondary-foreground">You can dispense in batches. Use the form below to dispense the remaining quantity. This requisition stays in Dashboard → Ready to Dispense until fully dispensed.</span>
+                            <span class="text-sm text-secondary-foreground">You can dispense in batches. Use the form below to dispense the remaining quantity. This requisition stays in Dashboard → Command Stock until fully dispensed.</span>
                         </div>
                         <div class="kt-card-content">
                             <form method="POST" action="{{ route('pharmacy.requisitions.dispense', $requisition->id) }}">

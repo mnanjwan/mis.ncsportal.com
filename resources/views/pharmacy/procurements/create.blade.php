@@ -78,20 +78,20 @@
                 <label class="kt-label text-xs">Quantity *</label>
                 <input type="number" name="items[INDEX][quantity]" class="kt-input kt-input-sm" placeholder="Qty" min="1" required>
             </div>
-            <div class="w-32">
-                <label class="kt-label text-xs">Unit</label>
-                <select name="items[INDEX][unit]" class="kt-input kt-input-sm">
-                    <option value="others" selected>Others</option>
-                    <option value="tablets">Tablets</option>
-                    <option value="capsules">Capsules</option>
-                    <option value="bottles">Bottles</option>
-                    <option value="vials">Vials</option>
-                    <option value="ampoules">Ampoules</option>
-                    <option value="sachets">Sachets</option>
-                    <option value="tubes">Tubes</option>
-                    <option value="packs">Packs</option>
-                    <option value="units">Units</option>
-                </select>
+            <div class="w-48 relative">
+                <label class="kt-label text-xs">Unit *</label>
+                <input type="hidden" name="items[INDEX][unit]" id="proc_unit_INDEX_id" value="others" required>
+                <button type="button" id="proc_unit_INDEX_trigger" class="kt-input kt-input-sm w-full text-left flex items-center justify-between cursor-pointer">
+                    <span id="proc_unit_INDEX_text">Others</span>
+                    <i class="ki-filled ki-down text-gray-400"></i>
+                </button>
+                <div id="proc_unit_INDEX_dropdown" class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden" style="min-width: 150px;">
+                    <div class="p-2 border-b border-input">
+                        <input type="text" id="proc_unit_INDEX_search" class="kt-input kt-input-sm w-full" placeholder="Search..." autocomplete="off">
+                    </div>
+                    <div id="proc_unit_INDEX_options" class="max-h-48 overflow-y-auto"></div>
+                </div>
+                <input type="text" id="proc_unit_INDEX_custom" class="kt-input kt-input-sm mt-2 hidden w-full" placeholder="Type new unit..." autocomplete="off">
             </div>
             <div class="flex items-end">
                 <button type="button" class="kt-btn kt-btn-sm kt-btn-light kt-btn-icon remove-item-btn mt-5">
@@ -111,6 +111,13 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: '', name: '-- Search or add drug / item --' },
         { id: ADD_NEW_VALUE, name: '-- Add new (type below) --' },
         ...existingNames.map(n => ({ id: n, name: n }))
+    ];
+
+    const unitOptionsList = @json($unitOptions ?? []);
+    const unitOptions = [
+        { id: '', name: '-- Select or add unit --' },
+        { id: ADD_NEW_VALUE, name: '-- Add new unit (type below) --' },
+        ...unitOptionsList.map(u => ({ id: u, name: u }))
     ];
 
     // Inline fallback when Vite bundle (app.js) doesn't load on production
@@ -210,6 +217,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function initUnitSelect(row, idx) {
+        const prefix = 'proc_unit_' + idx;
+        createSearchableSelect({
+            triggerId: prefix + '_trigger',
+            hiddenInputId: prefix + '_id',
+            dropdownId: prefix + '_dropdown',
+            searchInputId: prefix + '_search',
+            optionsContainerId: prefix + '_options',
+            displayTextId: prefix + '_text',
+            options: unitOptions.slice(),
+            placeholder: '-- Select or add unit --',
+            searchPlaceholder: 'Search...',
+            onSelect: function(option) {
+                const hidden = document.getElementById(prefix + '_id');
+                const customInput = document.getElementById(prefix + '_custom');
+                const displayText = document.getElementById(prefix + '_text');
+                if (!hidden || !customInput || !displayText) return;
+                if (option && option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
+                    hidden.value = customInput.value.trim();
+                    displayText.textContent = '-- Add new unit --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                    if (option && option.id) hidden.value = option.id;
+                }
+            }
+        });
+        const customInput = document.getElementById(prefix + '_custom');
+        const hiddenInput = document.getElementById(prefix + '_id');
+        if (customInput && hiddenInput) {
+            customInput.addEventListener('input', function() {
+                hiddenInput.value = this.value.trim();
+            });
+        }
+    }
+
     function addItem() {
         const clone = template.content.cloneNode(true);
         const row = clone.querySelector('.item-row');
@@ -224,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         container.appendChild(clone);
         initDrugSelect(row, idx);
+        initUnitSelect(row, idx);
         itemIndex++;
     }
 

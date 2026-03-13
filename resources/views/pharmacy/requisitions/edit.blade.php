@@ -77,7 +77,7 @@
                             $centralQty = isset($centralStock[$drug->id]) ? $centralStock[$drug->id]->sum('quantity') : 0;
                         @endphp
                         <option value="{{ $drug->id }}" data-stock="{{ $centralQty }}">
-                            {{ $drug->name }} ({{ $drug->unit_of_measure }}) - Central: {{ number_format($centralQty) }}
+                            {{ $drug->name }} ({{ $drug->unit_of_measure }}) @if(!auth()->user()->hasRole('Command Pharmacist')) - Central: {{ number_format($centralQty) }} @endif
                         </option>
                     @endforeach
                 </select>

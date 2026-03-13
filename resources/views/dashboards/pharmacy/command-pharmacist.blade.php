@@ -50,7 +50,7 @@
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Ready to Dispense</span>
+                            <span class="text-sm font-normal text-secondary-foreground">Command Stock</span>
                             <span class="text-2xl font-semibold text-mono">{{ $stats['issued'] ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-success/10 text-success">
@@ -107,10 +107,10 @@
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 lg:gap-7.5">
-            <!-- Ready to Dispense -->
+            <!-- Command Stock -->
             <div class="kt-card">
                 <div class="kt-card-header">
-                    <h3 class="kt-card-title">Ready to Dispense</h3>
+                    <h3 class="kt-card-title">Command Stock</h3>
                 </div>
                 <div class="kt-card-content">
                     @if($readyToDispense->count() > 0)
@@ -137,7 +137,7 @@
                     @else
                         <div class="text-center py-8">
                             <i class="ki-filled ki-pill text-4xl text-muted-foreground mb-4"></i>
-                            <p class="text-secondary-foreground">No items ready to dispense.</p>
+                            <p class="text-secondary-foreground">No items in command stock.</p>
                         </div>
                     @endif
                 </div>

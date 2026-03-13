@@ -60,28 +60,39 @@
     <!-- Item Row Template -->
     <template id="itemRowTemplate">
         <div class="item-row flex flex-wrap items-start gap-3 p-3 bg-muted/50 rounded-lg border border-input">
-            <div class="flex-grow min-w-[200px]">
+            <div class="flex-grow min-w-[200px] relative">
                 <label class="kt-label text-xs">Drug / Item Name *</label>
-                <input type="text" name="items[INDEX][drug_name]" class="kt-input kt-input-sm drug-name-input" placeholder="e.g., Paracetamol 500mg" required>
+                <input type="hidden" name="items[INDEX][drug_name]" id="proc_drug_name_INDEX_id" value="" required>
+                <button type="button" id="proc_drug_name_INDEX_trigger" class="kt-input kt-input-sm w-full text-left flex items-center justify-between cursor-pointer">
+                    <span id="proc_drug_name_INDEX_text">-- Search or add drug / item --</span>
+                    <i class="ki-filled ki-down text-gray-400"></i>
+                </button>
+                <div id="proc_drug_name_INDEX_dropdown" class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden" style="min-width: 200px;">
+                    <div class="p-2 border-b border-input">
+                        <input type="text" id="proc_drug_name_INDEX_search" class="kt-input kt-input-sm w-full" placeholder="Search..." autocomplete="off">
+                    </div>
+                    <div id="proc_drug_name_INDEX_options" class="max-h-48 overflow-y-auto"></div>
+                </div>
+                <input type="text" id="proc_drug_name_INDEX_custom" class="kt-input kt-input-sm mt-2 hidden w-full" placeholder="Type new name (e.g., Paracetamol 500mg)..." autocomplete="off">
             </div>
             <div class="w-32">
                 <label class="kt-label text-xs">Quantity *</label>
                 <input type="number" name="items[INDEX][quantity]" class="kt-input kt-input-sm quantity-input" placeholder="Qty" min="1" required>
             </div>
-            <div class="w-32">
-                <label class="kt-label text-xs">Unit</label>
-                <select name="items[INDEX][unit]" class="kt-input kt-input-sm unit-select">
-                    <option value="others">Others</option>
-                    <option value="tablets">Tablets</option>
-                    <option value="capsules">Capsules</option>
-                    <option value="bottles">Bottles</option>
-                    <option value="vials">Vials</option>
-                    <option value="ampoules">Ampoules</option>
-                    <option value="sachets">Sachets</option>
-                    <option value="tubes">Tubes</option>
-                    <option value="packs">Packs</option>
-                    <option value="units">Units</option>
-                </select>
+            <div class="w-48 relative">
+                <label class="kt-label text-xs">Unit *</label>
+                <input type="hidden" name="items[INDEX][unit]" id="proc_unit_INDEX_id" value="others" required>
+                <button type="button" id="proc_unit_INDEX_trigger" class="kt-input kt-input-sm w-full text-left flex items-center justify-between cursor-pointer">
+                    <span id="proc_unit_INDEX_text">Others</span>
+                    <i class="ki-filled ki-down text-gray-400"></i>
+                </button>
+                <div id="proc_unit_INDEX_dropdown" class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden" style="min-width: 150px;">
+                    <div class="p-2 border-b border-input">
+                        <input type="text" id="proc_unit_INDEX_search" class="kt-input kt-input-sm w-full" placeholder="Search..." autocomplete="off">
+                    </div>
+                    <div id="proc_unit_INDEX_options" class="max-h-48 overflow-y-auto"></div>
+                </div>
+                <input type="text" id="proc_unit_INDEX_custom" class="kt-input kt-input-sm mt-2 hidden w-full" placeholder="Type new unit..." autocomplete="off">
             </div>
             <div class="flex items-end">
                 <button type="button" class="kt-btn kt-btn-sm kt-btn-light kt-btn-icon remove-item-btn mt-5">
@@ -95,6 +106,74 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const ADD_NEW_VALUE = '__ADD_NEW__';
+    const existingNames = @json($existingDrugNames ?? []);
+    const drugOptions = [
+        { id: '', name: '-- Search or add drug / item --' },
+        { id: ADD_NEW_VALUE, name: '-- Add new (type below) --' },
+        ...existingNames.map(n => ({ id: n, name: n }))
+    ];
+
+    const unitOptionsList = @json($unitOptions ?? []);
+    const unitOptions = [
+        { id: '', name: '-- Select or add unit --' },
+        { id: ADD_NEW_VALUE, name: '-- Add new unit (type below) --' },
+        ...unitOptionsList.map(u => ({ id: u, name: u }))
+    ];
+
+    // Inline fallback when Vite bundle (app.js) doesn't load on production
+    function createSearchableSelectFallback(config) {
+        var c = config, trigger = document.getElementById(c.triggerId), hidden = document.getElementById(c.hiddenInputId),
+            dropdown = document.getElementById(c.dropdownId), searchInput = document.getElementById(c.searchInputId),
+            optionsContainer = document.getElementById(c.optionsContainerId), displayText = document.getElementById(c.displayTextId);
+        if (!trigger || !hidden || !dropdown || !searchInput || !optionsContainer || !displayText) return;
+        var options = c.options || [], filtered = options.slice(0);
+        function render(opts) {
+            optionsContainer.innerHTML = opts.length === 0 ? '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>' : opts.map(function(opt) {
+                var d = c.displayFn ? c.displayFn(opt) : (opt.name != null ? opt.name : opt.id != null ? opt.id : opt);
+                var v = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+                return '<div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-input last:border-0 select-option" data-id="' + v + '" data-name="' + d + '"><div class="text-sm text-foreground">' + d + '</div></div>';
+            }).join('');
+            optionsContainer.querySelectorAll('.select-option').forEach(function(el) {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var id = this.dataset.id, name = this.dataset.name;
+                    hidden.value = id ?? ''; displayText.textContent = name ?? '';
+                    dropdown.classList.add('hidden'); dropdown.style.cssText = ''; searchInput.value = '';
+                    filtered = options.slice(0); render(filtered);
+                    if (c.onSelect) c.onSelect({ id: id, name: name });
+                });
+            });
+        }
+        function openDrop() {
+            dropdown.classList.remove('hidden');
+            var r = trigger.getBoundingClientRect();
+            dropdown.style.cssText = 'position:fixed;z-index:99999;top:' + (r.bottom + 4) + 'px;left:' + r.left + 'px;width:' + r.width + 'px;min-width:' + r.width + 'px;';
+            setTimeout(function() { searchInput.focus(); }, 100);
+        }
+        function closeDrop() { dropdown.classList.add('hidden'); dropdown.style.cssText = ''; }
+        searchInput.addEventListener('input', function() {
+            var term = this.value.toLowerCase();
+            filtered = options.filter(function(opt) {
+                var d = c.displayFn ? c.displayFn(opt) : (opt.name != null ? opt.name : opt.id != null ? opt.id : opt);
+                return String(d).toLowerCase().includes(term);
+            });
+            render(filtered);
+        });
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.contains('hidden') ? openDrop() : closeDrop();
+        });
+        document.addEventListener('click', function(e) {
+            setTimeout(function() {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) closeDrop();
+            }, 0);
+        });
+        render(filtered);
+    }
+
+    var createSearchableSelect = typeof window.createSearchableSelect === 'function' ? window.createSearchableSelect : createSearchableSelectFallback;
+
     const container = document.getElementById('itemsContainer');
     const template = document.getElementById('itemRowTemplate');
     const addBtn = document.getElementById('addItemBtn');
@@ -107,32 +186,123 @@ document.addEventListener('DOMContentLoaded', function() {
         'unit' => $i->unit_of_measure ?? ($i->drug ? $i->drug->unit_of_measure : 'others')
     ]));
 
+    function initDrugSelect(row, idx, value = '') {
+        const prefix = 'proc_drug_name_' + idx;
+        const hiddenInput = document.getElementById(prefix + '_id');
+        const displayText = document.getElementById(prefix + '_text');
+        const customInput = document.getElementById(prefix + '_custom');
+
+        if (value) {
+            hiddenInput.value = value;
+            if (existingNames.includes(value)) {
+                displayText.textContent = value;
+            } else {
+                displayText.textContent = '-- Add new (type below) --';
+                customInput.classList.remove('hidden');
+                customInput.value = value;
+            }
+        }
+
+        createSearchableSelect({
+            triggerId: prefix + '_trigger',
+            hiddenInputId: prefix + '_id',
+            dropdownId: prefix + '_dropdown',
+            searchInputId: prefix + '_search',
+            optionsContainerId: prefix + '_options',
+            displayTextId: prefix + '_text',
+            options: drugOptions.slice(),
+            placeholder: '-- Search or add drug / item --',
+            searchPlaceholder: 'Search...',
+            onSelect: function(option) {
+                if (option && option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hiddenInput.value && hiddenInput.value !== ADD_NEW_VALUE) ? hiddenInput.value : '';
+                    hiddenInput.value = customInput.value.trim();
+                    displayText.textContent = '-- Add new (type below) --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                    if (option && option.id) hiddenInput.value = option.id;
+                }
+            }
+        });
+        
+        if (customInput && hiddenInput) {
+            customInput.addEventListener('input', function() {
+                hiddenInput.value = this.value.trim();
+            });
+        }
+    }
+
+    function initUnitSelect(row, idx, value = 'others') {
+        const prefix = 'proc_unit_' + idx;
+        const hiddenInput = document.getElementById(prefix + '_id');
+        const displayText = document.getElementById(prefix + '_text');
+        const customInput = document.getElementById(prefix + '_custom');
+
+        if (value) {
+            hiddenInput.value = value;
+            if (unitOptionsList.includes(value) || value === 'others') {
+                displayText.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+            } else {
+                displayText.textContent = '-- Add new unit --';
+                customInput.classList.remove('hidden');
+                customInput.value = value;
+            }
+        }
+
+        createSearchableSelect({
+            triggerId: prefix + '_trigger',
+            hiddenInputId: prefix + '_id',
+            dropdownId: prefix + '_dropdown',
+            searchInputId: prefix + '_search',
+            optionsContainerId: prefix + '_options',
+            displayTextId: prefix + '_text',
+            options: unitOptions.slice(),
+            placeholder: '-- Select or add unit --',
+            searchPlaceholder: 'Search...',
+            onSelect: function(option) {
+                if (option && option.id === ADD_NEW_VALUE) {
+                    customInput.classList.remove('hidden');
+                    customInput.value = (hiddenInput.value && hiddenInput.value !== ADD_NEW_VALUE) ? hiddenInput.value : '';
+                    hiddenInput.value = customInput.value.trim();
+                    displayText.textContent = '-- Add new unit --';
+                    setTimeout(() => customInput.focus(), 0);
+                } else {
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                    if (option && option.id) hiddenInput.value = option.id;
+                }
+            }
+        });
+        
+        if (customInput && hiddenInput) {
+            customInput.addEventListener('input', function() {
+                hiddenInput.value = this.value.trim();
+            });
+        }
+    }
+
     function addItem(drugName = '', quantity = '', unit = 'others') {
         const clone = template.content.cloneNode(true);
         const row = clone.querySelector('.item-row');
-        
-        // Update name attributes with current index
-        row.querySelectorAll('[name]').forEach(el => {
-            el.name = el.name.replace('INDEX', itemIndex);
-        });
+        const idx = itemIndex;
 
-        // Set values if provided
-        if (drugName) {
-            row.querySelector('.drug-name-input').value = drugName;
-        }
+        row.querySelectorAll('[name]').forEach(el => { el.name = el.name.replace('INDEX', idx); });
+        row.querySelectorAll('[id]').forEach(el => { el.id = el.id.replace('INDEX', idx); });
+
         if (quantity) {
             row.querySelector('.quantity-input').value = quantity;
         }
-        if (unit) {
-            row.querySelector('.unit-select').value = unit;
-        }
 
-        // Add remove handler
         row.querySelector('.remove-item-btn').addEventListener('click', function() {
             row.remove();
         });
 
         container.appendChild(clone);
+        initDrugSelect(row, idx, drugName);
+        initUnitSelect(row, idx, unit);
         itemIndex++;
     }
 

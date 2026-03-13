@@ -60,8 +60,9 @@ class PharmacyProcurementController extends Controller
     public function create()
     {
         $existingDrugNames = \App\Models\PharmacyDrug::orderBy('name')->pluck('name')->values()->toArray();
+        $unitOptions = \App\Models\PharmacyUnitOfMeasurement::names();
 
-        return view('pharmacy.procurements.create', compact('existingDrugNames'));
+        return view('pharmacy.procurements.create', compact('existingDrugNames', 'unitOptions'));
     }
 
     /**
@@ -123,7 +124,9 @@ class PharmacyProcurementController extends Controller
                 ->with('error', 'Only draft procurements can be edited.');
         }
 
-        return view('pharmacy.procurements.edit', compact('procurement'));
+        $unitOptions = \App\Models\PharmacyUnitOfMeasurement::names();
+
+        return view('pharmacy.procurements.edit', compact('procurement', 'unitOptions'));
     }
 
     /**
