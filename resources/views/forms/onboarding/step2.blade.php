@@ -114,16 +114,17 @@
                         <label class="kt-form-label">Zone <span class="text-danger">*</span></label>
                         <div class="relative">
                             <input type="hidden" name="zone_id" id="zone_id" value="{{ old('zone_id', $savedData['zone_id'] ?? '') }}" required>
-                            <button type="button" 
-                                    id="zone_id_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
-                                <span id="zone_id_select_text">@php
-                                    $zoneId = old('zone_id', $savedData['zone_id'] ?? '');
-                                    $selectedZone = $zoneId ? $zones->firstWhere('id', $zoneId) : null;
-                                    echo $selectedZone ? $selectedZone->name : 'Select Zone...';
-                                @endphp</span>
-                                <i class="ki-filled ki-down text-gray-400"></i>
-                            </button>
+                                <button type="button" 
+                                        id="zone_id_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer @if($commandFixed) opacity-70 cursor-not-allowed @endif"
+                                        @if($commandFixed) disabled @endif>
+                                    <span id="zone_id_select_text">@php
+                                        $zoneId = old('zone_id', $savedData['zone_id'] ?? '');
+                                        $selectedZone = $zoneId ? $zones->firstWhere('id', $zoneId) : null;
+                                        echo $selectedZone ? $selectedZone->name : 'Select Zone...';
+                                    @endphp</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
                             <div id="zone_id_dropdown" 
                                  class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
                                 <div class="p-3 border-b border-input">
@@ -142,13 +143,13 @@
                         <label class="kt-form-label">Command/Present Station <span class="text-danger">*</span></label>
                         <div class="relative">
                             <input type="hidden" name="command_id" id="command_id" value="{{ old('command_id', $savedData['command_id'] ?? '') }}" required>
-                            <button type="button" 
-                                    id="command_id_select_trigger" 
-                                    class="kt-input w-full text-left flex items-center justify-between cursor-pointer"
-                                    disabled>
-                                <span id="command_id_select_text">Select zone first, then select command...</span>
-                                <i class="ki-filled ki-down text-gray-400"></i>
-                            </button>
+                                <button type="button" 
+                                        id="command_id_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer @if($commandFixed) opacity-70 cursor-not-allowed @endif"
+                                        @if($commandFixed) disabled @else disabled @endif>
+                                    <span id="command_id_select_text">Select zone first, then select command...</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
                             <div id="command_id_dropdown" 
                                  class="absolute z-50 w-full mt-1 bg-white border border-input rounded-lg shadow-lg hidden">
                                 <div class="p-3 border-b border-input">
@@ -1178,13 +1179,16 @@ function loadCommandsForZone(zoneId, savedCommandId = null) {
     const commandTrigger = document.getElementById('command_id_select_trigger');
     const commandSelectText = document.getElementById('command_id_select_text');
     const commandHiddenInput = document.getElementById('command_id');
+    const isCommandFixed = {{ $commandFixed ? 'true' : 'false' }};
     
     if (!commandTrigger || !commandSelectText || !commandHiddenInput) {
         return;
     }
     
     if (zoneId && window.commands.length > 0) {
-        commandTrigger.disabled = false;
+        if (!isCommandFixed) {
+            commandTrigger.disabled = false;
+        }
         
         // Create command options
         const commandOptions = [

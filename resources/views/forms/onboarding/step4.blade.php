@@ -71,13 +71,23 @@
                 
                 <div class="flex flex-col gap-1 pt-5 border-t border-input">
                     <label class="kt-form-label">Upload Documents <span class="text-muted">(Preferably in JPEG format)</span></label>
-                    <div class="flex flex-col gap-3">
-                        <div class="relative">
-                            <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png"/>
-                            <label for="documents-input" class="kt-btn kt-btn-primary cursor-pointer inline-flex items-center justify-center gap-2">
-                                <i class="ki-filled ki-file-up"></i>
-                                <span id="upload-button-text">Choose Files</span>
-                            </label>
+                        <div class="flex flex-col sm:flex-row items-end gap-3">
+                            <div class="flex-1 w-full sm:w-auto">
+                                <label class="text-xs text-muted mb-1 block">Select Category First <span class="text-danger">*</span></label>
+                                <select id="global-document-category" class="kt-input kt-input-sm w-full">
+                                    <option value="">-- Choose Category --</option>
+                                    @foreach(config('document_categories') as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="relative flex-shrink-0">
+                                <input type="file" id="documents-input" name="documents[]" class="hidden" multiple accept="image/jpeg,image/jpg,image/png" disabled/>
+                                <label for="documents-input" id="upload-button-label" class="kt-btn kt-btn-primary cursor-not-allowed opacity-50 inline-flex items-center justify-center gap-2">
+                                    <i class="ki-filled ki-file-up"></i>
+                                    <span id="upload-button-text">Choose Files</span>
+                                </label>
+                            </div>
                         </div>
                         <div id="selected-files-list" class="flex flex-col gap-2 hidden">
                             <!-- Selected files will be displayed here -->
@@ -800,6 +810,23 @@ const documentCategoriesContainer = document.getElementById('document-categories
 let selectedFiles = [];
 let filePreviewUrls = []; // Store object URLs for cleanup
 let fileCategories = []; // Store category selections
+const globalCategorySelect = document.getElementById('global-document-category');
+const uploadButtonLabel = document.getElementById('upload-button-label');
+
+// Handle global category change to enable/disable upload
+if (globalCategorySelect && uploadButtonLabel && documentsInput) {
+    globalCategorySelect.addEventListener('change', function() {
+        if (this.value) {
+            uploadButtonLabel.classList.remove('cursor-not-allowed', 'opacity-50');
+            uploadButtonLabel.classList.add('cursor-pointer');
+            documentsInput.disabled = false;
+        } else {
+            uploadButtonLabel.classList.add('cursor-not-allowed', 'opacity-50');
+            uploadButtonLabel.classList.remove('cursor-pointer');
+            documentsInput.disabled = true;
+        }
+    });
+}
 
 // Document categories from config
 const documentCategories = @json(config('document_categories'));
@@ -889,8 +916,9 @@ if (documentsInput) {
         files.forEach(file => {
             if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
                 selectedFiles.push(file);
-                // Default category for new files
-                fileCategories.push('other');
+                // Auto-assign the selected category from the global dropdown
+                const selectedCategory = globalCategorySelect.value || 'other';
+                fileCategories.push(selectedCategory);
                 // Create preview URL for images
                 if (file.type.startsWith('image/')) {
                     filePreviewUrls.push(URL.createObjectURL(file));

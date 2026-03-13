@@ -152,6 +152,35 @@
                                 <p class="text-sm text-danger">{{ $message }}</p>
                             @enderror
                         </div>
+
+                        <div class="space-y-2 md:col-span-3">
+                            <label for="command_id" class="block text-sm font-medium text-foreground">
+                                Command/Station <span class="text-danger">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="hidden" name="command_id" id="command_id" value="{{ old('command_id') }}" required>
+                                <button type="button" 
+                                        id="command_id_select_trigger" 
+                                        class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                                    <span id="command_id_select_text">Select Command...</span>
+                                    <i class="ki-filled ki-down text-gray-400"></i>
+                                </button>
+                                <div id="command_id_dropdown" 
+                                     class="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg hidden">
+                                    <div class="p-3 border-b border-border">
+                                        <input type="text" 
+                                               id="command_id_search_input" 
+                                               class="kt-input w-full pl-10" 
+                                               placeholder="Search command..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div id="command_id_options" class="max-h-60 overflow-y-auto"></div>
+                                </div>
+                            </div>
+                            @error('command_id')
+                                <p class="text-sm text-danger">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
@@ -200,7 +229,7 @@
                             <p class="text-sm text-danger">{{ $message }}</p>
                         @enderror
                         <p class="text-xs text-secondary-foreground">
-                            CSV file must have columns: <strong>service_number</strong>, <strong>email</strong>, and optionally <strong>name</strong>. Maximum 10 entries per upload.
+                            CSV file must have columns: <strong>service_number</strong>, <strong>email</strong>, <strong>command_id</strong>, and optionally <strong>name</strong>. Maximum 10 entries per upload.
                         </p>
                         <span class="text-xs" style="color: red; display: block; margin-top: 0.5rem;">
                             <strong>Document Type Allowed:</strong> CSV, TXT<br>
@@ -208,9 +237,9 @@
                         </span>
                         <div class="mt-2 p-3 bg-muted/50 rounded border border-input">
                             <p class="text-xs font-semibold mb-2">CSV Format Example:</p>
-                            <pre class="text-xs font-mono">service_number,email,name
-57616,officer1@example.com,John Doe
-57617,officer2@example.com,Jane Smith</pre>
+                            <pre class="text-xs font-mono">service_number,email,command_id,name
+57616,officer1@example.com,1,John Doe
+57617,officer2@example.com,5,Jane Smith</pre>
                         </div>
                     </div>
                     <div class="flex items-center justify-end gap-4 pt-4 border-t border-border">
@@ -346,7 +375,7 @@ function addBulkEntry() {
 
     bulkEntryCount++;
     const entryHtml = `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded border border-input" id="entry-${bulkEntryCount}">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded border border-input" id="entry-${bulkEntryCount}">
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-foreground">
                     Service Number <span class="text-danger">*</span>
@@ -369,6 +398,31 @@ function addBulkEntry() {
             </div>
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-foreground">
+                    Command/Station <span class="text-danger">*</span>
+                </label>
+                <div class="relative">
+                    <input type="hidden" name="entries[${bulkEntryCount}][command_id]" id="bulk_command_id_${bulkEntryCount}" required>
+                    <button type="button" 
+                            id="bulk_command_id_${bulkEntryCount}_select_trigger" 
+                            class="kt-input w-full text-left flex items-center justify-between cursor-pointer">
+                        <span id="bulk_command_id_${bulkEntryCount}_select_text">Select Command...</span>
+                        <i class="ki-filled ki-down text-gray-400"></i>
+                    </button>
+                    <div id="bulk_command_id_${bulkEntryCount}_dropdown" 
+                         class="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg hidden">
+                        <div class="p-3 border-b border-border">
+                            <input type="text" 
+                                   id="bulk_command_id_${bulkEntryCount}_search_input" 
+                                   class="kt-input w-full pl-10" 
+                                   placeholder="Search command..."
+                                   autocomplete="off">
+                        </div>
+                        <div id="bulk_command_id_${bulkEntryCount}_options" class="max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-foreground">
                     Name (Optional)
                 </label>
                 <div class="flex items-center gap-2">
@@ -387,6 +441,20 @@ function addBulkEntry() {
     `;
     
     document.getElementById('bulk-entries').insertAdjacentHTML('beforeend', entryHtml);
+    
+    // Initialize Command select for this new entry
+    createSearchableSelect({
+        triggerId: `bulk_command_id_${bulkEntryCount}_select_trigger`,
+        hiddenInputId: `bulk_command_id_${bulkEntryCount}`,
+        dropdownId: `bulk_command_id_${bulkEntryCount}_dropdown`,
+        searchInputId: `bulk_command_id_${bulkEntryCount}_search_input`,
+        optionsContainerId: `bulk_command_id_${bulkEntryCount}_options`,
+        displayTextId: `bulk_command_id_${bulkEntryCount}_select_text`,
+        options: commandOptions,
+        placeholder: 'Select Command...',
+        searchPlaceholder: 'Search command...'
+    });
+
     updateBulkSubmitButton();
 }
 
@@ -419,7 +487,126 @@ function updateBulkSubmitButton() {
 document.addEventListener('DOMContentLoaded', function() {
     showTab('single');
     initOnboardingSearch();
+    initCommandSelects();
 });
+
+// Command options from PHP
+const commandOptions = @json($commands->map(fn($c) => ['id' => $c->id, 'name' => $c->name]));
+
+// Function to initialize Command selects (Single and Bulk)
+function initCommandSelects() {
+    // Single entry command select
+    if (document.getElementById('command_id_select_trigger')) {
+        createSearchableSelect({
+            triggerId: 'command_id_select_trigger',
+            hiddenInputId: 'command_id',
+            dropdownId: 'command_id_dropdown',
+            searchInputId: 'command_id_search_input',
+            optionsContainerId: 'command_id_options',
+            displayTextId: 'command_id_select_text',
+            options: commandOptions,
+            placeholder: 'Select Command...',
+            searchPlaceholder: 'Search command...'
+        });
+    }
+}
+
+// Reusable function to create searchable select (copied from step2 for consistency)
+function createSearchableSelect(config) {
+    const {
+        triggerId,
+        hiddenInputId,
+        dropdownId,
+        searchInputId,
+        optionsContainerId,
+        displayTextId,
+        options,
+        displayFn,
+        onSelect,
+        placeholder = 'Select...',
+        searchPlaceholder = 'Search...'
+    } = config;
+
+    const trigger = document.getElementById(triggerId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    const displayText = document.getElementById(displayTextId);
+
+    if (!trigger || !hiddenInput || !dropdown || !searchInput || !optionsContainer || !displayText) {
+        return;
+    }
+
+    let selectedOption = null;
+    let filteredOptions = [...options];
+
+    // Render options
+    function renderOptions(opts) {
+        if (opts.length === 0) {
+            optionsContainer.innerHTML = '<div class="p-3 text-sm text-secondary-foreground text-center">No options found</div>';
+            return;
+        }
+
+        optionsContainer.innerHTML = opts.map(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            const value = opt.id !== undefined ? opt.id : (opt.value !== undefined ? opt.value : opt);
+            return `
+                <div class="p-3 hover:bg-muted/50 cursor-pointer border-b border-border last:border-0 select-option" 
+                     data-id="${value}" 
+                     data-name="${display}">
+                    <div class="text-sm text-foreground font-medium">${display}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers
+        optionsContainer.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                
+                hiddenInput.value = id;
+                displayText.textContent = name;
+                dropdown.classList.add('hidden');
+                searchInput.value = '';
+                filteredOptions = [...options];
+                renderOptions(filteredOptions);
+                
+                if (onSelect) onSelect({id: id, name: name});
+            });
+        });
+    }
+
+    // Initial render
+    renderOptions(filteredOptions);
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredOptions = options.filter(opt => {
+            const display = displayFn ? displayFn(opt) : (opt.name || opt.id || opt);
+            return String(display).toLowerCase().includes(searchTerm);
+        });
+        renderOptions(filteredOptions);
+    });
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
 
 // Live Search for Onboarding Management (Server-side)
 function initOnboardingSearch() {

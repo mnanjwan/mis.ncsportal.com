@@ -44,12 +44,9 @@ class OnboardingController extends Controller
 
         $searchTerm = $search ?? null;
 
-        // Return partial view for AJAX requests
-        if ($request->ajax()) {
-            return view('dashboards.hrd.partials.onboarding-table', compact('onboardingOfficers', 'searchTerm'));
-        }
+        $commands = \App\Models\Command::orderBy('name')->get();
         
-        return view('dashboards.hrd.onboarding', compact('onboardingOfficers', 'searchTerm'));
+        return view('dashboards.hrd.onboarding', compact('onboardingOfficers', 'searchTerm', 'commands'));
     }
 
     public function initiate(Request $request)
@@ -58,6 +55,7 @@ class OnboardingController extends Controller
             'service_number' => 'required|string|max:50',
             'email' => 'required|email|max:255|unique:users,email',
             'name' => 'nullable|string|max:255',
+            'command_id' => 'required|exists:commands,id',
         ]);
 
         try {
@@ -91,11 +89,15 @@ class OnboardingController extends Controller
                     'permanent_home_address' => 'To be provided during onboarding',
                     'phone_number' => '00000000000', // Placeholder
                     'email' => $validated['email'],
+                    'present_station' => $validated['command_id'],
                     'is_active' => true,
                     'is_deceased' => false,
                     'created_by' => $currentUserId,
                 ]);
             } else {
+                // If officer exists, update their command as well
+                $officer->update(['present_station' => $validated['command_id']]);
+                
                 // Check if officer is active and not deceased
                 if (!$officer->is_active || $officer->is_deceased) {
                     return redirect()->back()
@@ -172,6 +174,7 @@ class OnboardingController extends Controller
             'entries.*.service_number' => 'required|string|max:50',
             'entries.*.email' => 'required|email|max:255',
             'entries.*.name' => 'nullable|string|max:255',
+            'entries.*.command_id' => 'required|exists:commands,id',
         ]);
 
         $results = [];
@@ -210,11 +213,15 @@ class OnboardingController extends Controller
                             'permanent_home_address' => 'To be provided during onboarding',
                             'phone_number' => '00000000000', // Placeholder
                             'email' => $entry['email'],
+                            'present_station' => $entry['command_id'],
                             'is_active' => true,
                             'is_deceased' => false,
                             'created_by' => $currentUserId,
                         ]);
                     } else {
+                        // If officer exists, update their command
+                        $officer->update(['present_station' => $entry['command_id']]);
+                        
                         // Check if officer is active and not deceased
                         if (!$officer->is_active || $officer->is_deceased) {
                             $results[] = [
@@ -429,10 +436,10 @@ class OnboardingController extends Controller
             $headers = array_shift($csvData);
             
             // Validate headers
-            $expectedHeaders = ['service_number', 'email', 'name'];
-            if (count($headers) < 2 || !in_array('service_number', $headers) || !in_array('email', $headers)) {
+            $expectedHeaders = ['service_number', 'email', 'name', 'command_id'];
+            if (count($headers) < 2 || !in_array('service_number', $headers) || !in_array('email', $headers) || !in_array('command_id', $headers)) {
                 return redirect()->back()
-                    ->with('error', 'CSV file must have columns: service_number, email, and optionally name');
+                    ->with('error', 'CSV file must have columns: service_number, email, command_id, and optionally name');
             }
 
             $entries = [];
@@ -454,6 +461,7 @@ class OnboardingController extends Controller
                     'service_number' => 'required|string|max:50',
                     'email' => 'required|email|max:255',
                     'name' => 'nullable|string|max:255',
+                    'command_id' => 'required|exists:commands,id',
                 ]);
 
                 if ($validator->fails()) {

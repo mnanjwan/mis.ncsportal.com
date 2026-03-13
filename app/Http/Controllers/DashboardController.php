@@ -1618,7 +1618,7 @@ class DashboardController extends Controller
                 'surname' => $officer->surname,
                 'first_name' => $officer->initials ?? '',
                 'gender' => $officer->sex == 'M' ? 'Male' : ($officer->sex == 'F' ? 'Female' : ''),
-                'date_of_birth' => $officer->date_of_birth ? $officer->date_of_birth->format('Y-m-d') : null,
+                'date_of_birth' => $officer->date_of_birth ? \Carbon\Carbon::parse($officer->date_of_birth)->format('Y-m-d') : null,
                 'state_of_origin' => $officer->state_of_origin,
                 'lga' => $officer->lga,
                 'geopolitical_zone' => $officer->geopolitical_zone,
@@ -1708,7 +1708,9 @@ class DashboardController extends Controller
         }
         $officer = $user->officer;
 
+        $commandFixed = false;
         if ($officer && $officer->presentStation && $officer->presentStation->zone) {
+            $commandFixed = true;
             if (!isset($savedData['zone_id']) || empty($savedData['zone_id'])) {
                 $savedData['zone_id'] = $officer->presentStation->zone->id;
             }
@@ -1765,7 +1767,7 @@ class DashboardController extends Controller
             'GL 13', 'GL 14', 'GL 15', 'GL 16', 'GL 17',
         ];
 
-        return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels', 'institutions', 'disciplines', 'qualifications'));
+        return view('forms.onboarding.step2', compact('savedData', 'zones', 'ranks', 'gradeLevels', 'institutions', 'disciplines', 'qualifications', 'commandFixed'));
     }
 
     public function saveOnboardingStep2(Request $request)
