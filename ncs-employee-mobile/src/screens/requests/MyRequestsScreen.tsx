@@ -331,7 +331,7 @@ export function MyRequestsScreen() {
                     <Ionicons name="card-outline" size={28} color="#10b981" />
                   </View>
                   <Text style={styles.actionCardTitle}>Pass</Text>
-                  <Text style={styles.actionCardDesc}>Request short-term absence (max 5 days).</Text>
+                  <Text style={styles.actionCardDesc}>Request short-term absence (working days, limit by grade).</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

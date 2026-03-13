@@ -55,6 +55,7 @@ use App\Http\Controllers\Fleet\FleetIssuanceController;
 use App\Http\Controllers\Fleet\FleetReportsController;
 use App\Http\Controllers\Fleet\FleetRequestController;
 use App\Http\Controllers\Fleet\FleetVehicleController;
+use App\Http\Controllers\HolidayController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -296,6 +297,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/reports/generate', [DashboardController::class, 'generateReport'])->name('reports.generate');
 
         Route::get('/leave-types', [LeaveTypeController::class, 'index'])->name('leave-types');
+
+        // Holiday Management
+        Route::resource('holidays', HolidayController::class)->except(['show']);
 
         Route::get('/manning-requests', [ManningRequestController::class, 'hrdIndex'])->name('manning-requests');
         Route::get('/manning-requests/print-selected', [ManningRequestController::class, 'hrdPrintSelected'])->name('manning-requests.print-selected');

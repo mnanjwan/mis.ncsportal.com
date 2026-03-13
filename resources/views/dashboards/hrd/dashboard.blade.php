@@ -128,6 +128,24 @@
                     </div>
                 </a>
 
+                <!-- Holiday Management -->
+                <a href="{{ route('hrd.holidays.index') }}" class="kt-card hover:shadow-lg transition-shadow">
+                    <div class="kt-card-content p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-center size-12 rounded-full bg-info/10">
+                                    <i class="ki-filled ki-calendar-8 text-xl text-info"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-sm">Holidays</h4>
+                                    <p class="text-xs text-secondary-foreground">Floating Holidays Management</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-secondary-foreground">Set non-working days for Leave & Pass calculations</p>
+                    </div>
+                </a>
+
                 <!-- Draft Deployments (Combined - Manning Requests & Command Duration) -->
                 <a href="{{ route('hrd.manning-deployments.draft') }}" class="kt-card hover:shadow-lg transition-shadow">
                     <div class="kt-card-content p-5">

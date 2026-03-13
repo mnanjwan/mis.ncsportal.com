@@ -6,7 +6,7 @@
 
 ## 1. Feature Overview
 
-A **Pass** allows officers to be absent from duty for short periods (1–5 days) after exhausting their annual leave. The mobile app must replicate the full pass lifecycle: submission, minute, approval/rejection, and status tracking.
+A **Pass** allows officers to be absent from duty for short periods after exhausting their annual leave. The maximum duration is in **working days** (Saturdays and Sundays excluded), by grade level: **GL 07 and above** 30 working days; **GL 04 to GL 06** 21 working days; **GL 03 and below** 14 working days. The mobile app must replicate the full pass lifecycle: submission, minute, approval/rejection, and status tracking.
 
 ---
 
@@ -14,7 +14,7 @@ A **Pass** allows officers to be absent from duty for short periods (1–5 days)
 
 | Rule | Source | Implementation |
 |------|--------|---------------|
-| Maximum **5 days** per pass application | `PassApplicationController::store()` line 64 | Client-side + server-side validation |
+| Maximum **working days** per pass by grade (GL 07+: 30, GL 04–06: 21, GL 03 and below: 14); weekends excluded | `PassService`, `PassApplicationController::store()` | Server-side validation; client may show API error |
 | Maximum **2 passes per year** (APPROVED only) | `PassApplicationController::store()` line 85-92 | Server rejects; app checks before submit |
 | **Annual leave must be exhausted** before applying | `PassApplicationController::store()` line 69-82 | Officer must have `≥ max_occurrences_per_year` APPROVED annual leave applications for current year |
 | `start_date` must be **today or later** | Validation rule: `after_or_equal:today` | DatePicker minimum = today |
@@ -35,7 +35,7 @@ A **Pass** allows officers to be absent from duty for short periods (1–5 days)
 │ officer_id           │ bigint FK      │ → officers.id                │
 │ start_date           │ date           │ Must be ≥ today              │
 │ end_date             │ date           │ Must be > start_date         │
-│ number_of_days       │ integer        │ Calculated: diff + 1, max 5  │
+│ number_of_days       │ integer        │ Working days (Mon–Fri) in range; max by GL  │
 │ reason               │ text (nullable)│ Why the pass is needed       │
 │ status               │ string         │ PENDING / APPROVED / REJECTED│
 │ submitted_at         │ timestamp      │ Set on creation              │

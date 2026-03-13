@@ -19,6 +19,9 @@ class PassApplication extends Model
         'expiry_alert_sent',
         'minuted_at',
         'rejection_reason',
+        'expiry_date',
+        'resumption_reminder_sent',
+        'resumption_day_alert_sent',
     ];
 
     protected function casts(): array
@@ -32,6 +35,9 @@ class PassApplication extends Model
             'rejected_at' => 'datetime',
             'number_of_days' => 'integer',
             'expiry_alert_sent' => 'boolean',
+            'expiry_date' => 'date',
+            'resumption_reminder_sent' => 'boolean',
+            'resumption_day_alert_sent' => 'boolean',
         ];
     }
 

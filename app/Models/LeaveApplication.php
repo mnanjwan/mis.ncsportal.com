@@ -22,6 +22,9 @@ class LeaveApplication extends Model
         'rejection_reason',
         'alert_sent_72h',
         'minuted_at',
+        'expiry_date',
+        'resumption_reminder_sent',
+        'resumption_day_alert_sent',
     ];
 
     protected function casts(): array
@@ -36,6 +39,9 @@ class LeaveApplication extends Model
             'rejected_at' => 'datetime',
             'number_of_days' => 'integer',
             'alert_sent_72h' => 'boolean',
+            'expiry_date' => 'date',
+            'resumption_reminder_sent' => 'boolean',
+            'resumption_day_alert_sent' => 'boolean',
         ];
     }
 

@@ -87,6 +87,12 @@
                                 <p class="text-sm text-foreground mt-1">{{ $application->end_date->format('d M Y') }}</p>
                             </div>
                             <div>
+                                <label class="text-sm font-medium text-primary font-bold">Resume Duty Date</label>
+                                <p class="text-sm text-primary font-bold mt-1">
+                                    {{ $application->expiry_date ? $application->expiry_date->format('d M Y') : 'N/A' }}
+                                </p>
+                            </div>
+                            <div>
                                 <label class="text-sm font-medium text-secondary-foreground">Submitted Date</label>
                                 <p class="text-sm text-foreground mt-1">
                                     {{ $application->submitted_at ? $application->submitted_at->format('d M Y') : $application->created_at->format('d M Y') }}

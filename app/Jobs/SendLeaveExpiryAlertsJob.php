@@ -16,29 +16,53 @@ class SendLeaveExpiryAlertsJob implements ShouldQueue
 
     public function handle(): void
     {
-        // Find approved leave applications expiring in 72 hours
-        $expiryDate = now()->addHours(72);
+        $notificationService = app(\App\Services\NotificationService::class);
 
-        $leaves = LeaveApplication::where('status', 'APPROVED')
-            ->where('end_date', '<=', $expiryDate)
-            ->where('end_date', '>', now())
-            ->with('officer')
+        // 1. Proactive Reminder: 48 hours before resumption
+        $reminderDate = now()->addDays(2)->toDateString();
+        $reminderLeaves = LeaveApplication::where('status', 'APPROVED')
+            ->where('expiry_date', $reminderDate)
+            ->where('resumption_reminder_sent', false)
+            ->with('officer.user')
             ->get();
 
-        foreach ($leaves as $leave) {
-            if ($leave->officer->user_id) {
-                $hoursRemaining = now()->diffInHours($leave->end_date);
+        foreach ($reminderLeaves as $leave) {
+            if ($leave->officer && $leave->officer->user) {
+                $notificationService->notify(
+                    $leave->officer->user,
+                    'LEAVE_RESUMPTION_REMINDER',
+                    'Leave Resumption Reminder',
+                    "This is a reminder that your leave ends soon. You are expected to resume duty in 48 hours, on {$leave->expiry_date->format('d/m/Y')}.",
+                    'leave_application',
+                    $leave->id
+                );
 
-                Notification::create([
-                    'user_id' => $leave->officer->user_id,
-                    'notification_type' => 'LEAVE_EXPIRY_ALERT',
-                    'title' => 'Leave Expiring Soon',
-                    'message' => "Your leave expires in {$hoursRemaining} hours. Please ensure you return on time.",
-                    'data' => [
-                        'leave_application_id' => $leave->id,
-                        'end_date' => $leave->end_date->format('Y-m-d'),
-                    ],
-                ]);
+                $leave->update(['resumption_reminder_sent' => true]);
+            }
+        }
+
+        // 2. Resumption Day Alert: Morning of resumption (only if run at or after 08:00)
+        if (now()->hour >= 8) {
+            $today = now()->toDateString();
+            $todayLeaves = LeaveApplication::where('status', 'APPROVED')
+                ->where('expiry_date', $today)
+                ->where('resumption_day_alert_sent', false)
+                ->with('officer.user')
+                ->get();
+
+            foreach ($todayLeaves as $leave) {
+                if ($leave->officer && $leave->officer->user) {
+                    $notificationService->notify(
+                        $leave->officer->user,
+                        'LEAVE_RESUMPTION_ALERT',
+                        'Duty Resumption Today',
+                        "Your leave has ended. You are expected to resume duty today, {$leave->expiry_date->format('d/m/Y')}. Welcome back!",
+                        'leave_application',
+                        $leave->id
+                    );
+
+                    $leave->update(['resumption_day_alert_sent' => true]);
+                }
             }
         }
     }

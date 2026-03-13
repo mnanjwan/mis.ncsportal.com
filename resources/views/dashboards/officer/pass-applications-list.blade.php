@@ -56,6 +56,9 @@
                                     Days
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Resumption
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Period
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
@@ -84,6 +87,15 @@
                                         <span class="text-sm font-medium text-foreground">
                                             {{ $pass->number_of_days }} days
                                         </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        @if($pass->expiry_date)
+                                            <span class="font-semibold text-primary">
+                                                {{ $pass->expiry_date->format('d/m/Y') }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted-foreground italic">Pending</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $pass->start_date->format('d/m/Y') }} - {{ $pass->end_date->format('d/m/Y') }}
@@ -142,6 +154,11 @@
                                     <span class="text-xs text-secondary-foreground">
                                         {{ $pass->start_date->format('d/m/Y') }} to {{ $pass->end_date->format('d/m/Y') }}
                                     </span>
+                                    @if($pass->expiry_date)
+                                        <span class="text-xs font-semibold text-primary">
+                                            Return: {{ $pass->expiry_date->format('d/m/Y') }}
+                                        </span>
+                                    @endif
                                     <span class="text-xs text-secondary-foreground">
                                         Applied: {{ $pass->created_at->format('d/m/Y') }}
                                     </span>

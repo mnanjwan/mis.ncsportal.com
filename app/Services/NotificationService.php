@@ -278,12 +278,13 @@ class NotificationService
 
         $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
         $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
+        $expiryDate = $application->expiry_date ? \Carbon\Carbon::parse($application->expiry_date)->format('d/m/Y') : 'N/A';
 
         return $this->notify(
             $officer->user,
             'leave_application_approved',
             'Leave Application Approved',
-            "Your leave application from {$startDate} to {$endDate} ({$application->number_of_days} days) has been approved.",
+            "Your leave application from {$startDate} to {$endDate} ({$application->number_of_days} working days) has been approved. You are expected to resume duty on {$expiryDate}.",
             'leave_application',
             $application->id
         );
@@ -321,13 +322,14 @@ class NotificationService
 
         $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
         $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
+        $expiryDate = $application->expiry_date ? \Carbon\Carbon::parse($application->expiry_date)->format('d/m/Y') : 'N/A';
         $leaveType = $application->leaveType ? $application->leaveType->name : 'Leave';
 
         return $this->notify(
             $officer->user,
             'leave_application_minuted',
             'Leave Application Minuted',
-            "Your {$leaveType} application from {$startDate} to {$endDate} ({$application->number_of_days} days) has been minuted and forwarded to DC Admin for approval.",
+            "Your {$leaveType} application from {$startDate} to {$endDate} ({$application->number_of_days} working days, resuming {$expiryDate}) has been minuted and forwarded to DC Admin for approval.",
             'leave_application',
             $application->id
         );
@@ -360,13 +362,14 @@ class NotificationService
 
         $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
         $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
+        $expiryDate = $application->expiry_date ? \Carbon\Carbon::parse($application->expiry_date)->format('d/m/Y') : 'N/A';
         $leaveType = $application->leaveType ? $application->leaveType->name : 'Leave';
 
         return $this->notifyMany(
             $dcAdmins,
             'leave_application_minuted',
             'Leave Application Minuted - Requires Approval',
-            "Leave application for Officer {$officerName} ({$officer->service_number}) - {$leaveType} from {$startDate} to {$endDate} ({$application->number_of_days} days) has been minuted and requires your approval.",
+            "Leave application for Officer {$officerName} ({$officer->service_number}) - {$leaveType} from {$startDate} to {$endDate} ({$application->number_of_days} working days, resumption {$expiryDate}) has been minuted and requires your approval.",
             'leave_application',
             $application->id
         );
@@ -382,11 +385,15 @@ class NotificationService
             return null;
         }
 
+        $startDate = \Carbon\Carbon::parse($application->start_date)->format('d/m/Y');
+        $endDate = \Carbon\Carbon::parse($application->end_date)->format('d/m/Y');
+        $expiryDate = $application->expiry_date ? \Carbon\Carbon::parse($application->expiry_date)->format('d/m/Y') : 'N/A';
+
         return $this->notify(
             $officer->user,
             'pass_application_approved',
             'Pass Application Approved',
-            "Your pass application has been approved.",
+            "Your pass application from {$startDate} to {$endDate} ({$application->number_of_days} working days) has been approved. You are expected to resume duty on {$expiryDate}.",
             'pass_application',
             $application->id
         );

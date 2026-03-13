@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\LeaveApplication;
 use App\Models\PassApplication;
+use App\Services\PassService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -96,7 +97,7 @@ class PassApplicationController extends BaseController
     /**
      * Apply for pass (Officer)
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, PassService $passService): JsonResponse
     {
         $user = $request->user();
         $officer = $user->officer;
@@ -111,14 +112,13 @@ class PassApplicationController extends BaseController
             'reason' => 'nullable|string',
         ]);
 
-        $startDate = \Carbon\Carbon::parse($request->start_date);
-        $endDate = \Carbon\Carbon::parse($request->end_date);
-        $numberOfDays = $startDate->diffInDays($endDate) + 1;
+        $workingDays = $passService->workingDaysBetween($request->start_date, $request->end_date);
+        $passMax = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
 
-        // Validate maximum 5 days
-        if ($numberOfDays > 5) {
+        if ($workingDays > $passMax) {
+            $gl = $officer->salary_grade_level ?? 'N/A';
             return $this->errorResponse(
-                'Pass cannot exceed 5 days',
+                "Pass cannot exceed {$passMax} working days for your grade level ({$gl}). Saturdays and Sundays are not counted.",
                 null,
                 422,
                 'VALIDATION_ERROR'
@@ -163,7 +163,7 @@ class PassApplicationController extends BaseController
             'officer_id' => $officer->id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'number_of_days' => $numberOfDays,
+            'number_of_days' => $workingDays,
             'reason' => $request->reason,
             'status' => 'PENDING',
         ]);
@@ -178,9 +178,9 @@ class PassApplicationController extends BaseController
     /**
      * Approve/reject pass (DC Admin)
      */
-    public function approve(Request $request, $id): JsonResponse
+    public function approve(Request $request, $id, PassService $passService): JsonResponse
     {
-        $application = PassApplication::with('approval')->findOrFail($id);
+        $application = PassApplication::with(['approval', 'officer'])->findOrFail($id);
 
         if ($application->status !== 'MINUTED') {
             return $this->errorResponse(
@@ -197,10 +197,11 @@ class PassApplicationController extends BaseController
         ]);
 
         if ($request->action === 'approve') {
-            // Validate 5-day limit
-            if ($application->number_of_days > 5) {
+            $passMax = $passService->getPassMaxWorkingDaysForGradeLevel($application->officer->salary_grade_level);
+            if ($application->number_of_days > $passMax) {
+                $gl = $application->officer->salary_grade_level ?? 'N/A';
                 return $this->errorResponse(
-                    'Pass cannot exceed 5 days',
+                    "Pass cannot exceed {$passMax} working days for this officer's grade level ({$gl}).",
                     null,
                     422,
                     'VALIDATION_ERROR'

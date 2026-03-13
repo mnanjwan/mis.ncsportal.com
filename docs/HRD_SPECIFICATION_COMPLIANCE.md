@@ -177,7 +177,7 @@ PUT    /hrd/settings/{key}             - Update setting
 - Years of service for retirement (default: 35)
 - Pre-retirement leave months (default: 3)
 - Annual leave days (GL 07 and below: 28, Level 08+: 30)
-- Pass maximum days (default: 5)
+- Pass maximum working days by grade: GL 07+ (default 30), GL 04–06 (default 21), GL 03 and below (default 14); configurable in system settings
 - Annual leave max applications (default: 2)
 - RSA PIN format validation
 - Other system-wide parameters

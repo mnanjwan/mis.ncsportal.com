@@ -6,6 +6,7 @@ use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use App\Models\Notification;
 use App\Models\Officer;
+use Carbon\Carbon;
 
 class LeaveService
 {
@@ -17,20 +18,46 @@ class LeaveService
         $leaveType = LeaveType::findOrFail($leaveTypeId);
         $officer = Officer::findOrFail($officerId);
 
-        $start = \Carbon\Carbon::parse($startDate);
-        $end = \Carbon\Carbon::parse($endDate);
-        $numberOfDays = $start->diffInDays($end) + 1;
+        $workingDayService = app(WorkingDayService::class);
+        $numberOfDays = $workingDayService->workingDaysBetween($startDate, $endDate);
 
-        // Check max duration
-        if ($leaveType->max_duration_days && $numberOfDays > $leaveType->max_duration_days) {
-            return [
-                'can_apply' => false,
-                'reason' => "Maximum duration for this leave type is {$leaveType->max_duration_days} days",
-            ];
-        }
-
-        // Check annual leave limits
+        // GL-based Annual Leave duration
         if ($leaveType->code === 'ANNUAL_LEAVE') {
+            $glNumeric = app(PassService::class)->parseGradeLevelNumeric($officer->salary_grade_level);
+            $maxDays = 14;
+            if ($glNumeric >= 7) {
+                $maxDays = 30;
+            } elseif ($glNumeric >= 4) {
+                $maxDays = 21;
+            }
+
+            if ($numberOfDays > $maxDays) {
+                return [
+                    'can_apply' => false,
+                    'reason' => "For your Grade Level, maximum Annual Leave duration is {$maxDays} working days.",
+                ];
+            }
+
+            // 6-Month Cooling Period
+            $lastLeave = LeaveApplication::where('officer_id', $officerId)
+                ->where('leave_type_id', $leaveTypeId)
+                ->where('status', 'APPROVED')
+                ->whereYear('start_date', Carbon::parse($startDate)->year)
+                ->latest('start_date')
+                ->first();
+
+            if ($lastLeave) {
+                $lastEndDate = Carbon::parse($lastLeave->end_date);
+                $newStartDate = Carbon::parse($startDate);
+                if ($lastEndDate->diffInMonths($newStartDate) < 6) {
+                    return [
+                        'can_apply' => false,
+                        'reason' => "You must wait at least 6 months after your previous leave within the same service year. Your last leave ended on {$lastEndDate->toDateString()}.",
+                    ];
+                }
+            }
+
+            // Check annual leave limits (max occurrences)
             $annualLeaveCount = LeaveApplication::where('officer_id', $officerId)
                 ->where('leave_type_id', $leaveTypeId)
                 ->whereYear('start_date', now()->year)
@@ -45,6 +72,14 @@ class LeaveService
             }
         }
 
+        // Generic max duration check for other leave types
+        if ($leaveType->code !== 'ANNUAL_LEAVE' && $leaveType->max_duration_days && $numberOfDays > $leaveType->max_duration_days) {
+            return [
+                'can_apply' => false,
+                'reason' => "Maximum duration for this leave type is {$leaveType->max_duration_days} days",
+            ];
+        }
+
         return ['can_apply' => true];
     }
 
@@ -53,9 +88,7 @@ class LeaveService
      */
     public function applyLeave(int $officerId, array $data): LeaveApplication
     {
-        $start = \Carbon\Carbon::parse($data['start_date']);
-        $end = \Carbon\Carbon::parse($data['end_date']);
-        $numberOfDays = $start->diffInDays($end) + 1;
+        $numberOfDays = app(WorkingDayService::class)->workingDaysBetween($data['start_date'], $data['end_date']);
 
         $application = LeaveApplication::create([
             'officer_id' => $officerId,

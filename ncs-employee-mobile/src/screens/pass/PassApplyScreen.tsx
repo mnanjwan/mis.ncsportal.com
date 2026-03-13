@@ -60,14 +60,6 @@ export function PassApplyScreen({ navigation, route }: Props) {
       return false;
     }
 
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays > 5) {
-      setError('Pass Application cannot exceed 5 days. For longer durations, please apply for Leave.');
-      return false;
-    }
-
     return true;
   };
 
@@ -197,7 +189,7 @@ export function PassApplyScreen({ navigation, route }: Props) {
           <Ionicons name="information-circle" size={24} color={themeColors.primary} />
           <View style={styles.infoTextContainer}>
             <Text style={[styles.infoTitle, { color: '#166534' }]}>Pass Policy Guidelines</Text>
-            <Text style={[styles.infoDesc, { color: '#166534' }]}>A Pass is a short-term absence permission strictly limited to a maximum of 5 days.</Text>
+            <Text style={[styles.infoDesc, { color: '#166534' }]}>A Pass is short-term absence permission. The maximum duration is based on your grade level (working days only; Saturdays and Sundays are not counted). Submit to see your limit or any validation message.</Text>
           </View>
         </View>
 

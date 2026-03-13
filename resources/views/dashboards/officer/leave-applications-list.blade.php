@@ -62,6 +62,9 @@
                                     Days
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Resumption
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Status
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
@@ -93,6 +96,15 @@
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $application->number_of_days ?? 'N/A' }} days
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        @if($application->expiry_date)
+                                            <span class="font-semibold text-primary">
+                                                {{ $application->expiry_date->format('d/m/Y') }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted-foreground italic">Pending</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4" style="white-space: nowrap;">
                                         <span class="kt-badge kt-badge-{{ $statusClass }} kt-badge-sm">
@@ -150,6 +162,11 @@
                                     <span class="text-xs text-secondary-foreground">
                                         {{ $application->start_date->format('d/m/Y') }} to {{ $application->end_date->format('d/m/Y') }}
                                     </span>
+                                    @if($application->expiry_date)
+                                        <span class="text-xs font-semibold text-primary">
+                                            Return: {{ $application->expiry_date->format('d/m/Y') }}
+                                        </span>
+                                    @endif
                                     <span class="text-xs text-secondary-foreground">
                                         Applied: {{ $application->created_at->format('d/m/Y') }}
                                     </span>

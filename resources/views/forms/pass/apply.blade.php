@@ -23,7 +23,7 @@
                                 Pass can only be applied if and only if you have exhausted your Annual Leave
                             </span>
                             <span class="text-xs text-secondary-foreground">
-                                Maximum number of days: 5 days per application
+                                Maximum: {{ $passMaxWorkingDays ?? 14 }} working days per application (Saturdays and Sundays are not counted). Based on your grade level.
                             </span>
                         </div>
                     </div>
@@ -71,7 +71,7 @@
                             <label class="kt-form-label font-normal text-mono">End Date</label>
                             <input class="kt-input" type="date" name="end_date" id="end-date" value="{{ old('end_date') }}"
                                 required />
-                            <span class="text-xs text-secondary-foreground">Maximum 5 days</span>
+                            <span class="text-xs text-secondary-foreground">Maximum {{ $passMaxWorkingDays ?? 14 }} working days</span>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -118,7 +118,7 @@
                                     <strong class="text-mono">Important:</strong>
                                 </p>
                                 <ul class="text-xs text-secondary-foreground mt-2 list-disc list-inside space-y-1">
-                                    <li>Maximum 5 days per application</li>
+                                    <li>Maximum {{ $passMaxWorkingDays ?? 14 }} working days per application (weekends excluded)</li>
                                     <li>Only available after exhausting annual leave</li>
                                     <li>Requires approval from Staff Officer and DC Admin</li>
                                 </ul>
@@ -137,19 +137,32 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                // Calculate days and validate
+                const passMaxWorkingDays = {{ $passMaxWorkingDays ?? 14 }};
                 const startDate = document.getElementById('start-date');
                 const endDate = document.getElementById('end-date');
+
+                function countWorkingDays(start, end) {
+                    let count = 0;
+                    const current = new Date(start);
+                    current.setHours(0, 0, 0, 0);
+                    const endDateObj = new Date(end);
+                    endDateObj.setHours(0, 0, 0, 0);
+                    while (current <= endDateObj) {
+                        const day = current.getDay();
+                        if (day !== 0 && day !== 6) count++;
+                        current.setDate(current.getDate() + 1);
+                    }
+                    return count;
+                }
 
                 function validateDates() {
                     if (startDate.value && endDate.value) {
                         const start = new Date(startDate.value);
                         const end = new Date(endDate.value);
-                        const diffTime = Math.abs(end - start);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-                        if (diffDays > 5) {
-                            alert('Pass cannot exceed 5 days. Please adjust your dates.');
+                        if (end <= start) return true;
+                        const workingDays = countWorkingDays(start, end);
+                        if (workingDays > passMaxWorkingDays) {
+                            alert('Pass cannot exceed ' + passMaxWorkingDays + ' working days (Saturdays and Sundays are not counted). Please adjust your dates.');
                             endDate.value = '';
                             return false;
                         }

@@ -519,7 +519,9 @@ class HRDTestDataSeeder extends Seeder
             'annual_leave_days_gl07_below' => 28,
             'annual_leave_days_gl08_above' => 30,
             'annual_leave_max_applications' => 2,
-            'pass_max_days' => 5,
+            'pass_max_days_gl07_above' => 30,
+            'pass_max_days_gl04_06' => 21,
+            'pass_max_days_gl03_below' => 14,
             'rsa_pin_prefix' => 'PEN',
             'rsa_pin_length' => 12,
         ];

@@ -1874,7 +1874,7 @@ HRD (Sets Timeline) → Reporting Officer (Searches & Creates Form) → Reportin
    - Any false information provided by an officer can lead to Dismissal for Forgery under the PSR Rules
 
 3. **Pass Rules**
-   - Maximum number of days given to an officer for pass should be 5 days
+   - Maximum pass duration is in **working days** (Saturdays and Sundays are not counted), by grade level: **GL 07 and above** 30 working days; **GL 04 to GL 06** 21 working days; **GL 03 and below** 14 working days. Configurable via HRD system settings.
    - Pass can only be applied if and only if the officer has exhausted the Annual leave
 
 4. **Annual Leave Rules**

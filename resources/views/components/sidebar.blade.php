@@ -280,6 +280,7 @@
                                 ['title' => 'Zones', 'href' => route('hrd.zones.index')],
                                 ['title' => 'Commands', 'href' => route('hrd.commands.index')],
                                 ['title' => 'Courses', 'href' => route('hrd.course-management.index')],
+                                ['title' => 'Holiday Settings', 'href' => route('hrd.holidays.index')],
                                 ['title' => 'System Settings', 'href' => route('hrd.system-settings')],
                             ]
                         ],
@@ -806,7 +807,7 @@
                                     @if(isset($groupItem['submenu']))
                                         @php
                                             $hasActiveChild = collect($groupItem['submenu'])->contains(function ($subItem) {
-                                                return request()->url() === url($subItem['href']);
+                                                return request()->fullUrlIs(url($subItem['href']) . '*');
                                             });
                                         @endphp
                                         <div class="kt-menu-item {{ $hasActiveChild ? 'here show' : '' }}" data-kt-menu-trigger="click"
@@ -825,10 +826,10 @@
                                             <div class="kt-menu-accordion" onclick="event.stopPropagation()">
                                                 @foreach($groupItem['submenu'] as $subItem)
                                                     @php
-                                                        $isSubActive = request()->url() === url($subItem['href']);
+                                                        $isSubActive = request()->fullUrlIs(url($subItem['href']) . '*');
                                                     @endphp
-                                                    <div class="kt-menu-item">
-                                                        <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isSubActive ? 'kt-menu-item-active' : '' }}"
+                                                    <div class="kt-menu-item {{ $isSubActive ? 'active' : '' }}">
+                                                        <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isSubActive ? 'kt-menu-item-active active' : '' }}"
                                                             href="{{ $subItem['href'] }}">
                                                             <span class="kt-menu-bullet">
                                                                 <span class="bullet bullet-dot"></span>
@@ -843,7 +844,7 @@
                                         </div>
                                     @else
                                         @php
-                                            $isActive = request()->url() === url($groupItem['href']);
+                                            $isActive = request()->fullUrlIs(url($groupItem['href']) . '*');
                                     $isRedItem = in_array($groupItem['title'], ['Report Deceased', 'Deceased Officers'], true);
                                     $redStyle = $isRedItem ? 'style="color: red !important;"' : '';
                                         @endphp
@@ -864,7 +865,7 @@
                         @elseif(isset($item['submenu']))
                             @php
                                 $hasActiveChild = collect($item['submenu'])->contains(function ($subItem) {
-                                    return request()->url() === url($subItem['href']);
+                                    return request()->fullUrlIs(url($subItem['href']) . '*');
                                 });
                             @endphp
                             <div class="kt-menu-item {{ $hasActiveChild ? 'here show' : '' }}" data-kt-menu-trigger="click"
@@ -883,10 +884,10 @@
                                 <div class="kt-menu-accordion" onclick="event.stopPropagation()">
                                     @foreach($item['submenu'] as $subItem)
                                         @php
-                                            $isSubActive = request()->url() === url($subItem['href']);
+                                            $isSubActive = request()->fullUrlIs(url($subItem['href']) . '*');
                                         @endphp
-                                        <div class="kt-menu-item">
-                                            <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isSubActive ? 'kt-menu-item-active' : '' }}"
+                                        <div class="kt-menu-item {{ $isSubActive ? 'active' : '' }}">
+                                            <a class="kt-menu-link gap-2.5 py-2 px-2.5 rounded-md {{ $isSubActive ? 'kt-menu-item-active active' : '' }}"
                                                 href="{{ $subItem['href'] }}">
                                                 <span class="kt-menu-bullet">
                                                     <span class="bullet bullet-dot"></span>
@@ -901,7 +902,7 @@
                             </div>
                         @else
                             @php
-                                $isActive = request()->url() === url($item['href']);
+                                $isActive = request()->fullUrlIs(url($item['href']) . '*');
                                 $isRedItem = in_array($item['title'], ['Report Deceased', 'Deceased Officers'], true);
                                 $redStyle = $isRedItem ? 'style="color: red !important;"' : '';
                             @endphp

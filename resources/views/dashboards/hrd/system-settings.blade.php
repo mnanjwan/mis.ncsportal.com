@@ -169,19 +169,55 @@
                         </div>
 
                         <div class="space-y-2">
-                            <label for="settings_pass_max_days" class="block text-sm font-medium text-foreground">
-                                {{ $settingsConfig['pass_max_days']['label'] }} <span class="text-danger">*</span>
+                            <label for="settings_pass_max_days_gl07_above" class="block text-sm font-medium text-foreground">
+                                {{ $settingsConfig['pass_max_days_gl07_above']['label'] }} <span class="text-danger">*</span>
                             </label>
                             <input type="number" 
-                                   name="settings[pass_max_days]" 
-                                   id="settings_pass_max_days"
-                                   value="{{ old('settings.pass_max_days', $settings['pass_max_days']->setting_value ?? $settingsConfig['pass_max_days']['default']) }}"
-                                   min="{{ $settingsConfig['pass_max_days']['min'] }}"
-                                   max="{{ $settingsConfig['pass_max_days']['max'] }}"
-                                   class="kt-input @error('settings.pass_max_days') kt-input-error @enderror"
+                                   name="settings[pass_max_days_gl07_above]" 
+                                   id="settings_pass_max_days_gl07_above"
+                                   value="{{ old('settings.pass_max_days_gl07_above', $settings['pass_max_days_gl07_above']->setting_value ?? $settingsConfig['pass_max_days_gl07_above']['default']) }}"
+                                   min="{{ $settingsConfig['pass_max_days_gl07_above']['min'] }}"
+                                   max="{{ $settingsConfig['pass_max_days_gl07_above']['max'] }}"
+                                   class="kt-input @error('settings.pass_max_days_gl07_above') kt-input-error @enderror"
                                    required>
-                            <p class="text-xs text-secondary-foreground">{{ $settingsConfig['pass_max_days']['description'] }}</p>
-                            @error('settings.pass_max_days')
+                            <p class="text-xs text-secondary-foreground">{{ $settingsConfig['pass_max_days_gl07_above']['description'] }}</p>
+                            @error('settings.pass_max_days_gl07_above')
+                                <p class="text-sm text-danger">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="settings_pass_max_days_gl04_06" class="block text-sm font-medium text-foreground">
+                                {{ $settingsConfig['pass_max_days_gl04_06']['label'] }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="settings[pass_max_days_gl04_06]" 
+                                   id="settings_pass_max_days_gl04_06"
+                                   value="{{ old('settings.pass_max_days_gl04_06', $settings['pass_max_days_gl04_06']->setting_value ?? $settingsConfig['pass_max_days_gl04_06']['default']) }}"
+                                   min="{{ $settingsConfig['pass_max_days_gl04_06']['min'] }}"
+                                   max="{{ $settingsConfig['pass_max_days_gl04_06']['max'] }}"
+                                   class="kt-input @error('settings.pass_max_days_gl04_06') kt-input-error @enderror"
+                                   required>
+                            <p class="text-xs text-secondary-foreground">{{ $settingsConfig['pass_max_days_gl04_06']['description'] }}</p>
+                            @error('settings.pass_max_days_gl04_06')
+                                <p class="text-sm text-danger">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="settings_pass_max_days_gl03_below" class="block text-sm font-medium text-foreground">
+                                {{ $settingsConfig['pass_max_days_gl03_below']['label'] }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   name="settings[pass_max_days_gl03_below]" 
+                                   id="settings_pass_max_days_gl03_below"
+                                   value="{{ old('settings.pass_max_days_gl03_below', $settings['pass_max_days_gl03_below']->setting_value ?? $settingsConfig['pass_max_days_gl03_below']['default']) }}"
+                                   min="{{ $settingsConfig['pass_max_days_gl03_below']['min'] }}"
+                                   max="{{ $settingsConfig['pass_max_days_gl03_below']['max'] }}"
+                                   class="kt-input @error('settings.pass_max_days_gl03_below') kt-input-error @enderror"
+                                   required>
+                            <p class="text-xs text-secondary-foreground">{{ $settingsConfig['pass_max_days_gl03_below']['description'] }}</p>
+                            @error('settings.pass_max_days_gl03_below')
                                 <p class="text-sm text-danger">{{ $message }}</p>
                             @enderror
                         </div>

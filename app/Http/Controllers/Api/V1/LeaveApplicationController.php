@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\LeaveApplication;
 use App\Models\LeaveType;
+use App\Models\LeaveApplication;
+use App\Services\WorkingDayService;
+use App\Services\PassService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -82,15 +84,106 @@ class LeaveApplicationController extends BaseController
             'medical_certificate' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120',
         ]);
 
+        // Check for overlapping leave applications
+        $overlappingLeave = LeaveApplication::where('officer_id', $officer->id)
+            ->whereIn('status', ['PENDING', 'APPROVED'])
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
+                    ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
+                    ->orWhere(function ($q) use ($request) {
+                        $q->where('start_date', '<=', $request->start_date)
+                            ->where('end_date', '>=', $request->end_date);
+                    });
+            })->first();
+
+        if ($overlappingLeave) {
+            $start = \Carbon\Carbon::parse($overlappingLeave->start_date)->format('d/m/Y');
+            $end = \Carbon\Carbon::parse($overlappingLeave->end_date)->format('d/m/Y');
+            return $this->errorResponse(
+                "You already have a {$overlappingLeave->status} leave application overlapping with this period ({$start} to {$end}).",
+                null,
+                422,
+                'VALIDATION_ERROR'
+            );
+        }
+
+        // Check for overlapping pass applications
+        $overlappingPass = \App\Models\PassApplication::where('officer_id', $officer->id)
+            ->whereIn('status', ['PENDING', 'APPROVED'])
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
+                    ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
+                    ->orWhere(function ($q) use ($request) {
+                        $q->where('start_date', '<=', $request->start_date)
+                            ->where('end_date', '>=', $request->end_date);
+                    });
+            })->first();
+
+        if ($overlappingPass) {
+            $start = \Carbon\Carbon::parse($overlappingPass->start_date)->format('d/m/Y');
+            $end = \Carbon\Carbon::parse($overlappingPass->end_date)->format('d/m/Y');
+            return $this->errorResponse(
+                "You already have a {$overlappingPass->status} pass application overlapping with this period ({$start} to {$end}).",
+                null,
+                422,
+                'VALIDATION_ERROR'
+            );
+        }
+
         $leaveType = LeaveType::findOrFail($request->leave_type_id);
 
-        // Calculate number of days
+        // Calculate working days within the selected range (for quota checking)
+        $workingDayService = app(WorkingDayService::class);
+        $numberOfDays = $workingDayService->workingDaysBetween($request->start_date, $request->end_date);
+
+        // Calculate Expiry Date (Resume Duty Date)
         $startDate = \Carbon\Carbon::parse($request->start_date);
         $endDate = \Carbon\Carbon::parse($request->end_date);
-        $numberOfDays = $startDate->diffInDays($endDate) + 1;
+        $calendarDaysChosen = $startDate->diffInDays($endDate) + 1;
+        
+        $calculatedEndDate = $workingDayService->calculateEndDate($request->start_date, $calendarDaysChosen);
+        $resumeDate = $workingDayService->calculateResumeDate($calculatedEndDate);
 
-        // Validate leave type specific rules
-        if ($leaveType->max_duration_days && $numberOfDays > $leaveType->max_duration_days) {
+        // Enforce Grade Level limits for Annual Leave
+        if ($leaveType->code === 'ANNUAL_LEAVE') {
+            $passService = app(PassService::class);
+            $maxAllowed = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
+            
+            if ($calendarDaysChosen > $maxAllowed) {
+                return $this->errorResponse(
+                    "Your Annual Leave entitlement is {$maxAllowed} working days based on your Grade Level. Your current selection effectively requests {$calendarDaysChosen} working days.",
+                    null,
+                    422,
+                    'VALIDATION_ERROR'
+                );
+            }
+
+            // Implement 6-Month Cooling Period
+            $lastLeave = LeaveApplication::where('officer_id', $officer->id)
+                ->where('leave_type_id', $leaveType->id)
+                ->where('status', 'APPROVED')
+                ->whereYear('start_date', now()->year)
+                ->orderBy('end_date', 'desc')
+                ->first();
+
+            if ($lastLeave) {
+                $lastEndDate = \Carbon\Carbon::parse($lastLeave->end_date);
+                $newStartDate = \Carbon\Carbon::parse($request->start_date);
+                $monthsSinceLastLeave = $lastEndDate->diffInMonths($newStartDate);
+                
+                if ($monthsSinceLastLeave < 6) {
+                    return $this->errorResponse(
+                        "The 6-Month Cooling Period rule applies. It has only been {$monthsSinceLastLeave} month(s) since your last Annual Leave. You must wait at least 6 months.",
+                        null,
+                        422,
+                        'VALIDATION_ERROR'
+                    );
+                }
+            }
+        }
+
+        // Validate other leave type specific rules
+        if ($leaveType->max_duration_days && $calendarDaysChosen > $leaveType->max_duration_days && $leaveType->code !== 'ANNUAL_LEAVE') {
             return $this->errorResponse(
                 "Maximum duration for this leave type is {$leaveType->max_duration_days} days",
                 null,
@@ -99,29 +192,13 @@ class LeaveApplicationController extends BaseController
             );
         }
 
-        // Check annual leave limits
-        if ($leaveType->code === 'ANNUAL_LEAVE') {
-            $annualLeaveCount = LeaveApplication::where('officer_id', $officer->id)
-                ->where('leave_type_id', $leaveType->id)
-                ->whereYear('start_date', now()->year)
-                ->count();
-
-            if ($annualLeaveCount >= ($leaveType->max_occurrences_per_year ?? 2)) {
-                return $this->errorResponse(
-                    'Maximum annual leave applications reached for this year',
-                    null,
-                    422,
-                    'VALIDATION_ERROR'
-                );
-            }
-        }
-
         $application = LeaveApplication::create([
             'officer_id' => $officer->id,
             'leave_type_id' => $request->leave_type_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'number_of_days' => $numberOfDays,
+            'expiry_date' => $resumeDate,
+            'number_of_days' => $calendarDaysChosen,
             'reason' => $request->reason,
             'expected_date_of_delivery' => $request->expected_date_of_delivery,
             'status' => 'PENDING',

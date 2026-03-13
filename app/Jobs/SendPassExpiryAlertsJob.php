@@ -16,29 +16,53 @@ class SendPassExpiryAlertsJob implements ShouldQueue
 
     public function handle(): void
     {
-        // Find approved pass applications expiring in 24 hours
-        $expiryDate = now()->addHours(24);
+        $notificationService = app(\App\Services\NotificationService::class);
 
-        $passes = PassApplication::where('status', 'APPROVED')
-            ->where('end_date', '<=', $expiryDate)
-            ->where('end_date', '>', now())
-            ->with('officer')
+        // 1. Proactive Reminder: 24 hours before resumption
+        $reminderDate = now()->addDay()->toDateString();
+        $reminderPasses = PassApplication::where('status', 'APPROVED')
+            ->where('expiry_date', $reminderDate)
+            ->where('resumption_reminder_sent', false)
+            ->with('officer.user')
             ->get();
 
-        foreach ($passes as $pass) {
-            if ($pass->officer->user_id) {
-                $hoursRemaining = now()->diffInHours($pass->end_date);
+        foreach ($reminderPasses as $pass) {
+            if ($pass->officer && $pass->officer->user) {
+                $notificationService->notify(
+                    $pass->officer->user,
+                    'PASS_RESUMPTION_REMINDER',
+                    'Pass Resumption Reminder',
+                    "This is a reminder that your pass ends soon. You are expected to resume duty in 24 hours, on {$pass->expiry_date->format('d/m/Y')}.",
+                    'pass_application',
+                    $pass->id
+                );
 
-                Notification::create([
-                    'user_id' => $pass->officer->user_id,
-                    'notification_type' => 'PASS_EXPIRY_ALERT',
-                    'title' => 'Pass Expiring Soon',
-                    'message' => "Your pass expires in {$hoursRemaining} hours. Please ensure you return on time.",
-                    'data' => [
-                        'pass_application_id' => $pass->id,
-                        'end_date' => $pass->end_date->format('Y-m-d'),
-                    ],
-                ]);
+                $pass->update(['resumption_reminder_sent' => true]);
+            }
+        }
+
+        // 2. Resumption Day Alert: Morning of resumption (at or after 08:00)
+        if (now()->hour >= 8) {
+            $today = now()->toDateString();
+            $todayPasses = PassApplication::where('status', 'APPROVED')
+                ->where('expiry_date', $today)
+                ->where('resumption_day_alert_sent', false)
+                ->with('officer.user')
+                ->get();
+
+            foreach ($todayPasses as $pass) {
+                if ($pass->officer && $pass->officer->user) {
+                    $notificationService->notify(
+                        $pass->officer->user,
+                        'PASS_RESUMPTION_ALERT',
+                        'Duty Resumption Today',
+                        "Your pass has ended. You are expected to resume duty today, {$pass->expiry_date->format('d/m/Y')}. Welcome back!",
+                        'pass_application',
+                        $pass->id
+                    );
+
+                    $pass->update(['resumption_day_alert_sent' => true]);
+                }
             }
         }
     }

@@ -313,15 +313,15 @@ Leave approval workflow tracking.
 | printed_by | BIGINT | FOREIGN KEY (users.id) | Staff Officer who printed |
 
 ### pass_applications
-Officer pass applications (max 5 days, only after annual leave exhausted).
+Officer pass applications. Duration is in working days (Saturdays/Sundays excluded); max by grade level (GL 07+: 30, GL 04–06: 21, GL 03 and below: 14). Only after annual leave exhausted.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Pass application ID |
 | officer_id | BIGINT | FOREIGN KEY (officers.id), NOT NULL | Officer ID |
 | start_date | DATE | NOT NULL | Pass start date |
-| end_date | DATE | NOT NULL | Pass end date (max 5 days) |
-| number_of_days | INT | NOT NULL | Number of days (max 5) |
+| end_date | DATE | NOT NULL | Pass end date |
+| number_of_days | INT | NOT NULL | Working days in range (weekends excluded); max by GL |
 | reason | TEXT | NULL | Reason for pass |
 | status | ENUM('PENDING', 'MINUTED', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED') | DEFAULT 'PENDING' | Application status |
 | submitted_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Submission timestamp |

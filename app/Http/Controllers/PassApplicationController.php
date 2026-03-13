@@ -9,6 +9,8 @@ use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\DB;
 use App\Services\NotificationService;
+use App\Services\PassService;
+use App\Services\WorkingDayService;
 
 class PassApplicationController extends Controller
 {
@@ -33,12 +35,18 @@ class PassApplicationController extends Controller
         return view('dashboards.officer.pass-applications-list', compact('passes'));
     }
 
-    public function create()
+    public function create(PassService $passService)
     {
-        return view('forms.pass.apply');
+        $user = auth()->user();
+        $officer = $user->officer;
+        $passMaxWorkingDays = $officer
+            ? $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level)
+            : 14;
+
+        return view('forms.pass.apply', compact('passMaxWorkingDays'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, PassService $passService)
     {
         $user = auth()->user();
         $officer = $user->officer;
@@ -51,18 +59,65 @@ class PassApplicationController extends Controller
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after:start_date',
             'reason' => 'nullable|string',
+        ], [
+            'start_date.after_or_equal' => 'The start date must be today or a future date.',
+            'end_date.after' => 'The end date must be after the start date.',
         ]);
+
+        // Check for overlapping leave applications
+        $overlappingLeave = LeaveApplication::where('officer_id', $officer->id)
+            ->whereIn('status', ['PENDING', 'APPROVED'])
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
+                    ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
+                    ->orWhere(function ($q) use ($request) {
+                        $q->where('start_date', '<=', $request->start_date)
+                            ->where('end_date', '>=', $request->end_date);
+                    });
+            })->first();
+
+        if ($overlappingLeave) {
+            $start = \Carbon\Carbon::parse($overlappingLeave->start_date)->format('d/m/Y');
+            $end = \Carbon\Carbon::parse($overlappingLeave->end_date)->format('d/m/Y');
+            return redirect()->back()->with('error', "You already have a {$overlappingLeave->status} leave application overlapping with this period ({$start} to {$end}).")->withInput();
+        }
+
+        // Check for overlapping pass applications
+        $overlappingPass = PassApplication::where('officer_id', $officer->id)
+            ->whereIn('status', ['PENDING', 'APPROVED'])
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
+                    ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
+                    ->orWhere(function ($q) use ($request) {
+                        $q->where('start_date', '<=', $request->start_date)
+                            ->where('end_date', '>=', $request->end_date);
+                    });
+            })->first();
+
+        if ($overlappingPass) {
+            $start = \Carbon\Carbon::parse($overlappingPass->start_date)->format('d/m/Y');
+            $end = \Carbon\Carbon::parse($overlappingPass->end_date)->format('d/m/Y');
+            return redirect()->back()->with('error', "You already have a {$overlappingPass->status} pass application overlapping with this period ({$start} to {$end}).")->withInput();
+        }
 
         try {
             DB::beginTransaction();
 
+            $workingDayService = app(WorkingDayService::class);
+            $workingDays = $workingDayService->workingDaysBetween($request->start_date, $request->end_date);
+            $passMax = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
+
+            // Calculate Expiry Date (Resume Duty Date)
             $startDate = \Carbon\Carbon::parse($request->start_date);
             $endDate = \Carbon\Carbon::parse($request->end_date);
-            $numberOfDays = $startDate->diffInDays($endDate) + 1;
+            $calendarDaysChosen = $startDate->diffInDays($endDate) + 1;
+            
+            $calculatedEndDate = $workingDayService->calculateEndDate($request->start_date, $calendarDaysChosen);
+            $resumeDate = $workingDayService->calculateResumeDate($calculatedEndDate);
 
-            // Validate maximum 5 days
-            if ($numberOfDays > 5) {
-                return redirect()->back()->with('error', 'Pass cannot exceed 5 days')->withInput();
+            if ($calendarDaysChosen > $passMax) {
+                $gl = $officer->salary_grade_level ?? 'N/A';
+                return redirect()->back()->with('error', "Pass cannot exceed {$passMax} working days for your grade level ({$gl}). Your selection effectively requests {$calendarDaysChosen} working days.")->withInput();
             }
 
             // Check if annual leave is exhausted
@@ -95,7 +150,8 @@ class PassApplicationController extends Controller
                 'officer_id' => $officer->id,
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,
-                'number_of_days' => $numberOfDays,
+                'expiry_date' => $resumeDate,
+                'number_of_days' => $calendarDaysChosen,
                 'reason' => $request->reason,
                 'status' => 'PENDING',
                 'submitted_at' => now(),
