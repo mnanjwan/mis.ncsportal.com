@@ -659,6 +659,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-pharmacy.dashboard')],
                 ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
+                ['icon' => 'ki-filled ki-clipboard', 'title' => 'Dispensing Audit Trail', 'href' => route('pharmacy.requisitions.audit-trail')],
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
                 [
@@ -679,6 +680,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.central-medical-store.dashboard')],
                 ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
+                ['icon' => 'ki-filled ki-clipboard', 'title' => 'Dispensing Audit Trail', 'href' => route('pharmacy.requisitions.audit-trail')],
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
             ];
@@ -688,6 +690,7 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.command-pharmacist.dashboard')],
                 ['icon' => 'ki-filled ki-package', 'title' => 'Command Stock', 'href' => route('pharmacy.command-pharmacist.ready-to-dispense')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
+                ['icon' => 'ki-filled ki-clipboard', 'title' => 'Dispensing Audit Trail', 'href' => route('pharmacy.requisitions.audit-trail')],
                 ['icon' => 'ki-filled ki-arrow-right-left', 'title' => 'Return Stock', 'href' => route('pharmacy.returns.index')],
             ];
             break;

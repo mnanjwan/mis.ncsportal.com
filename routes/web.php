@@ -1016,6 +1016,7 @@ Route::middleware('auth')->group(function () {
             // All pharmacy roles can view
             Route::middleware('role:Command Pharmacist|Comptroller Pharmacy|Central Medical Store')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyRequisitionController::class, 'index'])->name('index');
+                Route::get('/audit-trail', [\App\Http\Controllers\Pharmacy\PharmacyRequisitionController::class, 'auditTrail'])->name('audit-trail');
                 Route::get('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyRequisitionController::class, 'show'])->name('show');
             });
 

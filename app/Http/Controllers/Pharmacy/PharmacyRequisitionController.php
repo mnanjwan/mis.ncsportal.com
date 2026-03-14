@@ -362,4 +362,27 @@ class PharmacyRequisitionController extends Controller
             ->route('pharmacy.requisitions.show', $requisition->id)
             ->with('success', $message);
     }
+
+    /**
+     * Display a listing of dispensed requisitions for audit.
+     */
+    public function auditTrail(Request $request)
+    {
+        $user = $request->user();
+        $query = PharmacyRequisition::with(['dispensedBy.officer', 'createdBy.officer', 'command', 'items.drug', 'steps.actedBy.officer'])
+            ->where('status', 'DISPENSED');
+
+        // Scoping Logic
+        if ($user->hasRole('Command Pharmacist') && !$user->hasRole('Comptroller Pharmacy') && !$user->hasRole('Central Medical Store')) {
+            $commandId = $this->workflowService->getActiveCommandIdForRole($user, 'Command Pharmacist');
+            if ($commandId) {
+                $query->where('command_id', $commandId);
+            }
+        }
+        // Comptroller and CMS see everything by default (as per the user request)
+
+        $logs = $query->latest('dispensed_at')->paginate(25);
+
+        return view('pharmacy.requisitions.audit-trail', compact('logs'));
+    }
 }

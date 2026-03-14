@@ -72,7 +72,6 @@
                     </div>
                     <div id="proc_drug_name_INDEX_options" class="max-h-48 overflow-y-auto"></div>
                 </div>
-                <input type="text" id="proc_drug_name_INDEX_custom" class="kt-input kt-input-sm mt-2 hidden w-full" placeholder="Type new name (e.g., Paracetamol 500mg)..." autocomplete="off">
             </div>
             <div class="w-32">
                 <label class="kt-label text-xs">Quantity *</label>
@@ -91,7 +90,6 @@
                     </div>
                     <div id="proc_unit_INDEX_options" class="max-h-48 overflow-y-auto"></div>
                 </div>
-                <input type="text" id="proc_unit_INDEX_custom" class="kt-input kt-input-sm mt-2 hidden w-full" placeholder="Type new unit..." autocomplete="off">
             </div>
             <div class="flex items-end">
                 <button type="button" class="kt-btn kt-btn-sm kt-btn-light kt-btn-icon remove-item-btn mt-5">
@@ -105,18 +103,15 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ADD_NEW_VALUE = '__ADD_NEW__';
     const existingNames = @json($existingDrugNames ?? []);
     const drugOptions = [
-        { id: '', name: '-- Search or add drug / item --' },
-        { id: ADD_NEW_VALUE, name: '-- Add new (type below) --' },
+        { id: '', name: '-- Search drug / item --' },
         ...existingNames.map(n => ({ id: n, name: n }))
     ];
 
     const unitOptionsList = @json($unitOptions ?? []);
     const unitOptions = [
-        { id: '', name: '-- Select or add unit --' },
-        { id: ADD_NEW_VALUE, name: '-- Add new unit (type below) --' },
+        { id: '', name: '-- Select unit --' },
         ...unitOptionsList.map(u => ({ id: u, name: u }))
     ];
 
@@ -188,33 +183,17 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainerId: prefix + '_options',
             displayTextId: prefix + '_text',
             options: drugOptions.slice(),
-            placeholder: '-- Search or add drug / item --',
+            placeholder: '-- Search drug / item --',
             searchPlaceholder: 'Search...',
             onSelect: function(option) {
                 const hidden = document.getElementById(prefix + '_id');
-                const customInput = document.getElementById(prefix + '_custom');
                 const displayText = document.getElementById(prefix + '_text');
-                if (!hidden || !customInput || !displayText) return;
-                if (option && option.id === ADD_NEW_VALUE) {
-                    customInput.classList.remove('hidden');
-                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
-                    hidden.value = customInput.value.trim();
-                    displayText.textContent = '-- Add new (type below) --';
-                    setTimeout(() => customInput.focus(), 0);
-                } else {
-                    customInput.classList.add('hidden');
-                    customInput.value = '';
-                    if (option && option.id) hidden.value = option.id;
+                if (!hidden || !displayText) return;
+                if (option && option.id) {
+                    hidden.value = option.id;
                 }
             }
         });
-        const customInput = document.getElementById(prefix + '_custom');
-        const hiddenInput = document.getElementById(prefix + '_id');
-        if (customInput && hiddenInput) {
-            customInput.addEventListener('input', function() {
-                hiddenInput.value = this.value.trim();
-            });
-        }
     }
 
     function initUnitSelect(row, idx) {
@@ -227,33 +206,17 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainerId: prefix + '_options',
             displayTextId: prefix + '_text',
             options: unitOptions.slice(),
-            placeholder: '-- Select or add unit --',
+            placeholder: '-- Select unit --',
             searchPlaceholder: 'Search...',
             onSelect: function(option) {
                 const hidden = document.getElementById(prefix + '_id');
-                const customInput = document.getElementById(prefix + '_custom');
                 const displayText = document.getElementById(prefix + '_text');
-                if (!hidden || !customInput || !displayText) return;
-                if (option && option.id === ADD_NEW_VALUE) {
-                    customInput.classList.remove('hidden');
-                    customInput.value = (hidden.value && hidden.value !== ADD_NEW_VALUE) ? hidden.value : '';
-                    hidden.value = customInput.value.trim();
-                    displayText.textContent = '-- Add new unit --';
-                    setTimeout(() => customInput.focus(), 0);
-                } else {
-                    customInput.classList.add('hidden');
-                    customInput.value = '';
-                    if (option && option.id) hidden.value = option.id;
+                if (!hidden || !displayText) return;
+                if (option && option.id) {
+                    hidden.value = option.id;
                 }
             }
         });
-        const customInput = document.getElementById(prefix + '_custom');
-        const hiddenInput = document.getElementById(prefix + '_id');
-        if (customInput && hiddenInput) {
-            customInput.addEventListener('input', function() {
-                hiddenInput.value = this.value.trim();
-            });
-        }
     }
 
     function addItem() {

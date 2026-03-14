@@ -365,8 +365,8 @@
                                         <div class="text-[10px] text-secondary-foreground uppercase font-semibold">Dispensed By</div>
                                         <div class="text-xs font-medium">
                                             [{{ $requisition->dispensedBy->officer->service_number ?? 'N/A' }}] 
-                                            {{ $requisition->dispensedBy->officer->rank->name ?? '' }} 
-                                            {{ $requisition->dispensedBy->officer->full_name ?? $requisition->dispensedBy->email }}
+                                            {{ $requisition->dispensedBy->officer->display_rank }} 
+                                            {{ $requisition->dispensedBy->officer->full_name }}
                                         </div>
                                     </div>
                                 @endif
