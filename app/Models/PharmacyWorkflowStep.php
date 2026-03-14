@@ -12,6 +12,7 @@ class PharmacyWorkflowStep extends Model
     protected $fillable = [
         'pharmacy_procurement_id',
         'pharmacy_requisition_id',
+        'pharmacy_return_id',
         'step_order',
         'role_name',
         'action',
@@ -38,6 +39,11 @@ class PharmacyWorkflowStep extends Model
     public function requisition()
     {
         return $this->belongsTo(PharmacyRequisition::class, 'pharmacy_requisition_id');
+    }
+
+    public function return()
+    {
+        return $this->belongsTo(PharmacyReturn::class, 'pharmacy_return_id');
     }
 
     public function actedBy()

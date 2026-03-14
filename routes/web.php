@@ -1026,6 +1026,34 @@ Route::middleware('auth')->group(function () {
                 ->name('issue');
         });
 
+        // Return Routes - Command Pharmacist initiates, OC Pharmacy approves, CMS receives
+        Route::prefix('returns')->name('returns.')->group(function () {
+            // Command Pharmacist can create/edit/submit
+            Route::middleware('role:Command Pharmacist')->group(function () {
+                Route::get('/create', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'store'])->name('store');
+                Route::get('/{id}/edit', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'edit'])->name('edit');
+                Route::put('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'update'])->name('update');
+                Route::post('/{id}/submit', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'submit'])->name('submit');
+            });
+
+            // All pharmacy roles can view
+            Route::middleware('role:Command Pharmacist|OC Pharmacy|Central Medical Store|Controller Procurement')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'index'])->name('index');
+                Route::get('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'show'])->name('show');
+            });
+
+            // OC Pharmacy approval
+            Route::post('/{id}/act', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'act'])
+                ->middleware('role:OC Pharmacy')
+                ->name('act');
+
+            // Central Medical Store receipt
+            Route::post('/{id}/receive', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'receive'])
+                ->middleware('role:Central Medical Store')
+                ->name('receive');
+        });
+
         // Stock Management - All pharmacy roles can view stock
         Route::prefix('stocks')->name('stocks.')->middleware('role:OC Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
             Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'index'])->name('index');

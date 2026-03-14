@@ -7,6 +7,8 @@ use App\Models\PharmacyProcurement;
 use App\Models\PharmacyRequisition;
 use App\Models\PharmacyStock;
 use App\Models\PharmacyStockMovement;
+use App\Models\PharmacyReturn;
+use App\Models\PharmacyReturnItem;
 use App\Models\PharmacyWorkflowStep;
 use App\Models\Role;
 use App\Models\User;
@@ -668,6 +670,312 @@ class PharmacyWorkflowService
     // ============================================================
     // NOTIFICATIONS
     // ============================================================
+
+    // ============================================================
+    // RETURN WORKFLOW
+    // ============================================================
+
+    /**
+     * Create a return draft.
+     */
+    public function createReturn(User $user, array $data): PharmacyReturn
+    {
+        $commandId = $this->getActiveCommandIdForRole($user, 'Command Pharmacist');
+        if (!$commandId) {
+            throw ValidationException::withMessages([
+                'command' => 'Command Pharmacist role must be assigned to a command.',
+            ]);
+        }
+
+        $return = PharmacyReturn::create([
+            'status' => 'DRAFT',
+            'command_id' => $commandId,
+            'notes' => $data['notes'] ?? null,
+            'created_by' => $user->id,
+        ]);
+
+        $return->reference_number = $return->generateReferenceNumber();
+        $return->save();
+
+        return $return;
+    }
+
+    /**
+     * Submit a return draft.
+     */
+    public function submitReturn(PharmacyReturn $return, User $user): PharmacyReturn
+    {
+        if ($return->status !== 'DRAFT') {
+            throw ValidationException::withMessages([
+                'status' => 'Only DRAFT returns can be submitted.',
+            ]);
+        }
+
+        if ((int) $return->created_by !== (int) $user->id) {
+            throw ValidationException::withMessages([
+                'created_by' => 'Only the creator can submit this return.',
+            ]);
+        }
+
+        if ($return->items()->count() === 0) {
+            throw ValidationException::withMessages([
+                'items' => 'Return must have at least one item.',
+            ]);
+        }
+
+        DB::transaction(function () use ($return, $user) {
+            // Logic: Deduct from available stock and move to pending (virtual)
+            // We do this by recording a movement type 'RETURN_INITIATED'
+            foreach ($return->items as $item) {
+                $stocks = PharmacyStock::where('pharmacy_drug_id', $item->pharmacy_drug_id)
+                    ->where('location_type', 'COMMAND_PHARMACY')
+                    ->where('command_id', $return->command_id)
+                    ->where('quantity', '>', 0)
+                    ->orderBy('expiry_date')
+                    ->get();
+
+                $remainingToReturn = $item->quantity;
+                foreach ($stocks as $stock) {
+                    if ($remainingToReturn <= 0) break;
+
+                    $take = min($stock->quantity, $remainingToReturn);
+                    $stock->decrement('quantity', $take);
+                    $remainingToReturn -= $take;
+
+                    // Record movement
+                    PharmacyStockMovement::create([
+                        'pharmacy_drug_id' => $item->pharmacy_drug_id,
+                        'movement_type' => 'RETURN_INITIATED',
+                        'reference_id' => $return->id,
+                        'reference_type' => PharmacyReturn::class,
+                        'location_type' => 'COMMAND_PHARMACY',
+                        'command_id' => $return->command_id,
+                        'quantity' => -$take,
+                        'expiry_date' => $stock->expiry_date,
+                        'batch_number' => $stock->batch_number,
+                        'notes' => 'Stock return initiated',
+                        'created_by' => $user->id,
+                    ]);
+                }
+
+                if ($remainingToReturn > 0) {
+                    throw ValidationException::withMessages([
+                        'stock' => "Insufficient stock for drug ID {$item->pharmacy_drug_id}.",
+                    ]);
+                }
+            }
+
+            $return->update([
+                'status' => 'SUBMITTED',
+                'submitted_at' => now(),
+                'current_step_order' => 1,
+            ]);
+
+            $this->seedReturnWorkflowSteps($return);
+        });
+
+        // Notify OC Pharmacy
+        $this->notifyNextStepUsers($return, 'return');
+
+        return $return->fresh(['steps', 'items.drug', 'createdBy', 'command']);
+    }
+
+    /**
+     * Act on the current return step.
+     */
+    public function actOnReturn(PharmacyReturn $return, User $user, string $decision, ?string $comment = null): PharmacyReturn
+    {
+        $currentOrder = $return->current_step_order;
+        if (!$currentOrder) {
+            throw ValidationException::withMessages([
+                'current_step_order' => 'This return has no active step.',
+            ]);
+        }
+
+        $step = $return->steps()->where('step_order', $currentOrder)->first();
+        if (!$step) {
+            throw ValidationException::withMessages([
+                'step' => 'Current workflow step not found.',
+            ]);
+        }
+
+        // Role authorization
+        if (!$user->hasRole($step->role_name)) {
+            throw ValidationException::withMessages([
+                'role' => "You do not have permission to act on this step ({$step->role_name}).",
+            ]);
+        }
+
+        $validDecisions = $step->getValidDecisions();
+        if (!in_array($decision, $validDecisions, true)) {
+            throw ValidationException::withMessages([
+                'decision' => "Decision {$decision} is not valid for action {$step->action}.",
+            ]);
+        }
+
+        DB::transaction(function () use ($return, $step, $user, $decision, $comment) {
+            $step->update([
+                'acted_by_user_id' => $user->id,
+                'acted_at' => now(),
+                'decision' => $decision,
+                'comment' => $comment,
+            ]);
+
+            if ($decision === 'REJECTED') {
+                // Restoration logic: If rejected, move stock back to command available
+                foreach ($return->items as $item) {
+                    // Find the movements made during submission and reverse them
+                    $movements = PharmacyStockMovement::where('reference_id', $return->id)
+                        ->where('reference_type', PharmacyReturn::class)
+                        ->where('movement_type', 'RETURN_INITIATED')
+                        ->get();
+
+                    foreach ($movements as $mov) {
+                        $stock = PharmacyStock::firstOrCreate([
+                            'pharmacy_drug_id' => $mov->pharmacy_drug_id,
+                            'location_type' => 'COMMAND_PHARMACY',
+                            'command_id' => $return->command_id,
+                            'batch_number' => $mov->batch_number,
+                            'expiry_date' => $mov->expiry_date,
+                        ], ['quantity' => 0]);
+
+                        $stock->increment('quantity', abs($mov->quantity));
+
+                        // Record restoration movement
+                        PharmacyStockMovement::create([
+                            'pharmacy_drug_id' => $mov->pharmacy_drug_id,
+                            'movement_type' => 'RETURN_RESTORED',
+                            'reference_id' => $return->id,
+                            'reference_type' => PharmacyReturn::class,
+                            'location_type' => 'COMMAND_PHARMACY',
+                            'command_id' => $return->command_id,
+                            'quantity' => abs($mov->quantity),
+                            'expiry_date' => $mov->expiry_date,
+                            'batch_number' => $mov->batch_number,
+                            'notes' => 'Stock return rejected, quantity restored',
+                            'created_by' => $user->id,
+                        ]);
+                    }
+                }
+
+                $return->update([
+                    'status' => 'REJECTED',
+                    'current_step_order' => null,
+                ]);
+            } elseif ($decision === 'APPROVED') {
+                $nextOrder = $step->step_order + 1;
+                $hasNextStep = $return->steps()->where('step_order', $nextOrder)->exists();
+
+                $return->update([
+                    'status' => 'APPROVED',
+                    'approved_at' => now(),
+                    'current_step_order' => $hasNextStep ? $nextOrder : null,
+                ]);
+            }
+        });
+
+        $this->notifyNextStepUsers($return, 'return');
+        $this->notifyCreator($return, 'return', "Return #{$return->id} - {$decision}");
+
+        return $return->fresh(['steps', 'items.drug', 'createdBy', 'command']);
+    }
+
+    /**
+     * Confirm receipt of return items at Central Medical Store.
+     */
+    public function receiveReturn(PharmacyReturn $return, User $user, ?string $comment = null): PharmacyReturn
+    {
+        if (!$user->hasRole('Central Medical Store')) {
+            throw ValidationException::withMessages([
+                'role' => 'Only Central Medical Store can confirm receipt of returns.',
+            ]);
+        }
+
+        if ($return->status !== 'APPROVED') {
+            throw ValidationException::withMessages([
+                'status' => 'Only APPROVED returns can be received.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($return, $user, $comment) {
+            foreach ($return->items as $item) {
+                // Find original movements from initiation
+                $movements = PharmacyStockMovement::where('reference_id', $return->id)
+                    ->where('reference_type', PharmacyReturn::class)
+                    ->where('movement_type', 'RETURN_INITIATED')
+                    ->get();
+
+                foreach ($movements as $mov) {
+                    $qty = abs($mov->quantity);
+
+                    // Add to Central Store stock
+                    $stock = PharmacyStock::firstOrCreate([
+                        'pharmacy_drug_id' => $mov->pharmacy_drug_id,
+                        'location_type' => 'CENTRAL_STORE',
+                        'command_id' => null,
+                        'batch_number' => $mov->batch_number,
+                        'expiry_date' => $mov->expiry_date,
+                    ], ['quantity' => 0]);
+
+                    $stock->increment('quantity', $qty);
+
+                    // Record receipt movement
+                    PharmacyStockMovement::create([
+                        'pharmacy_drug_id' => $mov->pharmacy_drug_id,
+                        'movement_type' => 'RETURN_RECEIPT',
+                        'reference_id' => $return->id,
+                        'reference_type' => PharmacyReturn::class,
+                        'location_type' => 'CENTRAL_STORE',
+                        'command_id' => null,
+                        'quantity' => $qty,
+                        'expiry_date' => $mov->expiry_date,
+                        'batch_number' => $mov->batch_number,
+                        'notes' => $comment ?? 'Return items received at Central Store',
+                        'created_by' => $user->id,
+                    ]);
+                }
+            }
+
+            // Mark current step as completed
+            $currentStep = $return->getCurrentStep();
+            if ($currentStep) {
+                $currentStep->update([
+                    'acted_by_user_id' => $user->id,
+                    'acted_at' => now(),
+                    'decision' => 'REVIEWED',
+                    'comment' => $comment,
+                ]);
+            }
+
+            $return->update([
+                'status' => 'RECEIVED',
+                'received_at' => now(),
+                'current_step_order' => null,
+            ]);
+
+            $this->notifyCreator($return, 'return', 'Return items received at Central Medical Store');
+
+            return $return->fresh(['steps', 'items.drug', 'createdBy', 'command']);
+        });
+    }
+
+    /**
+     * Seed workflow steps for return.
+     */
+    private function seedReturnWorkflowSteps(PharmacyReturn $return): void
+    {
+        $steps = [
+            ['step_order' => 1, 'role_name' => 'OC Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
+        ];
+
+        foreach ($steps as $step) {
+            PharmacyWorkflowStep::create([
+                'pharmacy_return_id' => $return->id,
+                ...$step,
+            ]);
+        }
+    }
 
     /**
      * Notify users at the next step.
