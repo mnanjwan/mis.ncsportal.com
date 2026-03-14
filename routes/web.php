@@ -421,10 +421,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/leave-pass', [LeavePassController::class, 'staffOfficerIndex'])->name('leave-pass');
         Route::get('/leave-applications/{id}', [LeaveApplicationController::class, 'show'])->name('leave-applications.show');
         Route::post('/leave-applications/{id}/minute', [LeaveApplicationController::class, 'minute'])->name('leave-applications.minute');
+        Route::post('/leave-applications/{id}/reject', [LeaveApplicationController::class, 'reject'])->name('leave-applications.reject');
         Route::get('/leave-applications/{id}/print', [LeaveApplicationController::class, 'print'])->name('leave-applications.print');
 
         Route::get('/pass-applications/{id}', [PassApplicationController::class, 'show'])->name('pass-applications.show');
         Route::post('/pass-applications/{id}/minute', [PassApplicationController::class, 'minute'])->name('pass-applications.minute');
+        Route::post('/pass-applications/{id}/reject', [PassApplicationController::class, 'reject'])->name('pass-applications.reject');
         Route::get('/pass-applications/{id}/print', [PassApplicationController::class, 'print'])->name('pass-applications.print');
 
         Route::get('/manning-level', [ManningRequestController::class, 'index'])->name('manning-level');

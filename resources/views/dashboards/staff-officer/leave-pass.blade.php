@@ -98,12 +98,19 @@
                                         {{ $app->status }}
                                     </span>
                                     @if($app->status === 'PENDING' && is_null($app->minuted_at))
-                                        <form action="{{ route('staff-officer.leave-applications.minute', $app->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Minute this application to 2iC Unit Head?')">
-                                                <i class="ki-filled ki-file-edit"></i> Minute
+                                        <div class="flex items-center gap-2">
+                                            <form action="{{ route('staff-officer.leave-applications.minute', $app->id) }}" method="POST" class="inline minute-form">
+                                                @csrf
+                                                <button type="button" class="kt-btn kt-btn-sm kt-btn-primary handle-minute" data-text="Minute this application for Approval?">
+                                                    <i class="ki-filled ki-file-edit"></i> Minute
+                                                </button>
+                                            </form>
+                                            <button type="button" class="kt-btn kt-btn-sm kt-btn-danger handle-reject" 
+                                                    data-action="{{ route('staff-officer.leave-applications.reject', $app->id) }}"
+                                                    data-name="{{ $app->officer->initials ?? '' }} {{ $app->officer->surname ?? '' }}">
+                                                <i class="ki-filled ki-trash"></i> Reject
                                             </button>
-                                        </form>
+                                        </div>
                                     @elseif($app->minuted_at)
                                         <span class="kt-badge kt-badge-info kt-badge-sm">
                                             Minuted
@@ -186,12 +193,19 @@
                                         {{ $app->status }}
                                     </span>
                                     @if($app->status === 'PENDING' && is_null($app->minuted_at))
-                                        <form action="{{ route('staff-officer.pass-applications.minute', $app->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Minute this application to 2iC Unit Head?')">
-                                                <i class="ki-filled ki-file-edit"></i> Minute
+                                        <div class="flex items-center gap-2">
+                                            <form action="{{ route('staff-officer.pass-applications.minute', $app->id) }}" method="POST" class="inline minute-form">
+                                                @csrf
+                                                <button type="button" class="kt-btn kt-btn-sm kt-btn-primary handle-minute" data-text="Minute this application for Approval?">
+                                                    <i class="ki-filled ki-file-edit"></i> Minute
+                                                </button>
+                                            </form>
+                                            <button type="button" class="kt-btn kt-btn-sm kt-btn-danger handle-reject" 
+                                                    data-action="{{ route('staff-officer.pass-applications.reject', $app->id) }}"
+                                                    data-name="{{ $app->officer->initials ?? '' }} {{ $app->officer->surname ?? '' }}">
+                                                <i class="ki-filled ki-trash"></i> Reject
                                             </button>
-                                        </form>
+                                        </div>
                                     @elseif($app->minuted_at)
                                         <span class="kt-badge kt-badge-info kt-badge-sm">
                                             Minuted
@@ -362,6 +376,77 @@
             }
         });
         @endif
+
+        // Minute for Approval Confirmation
+        document.querySelectorAll('.handle-minute').forEach(button => {
+            button.addEventListener('click', function() {
+                const text = this.dataset.text || 'Minute this application for Approval?';
+                const form = this.closest('.minute-form');
+                
+                Swal.fire({
+                    title: 'Confirm Minuting',
+                    text: text,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Minute it',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Reject Confirmation with Reason
+        document.querySelectorAll('.handle-reject').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.dataset.action;
+                const name = this.dataset.name;
+                
+                Swal.fire({
+                    title: 'Reject Application',
+                    text: `Please provide a reason for rejecting the application from ${name}:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason here...',
+                    inputAttributes: {
+                        'aria-label': 'Type your reason here'
+                    },
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Reject Application',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#ef4444',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You must provide a reason for rejection!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = action;
+                        
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken;
+                        
+                        const reasonInput = document.createElement('input');
+                        reasonInput.type = 'hidden';
+                        reasonInput.name = 'rejection_reason';
+                        reasonInput.value = result.value;
+                        
+                        form.appendChild(csrfInput);
+                        form.appendChild(reasonInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
+        });
     });
 </script>
 @endsection

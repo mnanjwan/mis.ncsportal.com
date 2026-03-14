@@ -45,12 +45,17 @@
             </div>
             <div class="flex-shrink-0 flex gap-2">
                 @if($application->status === 'PENDING' && is_null($application->minuted_at))
-                    <form action="{{ route('staff-officer.leave-applications.minute', $application->id) }}" method="POST" class="inline">
+                    <form action="{{ route('staff-officer.leave-applications.minute', $application->id) }}" method="POST" class="inline minute-form">
                         @csrf
-                        <button type="submit" class="kt-btn kt-btn-primary" onclick="return confirm('Minute this application to 2iC Unit Head for approval?')">
-                            <i class="ki-filled ki-file-edit"></i> Minute to 2iC Unit Head
+                        <button type="button" class="kt-btn kt-btn-primary handle-minute" data-text="Minute this application to 2iC Unit Head for Approval?">
+                            <i class="ki-filled ki-file-edit"></i> Minute for Approval
                         </button>
                     </form>
+                    <button type="button" class="kt-btn kt-btn-danger handle-reject" 
+                            data-action="{{ route('staff-officer.leave-applications.reject', $application->id) }}"
+                            data-name="{{ $application->officer->initials ?? '' }} {{ $application->officer->surname ?? '' }}">
+                        <i class="ki-filled ki-trash"></i> Reject
+                    </button>
                 @elseif($application->minuted_at)
                     <span class="kt-badge kt-badge-info kt-badge-sm flex items-center gap-2">
                         <i class="ki-filled ki-check-circle"></i> Minuted to 2iC Unit Head
@@ -67,6 +72,78 @@
                 </a>
             </div>
         </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Minute for Approval Confirmation
+        document.querySelectorAll('.handle-minute').forEach(button => {
+            button.addEventListener('click', function() {
+                const text = this.dataset.text || 'Minute this application for Approval?';
+                const form = this.closest('.minute-form');
+                
+                Swal.fire({
+                    title: 'Confirm Minuting',
+                    text: text,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Minute it',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Reject Confirmation with Reason
+        document.querySelectorAll('.handle-reject').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.dataset.action;
+                const name = this.dataset.name;
+                
+                Swal.fire({
+                    title: 'Reject Application',
+                    text: `Please provide a reason for rejecting the application from ${name}:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason here...',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Reject Application',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#ef4444',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You must provide a reason for rejection!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = action;
+                        
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken;
+                        
+                        const reasonInput = document.createElement('input');
+                        reasonInput.type = 'hidden';
+                        reasonInput.name = 'rejection_reason';
+                        reasonInput.value = result.value;
+                        
+                        form.appendChild(csrfInput);
+                        form.appendChild(reasonInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
+</script>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-7.5">
             <!-- Main Info -->

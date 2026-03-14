@@ -353,15 +353,30 @@ class LeaveApplicationController extends Controller
         $user = auth()->user();
         $application = LeaveApplication::with(['officer', 'leaveType'])->findOrFail($id);
         
-        // Check if user is 2iC Unit Head
-        if (!$user->hasRole('2iC Unit Head')) {
-            abort(403, 'Only 2iC Unit Head can reject applications');
+        $isStaffOfficer = $user->hasRole('Staff Officer');
+        $is2iC = $user->hasRole('2iC Unit Head');
+
+        if (!$isStaffOfficer && !$is2iC) {
+            abort(403, 'Only Staff Officers or 2iC Unit Head can reject applications');
         }
         
-        // Check if application has been minuted
-        if (!$application->minuted_at) {
-            return redirect()->back()
-                ->with('error', 'This application has not been minuted yet.');
+        if ($isStaffOfficer) {
+            // Verify application is from Staff Officer's command
+            $staffOfficerRole = $user->roles()
+                ->where('name', 'Staff Officer')
+                ->wherePivot('is_active', true)
+                ->first();
+            
+            $commandId = $staffOfficerRole?->pivot->command_id ?? null;
+            if ($commandId && $application->officer->present_station != $commandId) {
+                return redirect()->back()->with('error', 'You can only reject applications from your command.');
+            }
+        } else {
+            // 2iC Unit Head - Check if application has been minuted
+            if (!$application->minuted_at) {
+                return redirect()->back()
+                    ->with('error', 'This application has not been minuted yet.');
+            }
         }
         
         // Check if application is in PENDING status
@@ -384,10 +399,11 @@ class LeaveApplicationController extends Controller
             $notificationService = app(NotificationService::class);
             $notificationService->notifyLeaveApplicationRejected($application, $request->rejection_reason);
             
-            return redirect()->route('dc-admin.leave-pass', ['type' => 'leave'])
+            $redirectRoute = $is2iC ? 'dc-admin.leave-pass' : 'staff-officer.leave-pass';
+            return redirect()->route($redirectRoute, ['type' => 'leave'])
                 ->with('success', 'Leave application rejected.');
         } catch (\Exception $e) {
-            Log::error('Failed to reject leave application: ' . $e->getMessage());
+            \Log::error('Failed to reject leave application: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to reject application: ' . $e->getMessage());
         }

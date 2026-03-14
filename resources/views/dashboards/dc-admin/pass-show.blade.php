@@ -22,11 +22,96 @@
                 </p>
             </div>
             <div class="flex-shrink-0 flex gap-2">
+                @if($application->status === 'PENDING')
+                    <form action="{{ route('dc-admin.pass-applications.approve', $application->id) }}" method="POST" class="inline approve-form">
+                        @csrf
+                        <button type="button" class="kt-btn kt-btn-success handle-approve">
+                            <i class="ki-filled ki-check"></i> Approve
+                        </button>
+                    </form>
+                    <button type="button" class="kt-btn kt-btn-danger handle-reject" 
+                            data-action="{{ route('dc-admin.pass-applications.reject', $application->id) }}"
+                            data-name="{{ $application->officer->initials ?? '' }} {{ $application->officer->surname ?? '' }}">
+                        <i class="ki-filled ki-trash"></i> Reject
+                    </button>
+                @endif
                 <a href="{{ route('dc-admin.leave-pass', ['type' => 'pass']) }}" class="kt-btn kt-btn-outline">
                     <i class="ki-filled ki-left"></i> Back
                 </a>
             </div>
         </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Approve Confirmation
+        document.querySelectorAll('.handle-approve').forEach(button => {
+            button.addEventListener('click', function() {
+                const form = this.closest('.approve-form');
+                
+                Swal.fire({
+                    title: 'Confirm Approval',
+                    text: 'Are you sure you want to approve this application?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Approve it',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#10b981'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Reject Confirmation with Reason
+        document.querySelectorAll('.handle-reject').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.dataset.action;
+                const name = this.dataset.name;
+                
+                Swal.fire({
+                    title: 'Reject Application',
+                    text: `Please provide a reason for rejecting the application from ${name}:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason here...',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Reject Application',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#ef4444',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You must provide a reason for rejection!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = action;
+                        
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken;
+                        
+                        const reasonInput = document.createElement('input');
+                        reasonInput.type = 'hidden';
+                        reasonInput.name = 'rejection_reason';
+                        reasonInput.value = result.value;
+                        
+                        form.appendChild(csrfInput);
+                        form.appendChild(reasonInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
+</script>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-7.5">
             <!-- Main Info -->

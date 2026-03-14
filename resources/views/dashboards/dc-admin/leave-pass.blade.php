@@ -102,15 +102,19 @@
                             {{ $app->status }}
                         </span>
                         @if($app->status === 'PENDING')
-                            <form action="{{ route('dc-admin.leave-applications.approve', $app->id) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-success" onclick="return confirm('Approve this leave application?')">
-                                    <i class="ki-filled ki-check"></i> Approve
+                            <div class="flex items-center gap-2">
+                                <form action="{{ route('dc-admin.leave-applications.approve', $app->id) }}" method="POST" class="inline approve-form">
+                                    @csrf
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-success handle-approve">
+                                        <i class="ki-filled ki-check"></i> Approve
+                                    </button>
+                                </form>
+                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger handle-reject" 
+                                        data-action="{{ route('dc-admin.leave-applications.reject', $app->id) }}"
+                                        data-name="{{ $app->officer->initials ?? '' }} {{ $app->officer->surname ?? '' }}">
+                                    <i class="ki-filled ki-cross"></i> Reject
                                 </button>
-                            </form>
-                            <button type="button" class="kt-btn kt-btn-sm kt-btn-danger" onclick="showRejectModal({{ $app->id }}, 'leave')">
-                                <i class="ki-filled ki-cross"></i> Reject
-                            </button>
+                            </div>
                         @endif
                         <a href="{{ route('dc-admin.leave-applications.show', $app->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                             <i class="ki-filled ki-eye"></i> View
@@ -176,15 +180,19 @@
                             {{ $app->status }}
                         </span>
                         @if($app->status === 'PENDING')
-                            <form action="{{ route('dc-admin.pass-applications.approve', $app->id) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-success" onclick="return confirm('Approve this pass application?')">
-                                    <i class="ki-filled ki-check"></i> Approve
+                            <div class="flex items-center gap-2">
+                                <form action="{{ route('dc-admin.pass-applications.approve', $app->id) }}" method="POST" class="inline approve-form">
+                                    @csrf
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-success handle-approve">
+                                        <i class="ki-filled ki-check"></i> Approve
+                                    </button>
+                                </form>
+                                <button type="button" class="kt-btn kt-btn-sm kt-btn-danger handle-reject" 
+                                        data-action="{{ route('dc-admin.pass-applications.reject', $app->id) }}"
+                                        data-name="{{ $app->officer->initials ?? '' }} {{ $app->officer->surname ?? '' }}">
+                                    <i class="ki-filled ki-cross"></i> Reject
                                 </button>
-                            </form>
-                            <button type="button" class="kt-btn kt-btn-sm kt-btn-danger" onclick="showRejectModal({{ $app->id }}, 'pass')">
-                                <i class="ki-filled ki-cross"></i> Reject
-                            </button>
+                            </div>
                         @endif
                         <a href="{{ route('dc-admin.pass-applications.show', $app->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                             <i class="ki-filled ki-eye"></i> View
@@ -200,28 +208,6 @@
             </div>
             @endif
         </div>
-    </div>
-</div>
-
-<!-- Reject Modal -->
-<div id="reject-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div class="kt-card max-w-md w-full mx-4">
-        <div class="kt-card-header">
-            <h3 class="kt-card-title">Reject Application</h3>
-        </div>
-        <form id="reject-form" method="POST" class="kt-card-content">
-            @csrf
-            <div class="flex flex-col gap-4">
-                <div>
-                    <label class="kt-form-label">Rejection Reason <span class="text-danger">*</span></label>
-                    <textarea name="rejection_reason" class="kt-input" rows="4" placeholder="Enter reason for rejection" required></textarea>
-                </div>
-                <div class="flex gap-3 justify-end">
-                    <button type="button" class="kt-btn kt-btn-outline" onclick="closeRejectModal()">Cancel</button>
-                    <button type="submit" class="kt-btn kt-btn-danger">Reject</button>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -370,30 +356,74 @@
             onSelect: function() {
                 document.getElementById('pass-status-filter-form').submit();
             }
+        // Approve Confirmation
+        document.querySelectorAll('.handle-approve').forEach(button => {
+            button.addEventListener('click', function() {
+                const form = this.closest('.approve-form');
+                
+                Swal.fire({
+                    title: 'Confirm Approval',
+                    text: 'Are you sure you want to approve this application?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Approve it',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#10b981'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Reject Confirmation with Reason
+        document.querySelectorAll('.handle-reject').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.dataset.action;
+                const name = this.dataset.name;
+                
+                Swal.fire({
+                    title: 'Reject Application',
+                    text: `Please provide a reason for rejecting the application from ${name}:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason here...',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Reject Application',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#ef4444',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You must provide a reason for rejection!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = action;
+                        
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken;
+                        
+                        const reasonInput = document.createElement('input');
+                        reasonInput.type = 'hidden';
+                        reasonInput.name = 'rejection_reason';
+                        reasonInput.value = result.value;
+                        
+                        form.appendChild(csrfInput);
+                        form.appendChild(reasonInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
         });
     });
-
-function showRejectModal(id, type) {
-    const modal = document.getElementById('reject-modal');
-    const form = document.getElementById('reject-form');
-    const route = type === 'leave' 
-        ? '{{ route("dc-admin.leave-applications.reject", ":id") }}'
-        : '{{ route("dc-admin.pass-applications.reject", ":id") }}';
-    form.action = route.replace(':id', id);
-    modal.classList.remove('hidden');
-}
-
-function closeRejectModal() {
-    document.getElementById('reject-modal').classList.add('hidden');
-    document.getElementById('reject-form').reset();
-}
-
-// Close modal on outside click
-document.getElementById('reject-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeRejectModal();
-    }
-});
 </script>
 @endpush
 @endsection
