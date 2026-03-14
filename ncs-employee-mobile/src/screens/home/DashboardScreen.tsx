@@ -22,7 +22,7 @@ type FeatureItem = {
 const FEATURES: FeatureItem[] = [
   { id: 'chat', title: 'Chat', icon: 'chatbubbles' },
   { id: 'transport', title: 'Fleet', icon: 'car', roles: ['CD', 'CC T&L', 'O/C T&L', 'T&L Officer', 'Staff Officer T&L', 'Staff Officer', 'Transport Store/Receiver'] },
-  { id: 'health', title: 'Health', icon: 'medkit', roles: ['Controller Pharmacy', 'Command Pharmacist', 'Central Medical Store'] },
+  { id: 'health', title: 'Health', icon: 'medkit', roles: ['Comptroller Pharmacy', 'Command Pharmacist', 'Central Medical Store'] },
   { id: 'reports', title: 'Reports', icon: 'document-text', roles: ['Area Controller', 'Staff Officer', 'HRD', '2iC Unit Head'] },
   // Optional: A unified Approvals module that only appears for approver roles
   {

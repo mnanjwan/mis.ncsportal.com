@@ -60,7 +60,7 @@
                             <i class="ki-filled ki-magnifier"></i> Search
                         </button>
                     </div>
-                    @if(auth()->user()->hasRole('Controller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
+                    @if(auth()->user()->hasRole('Comptroller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                         <div class="ml-auto">
                             <a href="{{ route('pharmacy.drugs.create') }}" class="kt-btn kt-btn-success">
                                 <i class="ki-filled ki-plus"></i> Add New
@@ -118,7 +118,7 @@
                                                 <a href="{{ route('pharmacy.stocks.show', $drug->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost" title="View Stock">
                                                     <i class="ki-filled ki-package"></i> View Stock
                                                 </a>
-                                                @if(auth()->user()->hasRole('Controller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
+                                                @if(auth()->user()->hasRole('Comptroller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                                                     <a href="{{ route('pharmacy.drugs.edit', $drug->id) }}" class="kt-btn kt-btn-sm kt-btn-ghost" title="Edit">
                                                         <i class="ki-filled ki-notepad-edit"></i> Edit
                                                     </a>
@@ -138,7 +138,7 @@
                     <div class="text-center py-12">
                         <i class="ki-filled ki-pill text-5xl text-muted-foreground mb-4"></i>
                         <p class="text-secondary-foreground">No drugs / items found in the catalog.</p>
-                        @if(auth()->user()->hasRole('Controller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
+                        @if(auth()->user()->hasRole('Comptroller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                             <a href="{{ route('pharmacy.drugs.create') }}" class="kt-btn kt-btn-primary mt-4">
                                 Add First Drug / Item
                             </a>

@@ -88,8 +88,8 @@ class DashboardController extends Controller
             'Investigation Unit',
             'Building Unit',
             // Pharmacy roles
-            'Controller Pharmacy',
-            'Controller Procurement',
+            'Comptroller Pharmacy',
+            'Comptroller Procurement',
             'Central Medical Store',
             'Command Pharmacist',
             'Area Controller',
@@ -2332,8 +2332,8 @@ class DashboardController extends Controller
             'Transport Store/Receiver' => 'fleet.store-receiver.dashboard',
             'OC Workshop' => 'fleet.requests.index',
             // Pharmacy
-            'Controller Procurement' => 'pharmacy.controller-procurement.dashboard',
-            'Controller Pharmacy' => 'pharmacy.controller-pharmacy.dashboard',
+            'Comptroller Procurement' => 'pharmacy.controller-procurement.dashboard',
+            'Comptroller Pharmacy' => 'pharmacy.controller-pharmacy.dashboard',
             'Central Medical Store' => 'pharmacy.central-medical-store.dashboard',
             'Command Pharmacist' => 'pharmacy.command-pharmacist.dashboard',
         ];

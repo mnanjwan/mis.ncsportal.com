@@ -12,15 +12,15 @@ return new class extends Migration
     {
         $roles = [
             [
-                'name' => 'Controller Procurement',
-                'code' => 'controller_procurement',
-                'description' => 'Controller Procurement - Creates and submits procurement drafts for pharmacy supplies',
+                'name' => 'Comptroller Procurement',
+                'code' => 'comptroller_procurement',
+                'description' => 'Comptroller Procurement - Creates and submits procurement drafts for pharmacy supplies',
                 'access_level' => 3,
             ],
             [
-                'name' => 'Controller Pharmacy',
-                'code' => 'controller_pharmacy',
-                'description' => 'Controller Pharmacy - Approves procurements and requisitions, generates reports, oversees pharmacy operations',
+                'name' => 'Comptroller Pharmacy',
+                'code' => 'comptroller_pharmacy',
+                'description' => 'Comptroller Pharmacy - Approves procurements and requisitions, generates reports, oversees pharmacy operations',
                 'access_level' => 4,
             ],
             [
@@ -55,8 +55,8 @@ return new class extends Migration
     {
         DB::table('roles')
             ->whereIn('name', [
-                'Controller Procurement',
-                'Controller Pharmacy',
+                'Comptroller Procurement',
+                'Comptroller Pharmacy',
                 'Central Medical Store',
                 'Command Pharmacist',
             ])

@@ -117,7 +117,7 @@
    - Color-coded expiry dates
    - Status badges with warning levels
 
-4. ✅ **Controller Pharmacy Dashboard**
+4. ✅ **Comptroller Pharmacy Dashboard**
    - Expiring Soon section with enhanced warnings
    - Color-coded badges based on warning level
    - Days remaining displayed

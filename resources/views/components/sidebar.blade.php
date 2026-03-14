@@ -28,8 +28,8 @@
         'Investigation Unit',
         'Building Unit',
         // Pharmacy roles
-        'Controller Pharmacy',
-        'Controller Procurement',
+        'Comptroller Pharmacy',
+        'Comptroller Procurement',
         'Central Medical Store',
         'Command Pharmacist',
         'Area Controller',
@@ -646,7 +646,7 @@
                 ['icon' => 'ki-filled ki-document', 'title' => 'Investigations', 'href' => route('investigation.index')],
             ];
             break;
-        case 'Controller Procurement':
+        case 'Comptroller Procurement':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-procurement.dashboard')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
@@ -654,7 +654,7 @@
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
             ];
             break;
-        case 'Controller Pharmacy':
+        case 'Comptroller Pharmacy':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-pharmacy.dashboard')],
                 ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
@@ -707,7 +707,7 @@
     // Display names for roles (text only; role identifiers unchanged for functionality)
     $roleDisplayNames = [
         'CGC' => 'CGC Office',
-        'Controller Pharmacy' => 'Comptroller Pharmacy',
+        'Comptroller Pharmacy' => 'Comptroller Pharmacy',
         '2iC Unit Head' => '2iC Unit Head',
     ];
     $primaryRoleDisplay = $roleDisplayNames[$primaryRole] ?? $primaryRole;

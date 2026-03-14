@@ -6,8 +6,8 @@ The Medical/Pharmacy system manages procurement, requisition, stock management, 
 
 ## Roles Involved
 
-1. **Controller Procurement** - Creates procurement requests for new drugs/supplies
-2. **Controller Pharmacy** - Approves procurements and requisitions, manages drug catalog
+1. **Comptroller Procurement** - Creates procurement requests for new drugs/supplies
+2. **Comptroller Pharmacy** - Approves procurements and requisitions, manages drug catalog
 3. **Central Medical Store** - Receives procurements, issues requisitions, manages central stock
 4. **Command Pharmacist** - Creates requisitions for their command, dispenses drugs
 
@@ -18,12 +18,12 @@ The Medical/Pharmacy system manages procurement, requisition, stock management, 
 ### Step-by-Step Flow
 
 ```
-Controller Procurement
+Comptroller Procurement
     ↓ Creates Draft Procurement
     ↓ Adds Items (Drug Name, Quantity, Unit)
     ↓ Submits for Approval
     ↓
-Controller Pharmacy
+Comptroller Pharmacy
     ↓ Reviews & Approves/Rejects
     ↓ (If Approved)
     ↓
@@ -35,7 +35,7 @@ Central Medical Store
 
 ### Detailed Process
 
-#### 1. Controller Procurement Creates Procurement
+#### 1. Comptroller Procurement Creates Procurement
 - **Page**: `/pharmacy/procurements/create`
 - **Action**: Create new procurement draft
 - **Fields**:
@@ -43,20 +43,20 @@ Central Medical Store
   - Items (Drug Name, Quantity, Unit of Measure)
 - **Status**: DRAFT
 
-#### 2. Controller Procurement Submits
+#### 2. Comptroller Procurement Submits
 - **Page**: `/pharmacy/procurements/{id}`
 - **Action**: Click "Submit for Approval"
 - **Status**: Changes to SUBMITTED
-- **Notification**: Controller Pharmacy is notified
+- **Notification**: Comptroller Pharmacy is notified
 
-#### 3. Controller Pharmacy Reviews
+#### 3. Comptroller Pharmacy Reviews
 - **Dashboard**: Shows pending procurements
 - **Page**: `/pharmacy/procurements/{id}`
 - **Actions Available**:
   - **Approve** → Moves to Central Medical Store
-  - **Reject** → Returns to Controller Procurement
+  - **Reject** → Returns to Comptroller Procurement
 - **Status**: Changes to APPROVED or REJECTED
-- **Notification**: Controller Procurement and Central Medical Store notified
+- **Notification**: Comptroller Procurement and Central Medical Store notified
 
 #### 4. Central Medical Store Receives
 - **Dashboard**: Shows approved procurements awaiting receipt
@@ -68,7 +68,7 @@ Central Medical Store
   - Expiry Date (per item)
 - **Status**: Changes to RECEIVED
 - **Stock**: Automatically updated in central store
-- **Notification**: Controller Procurement notified
+- **Notification**: Comptroller Procurement notified
 
 ---
 
@@ -83,7 +83,7 @@ Command Pharmacist
     ↓ Adds Quantities
     ↓ Submits for Approval
     ↓
-Controller Pharmacy
+Comptroller Pharmacy
     ↓ Reviews & Approves/Rejects
     ↓ (If Approved)
     ↓
@@ -113,9 +113,9 @@ Command Pharmacist
 - **Page**: `/pharmacy/requisitions/{id}`
 - **Action**: Click "Submit for Approval"
 - **Status**: Changes to SUBMITTED
-- **Notification**: Controller Pharmacy is notified
+- **Notification**: Comptroller Pharmacy is notified
 
-#### 3. Controller Pharmacy Reviews
+#### 3. Comptroller Pharmacy Reviews
 - **Dashboard**: Shows pending requisitions
 - **Page**: `/pharmacy/requisitions/{id}`
 - **Actions Available**:
@@ -152,7 +152,7 @@ Command Pharmacist
 - **View**: All drugs in central store
 - **Actions**:
   - View stock levels
-  - Adjust stock (Controller Pharmacy/Central Medical Store only)
+  - Adjust stock (Comptroller Pharmacy/Central Medical Store only)
   - View stock movements/history
 
 ### Command Pharmacy Stock
@@ -163,7 +163,7 @@ Command Pharmacist
   - View stock movements/history
 
 ### Stock Adjustments
-- **Who Can Adjust**: Controller Pharmacy, Central Medical Store
+- **Who Can Adjust**: Comptroller Pharmacy, Central Medical Store
 - **Page**: `/pharmacy/stocks/{stockId}/adjust`
 - **Fields**:
   - Adjustment Type (Increase/Decrease)
@@ -181,7 +181,7 @@ Command Pharmacist
 - **Shows**: List of all drugs in catalog
 
 ### Create/Edit Drugs
-- **Who Can Manage**: Controller Pharmacy, Central Medical Store
+- **Who Can Manage**: Comptroller Pharmacy, Central Medical Store
 - **Page**: `/pharmacy/drugs/create` or `/pharmacy/drugs/{id}/edit`
 - **Fields**:
   - Drug Name
@@ -193,7 +193,7 @@ Command Pharmacist
 
 ## Flow 5: Reports
 
-### Available Reports (Controller Pharmacy Only)
+### Available Reports (Comptroller Pharmacy Only)
 1. **Stock Balance Report**
    - Page: `/pharmacy/reports/stock-balance`
    - Shows: Current stock levels across all locations
@@ -213,14 +213,14 @@ Command Pharmacist
 
 ## Pages & Access by Role
 
-### Controller Procurement
+### Comptroller Procurement
 - ✅ Dashboard: `/pharmacy/controller-procurement/dashboard`
 - ✅ Create Procurement: `/pharmacy/procurements/create`
 - ✅ View My Procurements: `/pharmacy/procurements`
 - ✅ Edit Draft: `/pharmacy/procurements/{id}/edit`
 - ✅ Submit: `/pharmacy/procurements/{id}/submit`
 
-### Controller Pharmacy
+### Comptroller Pharmacy
 - ✅ Dashboard: `/pharmacy/controller-pharmacy/dashboard`
 - ✅ View All Procurements: `/pharmacy/procurements`
 - ✅ Approve/Reject Procurements: `/pharmacy/procurements/{id}/act`
@@ -283,11 +283,11 @@ Command Pharmacist
 
 ### Current Notification System
 Notifications are sent via `NotificationService` for:
-- ✅ Procurement submitted → Controller Pharmacy notified
-- ✅ Procurement approved/rejected → Controller Procurement notified
+- ✅ Procurement submitted → Comptroller Pharmacy notified
+- ✅ Procurement approved/rejected → Comptroller Procurement notified
 - ✅ Procurement approved → Central Medical Store notified
-- ✅ Procurement received → Controller Procurement notified
-- ✅ Requisition submitted → Controller Pharmacy notified
+- ✅ Procurement received → Comptroller Procurement notified
+- ✅ Requisition submitted → Comptroller Pharmacy notified
 - ✅ Requisition approved/rejected → Command Pharmacist notified
 - ✅ Requisition approved → Central Medical Store notified
 - ✅ Requisition issued → Command Pharmacist notified
@@ -303,17 +303,17 @@ Notifications are sent via `NotificationService` for:
 ### Procurement Statuses
 1. **DRAFT** → Created but not submitted
 2. **SUBMITTED** → Submitted for approval
-3. **APPROVED** → Approved by Controller Pharmacy, awaiting receipt
+3. **APPROVED** → Approved by Comptroller Pharmacy, awaiting receipt
 4. **RECEIVED** → Received by Central Medical Store, stock updated
-5. **REJECTED** → Rejected by Controller Pharmacy
+5. **REJECTED** → Rejected by Comptroller Pharmacy
 
 ### Requisition Statuses
 1. **DRAFT** → Created but not submitted
 2. **SUBMITTED** → Submitted for approval
-3. **APPROVED** → Approved by Controller Pharmacy, awaiting issue
+3. **APPROVED** → Approved by Comptroller Pharmacy, awaiting issue
 4. **ISSUED** → Issued by Central Medical Store, stock transferred
 5. **DISPENSED** → Dispensed by Command Pharmacist
-6. **REJECTED** → Rejected by Controller Pharmacy
+6. **REJECTED** → Rejected by Comptroller Pharmacy
 
 ---
 
@@ -343,10 +343,10 @@ Notifications are sent via `NotificationService` for:
 ## Straightforward Testing Flow
 
 ### Test Procurement Flow
-1. Login as **Controller Procurement**
+1. Login as **Comptroller Procurement**
 2. Create new procurement → Add items → Save Draft
 3. Submit procurement
-4. Login as **Controller Pharmacy** → Approve procurement
+4. Login as **Comptroller Pharmacy** → Approve procurement
 5. Login as **Central Medical Store** → Receive procurement → Enter batch/expiry → Confirm
 6. Verify stock updated in central store
 
@@ -354,14 +354,14 @@ Notifications are sent via `NotificationService` for:
 1. Login as **Command Pharmacist**
 2. Create new requisition → Select drugs → Add quantities → Save Draft
 3. Submit requisition
-4. Login as **Controller Pharmacy** → Approve requisition
+4. Login as **Comptroller Pharmacy** → Approve requisition
 5. Login as **Central Medical Store** → Issue requisition → Enter quantities → Confirm
 6. Verify stock transferred (central reduced, command increased)
 7. Login as **Command Pharmacist** → Mark as dispensed
 8. Verify command stock updated
 
 ### Test Stock Management
-1. Login as **Controller Pharmacy** or **Central Medical Store**
+1. Login as **Comptroller Pharmacy** or **Central Medical Store**
 2. View stock → Select item → Adjust stock
 3. Enter adjustment details → Confirm
 4. Verify stock movement recorded

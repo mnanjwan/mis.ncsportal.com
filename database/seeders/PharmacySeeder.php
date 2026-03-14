@@ -80,8 +80,8 @@ class PharmacySeeder extends Seeder
     private function setupPharmacyUsers(): array
     {
         $roles = [
-            'Controller Procurement',
-            'Controller Pharmacy',
+            'Comptroller Procurement',
+            'Comptroller Pharmacy',
             'Central Medical Store',
             'Command Pharmacist',
         ];
@@ -214,12 +214,12 @@ class PharmacySeeder extends Seeder
     private function createProcurements($users, $drugs)
     {
         $procurements = collect();
-        $controllerProcurement = $users['Controller Procurement'] ?? null;
-        $controllerPharmacy = $users['Controller Pharmacy'] ?? null;
+        $controllerProcurement = $users['Comptroller Procurement'] ?? null;
+        $controllerPharmacy = $users['Comptroller Pharmacy'] ?? null;
         $centralStore = $users['Central Medical Store'] ?? null;
         
         if (!$controllerProcurement) {
-            $this->command->warn('⚠️  Controller Procurement user not found. Skipping procurement creation.');
+            $this->command->warn('⚠️  Comptroller Procurement user not found. Skipping procurement creation.');
             return $procurements;
         }
         
@@ -242,7 +242,7 @@ class PharmacySeeder extends Seeder
         ]);
         $procurements->push($procurement1);
         
-        // 2. SUBMITTED procurement (pending Controller Pharmacy approval)
+        // 2. SUBMITTED procurement (pending Comptroller Pharmacy approval)
         $procurement2 = PharmacyProcurement::create([
             'status' => 'SUBMITTED',
             'reference_number' => 'PROC-' . $year . '-' . str_pad($procCount + 2, 5, '0', STR_PAD_LEFT),
@@ -260,14 +260,14 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $procurement2->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_at' => null,
             'decision' => null,
         ]);
         $procurements->push($procurement2);
         
-        // 3. REJECTED procurement (rejected by Controller Pharmacy)
+        // 3. REJECTED procurement (rejected by Comptroller Pharmacy)
         $procurement3 = PharmacyProcurement::create([
             'status' => 'REJECTED',
             'reference_number' => 'PROC-' . $year . '-' . str_pad($procCount + 3, 5, '0', STR_PAD_LEFT),
@@ -284,7 +284,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $procurement3->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(9),
@@ -313,7 +313,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $procurement4->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(3),
@@ -381,7 +381,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $procurement5->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(8),
@@ -428,7 +428,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $procurement6->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(6),
@@ -453,7 +453,7 @@ class PharmacySeeder extends Seeder
     
     private function createStock($drugs, $commands, $procurements, $users)
     {
-        $centralStoreUser = $users['Central Medical Store'] ?? $users['Controller Pharmacy'] ?? null;
+        $centralStoreUser = $users['Central Medical Store'] ?? $users['Comptroller Pharmacy'] ?? null;
         
         // Create central store stock from received procurements
         $receivedProcurements = $procurements->where('status', 'RECEIVED');
@@ -629,7 +629,7 @@ class PharmacySeeder extends Seeder
             return;
         }
         
-        $controllerPharmacy = $users['Controller Pharmacy'] ?? null;
+        $controllerPharmacy = $users['Comptroller Pharmacy'] ?? null;
         $centralStore = $users['Central Medical Store'] ?? null;
         $pharmacist1 = reset($commandPharmacists);
         $command1 = $commands->first();
@@ -657,7 +657,7 @@ class PharmacySeeder extends Seeder
             ['pharmacy_drug_id' => $drugs->where('name', 'Amoxicillin 500mg')->first()?->id, 'quantity_requested' => 300],
         ]);
         
-        // 2. SUBMITTED requisition (pending Controller Pharmacy approval)
+        // 2. SUBMITTED requisition (pending Comptroller Pharmacy approval)
         $requisition2 = PharmacyRequisition::create([
             'status' => 'SUBMITTED',
             'reference_number' => 'REQ-' . $year . '-' . str_pad($reqCount + 2, 5, '0', STR_PAD_LEFT),
@@ -676,13 +676,13 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $requisition2->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_at' => null,
             'decision' => null,
         ]);
         
-        // 3. REJECTED requisition (rejected by Controller Pharmacy)
+        // 3. REJECTED requisition (rejected by Comptroller Pharmacy)
         $requisition3 = PharmacyRequisition::create([
             'status' => 'REJECTED',
             'reference_number' => 'REQ-' . $year . '-' . str_pad($reqCount + 3, 5, '0', STR_PAD_LEFT),
@@ -700,7 +700,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $requisition3->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(7),
@@ -728,7 +728,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $requisition4->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(2),
@@ -773,7 +773,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $requisition5->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(5),
@@ -825,7 +825,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $requisition6->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(4),
@@ -883,7 +883,7 @@ class PharmacySeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $requisition7->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(8),

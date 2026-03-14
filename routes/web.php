@@ -948,13 +948,13 @@ Route::middleware('auth')->group(function () {
     // PHARMACY ROUTES
     // ============================================================
     Route::prefix('pharmacy')->name('pharmacy.')->group(function () {
-        // Controller Procurement Dashboard & Routes
-        Route::prefix('controller-procurement')->name('controller-procurement.')->middleware('role:Controller Procurement')->group(function () {
+        // Comptroller Procurement Dashboard & Routes
+        Route::prefix('controller-procurement')->name('controller-procurement.')->middleware('role:Comptroller Procurement')->group(function () {
             Route::get('/dashboard', [\App\Http\Controllers\Pharmacy\PharmacyDashboardController::class, 'controllerProcurement'])->name('dashboard');
         });
 
-        // Controller Pharmacy Dashboard & Routes
-        Route::prefix('controller-pharmacy')->name('controller-pharmacy.')->middleware('role:Controller Pharmacy')->group(function () {
+        // Comptroller Pharmacy Dashboard & Routes
+        Route::prefix('controller-pharmacy')->name('controller-pharmacy.')->middleware('role:Comptroller Pharmacy')->group(function () {
             Route::get('/dashboard', [\App\Http\Controllers\Pharmacy\PharmacyDashboardController::class, 'controllerPharmacy'])->name('dashboard');
         });
         // Redirect old OC Pharmacy URL for backward compatibility
@@ -971,10 +971,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/ready-to-dispense', [\App\Http\Controllers\Pharmacy\PharmacyDashboardController::class, 'readyToDispense'])->name('ready-to-dispense');
         });
 
-        // Procurement Routes - Controller Procurement creates, others view/act
+        // Procurement Routes - Comptroller Procurement creates, others view/act
         Route::prefix('procurements')->name('procurements.')->group(function () {
-            // Controller Procurement can create/edit
-            Route::middleware('role:Controller Procurement')->group(function () {
+            // Comptroller Procurement can create/edit
+            Route::middleware('role:Comptroller Procurement')->group(function () {
                 Route::get('/create', [\App\Http\Controllers\Pharmacy\PharmacyProcurementController::class, 'create'])->name('create');
                 Route::post('/', [\App\Http\Controllers\Pharmacy\PharmacyProcurementController::class, 'store'])->name('store');
                 Route::get('/{id}/edit', [\App\Http\Controllers\Pharmacy\PharmacyProcurementController::class, 'edit'])->name('edit');
@@ -983,14 +983,14 @@ Route::middleware('auth')->group(function () {
             });
 
             // All pharmacy roles can view
-            Route::middleware('role:Controller Procurement|Controller Pharmacy|Central Medical Store')->group(function () {
+            Route::middleware('role:Comptroller Procurement|Comptroller Pharmacy|Central Medical Store')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyProcurementController::class, 'index'])->name('index');
                 Route::get('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyProcurementController::class, 'show'])->name('show');
             });
 
-            // Controller Pharmacy approval
+            // Comptroller Pharmacy approval
             Route::post('/{id}/act', [\App\Http\Controllers\Pharmacy\PharmacyProcurementController::class, 'act'])
-                ->middleware('role:Controller Pharmacy')
+                ->middleware('role:Comptroller Pharmacy')
                 ->name('act');
 
             // Central Medical Store receipt
@@ -1012,14 +1012,14 @@ Route::middleware('auth')->group(function () {
             });
 
             // All pharmacy roles can view
-            Route::middleware('role:Command Pharmacist|Controller Pharmacy|Central Medical Store')->group(function () {
+            Route::middleware('role:Command Pharmacist|Comptroller Pharmacy|Central Medical Store')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyRequisitionController::class, 'index'])->name('index');
                 Route::get('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyRequisitionController::class, 'show'])->name('show');
             });
 
-            // Controller Pharmacy approval
+            // Comptroller Pharmacy approval
             Route::post('/{id}/act', [\App\Http\Controllers\Pharmacy\PharmacyRequisitionController::class, 'act'])
-                ->middleware('role:Controller Pharmacy')
+                ->middleware('role:Comptroller Pharmacy')
                 ->name('act');
 
             // Central Medical Store issuance
@@ -1028,7 +1028,7 @@ Route::middleware('auth')->group(function () {
                 ->name('issue');
         });
 
-        // Return Routes - Command Pharmacist initiates, Controller Pharmacy approves, CMS receives
+        // Return Routes - Command Pharmacist initiates, Comptroller Pharmacy approves, CMS receives
         Route::prefix('returns')->name('returns.')->group(function () {
             // Command Pharmacist can create/edit/submit
             Route::middleware('role:Command Pharmacist')->group(function () {
@@ -1040,14 +1040,14 @@ Route::middleware('auth')->group(function () {
             });
 
             // All pharmacy roles can view
-            Route::middleware('role:Command Pharmacist|Controller Pharmacy|Central Medical Store|Controller Procurement')->group(function () {
+            Route::middleware('role:Command Pharmacist|Comptroller Pharmacy|Central Medical Store|Comptroller Procurement')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'index'])->name('index');
                 Route::get('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'show'])->name('show');
             });
 
-            // Controller Pharmacy approval
+            // Comptroller Pharmacy approval
             Route::post('/{id}/act', [\App\Http\Controllers\Pharmacy\PharmacyReturnController::class, 'act'])
-                ->middleware('role:Controller Pharmacy')
+                ->middleware('role:Comptroller Pharmacy')
                 ->name('act');
 
             // Central Medical Store receipt
@@ -1057,20 +1057,20 @@ Route::middleware('auth')->group(function () {
         });
 
         // Stock Management - All pharmacy roles can view stock
-        Route::prefix('stocks')->name('stocks.')->middleware('role:Controller Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
+        Route::prefix('stocks')->name('stocks.')->middleware('role:Comptroller Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
             Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'index'])->name('index');
             Route::get('/{drugId}', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'show'])->name('show');
             Route::post('/{stockId}/adjust', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'adjust'])
-                ->middleware('role:Central Medical Store|Controller Pharmacy')
+                ->middleware('role:Central Medical Store|Comptroller Pharmacy')
                 ->name('adjust');
         });
 
-        // Drug Catalog - All pharmacy roles can view, Controller Pharmacy/Central Store can manage
-        Route::prefix('drugs')->name('drugs.')->middleware('role:Controller Procurement|Controller Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
+        // Drug Catalog - All pharmacy roles can view, Comptroller Pharmacy/Central Store can manage
+        Route::prefix('drugs')->name('drugs.')->middleware('role:Comptroller Procurement|Comptroller Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
             Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyDrugController::class, 'index'])->name('index');
             Route::get('/{id}', [\App\Http\Controllers\Pharmacy\PharmacyDrugController::class, 'show'])->name('show');
             
-            Route::middleware('role:Controller Pharmacy|Central Medical Store')->group(function () {
+            Route::middleware('role:Comptroller Pharmacy|Central Medical Store')->group(function () {
                 Route::get('/create/new', [\App\Http\Controllers\Pharmacy\PharmacyDrugController::class, 'create'])->name('create');
                 Route::post('/', [\App\Http\Controllers\Pharmacy\PharmacyDrugController::class, 'store'])->name('store');
                 Route::get('/{id}/edit', [\App\Http\Controllers\Pharmacy\PharmacyDrugController::class, 'edit'])->name('edit');
@@ -1080,13 +1080,13 @@ Route::middleware('auth')->group(function () {
         });
 
         // Quarantine Management
-        Route::prefix('quarantine')->name('quarantine.')->middleware('role:Controller Pharmacy')->group(function () {
+        Route::prefix('quarantine')->name('quarantine.')->middleware('role:Comptroller Pharmacy')->group(function () {
             Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyQuarantineController::class, 'index'])->name('index');
             Route::post('/{id}/act', [\App\Http\Controllers\Pharmacy\PharmacyQuarantineController::class, 'act'])->name('act');
         });
 
-        // Reports - Controller Pharmacy has full access, others have limited
-        Route::prefix('reports')->name('reports.')->middleware('role:Controller Pharmacy')->group(function () {
+        // Reports - Comptroller Pharmacy has full access, others have limited
+        Route::prefix('reports')->name('reports.')->middleware('role:Comptroller Pharmacy')->group(function () {
             Route::get('/stock-balance', [\App\Http\Controllers\Pharmacy\PharmacyReportsController::class, 'stockBalance'])->name('stock-balance');
             Route::get('/stock-balance/print', [\App\Http\Controllers\Pharmacy\PharmacyReportsController::class, 'printStockBalance'])->name('stock-balance.print');
             Route::get('/expiry', [\App\Http\Controllers\Pharmacy\PharmacyReportsController::class, 'expiryReport'])->name('expiry');

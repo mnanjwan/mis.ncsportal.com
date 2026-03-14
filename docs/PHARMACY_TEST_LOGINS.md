@@ -4,12 +4,12 @@
 
 All passwords are: **`password`**
 
-### Controller Procurement
+### Comptroller Procurement
 - **Email**: `pharmacy.procurement@ncs.gov.ng`
 - **Password**: `password`
 - **Can Do**: Create and submit procurements
 
-### Controller Pharmacy
+### Comptroller Pharmacy
 - **Email**: `pharmacy.oc@ncs.gov.ng`
 - **Password**: `password`
 - **Can Do**: Approve/reject procurements and requisitions, manage drug catalog, view reports
@@ -38,13 +38,13 @@ All passwords are: **`password`**
 
 ### Procurements Created
 ✅ **DRAFT** - Can be edited and submitted
-✅ **SUBMITTED** - Pending Controller Pharmacy approval
+✅ **SUBMITTED** - Pending Comptroller Pharmacy approval
 ✅ **APPROVED** - Pending Central Medical Store receipt
 ✅ **RECEIVED** - Fully received and stocked
 
 ### Requisitions Created
 ✅ **DRAFT** - Can be edited and submitted
-✅ **SUBMITTED** - Pending Controller Pharmacy approval
+✅ **SUBMITTED** - Pending Comptroller Pharmacy approval
 ✅ **APPROVED** - Pending Central Medical Store issue
 ✅ **ISSUED** - Pending Command Pharmacist dispense
 
@@ -110,7 +110,7 @@ php artisan db:seed --class=PharmacyTestDataSeeder
 - [ ] Verify stock additions/subtractions work correctly
 - [ ] Test low stock warnings
 - [ ] View dashboards for each role
-- [ ] Test reports (Controller Pharmacy only)
+- [ ] Test reports (Comptroller Pharmacy only)
 - [ ] Test drug catalog management
 
 ---

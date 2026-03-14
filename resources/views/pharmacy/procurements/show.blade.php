@@ -104,10 +104,10 @@
                 </div>
 
                 <!-- Comptroller Pharmacy Approval Form -->
-                @if(auth()->user()->hasRole('Controller Pharmacy') && $procurement->status === 'SUBMITTED' && $procurement->current_step_order === 1)
+                @if(auth()->user()->hasRole('Comptroller Pharmacy') && $procurement->status === 'SUBMITTED' && $procurement->current_step_order === 1)
                     <div class="kt-card border-warning">
                         <div class="kt-card-header">
-                            <h3 class="kt-card-title">Controller Pharmacy Approval</h3>
+                            <h3 class="kt-card-title">Comptroller Pharmacy Approval</h3>
                         </div>
                         <div class="kt-card-content">
                             <form method="POST" action="{{ route('pharmacy.procurements.act', $procurement->id) }}">

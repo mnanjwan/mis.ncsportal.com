@@ -19,7 +19,7 @@ class PharmacyDashboardController extends Controller
     }
 
     /**
-     * Controller Procurement Dashboard
+     * Comptroller Procurement Dashboard
      */
     public function controllerProcurement(Request $request)
     {
@@ -42,7 +42,7 @@ class PharmacyDashboardController extends Controller
     }
 
     /**
-     * Controller Pharmacy Dashboard
+     * Comptroller Pharmacy Dashboard
      */
     public function controllerPharmacy(Request $request)
     {
@@ -50,7 +50,7 @@ class PharmacyDashboardController extends Controller
 
         // Pending procurements for approval
         $pendingProcurements = PharmacyProcurement::whereHas('steps', function ($q) {
-            $q->where('role_name', 'Controller Pharmacy')
+            $q->where('role_name', 'Comptroller Pharmacy')
                 ->whereColumn('step_order', 'pharmacy_procurements.current_step_order')
                 ->whereNull('acted_at');
         })
@@ -61,7 +61,7 @@ class PharmacyDashboardController extends Controller
 
         // Pending requisitions for approval
         $pendingRequisitions = PharmacyRequisition::whereHas('steps', function ($q) {
-            $q->where('role_name', 'Controller Pharmacy')
+            $q->where('role_name', 'Comptroller Pharmacy')
                 ->whereColumn('step_order', 'pharmacy_requisitions.current_step_order')
                 ->whereNull('acted_at');
         })

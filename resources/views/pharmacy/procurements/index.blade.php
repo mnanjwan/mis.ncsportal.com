@@ -46,7 +46,7 @@
                             <option value="RECEIVED" {{ $status === 'RECEIVED' ? 'selected' : '' }}>Received</option>
                         </select>
                     </form>
-                    @if(auth()->user()->hasRole('Controller Procurement'))
+                    @if(auth()->user()->hasRole('Comptroller Procurement'))
                         <a href="{{ route('pharmacy.procurements.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
                             <i class="ki-filled ki-plus"></i>
                             New Procurement
@@ -126,7 +126,7 @@
                     <div class="text-center py-12">
                         <i class="ki-filled ki-document text-5xl text-muted-foreground mb-4"></i>
                         <p class="text-secondary-foreground">No procurements found.</p>
-                        @if(auth()->user()->hasRole('Controller Procurement'))
+                        @if(auth()->user()->hasRole('Comptroller Procurement'))
                             <a href="{{ route('pharmacy.procurements.create') }}" class="kt-btn kt-btn-primary mt-4">
                                 Create Your First Procurement
                             </a>

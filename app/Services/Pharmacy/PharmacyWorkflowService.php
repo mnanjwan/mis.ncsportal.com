@@ -50,9 +50,9 @@ class PharmacyWorkflowService
      */
     public function createProcurement(User $user, array $data): PharmacyProcurement
     {
-        if (!$this->userHasActiveRole($user, 'Controller Procurement')) {
+        if (!$this->userHasActiveRole($user, 'Comptroller Procurement')) {
             throw ValidationException::withMessages([
-                'role' => 'You must have the Controller Procurement role.',
+                'role' => 'You must have the Comptroller Procurement role.',
             ]);
         }
 
@@ -101,7 +101,7 @@ class PharmacyWorkflowService
             $this->seedProcurementWorkflowSteps($procurement);
         });
 
-        // Notify Controller Pharmacy
+        // Notify Comptroller Pharmacy
         $this->notifyNextStepUsers($procurement, 'procurement');
 
         return $procurement->fresh(['steps', 'items.drug', 'createdBy']);
@@ -293,7 +293,7 @@ class PharmacyWorkflowService
     private function seedProcurementWorkflowSteps(PharmacyProcurement $procurement): void
     {
         $steps = [
-            ['step_order' => 1, 'role_name' => 'Controller Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 1, 'role_name' => 'Comptroller Pharmacy', 'action' => 'APPROVE'],
             ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
         ];
 
@@ -367,7 +367,7 @@ class PharmacyWorkflowService
             $this->seedRequisitionWorkflowSteps($requisition);
         });
 
-        // Notify Controller Pharmacy
+        // Notify Comptroller Pharmacy
         $this->notifyNextStepUsers($requisition, 'requisition');
 
         return $requisition->fresh(['steps', 'items.drug', 'createdBy', 'command']);
@@ -650,7 +650,7 @@ class PharmacyWorkflowService
                     'dispensed_at' => now(),
                     'dispensed_by' => $user->id,
                 ]);
-                $this->notifyByRole('Controller Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
+                $this->notifyByRole('Comptroller Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
             }
 
             // Check low stock after dispensing
@@ -671,7 +671,7 @@ class PharmacyWorkflowService
     private function seedRequisitionWorkflowSteps(PharmacyRequisition $requisition): void
     {
         $steps = [
-            ['step_order' => 1, 'role_name' => 'Controller Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 1, 'role_name' => 'Comptroller Pharmacy', 'action' => 'APPROVE'],
             ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
         ];
 
@@ -794,7 +794,7 @@ class PharmacyWorkflowService
             $this->seedReturnWorkflowSteps($return);
         });
 
-        // Notify Controller Pharmacy
+        // Notify Comptroller Pharmacy
         $this->notifyNextStepUsers($return, 'return');
 
         return $return->fresh(['steps', 'items.drug', 'createdBy', 'command']);
@@ -991,7 +991,7 @@ class PharmacyWorkflowService
     private function seedReturnWorkflowSteps(PharmacyReturn $return): void
     {
         $steps = [
-            ['step_order' => 1, 'role_name' => 'Controller Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 1, 'role_name' => 'Comptroller Pharmacy', 'action' => 'APPROVE'],
             ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
         ];
 
@@ -1090,7 +1090,7 @@ class PharmacyWorkflowService
     }
 
     /**
-     * Check if stock has dropped below the threshold and notify Controller Pharmacy.
+     * Check if stock has dropped below the threshold and notify Comptroller Pharmacy.
      */
     private function checkAndNotifyLowStock(int $drugId, ?int $commandId): void
     {
@@ -1105,7 +1105,7 @@ class PharmacyWorkflowService
 
             $notificationService = app(NotificationService::class);
             $users = User::whereHas('roles', function ($q) {
-                $q->where('name', 'Controller Pharmacy')
+                $q->where('name', 'Comptroller Pharmacy')
                   ->where('user_roles.is_active', true);
             })->where('is_active', true)->get();
 

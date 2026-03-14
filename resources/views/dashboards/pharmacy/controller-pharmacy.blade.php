@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Controller Pharmacy Dashboard')
-@section('page-title', 'Controller Pharmacy Dashboard')
+@section('title', 'Comptroller Pharmacy Dashboard')
+@section('page-title', 'Comptroller Pharmacy Dashboard')
 
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">

@@ -28,15 +28,15 @@ class PharmacyProcurementController extends Controller
 
         $query = PharmacyProcurement::with(['items.drug', 'createdBy', 'steps']);
 
-        // For Controller Procurement, show their own procurements
-        if ($user->hasRole('Controller Procurement')) {
+        // For Comptroller Procurement, show their own procurements
+        if ($user->hasRole('Comptroller Procurement')) {
             $query->where('created_by', $user->id);
         }
 
-        // For Controller Pharmacy, show procurements pending their action
-        if ($user->hasRole('Controller Pharmacy')) {
+        // For Comptroller Pharmacy, show procurements pending their action
+        if ($user->hasRole('Comptroller Pharmacy')) {
             $query->orWhereHas('steps', function ($q) {
-                $q->where('role_name', 'Controller Pharmacy');
+                $q->where('role_name', 'Comptroller Pharmacy');
             });
         }
 

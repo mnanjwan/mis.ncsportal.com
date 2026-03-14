@@ -97,7 +97,7 @@
                         <i class="ki-filled ki-package"></i>
                         My Stock
                     </a>
-                    @if(!auth()->user()->hasRole('Command Pharmacist') || auth()->user()->hasRole('Controller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
+                    @if(!auth()->user()->hasRole('Command Pharmacist') || auth()->user()->hasRole('Comptroller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                     <a href="{{ route('pharmacy.stocks.index', ['location_type' => 'CENTRAL_STORE']) }}"
                        class="kt-btn kt-btn-outline w-full transition hover:-translate-y-0.5">
                         <i class="ki-filled ki-eye"></i>

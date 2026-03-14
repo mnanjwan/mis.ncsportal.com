@@ -56,11 +56,11 @@ class PharmacyTestDataSeeder extends Seeder
             $this->command->info('');
             $this->command->info('🔑 LOGIN CREDENTIALS:');
             $this->command->info('═══════════════════════════════════════════════════════');
-            $this->command->info('Controller Procurement:');
+            $this->command->info('Comptroller Procurement:');
             $this->command->info('  Email: pharmacy.procurement@ncs.gov.ng');
             $this->command->info('  Password: password');
             $this->command->info('');
-            $this->command->info('Controller Pharmacy:');
+            $this->command->info('Comptroller Pharmacy:');
             $this->command->info('  Email: pharmacy.oc@ncs.gov.ng');
             $this->command->info('  Password: password');
             $this->command->info('');
@@ -84,8 +84,8 @@ class PharmacyTestDataSeeder extends Seeder
     {
         $users = [];
         
-        // Controller Procurement
-        $role = Role::where('name', 'Controller Procurement')->first();
+        // Comptroller Procurement
+        $role = Role::where('name', 'Comptroller Procurement')->first();
         if ($role) {
             $user = User::firstOrCreate(
                 ['email' => 'pharmacy.procurement@ncs.gov.ng'],
@@ -97,11 +97,11 @@ class PharmacyTestDataSeeder extends Seeder
             if (!$user->roles()->where('roles.id', $role->id)->exists()) {
                 $user->roles()->attach($role->id, ['is_active' => true, 'assigned_at' => now()]);
             }
-            $users['Controller Procurement'] = $user;
+            $users['Comptroller Procurement'] = $user;
         }
         
-        // Controller Pharmacy
-        $role = Role::where('name', 'Controller Pharmacy')->first();
+        // Comptroller Pharmacy
+        $role = Role::where('name', 'Comptroller Pharmacy')->first();
         if ($role) {
             $user = User::firstOrCreate(
                 ['email' => 'pharmacy.oc@ncs.gov.ng'],
@@ -113,7 +113,7 @@ class PharmacyTestDataSeeder extends Seeder
             if (!$user->roles()->where('roles.id', $role->id)->exists()) {
                 $user->roles()->attach($role->id, ['is_active' => true, 'assigned_at' => now()]);
             }
-            $users['Controller Pharmacy'] = $user;
+            $users['Comptroller Pharmacy'] = $user;
         }
         
         // Central Medical Store
@@ -199,7 +199,7 @@ class PharmacyTestDataSeeder extends Seeder
     
     private function createStockWithExpiryScenarios($drugs, $commands, $users)
     {
-        $centralStoreUser = $users['Central Medical Store'] ?? $users['Controller Pharmacy'] ?? null;
+        $centralStoreUser = $users['Central Medical Store'] ?? $users['Comptroller Pharmacy'] ?? null;
         $command = $commands->first();
         
         foreach ($drugs->take(8) as $index => $drug) {
@@ -279,8 +279,8 @@ class PharmacyTestDataSeeder extends Seeder
     
     private function createProcurements($users, $drugs)
     {
-        $controllerProcurement = $users['Controller Procurement'] ?? null;
-        $controllerPharmacy = $users['Controller Pharmacy'] ?? null;
+        $controllerProcurement = $users['Comptroller Procurement'] ?? null;
+        $controllerPharmacy = $users['Comptroller Pharmacy'] ?? null;
         $centralStore = $users['Central Medical Store'] ?? null;
         
         if (!$controllerProcurement) return;
@@ -318,7 +318,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $proc2->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
         ]);
         
@@ -339,7 +339,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $proc3->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(1),
@@ -388,7 +388,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $proc4->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(8),
@@ -427,7 +427,7 @@ class PharmacyTestDataSeeder extends Seeder
     {
         $commandPharmacist = $users['Command Pharmacist'] ?? null;
         $command = $users['Command Pharmacist Command'] ?? $commands->first();
-        $controllerPharmacy = $users['Controller Pharmacy'] ?? null;
+        $controllerPharmacy = $users['Comptroller Pharmacy'] ?? null;
         $centralStore = $users['Central Medical Store'] ?? null;
         
         if (!$commandPharmacist || !$command) return;
@@ -466,7 +466,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $req2->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
         ]);
         
@@ -487,7 +487,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $req3->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(1),
@@ -521,7 +521,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $req4->id,
             'step_order' => 1,
-            'role_name' => 'Controller Pharmacy',
+            'role_name' => 'Comptroller Pharmacy',
             'action' => 'APPROVE',
             'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(3),
