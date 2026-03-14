@@ -131,7 +131,7 @@ Zone Coordinator Dashboard
                             View Zone Officers
                         </a>
                         <a href="{{ route('zone-coordinator.movement-orders.create') }}" class="kt-btn kt-btn-ghost w-full">
-                            <i class="ki-filled ki-arrow-left-right"></i>
+                            <i class="ki-filled ki-arrow-right-left"></i>
                             Create Movement Order
                         </a>
                         <a href="{{ route('zone-coordinator.movement-orders') }}" class="kt-btn kt-btn-ghost w-full">

@@ -753,10 +753,10 @@ Every notification below is sourced directly from `NotificationService.php`. **A
 
 | # | Type | Title | Recipient | Message Summary |
 |---|------|-------|-----------|----------------|
-| 74 | `pharmacy_procurement_submitted` | Procurement Submitted | OC Pharmacy | "A new procurement request has been submitted for approval" |
-| 75 | `pharmacy_procurement_approved` | Procurement Approved | Controller Procurement | "Your procurement request has been approved by OC Pharmacy" |
-| 76 | `pharmacy_procurement_received` | Procurement Received | OC Pharmacy + Controller Procurement | "Procurement items have been received by Central Medical Store" |
-| 77 | `pharmacy_requisition_submitted` | Requisition Submitted | OC Pharmacy | "A new requisition from [Command] has been submitted" |
+| 74 | `pharmacy_procurement_submitted` | Procurement Submitted | Controller Pharmacy | "A new procurement request has been submitted for approval" |
+| 75 | `pharmacy_procurement_approved` | Procurement Approved | Controller Procurement | "Your procurement request has been approved by Controller Pharmacy" |
+| 76 | `pharmacy_procurement_received` | Procurement Received | Controller Pharmacy + Controller Procurement | "Procurement items have been received by Central Medical Store" |
+| 77 | `pharmacy_requisition_submitted` | Requisition Submitted | Controller Pharmacy | "A new requisition from [Command] has been submitted" |
 | 78 | `pharmacy_requisition_approved` | Requisition Approved | Command Pharmacist | "Your requisition has been approved" |
 | 79 | `pharmacy_requisition_issued` | Requisition Issued | Command Pharmacist | "Items for your requisition have been issued by Central Medical Store" |
 

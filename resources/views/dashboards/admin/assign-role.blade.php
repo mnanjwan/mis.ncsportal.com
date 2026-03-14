@@ -35,7 +35,7 @@
                                 <h4 class="font-semibold text-info mb-2">Role Assignment Guidelines</h4>
                                 <ul class="text-sm text-secondary-foreground space-y-1 list-disc list-inside">
                                     <li>You can assign roles to officers in your command: <strong>{{ $adminCommand->name }}</strong></li>
-                                    <li>You can assign the following roles: <strong>Staff Officer</strong>, <strong>Area Controller</strong>, and <strong>DC Admin</strong></li>
+                                    <li>You can assign the following roles: <strong>Staff Officer</strong>, <strong>Area Controller</strong>, and <strong>2iC Unit Head</strong></li>
                                     <li>All role assignments are specific to your command</li>
                                     <li>The officer will receive email and app notifications when assigned</li>
                                 </ul>

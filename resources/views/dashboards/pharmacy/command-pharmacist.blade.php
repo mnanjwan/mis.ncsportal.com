@@ -50,7 +50,7 @@
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
-                            <span class="text-sm font-normal text-secondary-foreground">Command Stock</span>
+                            <span class="text-sm font-normal text-secondary-foreground">Pending Dispense</span>
                             <span class="text-2xl font-semibold text-mono">{{ $stats['issued'] ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-success/10 text-success">
@@ -97,7 +97,7 @@
                         <i class="ki-filled ki-package"></i>
                         My Stock
                     </a>
-                    @if(!auth()->user()->hasRole('Command Pharmacist') || auth()->user()->hasRole('OC Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
+                    @if(!auth()->user()->hasRole('Command Pharmacist') || auth()->user()->hasRole('Controller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                     <a href="{{ route('pharmacy.stocks.index', ['location_type' => 'CENTRAL_STORE']) }}"
                        class="kt-btn kt-btn-outline w-full transition hover:-translate-y-0.5">
                         <i class="ki-filled ki-eye"></i>

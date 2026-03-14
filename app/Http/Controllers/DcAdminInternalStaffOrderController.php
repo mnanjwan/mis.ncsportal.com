@@ -124,7 +124,7 @@ class DcAdminInternalStaffOrderController extends Controller
 
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can approve internal staff orders');
+            abort(403, 'Only 2iC Unit Head can approve internal staff orders');
         }
 
         $order = InternalStaffOrder::with(['officer', 'command'])->findOrFail($id);
@@ -306,7 +306,7 @@ class DcAdminInternalStaffOrderController extends Controller
 
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can reject internal staff orders');
+            abort(403, 'Only 2iC Unit Head can reject internal staff orders');
         }
 
         $order = InternalStaffOrder::findOrFail($id);

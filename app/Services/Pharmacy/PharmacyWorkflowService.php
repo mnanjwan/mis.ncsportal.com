@@ -99,7 +99,7 @@ class PharmacyWorkflowService
             $this->seedProcurementWorkflowSteps($procurement);
         });
 
-        // Notify OC Pharmacy
+        // Notify Controller Pharmacy
         $this->notifyNextStepUsers($procurement, 'procurement');
 
         return $procurement->fresh(['steps', 'items.drug', 'createdBy']);
@@ -291,7 +291,7 @@ class PharmacyWorkflowService
     private function seedProcurementWorkflowSteps(PharmacyProcurement $procurement): void
     {
         $steps = [
-            ['step_order' => 1, 'role_name' => 'OC Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 1, 'role_name' => 'Controller Pharmacy', 'action' => 'APPROVE'],
             ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
         ];
 
@@ -365,7 +365,7 @@ class PharmacyWorkflowService
             $this->seedRequisitionWorkflowSteps($requisition);
         });
 
-        // Notify OC Pharmacy
+        // Notify Controller Pharmacy
         $this->notifyNextStepUsers($requisition, 'requisition');
 
         return $requisition->fresh(['steps', 'items.drug', 'createdBy', 'command']);
@@ -477,6 +477,7 @@ class PharmacyWorkflowService
                     ->get();
 
                 $remainingToIssue = $quantityIssued;
+                /** @var PharmacyStock $stock */
                 foreach ($centralStock as $stock) {
                     if ($remainingToIssue <= 0) {
                         break;
@@ -603,12 +604,14 @@ class PharmacyWorkflowService
                     ->get();
 
                 $remainingFromStock = $quantityToDispense;
+                /** @var PharmacyStock $stock */
                 foreach ($commandStock as $stock) {
                     if ($remainingFromStock <= 0) {
                         break;
                     }
 
                     $dispenseFromStock = min($stock->quantity, $remainingFromStock);
+                    /** @var \App\Models\PharmacyStock $stock */
                     $stock->decrement('quantity', $dispenseFromStock);
                     $remainingFromStock -= $dispenseFromStock;
 
@@ -628,6 +631,7 @@ class PharmacyWorkflowService
                     ]);
                 }
 
+                /** @var \App\Models\PharmacyRequisitionItem $item */
                 $item->update(['quantity_dispensed' => $alreadyDispensed + $quantityToDispense]);
             }
 
@@ -638,11 +642,13 @@ class PharmacyWorkflowService
                 ->every(fn ($item) => ($item->quantity_dispensed ?? 0) >= $item->quantity_issued);
 
             if ($allFullyDispensed) {
+                /** @var \App\Models\PharmacyRequisition $requisition */
                 $requisition->update([
                     'status' => 'DISPENSED',
                     'dispensed_at' => now(),
+                    'dispensed_by' => $user->id,
                 ]);
-                $this->notifyByRole('OC Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
+                $this->notifyByRole('Controller Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
             }
 
             return $requisition->fresh(['steps', 'items.drug', 'createdBy', 'command']);
@@ -655,7 +661,7 @@ class PharmacyWorkflowService
     private function seedRequisitionWorkflowSteps(PharmacyRequisition $requisition): void
     {
         $steps = [
-            ['step_order' => 1, 'role_name' => 'OC Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 1, 'role_name' => 'Controller Pharmacy', 'action' => 'APPROVE'],
             ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
         ];
 
@@ -694,6 +700,7 @@ class PharmacyWorkflowService
             'created_by' => $user->id,
         ]);
 
+        /** @var \App\Models\PharmacyReturn $return */
         $return->reference_number = $return->generateReferenceNumber();
         $return->save();
 
@@ -735,10 +742,12 @@ class PharmacyWorkflowService
                     ->get();
 
                 $remainingToReturn = $item->quantity;
+                /** @var PharmacyStock $stock */
                 foreach ($stocks as $stock) {
                     if ($remainingToReturn <= 0) break;
 
                     $take = min($stock->quantity, $remainingToReturn);
+                    /** @var \App\Models\PharmacyStock $stock */
                     $stock->decrement('quantity', $take);
                     $remainingToReturn -= $take;
 
@@ -765,6 +774,7 @@ class PharmacyWorkflowService
                 }
             }
 
+            /** @var \App\Models\PharmacyReturn $return */
             $return->update([
                 'status' => 'SUBMITTED',
                 'submitted_at' => now(),
@@ -774,7 +784,7 @@ class PharmacyWorkflowService
             $this->seedReturnWorkflowSteps($return);
         });
 
-        // Notify OC Pharmacy
+        // Notify Controller Pharmacy
         $this->notifyNextStepUsers($return, 'return');
 
         return $return->fresh(['steps', 'items.drug', 'createdBy', 'command']);
@@ -814,6 +824,7 @@ class PharmacyWorkflowService
         }
 
         DB::transaction(function () use ($return, $step, $user, $decision, $comment) {
+            /** @var \App\Models\PharmacyWorkflowStep $step */
             $step->update([
                 'acted_by_user_id' => $user->id,
                 'acted_at' => now(),
@@ -830,6 +841,7 @@ class PharmacyWorkflowService
                         ->where('movement_type', 'RETURN_INITIATED')
                         ->get();
 
+                    /** @var \App\Models\PharmacyStockMovement $mov */
                     foreach ($movements as $mov) {
                         $stock = PharmacyStock::firstOrCreate([
                             'pharmacy_drug_id' => $mov->pharmacy_drug_id,
@@ -839,6 +851,7 @@ class PharmacyWorkflowService
                             'expiry_date' => $mov->expiry_date,
                         ], ['quantity' => 0]);
 
+                        /** @var \App\Models\PharmacyStock $stock */
                         $stock->increment('quantity', abs($mov->quantity));
 
                         // Record restoration movement
@@ -858,6 +871,7 @@ class PharmacyWorkflowService
                     }
                 }
 
+                /** @var \App\Models\PharmacyReturn $return */
                 $return->update([
                     'status' => 'REJECTED',
                     'current_step_order' => null,
@@ -866,6 +880,7 @@ class PharmacyWorkflowService
                 $nextOrder = $step->step_order + 1;
                 $hasNextStep = $return->steps()->where('step_order', $nextOrder)->exists();
 
+                /** @var \App\Models\PharmacyReturn $return */
                 $return->update([
                     'status' => 'APPROVED',
                     'approved_at' => now(),
@@ -897,7 +912,7 @@ class PharmacyWorkflowService
             ]);
         }
 
-        return DB::transaction(function () use ($return, $user, $comment) {
+        DB::transaction(function () use ($return, $user, $comment) {
             foreach ($return->items as $item) {
                 // Find original movements from initiation
                 $movements = PharmacyStockMovement::where('reference_id', $return->id)
@@ -905,6 +920,7 @@ class PharmacyWorkflowService
                     ->where('movement_type', 'RETURN_INITIATED')
                     ->get();
 
+                /** @var \App\Models\PharmacyStockMovement $mov */
                 foreach ($movements as $mov) {
                     $qty = abs($mov->quantity);
 
@@ -965,7 +981,7 @@ class PharmacyWorkflowService
     private function seedReturnWorkflowSteps(PharmacyReturn $return): void
     {
         $steps = [
-            ['step_order' => 1, 'role_name' => 'OC Pharmacy', 'action' => 'APPROVE'],
+            ['step_order' => 1, 'role_name' => 'Controller Pharmacy', 'action' => 'APPROVE'],
             ['step_order' => 2, 'role_name' => 'Central Medical Store', 'action' => 'REVIEW'],
         ];
 
@@ -1004,6 +1020,7 @@ class PharmacyWorkflowService
         $title = "{$entityType} #{$entity->id} awaiting action";
         $message = "A pharmacy {$type} is waiting at Step {$nextOrder} ({$roleName}).";
 
+        /** @var User $recipient */
         foreach ($query->get() as $recipient) {
             $notificationService->notify(
                 $recipient,

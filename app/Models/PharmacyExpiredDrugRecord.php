@@ -15,6 +15,10 @@ class PharmacyExpiredDrugRecord extends Model
         'expiry_date',
         'batch_number',
         'moved_at',
+        'status',
+        'action_notes',
+        'acted_by',
+        'acted_at',
     ];
 
     protected function casts(): array
@@ -23,7 +27,13 @@ class PharmacyExpiredDrugRecord extends Model
             'quantity' => 'integer',
             'expiry_date' => 'date',
             'moved_at' => 'datetime',
+            'acted_at' => 'datetime',
         ];
+    }
+
+    public function actedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acted_by');
     }
 
     public function drug(): BelongsTo

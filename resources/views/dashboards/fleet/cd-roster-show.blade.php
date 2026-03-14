@@ -22,7 +22,7 @@
     <div class="kt-card">
         <div class="kt-card-header">
             <h3 class="kt-card-title">Duty Roster Details - CD Approval</h3>
-            <p class="text-sm text-secondary-foreground mt-1">This roster includes Transport officers. Approve to allow Area Controller or DC Admin to give final approval.</p>
+            <p class="text-sm text-secondary-foreground mt-1">This roster includes Transport officers. Approve to allow Area Controller or 2iC Unit Head to give final approval.</p>
         </div>
         <div class="kt-card-content">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -129,7 +129,7 @@
         </div>
         <div class="kt-modal-body py-5 px-5">
             <p class="text-sm text-secondary-foreground">
-                Confirm CD approval for this roster? After approval, Area Controller or DC Admin can give final approval.
+                Confirm CD approval for this roster? After approval, Area Controller or 2iC Unit Head can give final approval.
             </p>
         </div>
         <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">

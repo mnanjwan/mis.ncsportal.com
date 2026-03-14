@@ -36,7 +36,7 @@
         <div class="kt-card">
             <div class="kt-card-content p-5">
                 <form method="GET" class="flex flex-wrap items-end gap-4">
-                    @if(!auth()->user()->hasRole('Command Pharmacist') || auth()->user()->hasRole('OC Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
+                    @if(!auth()->user()->hasRole('Command Pharmacist') || auth()->user()->hasRole('Controller Pharmacy') || auth()->user()->hasRole('Central Medical Store'))
                     <div class="w-full sm:w-auto min-w-[180px]">
                         <label class="block text-sm font-medium text-secondary-foreground mb-1">Location Type</label>
                         <select name="location_type" class="kt-input" onchange="this.form.submit()">
@@ -79,7 +79,7 @@
                     {{ $locationType === 'CENTRAL_STORE' ? 'Central Medical Store Stock' : 'Command Pharmacy Stock' }}
                 </h3>
                 <div class="kt-card-toolbar">
-                    @if(auth()->user()->hasRole('OC Pharmacy'))
+                    @if(auth()->user()->hasRole('Controller Pharmacy'))
                         <a href="{{ route('pharmacy.reports.stock-balance') }}" class="kt-btn kt-btn-sm kt-btn-ghost">
                             <i class="ki-filled ki-chart-line"></i> Reports
                         </a>

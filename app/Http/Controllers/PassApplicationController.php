@@ -284,7 +284,7 @@ class PassApplicationController extends Controller
         
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can approve applications');
+            abort(403, 'Only 2iC Unit Head can approve applications');
         }
         
         // Check if application has been minuted
@@ -324,7 +324,7 @@ class PassApplicationController extends Controller
         
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can reject applications');
+            abort(403, 'Only 2iC Unit Head can reject applications');
         }
         
         // Check if application has been minuted

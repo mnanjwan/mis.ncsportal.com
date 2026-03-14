@@ -60,7 +60,7 @@ class PharmacyTestDataSeeder extends Seeder
             $this->command->info('  Email: pharmacy.procurement@ncs.gov.ng');
             $this->command->info('  Password: password');
             $this->command->info('');
-            $this->command->info('OC Pharmacy:');
+            $this->command->info('Controller Pharmacy:');
             $this->command->info('  Email: pharmacy.oc@ncs.gov.ng');
             $this->command->info('  Password: password');
             $this->command->info('');
@@ -100,8 +100,8 @@ class PharmacyTestDataSeeder extends Seeder
             $users['Controller Procurement'] = $user;
         }
         
-        // OC Pharmacy
-        $role = Role::where('name', 'OC Pharmacy')->first();
+        // Controller Pharmacy
+        $role = Role::where('name', 'Controller Pharmacy')->first();
         if ($role) {
             $user = User::firstOrCreate(
                 ['email' => 'pharmacy.oc@ncs.gov.ng'],
@@ -113,7 +113,7 @@ class PharmacyTestDataSeeder extends Seeder
             if (!$user->roles()->where('roles.id', $role->id)->exists()) {
                 $user->roles()->attach($role->id, ['is_active' => true, 'assigned_at' => now()]);
             }
-            $users['OC Pharmacy'] = $user;
+            $users['Controller Pharmacy'] = $user;
         }
         
         // Central Medical Store
@@ -199,7 +199,7 @@ class PharmacyTestDataSeeder extends Seeder
     
     private function createStockWithExpiryScenarios($drugs, $commands, $users)
     {
-        $centralStoreUser = $users['Central Medical Store'] ?? $users['OC Pharmacy'] ?? null;
+        $centralStoreUser = $users['Central Medical Store'] ?? $users['Controller Pharmacy'] ?? null;
         $command = $commands->first();
         
         foreach ($drugs->take(8) as $index => $drug) {
@@ -280,7 +280,7 @@ class PharmacyTestDataSeeder extends Seeder
     private function createProcurements($users, $drugs)
     {
         $controllerProcurement = $users['Controller Procurement'] ?? null;
-        $ocPharmacy = $users['OC Pharmacy'] ?? null;
+        $controllerPharmacy = $users['Controller Pharmacy'] ?? null;
         $centralStore = $users['Central Medical Store'] ?? null;
         
         if (!$controllerProcurement) return;
@@ -318,7 +318,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $proc2->id,
             'step_order' => 1,
-            'role_name' => 'OC Pharmacy',
+            'role_name' => 'Controller Pharmacy',
             'action' => 'APPROVE',
         ]);
         
@@ -339,9 +339,9 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $proc3->id,
             'step_order' => 1,
-            'role_name' => 'OC Pharmacy',
+            'role_name' => 'Controller Pharmacy',
             'action' => 'APPROVE',
-            'acted_by_user_id' => $ocPharmacy?->id,
+            'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(1),
             'decision' => 'APPROVED',
         ]);
@@ -388,9 +388,9 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_procurement_id' => $proc4->id,
             'step_order' => 1,
-            'role_name' => 'OC Pharmacy',
+            'role_name' => 'Controller Pharmacy',
             'action' => 'APPROVE',
-            'acted_by_user_id' => $ocPharmacy?->id,
+            'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(8),
             'decision' => 'APPROVED',
         ]);
@@ -427,7 +427,7 @@ class PharmacyTestDataSeeder extends Seeder
     {
         $commandPharmacist = $users['Command Pharmacist'] ?? null;
         $command = $users['Command Pharmacist Command'] ?? $commands->first();
-        $ocPharmacy = $users['OC Pharmacy'] ?? null;
+        $controllerPharmacy = $users['Controller Pharmacy'] ?? null;
         $centralStore = $users['Central Medical Store'] ?? null;
         
         if (!$commandPharmacist || !$command) return;
@@ -466,7 +466,7 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $req2->id,
             'step_order' => 1,
-            'role_name' => 'OC Pharmacy',
+            'role_name' => 'Controller Pharmacy',
             'action' => 'APPROVE',
         ]);
         
@@ -487,9 +487,9 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $req3->id,
             'step_order' => 1,
-            'role_name' => 'OC Pharmacy',
+            'role_name' => 'Controller Pharmacy',
             'action' => 'APPROVE',
-            'acted_by_user_id' => $ocPharmacy?->id,
+            'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(1),
             'decision' => 'APPROVED',
         ]);
@@ -521,9 +521,9 @@ class PharmacyTestDataSeeder extends Seeder
         PharmacyWorkflowStep::create([
             'pharmacy_requisition_id' => $req4->id,
             'step_order' => 1,
-            'role_name' => 'OC Pharmacy',
+            'role_name' => 'Controller Pharmacy',
             'action' => 'APPROVE',
-            'acted_by_user_id' => $ocPharmacy?->id,
+            'acted_by_user_id' => $controllerPharmacy?->id,
             'acted_at' => now()->subDays(3),
             'decision' => 'APPROVED',
         ]);

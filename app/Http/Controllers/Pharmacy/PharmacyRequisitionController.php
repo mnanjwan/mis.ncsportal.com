@@ -37,8 +37,8 @@ class PharmacyRequisitionController extends Controller
             }
         }
 
-        // For OC Pharmacy, show all requisitions
-        if ($user->hasRole('OC Pharmacy')) {
+        // For Controller Pharmacy, show all requisitions
+        if ($user->hasRole('Controller Pharmacy')) {
             // No filter needed, show all
         }
 
@@ -127,7 +127,7 @@ class PharmacyRequisitionController extends Controller
         $user = $request->user();
 
         // Command Pharmacist can only view requisitions from their command
-        if ($user->hasRole('Command Pharmacist') && !$user->hasRole('OC Pharmacy') && !$user->hasRole('Central Medical Store')) {
+        if ($user->hasRole('Command Pharmacist') && !$user->hasRole('Controller Pharmacy') && !$user->hasRole('Central Medical Store')) {
             $userCommandId = $this->workflowService->getActiveCommandIdForRole($user, 'Command Pharmacist');
             if ($requisition->command_id !== $userCommandId) {
                 abort(403, 'You can only view requisitions from your own command.');

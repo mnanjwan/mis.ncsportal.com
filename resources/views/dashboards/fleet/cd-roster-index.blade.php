@@ -25,7 +25,7 @@
         <div class="kt-card">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">Rosters Pending CD Approval</h3>
-                <p class="text-sm text-secondary-foreground mt-1">These rosters include Transport officers and require your approval before Area Controller or DC Admin can give final approval.</p>
+                <p class="text-sm text-secondary-foreground mt-1">These rosters include Transport officers and require your approval before Area Controller or 2iC Unit Head can give final approval.</p>
             </div>
             <div class="kt-card-content">
                 @if($rosters->count() > 0)

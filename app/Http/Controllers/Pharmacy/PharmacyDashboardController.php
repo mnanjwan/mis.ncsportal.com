@@ -42,15 +42,15 @@ class PharmacyDashboardController extends Controller
     }
 
     /**
-     * OC Pharmacy Dashboard
+     * Controller Pharmacy Dashboard
      */
-    public function ocPharmacy(Request $request)
+    public function controllerPharmacy(Request $request)
     {
         $user = $request->user();
 
         // Pending procurements for approval
         $pendingProcurements = PharmacyProcurement::whereHas('steps', function ($q) {
-            $q->where('role_name', 'OC Pharmacy')
+            $q->where('role_name', 'Controller Pharmacy')
                 ->whereColumn('step_order', 'pharmacy_procurements.current_step_order')
                 ->whereNull('acted_at');
         })
@@ -61,7 +61,7 @@ class PharmacyDashboardController extends Controller
 
         // Pending requisitions for approval
         $pendingRequisitions = PharmacyRequisition::whereHas('steps', function ($q) {
-            $q->where('role_name', 'OC Pharmacy')
+            $q->where('role_name', 'Controller Pharmacy')
                 ->whereColumn('step_order', 'pharmacy_requisitions.current_step_order')
                 ->whereNull('acted_at');
         })
@@ -90,7 +90,7 @@ class PharmacyDashboardController extends Controller
             'expiring_soon' => $expiringSoon->count(),
         ];
 
-        return view('dashboards.pharmacy.oc-pharmacy', compact(
+        return view('dashboards.pharmacy.controller-pharmacy', compact(
             'pendingProcurements',
             'pendingRequisitions',
             'lowStock',
@@ -253,6 +253,14 @@ class PharmacyDashboardController extends Controller
             ->latest()
             ->get();
 
-        return view('pharmacy.ready-to-dispense', compact('requisitions', 'commandName'));
+        // Also fetch current stock for this command to show on the page
+        $commandStock = PharmacyStock::commandPharmacy()
+            ->byCommand($commandId)
+            ->withStock()
+            ->with('drug')
+            ->orderBy('quantity', 'asc')
+            ->get();
+
+        return view('pharmacy.ready-to-dispense', compact('requisitions', 'commandName', 'commandStock', 'commandId'));
     }
 }

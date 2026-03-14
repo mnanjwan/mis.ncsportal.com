@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - Run seeder: `php artisan db:seed --class=PharmacyTestDataSeeder`
-- Test users with roles: Controller Procurement, OC Pharmacy, Central Medical Store, Command Pharmacist
+- Test users with roles: Controller Procurement, Controller Pharmacy, Central Medical Store, Command Pharmacist
 - All passwords: `password`
 
 ## 🔑 Login Credentials
@@ -11,7 +11,7 @@
 - **Email**: `pharmacy.procurement@ncs.gov.ng`
 - **Password**: `password`
 
-### OC Pharmacy
+### Controller Pharmacy
 - **Email**: `pharmacy.oc@ncs.gov.ng`
 - **Password**: `password`
 
@@ -44,8 +44,8 @@
 2. **Click**: "Submit for Approval"
 3. **Verify**: Status changes to SUBMITTED
 
-### Step 3: OC Pharmacy Approves
-1. **Login as**: OC Pharmacy
+### Step 3: Controller Pharmacy Approves
+1. **Login as**: Controller Pharmacy
 2. **Dashboard**: Should see "Pending Procurements" count
 3. **Go to**: `/pharmacy/procurements/{id}`
 4. **Actions**:
@@ -87,8 +87,8 @@
 2. **Click**: "Submit for Approval"
 3. **Verify**: Status changes to SUBMITTED
 
-### Step 7: OC Pharmacy Approves Requisition
-1. **Login as**: OC Pharmacy
+### Step 7: Controller Pharmacy Approves Requisition
+1. **Login as**: Controller Pharmacy
 2. **Dashboard**: Should see "Pending Requisitions" count
 3. **Go to**: `/pharmacy/requisitions/{id}`
 4. **Actions**:
@@ -144,8 +144,8 @@
    - See quantities, batch numbers, expiry dates
    - Expiry warnings displayed
 
-### Step 12: Stock Adjustment (OC Pharmacy/Central Medical Store)
-1. **Login as**: OC Pharmacy or Central Medical Store
+### Step 12: Stock Adjustment (Controller Pharmacy/Central Medical Store)
+1. **Login as**: Controller Pharmacy or Central Medical Store
 2. **Go to**: `/pharmacy/stocks/{stockId}` (click on a stock item)
 3. **Click**: "Adjust Stock"
 4. **Actions**:
@@ -175,7 +175,7 @@
    - Verify status badges show correct warning level
 
 3. **View Dashboards**:
-   - OC Pharmacy Dashboard → "Expiring Soon" section shows warnings
+   - Controller Pharmacy Dashboard → "Expiring Soon" section shows warnings
    - Central Medical Store Dashboard → Stock overview shows warnings
    - Command Pharmacist Dashboard → My Pharmacy Stock shows warnings
 
@@ -188,8 +188,8 @@
 2. **Go to**: `/pharmacy/drugs`
 3. **Verify**: See list of all drugs in catalog
 
-### Step 15: Create New Drug (OC Pharmacy/Central Medical Store)
-1. **Login as**: OC Pharmacy or Central Medical Store
+### Step 15: Create New Drug (Controller Pharmacy/Central Medical Store)
+1. **Login as**: Controller Pharmacy or Central Medical Store
 2. **Go to**: `/pharmacy/drugs/create/new`
 3. **Actions**:
    - Enter Drug Name: "Test Drug"
@@ -210,10 +210,10 @@
 
 ---
 
-## PART 6: REPORTS (OC Pharmacy Only)
+## PART 6: REPORTS (Controller Pharmacy Only)
 
 ### Step 18: Stock Balance Report
-1. **Login as**: OC Pharmacy
+1. **Login as**: Controller Pharmacy
 2. **Go to**: `/pharmacy/reports/stock-balance`
 3. **Verify**: See stock levels across all locations
 4. **Click**: "Print Report"
@@ -245,9 +245,9 @@
    - Recent procurements listed
    - Quick actions available
 
-### Step 22: OC Pharmacy Dashboard
-1. **Login as**: OC Pharmacy
-2. **Go to**: `/pharmacy/oc-pharmacy/dashboard`
+### Step 22: Controller Pharmacy Dashboard
+1. **Login as**: Controller Pharmacy
+2. **Go to**: `/pharmacy/controller-pharmacy/dashboard`
 3. **Verify**:
    - Stats cards (Pending Procurements, Pending Requisitions, Low Stock, Expiring Soon)
    - Pending items listed
@@ -291,7 +291,7 @@
 ### Step 26: Test Low Stock Warnings
 1. **Create stock with quantity < 10**
 2. **Verify**: Shows "Low Stock" badge in red
-3. **Verify**: Appears in OC Pharmacy dashboard "Low Stock Alerts"
+3. **Verify**: Appears in Controller Pharmacy dashboard "Low Stock Alerts"
 
 ### Step 27: Test FEFO (First Expiry First Out)
 1. **Create multiple stock entries with different expiry dates**
@@ -306,7 +306,7 @@
 
 ### Step 29: Test Rejection Flow
 1. **Create procurement/requisition**
-2. **OC Pharmacy rejects it**
+2. **Controller Pharmacy rejects it**
 3. **Verify**: Status changes to REJECTED
 4. **Verify**: Creator notified
 5. **Verify**: Stock NOT affected
@@ -316,13 +316,13 @@
 ## PART 10: NOTIFICATIONS
 
 ### Step 30: Verify Notifications
-1. **Submit procurement** → OC Pharmacy should be notified
+1. **Submit procurement** → Controller Pharmacy should be notified
 2. **Approve procurement** → Controller Procurement and Central Medical Store notified
 3. **Receive procurement** → Controller Procurement notified
-4. **Submit requisition** → OC Pharmacy notified
+4. **Submit requisition** → Controller Pharmacy notified
 5. **Approve requisition** → Command Pharmacist and Central Medical Store notified
 6. **Issue requisition** → Command Pharmacist notified
-7. **Dispense requisition** → OC Pharmacy notified
+7. **Dispense requisition** → Controller Pharmacy notified
 
 ---
 
@@ -370,7 +370,7 @@
 
 ### Dashboards
 - [ ] Controller Procurement dashboard
-- [ ] OC Pharmacy dashboard
+- [ ] Controller Pharmacy dashboard
 - [ ] Central Medical Store dashboard
 - [ ] Command Pharmacist dashboard
 

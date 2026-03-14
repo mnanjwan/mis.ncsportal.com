@@ -199,7 +199,7 @@
                 <!-- Mobile scroll hint -->
                 <div class="block md:hidden px-4 py-3 bg-muted/50 border-b border-border">
                     <div class="flex items-center gap-2 text-xs text-secondary-foreground">
-                        <i class="ki-filled ki-arrow-left-right"></i>
+                        <i class="ki-filled ki-arrow-right-left"></i>
                         <span>Swipe left to view more columns</span>
                     </div>
                 </div>

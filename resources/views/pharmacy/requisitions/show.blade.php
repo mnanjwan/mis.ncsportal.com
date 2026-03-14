@@ -125,8 +125,8 @@
                     </div>
                 </div>
 
-                <!-- OC Pharmacy Approval Form -->
-                @if(auth()->user()->hasRole('OC Pharmacy') && $requisition->status === 'SUBMITTED' && $requisition->current_step_order === 1)
+                <!-- Comptroller Pharmacy Approval Form -->
+                @if(auth()->user()->hasRole('Controller Pharmacy') && $requisition->status === 'SUBMITTED' && $requisition->current_step_order === 1)
                     <div class="kt-card border-warning">
                         <div class="kt-card-header">
                             <h3 class="kt-card-title">Controller Pharmacy Approval</h3>
@@ -358,8 +358,18 @@
                             @if($requisition->dispensed_at)
                                 <div class="flex justify-between">
                                     <span class="text-sm text-secondary-foreground">Dispensed</span>
-                                    <span class="text-sm font-medium">{{ $requisition->dispensed_at->format('d M Y') }}</span>
+                                    <span class="text-sm font-medium">{{ $requisition->dispensed_at->format('d M Y H:i:s') }}</span>
                                 </div>
+                                @if($requisition->dispensedBy)
+                                    <div class="mt-2 p-2 bg-muted rounded border border-input">
+                                        <div class="text-[10px] text-secondary-foreground uppercase font-semibold">Dispensed By</div>
+                                        <div class="text-xs font-medium">
+                                            [{{ $requisition->dispensedBy->officer->service_number ?? 'N/A' }}] 
+                                            {{ $requisition->dispensedBy->officer->rank->name ?? '' }} 
+                                            {{ $requisition->dispensedBy->officer->full_name ?? $requisition->dispensedBy->email }}
+                                        </div>
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </div>

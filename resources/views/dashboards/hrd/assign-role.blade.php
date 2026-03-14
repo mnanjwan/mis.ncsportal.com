@@ -227,7 +227,7 @@
             $roleDisplayMap = [
                 'Zone Coordinator' => 'Zonal Coordinator',
                 'Area Controller' => 'Head of Unit',
-                'OC Pharmacy' => 'Controller Pharmacy',
+                'Comptroller Pharmacy' => 'Controller Pharmacy',
             ];
             $rolesData = $allRoles->map(function($role) use ($roleDisplayMap, $commandBasedRoles) {
                 $baseName = $roleDisplayMap[$role->name] ?? $role->name;

@@ -33,10 +33,10 @@ class PharmacyProcurementController extends Controller
             $query->where('created_by', $user->id);
         }
 
-        // For OC Pharmacy, show procurements pending their action
-        if ($user->hasRole('OC Pharmacy')) {
+        // For Controller Pharmacy, show procurements pending their action
+        if ($user->hasRole('Controller Pharmacy')) {
             $query->orWhereHas('steps', function ($q) {
-                $q->where('role_name', 'OC Pharmacy');
+                $q->where('role_name', 'Controller Pharmacy');
             });
         }
 

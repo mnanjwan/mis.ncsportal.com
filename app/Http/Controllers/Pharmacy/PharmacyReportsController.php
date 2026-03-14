@@ -7,6 +7,7 @@ use App\Models\Command;
 use App\Models\PharmacyDrug;
 use App\Models\PharmacyStock;
 use App\Models\PharmacyStockMovement;
+use App\Models\PharmacyExpiredDrugRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -404,5 +405,64 @@ class PharmacyReportsController extends Controller
             'filters',
             'generatedBy'
         ));
+    }
+
+    /**
+     * Quarantine Report
+     */
+    public function quarantineReport(Request $request)
+    {
+        $status = $request->get('status');
+        $locationType = $request->get('location_type');
+        $commandId = $request->get('command_id');
+
+        $query = PharmacyExpiredDrugRecord::with(['drug', 'command', 'actedBy.officer']);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($locationType) {
+            $query->where('location_type', $locationType);
+        }
+
+        if ($commandId) {
+            $query->where('command_id', $commandId);
+        }
+
+        $records = $query->orderBy('expiry_date', 'asc')->get();
+        $commands = Command::where('is_active', true)->orderBy('name')->get();
+
+        return view('pharmacy.reports.quarantine', compact('records', 'status', 'locationType', 'commandId', 'commands'));
+    }
+
+    /**
+     * Print Quarantine Report
+     */
+    public function printQuarantineReport(Request $request)
+    {
+        $status = $request->get('status');
+        $locationType = $request->get('location_type');
+        $commandId = $request->get('command_id');
+
+        $query = PharmacyExpiredDrugRecord::with(['drug', 'command', 'actedBy.officer']);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($locationType) {
+            $query->where('location_type', $locationType);
+        }
+
+        if ($commandId) {
+            $query->where('command_id', $commandId);
+        }
+
+        $records = $query->orderBy('expiry_date', 'asc')->get();
+        $generatedBy = Auth::user()->officer->full_name ?? Auth::user()->email;
+        $command = $commandId ? Command::find($commandId) : null;
+
+        return view('prints.pharmacy.quarantine-report', compact('records', 'status', 'locationType', 'command', 'generatedBy'));
     }
 }

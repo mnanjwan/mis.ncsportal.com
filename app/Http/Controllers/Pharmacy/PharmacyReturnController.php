@@ -30,7 +30,7 @@ class PharmacyReturnController extends Controller
         if ($user->hasRole('Command Pharmacist')) {
             $commandId = $this->workflowService->getActiveCommandIdForRole($user, 'Command Pharmacist');
             $query->where('command_id', $commandId);
-        } elseif ($user->hasRole('OC Pharmacy') || $user->hasRole('Central Medical Store') || $user->hasRole('Controller Procurement')) {
+        } elseif ($user->hasRole('Controller Pharmacy') || $user->hasRole('Central Medical Store') || $user->hasRole('Controller Procurement')) {
             // Can see all
         } else {
             abort(403);

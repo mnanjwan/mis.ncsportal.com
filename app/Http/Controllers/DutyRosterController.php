@@ -1101,7 +1101,7 @@ class DutyRosterController extends Controller
 
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can approve rosters');
+            abort(403, 'Only 2iC Unit Head can approve rosters');
         }
 
         $roster = \App\Models\DutyRoster::with('assignments.officer')->findOrFail($id);
@@ -1165,7 +1165,7 @@ class DutyRosterController extends Controller
 
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can reject rosters');
+            abort(403, 'Only 2iC Unit Head can reject rosters');
         }
 
         $roster = \App\Models\DutyRoster::findOrFail($id);

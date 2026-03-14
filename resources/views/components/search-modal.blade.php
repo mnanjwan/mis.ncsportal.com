@@ -27,7 +27,7 @@
                                     'Validator' => route('validator.dashboard'),
                                     'Auditor' => route('auditor.dashboard'),
                                     'Area Controller' => route('area-controller.dashboard'),
-                                    'DC Admin' => route('dc-admin.dashboard'),
+                                    '2iC Unit Head' => route('dc-admin.dashboard'),
                                     'Accounts' => route('accounts.dashboard'),
                                     'Board' => route('board.dashboard'),
                                     'Building Unit' => route('building.dashboard'),

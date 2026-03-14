@@ -28,7 +28,7 @@
         'Investigation Unit',
         'Building Unit',
         // Pharmacy roles
-        'OC Pharmacy',
+        'Controller Pharmacy',
         'Controller Procurement',
         'Central Medical Store',
         'Command Pharmacist',
@@ -650,13 +650,13 @@
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-procurement.dashboard')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
-                ['icon' => 'ki-filled ki-arrow-left-right', 'title' => 'Returns', 'href' => route('pharmacy.returns.index')],
+                ['icon' => 'ki-filled ki-arrow-right-left', 'title' => 'Returns', 'href' => route('pharmacy.returns.index')],
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
             ];
             break;
-        case 'OC Pharmacy':
+        case 'Controller Pharmacy':
             $menuItems = [
-                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.oc-pharmacy.dashboard')],
+                ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-pharmacy.dashboard')],
                 ['icon' => 'ki-filled ki-notepad', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
@@ -667,9 +667,11 @@
                     'submenu' => [
                         ['title' => 'Stock Balance', 'href' => route('pharmacy.reports.stock-balance')],
                         ['title' => 'Expiry Report', 'href' => route('pharmacy.reports.expiry')],
+                        ['title' => 'Quarantine Report', 'href' => route('pharmacy.reports.quarantine')],
                         ['title' => 'Custom Report', 'href' => route('pharmacy.reports.custom')],
                     ]
                 ],
+                ['icon' => 'ki-filled ki-biohazard', 'title' => 'Quarantine Stock', 'href' => route('pharmacy.quarantine.index')],
             ];
             break;
         case 'Central Medical Store':
@@ -684,9 +686,9 @@
         case 'Command Pharmacist':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.command-pharmacist.dashboard')],
-                ['icon' => 'ki-filled ki-pill', 'title' => 'Command Stock', 'href' => route('pharmacy.command-pharmacist.ready-to-dispense')],
+                ['icon' => 'ki-filled ki-package', 'title' => 'Command Stock', 'href' => route('pharmacy.command-pharmacist.ready-to-dispense')],
                 ['icon' => 'ki-filled ki-basket', 'title' => 'Requisitions', 'href' => route('pharmacy.requisitions.index')],
-                ['icon' => 'ki-filled ki-arrow-left-right', 'title' => 'Returns', 'href' => route('pharmacy.returns.index')],
+                ['icon' => 'ki-filled ki-arrow-right-left', 'title' => 'Returns', 'href' => route('pharmacy.returns.index')],
             ];
             break;
         default:
@@ -705,7 +707,8 @@
     // Display names for roles (text only; role identifiers unchanged for functionality)
     $roleDisplayNames = [
         'CGC' => 'CGC Office',
-        'OC Pharmacy' => 'Controller Pharmacy',
+        'Controller Pharmacy' => 'Comptroller Pharmacy',
+        'DC Admin' => '2iC Unit Head',
     ];
     $primaryRoleDisplay = $roleDisplayNames[$primaryRole] ?? $primaryRole;
 @endphp

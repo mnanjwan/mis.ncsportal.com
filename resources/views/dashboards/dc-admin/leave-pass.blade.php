@@ -4,7 +4,7 @@
 @section('page-title', 'Leave & Pass Management')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">DC Admin</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">2iC Unit Head</a>
     <span>/</span>
     <span class="text-primary">Leave & Pass</span>
 @endsection

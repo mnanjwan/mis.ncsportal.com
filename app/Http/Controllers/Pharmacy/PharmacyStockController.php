@@ -28,7 +28,7 @@ class PharmacyStockController extends Controller
         $locationType = $request->get('location_type', 'CENTRAL_STORE');
         
         $isCommandPharmacistOnly = $user->hasRole('Command Pharmacist') 
-            && !$user->hasRole('OC Pharmacy') 
+            && !$user->hasRole('Controller Pharmacy') 
             && !$user->hasRole('Central Medical Store');
 
         // Force command pharmacy location for command pharmacists
@@ -91,7 +91,7 @@ class PharmacyStockController extends Controller
         $user = $request->user();
 
         $isCommandPharmacistOnly = $user->hasRole('Command Pharmacist') 
-            && !$user->hasRole('OC Pharmacy') 
+            && !$user->hasRole('Controller Pharmacy') 
             && !$user->hasRole('Central Medical Store');
 
         $userCommandId = null;
@@ -140,7 +140,7 @@ class PharmacyStockController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->hasRole('Central Medical Store') && !$user->hasRole('OC Pharmacy')) {
+        if (!$user->hasRole('Central Medical Store') && !$user->hasRole('Controller Pharmacy')) {
             abort(403, 'Unauthorized');
         }
 

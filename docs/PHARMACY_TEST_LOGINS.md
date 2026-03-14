@@ -9,7 +9,7 @@ All passwords are: **`password`**
 - **Password**: `password`
 - **Can Do**: Create and submit procurements
 
-### OC Pharmacy
+### Controller Pharmacy
 - **Email**: `pharmacy.oc@ncs.gov.ng`
 - **Password**: `password`
 - **Can Do**: Approve/reject procurements and requisitions, manage drug catalog, view reports
@@ -38,13 +38,13 @@ All passwords are: **`password`**
 
 ### Procurements Created
 ✅ **DRAFT** - Can be edited and submitted
-✅ **SUBMITTED** - Pending OC Pharmacy approval
+✅ **SUBMITTED** - Pending Controller Pharmacy approval
 ✅ **APPROVED** - Pending Central Medical Store receipt
 ✅ **RECEIVED** - Fully received and stocked
 
 ### Requisitions Created
 ✅ **DRAFT** - Can be edited and submitted
-✅ **SUBMITTED** - Pending OC Pharmacy approval
+✅ **SUBMITTED** - Pending Controller Pharmacy approval
 ✅ **APPROVED** - Pending Central Medical Store issue
 ✅ **ISSUED** - Pending Command Pharmacist dispense
 
@@ -110,7 +110,7 @@ php artisan db:seed --class=PharmacyTestDataSeeder
 - [ ] Verify stock additions/subtractions work correctly
 - [ ] Test low stock warnings
 - [ ] View dashboards for each role
-- [ ] Test reports (OC Pharmacy only)
+- [ ] Test reports (Controller Pharmacy only)
 - [ ] Test drug catalog management
 
 ---

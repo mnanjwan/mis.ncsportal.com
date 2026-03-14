@@ -125,7 +125,7 @@
                             </div>
                         </div>
                         <p class="text-xs text-secondary-foreground">
-                            Your application will be reviewed by Staff Officer, then minuted to DC Admin for approval.
+                            Your application will be reviewed by Staff Officer, then minuted to 2iC Unit Head for approval.
                         </p>
                     </div>
                 </div>

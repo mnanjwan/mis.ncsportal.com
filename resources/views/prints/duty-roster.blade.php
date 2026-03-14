@@ -231,7 +231,7 @@
             <strong>Approved by:</strong> 
             @if($approver)
                 @if($approverRole === 'DC Admin')
-                    Comptroller ({{ strtoupper($approver->initials ?? '') }} {{ strtoupper($approver->surname ?? '') }} - DC Admin)
+                    Comptroller ({{ strtoupper($approver->initials ?? '') }} {{ strtoupper($approver->surname ?? '') }} - 2iC Unit Head)
                 @else
                     Comptroller ({{ strtoupper($approver->initials ?? '') }} {{ strtoupper($approver->surname ?? '') }})
                 @endif

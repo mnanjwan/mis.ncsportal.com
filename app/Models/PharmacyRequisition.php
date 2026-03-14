@@ -19,6 +19,7 @@ class PharmacyRequisition extends Model
         'approved_at',
         'issued_at',
         'dispensed_at',
+        'dispensed_by',
         'current_step_order',
     ];
 
@@ -47,6 +48,11 @@ class PharmacyRequisition extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function dispensedBy()
+    {
+        return $this->belongsTo(User::class, 'dispensed_by');
     }
 
     public function steps()

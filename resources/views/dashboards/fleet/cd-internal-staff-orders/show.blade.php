@@ -257,7 +257,7 @@
             </div>
             <div class="kt-modal-body py-5 px-5">
                 <p class="text-sm text-secondary-foreground">
-                    Are you sure you want to submit this order for DC Admin approval? Once submitted, you will not be able to edit it until it is reviewed.
+                    Are you sure you want to submit this order for 2iC Unit Head approval? Once submitted, you will not be able to edit it until it is reviewed.
                 </p>
             </div>
             <div class="kt-modal-footer py-4 px-5 flex items-center justify-end gap-2.5">

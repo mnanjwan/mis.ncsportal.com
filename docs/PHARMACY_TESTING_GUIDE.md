@@ -9,7 +9,7 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 | Role | Email | Password | Primary Function |
 |------|-------|----------|------------------|
 | **Controller Procurement** | `officer69@ncs.gov.ng` | `password123` | Create and submit procurement requests |
-| **OC Pharmacy** | `officer88@ncs.gov.ng` | `password123` | Approve procurements & requisitions, view reports |
+| **Controller Pharmacy** | `officer88@ncs.gov.ng` | `password123` | Approve procurements & requisitions, view reports |
 | **Central Medical Store** | `officer99@ncs.gov.ng` | `password123` | Receive procurements, issue requisitions |
 | **Command Pharmacist** | `officer97@ncs.gov.ng` | `password123` | Create requisitions, dispense drugs |
 | **Command Pharmacist 1** | `command.pharmacist.1@ncs.gov.ng` | `password123` | Command: CGC OFFICE |
@@ -27,11 +27,11 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 
 ## Workflow Overview
 
-### Procurement Workflow (Controller Procurement → OC Pharmacy → Central Medical Store)
+### Procurement Workflow (Controller Procurement → Controller Pharmacy → Central Medical Store)
 
 ```
 ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
-│ Controller          │     │ OC Pharmacy         │     │ Central Medical     │
+│ Controller          │     │ Controller Pharmacy         │     │ Central Medical     │
 │ Procurement         │     │                     │     │ Store               │
 ├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤
 │ 1. Create Draft     │────▶│ 2. Review & Approve │────▶│ 3. Receive Items    │
@@ -39,11 +39,11 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 └─────────────────────┘     └─────────────────────┘     └─────────────────────┘
 ```
 
-### Requisition Workflow (Command Pharmacist → OC Pharmacy → Central Medical Store → Command Pharmacist)
+### Requisition Workflow (Command Pharmacist → Controller Pharmacy → Central Medical Store → Command Pharmacist)
 
 ```
 ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
-│ Command Pharmacist  │     │ OC Pharmacy         │     │ Central Medical     │     │ Command Pharmacist  │
+│ Command Pharmacist  │     │ Controller Pharmacy         │     │ Central Medical     │     │ Command Pharmacist  │
 │                     │     │                     │     │ Store               │     │                     │
 ├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤
 │ 1. Create Draft     │────▶│ 2. Review & Approve │────▶│ 3. Issue Items      │────▶│ 4. Confirm Receipt  │
@@ -109,12 +109,12 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 
 ---
 
-### Phase 2: OC Pharmacy Testing
+### Phase 2: Controller Pharmacy Testing
 
 **Login**: `officer88@ncs.gov.ng` / `password123`
 
 #### Dashboard Verification
-- [ ] Navigate to `/pharmacy/oc-pharmacy/dashboard`
+- [ ] Navigate to `/pharmacy/controller-pharmacy/dashboard`
 - [ ] Verify dashboard shows:
   - Pending Approvals (procurements + requisitions)
   - Stock Overview
@@ -274,13 +274,13 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 
 #### Complete Procurement Cycle
 1. **Controller Procurement** creates and submits procurement
-2. **OC Pharmacy** approves procurement
+2. **Controller Pharmacy** approves procurement
 3. **Central Medical Store** receives items
 4. Verify stock is added to Central Store
 
 #### Complete Requisition Cycle
 1. **Command Pharmacist** creates and submits requisition
-2. **OC Pharmacy** approves requisition
+2. **Controller Pharmacy** approves requisition
 3. **Central Medical Store** issues items
 4. **Command Pharmacist** dispenses
 5. Verify stock movements are recorded
@@ -300,10 +300,10 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 | Drug Catalog | `/pharmacy/drugs` | View drugs |
 | Stock | `/pharmacy/stocks` | View stock |
 
-### OC Pharmacy Pages
+### Controller Pharmacy Pages
 | Page | URL | Purpose |
 |------|-----|---------|
-| Dashboard | `/pharmacy/oc-pharmacy/dashboard` | Overview |
+| Dashboard | `/pharmacy/controller-pharmacy/dashboard` | Overview |
 | Procurements | `/pharmacy/procurements` | View/approve |
 | Requisitions | `/pharmacy/requisitions` | View/approve |
 | Drug Catalog | `/pharmacy/drugs` | Manage drugs |
@@ -339,14 +339,14 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 
 ### Procurements (6 records)
 - 1x DRAFT
-- 1x SUBMITTED (pending OC Pharmacy)
+- 1x SUBMITTED (pending Controller Pharmacy)
 - 1x REJECTED
 - 1x APPROVED (pending receipt)
 - 2x RECEIVED (1 fully, 1 partially)
 
 ### Requisitions (7 records)
 - 1x DRAFT
-- 1x SUBMITTED (pending OC Pharmacy)
+- 1x SUBMITTED (pending Controller Pharmacy)
 - 1x REJECTED
 - 1x APPROVED (pending issue)
 - 2x ISSUED (1 fully, 1 partially)
@@ -373,8 +373,8 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 - [ ] Create draft procurement
 - [ ] Edit draft procurement
 - [ ] Submit procurement
-- [ ] Approve procurement (OC Pharmacy)
-- [ ] Reject procurement (OC Pharmacy)
+- [ ] Approve procurement (Controller Pharmacy)
+- [ ] Reject procurement (Controller Pharmacy)
 - [ ] Receive procurement (Central Medical Store)
 - [ ] Stock updates after receipt
 
@@ -382,8 +382,8 @@ A comprehensive guide to test all features of the Pharmacy Workflow System.
 - [ ] Create draft requisition
 - [ ] Edit draft requisition
 - [ ] Submit requisition
-- [ ] Approve requisition (OC Pharmacy)
-- [ ] Reject requisition (OC Pharmacy)
+- [ ] Approve requisition (Controller Pharmacy)
+- [ ] Reject requisition (Controller Pharmacy)
 - [ ] Issue requisition (Central Medical Store)
 - [ ] Dispense requisition (Command Pharmacist)
 
@@ -421,15 +421,15 @@ Notifications are sent both **in-app** (stored in database) and via **email** (q
 
 | Action | Who Gets Notified | Notification Type |
 |--------|-------------------|-------------------|
-| **Submit Procurement** | OC Pharmacy users | `pharmacy_procurement_pending` |
+| **Submit Procurement** | Controller Pharmacy users | `pharmacy_procurement_pending` |
 | **Approve Procurement** | Creator + Central Medical Store | `pharmacy_procurement_update` + `pharmacy_procurement_pending` |
 | **Reject Procurement** | Creator | `pharmacy_procurement_update` |
 | **Receive Procurement** | Creator | `pharmacy_procurement_update` |
-| **Submit Requisition** | OC Pharmacy users | `pharmacy_requisition_pending` |
+| **Submit Requisition** | Controller Pharmacy users | `pharmacy_requisition_pending` |
 | **Approve Requisition** | Creator + Central Medical Store | `pharmacy_requisition_update` + `pharmacy_requisition_pending` |
 | **Reject Requisition** | Creator | `pharmacy_requisition_update` |
 | **Issue Requisition** | Creator | `pharmacy_requisition_update` |
-| **Dispense Requisition** | OC Pharmacy users | `pharmacy_requisition_update` |
+| **Dispense Requisition** | Controller Pharmacy users | `pharmacy_requisition_update` |
 
 ### Testing Notifications
 
@@ -458,17 +458,17 @@ Notifications are sent both **in-app** (stored in database) and via **email** (q
 #### Notification Test Checklist
 
 **Procurement Notifications:**
-- [ ] Submit procurement → OC Pharmacy receives notification
+- [ ] Submit procurement → Controller Pharmacy receives notification
 - [ ] Approve procurement → Creator + Central Store receive notifications
 - [ ] Reject procurement → Creator receives notification
 - [ ] Receive procurement → Creator receives notification
 
 **Requisition Notifications:**
-- [ ] Submit requisition → OC Pharmacy receives notification
+- [ ] Submit requisition → Controller Pharmacy receives notification
 - [ ] Approve requisition → Creator + Central Store receive notifications
 - [ ] Reject requisition → Creator receives notification
 - [ ] Issue requisition → Creator (Command Pharmacist) receives notification
-- [ ] Dispense requisition → OC Pharmacy receives notification
+- [ ] Dispense requisition → Controller Pharmacy receives notification
 
 ### Viewing Notifications in Database
 
@@ -492,7 +492,7 @@ ORDER BY created_at DESC;
 
 ### "No drugs available" message
 - Drugs are added to catalog when:
-  1. OC Pharmacy/Central Medical Store adds them manually
+  1. Controller Pharmacy/Central Medical Store adds them manually
   2. Procurements are received (auto-creates drugs)
 - Run seeder: `php artisan db:seed --class=PharmacySeeder`
 
@@ -505,7 +505,7 @@ ORDER BY created_at DESC;
 - Check user has correct role assigned
 
 ### Sidebar not visible
-- Ensure user has one of: Controller Procurement, OC Pharmacy, Central Medical Store, Command Pharmacist roles
+- Ensure user has one of: Controller Procurement, Controller Pharmacy, Central Medical Store, Command Pharmacist roles
 - Clear cache: `php artisan cache:clear && php artisan view:clear`
 
 ---

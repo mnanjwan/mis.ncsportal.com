@@ -3432,7 +3432,7 @@ class ManningRequestController extends Controller
 
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can approve manning requests');
+            abort(403, 'Only 2iC Unit Head can approve manning requests');
         }
 
         // Get DC Admin's command
@@ -3498,7 +3498,7 @@ class ManningRequestController extends Controller
 
         // Check if user is DC Admin
         if (!$user->hasRole('DC Admin')) {
-            abort(403, 'Only DC Admin can reject manning requests');
+            abort(403, 'Only 2iC Unit Head can reject manning requests');
         }
 
         // Get DC Admin's command

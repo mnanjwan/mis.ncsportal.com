@@ -4,7 +4,7 @@
 @section('page-title', 'Internal Staff Orders - Pending Approval')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">DC Admin</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">2iC Unit Head</a>
     <span>/</span>
     <span class="text-primary">Internal Staff Orders</span>
 @endsection

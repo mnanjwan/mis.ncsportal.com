@@ -18,9 +18,9 @@ return new class extends Migration
                 'access_level' => 3,
             ],
             [
-                'name' => 'OC Pharmacy',
-                'code' => 'oc_pharmacy',
-                'description' => 'OC Pharmacy - Approves procurements and requisitions, generates reports, oversees pharmacy operations',
+                'name' => 'Controller Pharmacy',
+                'code' => 'controller_pharmacy',
+                'description' => 'Controller Pharmacy - Approves procurements and requisitions, generates reports, oversees pharmacy operations',
                 'access_level' => 4,
             ],
             [
@@ -56,7 +56,7 @@ return new class extends Migration
         DB::table('roles')
             ->whereIn('name', [
                 'Controller Procurement',
-                'OC Pharmacy',
+                'Controller Pharmacy',
                 'Central Medical Store',
                 'Command Pharmacist',
             ])

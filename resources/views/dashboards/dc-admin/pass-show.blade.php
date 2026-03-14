@@ -4,7 +4,7 @@
 @section('page-title', 'Pass Application Details')
 
 @section('breadcrumbs')
-    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">DC Admin</a>
+    <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.dashboard') }}">2iC Unit Head</a>
     <span>/</span>
     <a class="text-secondary-foreground hover:text-primary" href="{{ route('dc-admin.leave-pass', ['type' => 'pass']) }}">Leave & Pass</a>
     <span>/</span>
