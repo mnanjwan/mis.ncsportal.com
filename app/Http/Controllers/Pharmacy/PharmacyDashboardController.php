@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pharmacy;
 use App\Http\Controllers\Controller;
 use App\Models\PharmacyProcurement;
 use App\Models\PharmacyRequisition;
+use App\Models\PharmacyReturn;
 use App\Models\PharmacyStock;
 use App\Services\Pharmacy\PharmacyWorkflowService;
 use Illuminate\Http\Request;
@@ -83,9 +84,21 @@ class PharmacyDashboardController extends Controller
             ->take(10)
             ->get();
 
+        // Pending returns for approval
+        $pendingReturns = PharmacyReturn::whereHas('steps', function ($q) {
+            $q->where('role_name', 'Comptroller Pharmacy')
+                ->whereColumn('step_order', 'pharmacy_returns.current_step_order')
+                ->whereNull('acted_at');
+        })
+            ->with(['items.drug', 'createdBy', 'command'])
+            ->latest()
+            ->take(10)
+            ->get();
+
         $stats = [
             'pending_procurements' => $pendingProcurements->count(),
             'pending_requisitions' => $pendingRequisitions->count(),
+            'pending_returns' => $pendingReturns->count(),
             'low_stock_items' => $lowStock->count(),
             'expiring_soon' => $expiringSoon->count(),
         ];
@@ -93,6 +106,7 @@ class PharmacyDashboardController extends Controller
         return view('dashboards.pharmacy.controller-pharmacy', compact(
             'pendingProcurements',
             'pendingRequisitions',
+            'pendingReturns',
             'lowStock',
             'expiringSoon',
             'stats'
@@ -138,15 +152,29 @@ class PharmacyDashboardController extends Controller
             ->take(20)
             ->get();
 
+        // Approved returns awaiting receipt
+        $pendingReturnReceipt = PharmacyReturn::where('status', 'APPROVED')
+            ->whereHas('steps', function ($q) {
+                $q->where('role_name', 'Central Medical Store')
+                    ->whereColumn('step_order', 'pharmacy_returns.current_step_order')
+                    ->whereNull('acted_at');
+            })
+            ->with(['items.drug', 'createdBy', 'command'])
+            ->latest()
+            ->take(10)
+            ->get();
+
         $stats = [
             'pending_receipt' => $pendingReceipt->count(),
             'pending_issue' => $pendingIssue->count(),
+            'pending_return_receipt' => $pendingReturnReceipt->count(),
             'total_stock_items' => PharmacyStock::centralStore()->withStock()->count(),
         ];
 
         return view('dashboards.pharmacy.central-medical-store', compact(
             'pendingReceipt',
             'pendingIssue',
+            'pendingReturnReceipt',
             'stockOverview',
             'stats'
         ));

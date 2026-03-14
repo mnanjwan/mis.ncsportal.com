@@ -6,7 +6,7 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-7.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 lg:gap-7.5">
             <div class="kt-card transition hover:shadow-sm hover:-translate-y-0.5 {{ $stats['pending_procurements'] > 0 ? 'border-warning' : '' }}">
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
@@ -58,6 +58,20 @@
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-warning/10 text-warning">
                             <i class="ki-filled ki-calendar text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kt-card transition hover:shadow-sm hover:-translate-y-0.5 {{ $stats['pending_returns'] > 0 ? 'border-danger' : '' }}">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Pending Returns</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $stats['pending_returns'] ?? 0 }}</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-danger/10 text-danger">
+                            <i class="ki-filled ki-arrow-right-left text-2xl"></i>
                         </div>
                     </div>
                 </div>
@@ -162,11 +176,44 @@
                                     </a>
                                 </div>
                             @endforeach
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-1 gap-5 lg:gap-7.5">
+            <!-- Pending Returns for Approval -->
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Returns Awaiting Approval</h3>
+                    <div class="kt-card-toolbar">
+                        <a href="{{ route('pharmacy.returns.index', ['status' => 'SUBMITTED']) }}" class="kt-btn kt-btn-sm kt-btn-light">
+                            View All
+                        </a>
+                    </div>
+                </div>
+                <div class="kt-card-content">
+                    @if($pendingReturns->count() > 0)
+                        <div class="flex flex-col gap-3">
+                            @foreach($pendingReturns as $return)
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-sm font-semibold text-foreground">
+                                            {{ $return->reference_number }} - {{ $return->command->name ?? 'N/A' }}
+                                        </span>
+                                        <span class="text-xs text-secondary-foreground">
+                                            {{ $return->items->count() }} items | Submitted: {{ $return->submitted_at ? $return->submitted_at->format('d M Y') : 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <a href="{{ route('pharmacy.returns.show', $return->id) }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                                        Review
+                                    </a>
+                                </div>
+                            @endforeach
                         </div>
                     @else
                         <div class="text-center py-8">
                             <i class="ki-filled ki-check-circle text-4xl text-success mb-4"></i>
-                            <p class="text-secondary-foreground">No requisitions pending approval.</p>
+                            <p class="text-secondary-foreground">No returns pending approval.</p>
                         </div>
                     @endif
                 </div>

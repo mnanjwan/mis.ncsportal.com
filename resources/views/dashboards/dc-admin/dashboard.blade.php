@@ -205,6 +205,72 @@
                 @endif
             </div>
         </div>
+
+        <!-- Recent Pending Leave -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Recent Pending Leave</h3>
+            </div>
+            <div class="kt-card-content">
+                @if(isset($recentPendingLeave) && $recentPendingLeave->count() > 0)
+                    <div class="flex flex-col gap-3">
+                        @foreach($recentPendingLeave as $leave)
+                            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-semibold text-foreground">
+                                        {{ $leave->officer->surname ?? 'N/A' }}, {{ $leave->officer->first_name ?? '' }} ({{ $leave->officer->service_no ?? '' }})
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        {{ $leave->leaveType->name ?? 'Leave' }} | {{ $leave->start_date?->format('d M') }} - {{ $leave->end_date?->format('d M Y') }}
+                                    </span>
+                                </div>
+                                <a href="{{ route('dc-admin.leave-pass') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                                    <i class="ki-filled ki-eye"></i> Review
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-8">
+                        <i class="ki-filled ki-calendar text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground">No pending leave applications</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Recent Pending Pass -->
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Recent Pending Pass</h3>
+            </div>
+            <div class="kt-card-content">
+                @if(isset($recentPendingPass) && $recentPendingPass->count() > 0)
+                    <div class="flex flex-col gap-3">
+                        @foreach($recentPendingPass as $pass)
+                            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-semibold text-foreground">
+                                        {{ $pass->officer->surname ?? 'N/A' }}, {{ $pass->officer->first_name ?? '' }} ({{ $pass->officer->service_no ?? '' }})
+                                    </span>
+                                    <span class="text-xs text-secondary-foreground">
+                                        Pass | {{ $pass->start_date?->format('d M') }} - {{ $pass->end_date?->format('d M Y') }}
+                                    </span>
+                                </div>
+                                <a href="{{ route('dc-admin.leave-pass') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                                    <i class="ki-filled ki-eye"></i> Review
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-8">
+                        <i class="ki-filled ki-calendar-tick text-4xl text-muted-foreground mb-4"></i>
+                        <p class="text-secondary-foreground">No pending pass applications</p>
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
     
     <!-- Quick Actions -->

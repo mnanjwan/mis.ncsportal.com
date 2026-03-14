@@ -1158,13 +1158,39 @@ class DashboardController extends Controller
         }
         $recentManningRequests = $recentManningRequestsQuery->get();
 
+        // Get recent pending leave applications
+        $recentPendingLeaveQuery = LeaveApplication::with(['officer', 'leaveType'])
+            ->where('status', 'PENDING')
+            ->orderBy('created_at', 'desc')
+            ->limit(5);
+        if ($commandId) {
+            $recentPendingLeaveQuery->whereHas('officer', function($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            });
+        }
+        $recentPendingLeave = $recentPendingLeaveQuery->get();
+
+        // Get recent pending pass applications
+        $recentPendingPassQuery = PassApplication::with(['officer'])
+            ->where('status', 'PENDING')
+            ->orderBy('created_at', 'desc')
+            ->limit(5);
+        if ($commandId) {
+            $recentPendingPassQuery->whereHas('officer', function($q) use ($commandId) {
+                $q->where('present_station', $commandId);
+            });
+        }
+        $recentPendingPass = $recentPendingPassQuery->get();
+
         return view('dashboards.dc-admin.dashboard', compact(
             'pendingRosters', 
             'recentRosters',
             'pendingInternalStaffOrders',
             'recentInternalStaffOrders',
             'pendingManningRequests',
-            'recentManningRequests'
+            'recentManningRequests',
+            'recentPendingLeave',
+            'recentPendingPass'
         ));
     }
 

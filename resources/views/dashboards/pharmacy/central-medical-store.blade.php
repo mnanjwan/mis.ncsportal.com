@@ -6,7 +6,7 @@
 @section('content')
     <div class="grid gap-5 lg:gap-7.5">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-7.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-7.5">
             <div class="kt-card transition hover:shadow-sm hover:-translate-y-0.5 {{ $stats['pending_receipt'] > 0 ? 'border-warning' : '' }}">
                 <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                     <div class="flex items-center justify-between">
@@ -44,6 +44,20 @@
                         </div>
                         <div class="flex items-center justify-center size-12 rounded-full bg-success/10 text-success">
                             <i class="ki-filled ki-package text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kt-card transition hover:shadow-sm hover:-translate-y-0.5 {{ $stats['pending_return_receipt'] > 0 ? 'border-danger' : '' }}">
+                <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-normal text-secondary-foreground">Pending Return Receipt</span>
+                            <span class="text-2xl font-semibold text-mono">{{ $stats['pending_return_receipt'] ?? 0 }}</span>
+                        </div>
+                        <div class="flex items-center justify-center size-12 rounded-full bg-danger/10 text-danger">
+                            <i class="ki-filled ki-arrow-left-left text-2xl"></i>
                         </div>
                     </div>
                 </div>
@@ -138,11 +152,39 @@
                                     </a>
                                 </div>
                             @endforeach
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-1 gap-5 lg:gap-7.5">
+            <!-- Pending Return Receipt -->
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Approved Returns Awaiting Receipt</h3>
+                </div>
+                <div class="kt-card-content">
+                    @if($pendingReturnReceipt->count() > 0)
+                        <div class="flex flex-col gap-3">
+                            @foreach($pendingReturnReceipt as $return)
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-input">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-sm font-semibold text-foreground">
+                                            {{ $return->reference_number }} - {{ $return->command->name ?? 'N/A' }}
+                                        </span>
+                                        <span class="text-xs text-secondary-foreground">
+                                            {{ $return->items->count() }} items | Approved: {{ $return->approved_at?->format('d M Y') ?? 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <a href="{{ route('pharmacy.returns.show', $return->id) }}" class="kt-btn kt-btn-sm kt-btn-success">
+                                        Receive
+                                    </a>
+                                </div>
+                            @endforeach
                         </div>
                     @else
                         <div class="text-center py-8">
                             <i class="ki-filled ki-check-circle text-4xl text-success mb-4"></i>
-                            <p class="text-secondary-foreground">No requisitions pending issue.</p>
+                            <p class="text-secondary-foreground">No returns pending receipt.</p>
                         </div>
                     @endif
                 </div>
