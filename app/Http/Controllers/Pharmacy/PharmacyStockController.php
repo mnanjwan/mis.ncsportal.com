@@ -26,12 +26,18 @@ class PharmacyStockController extends Controller
     {
         $user = $request->user();
         $locationType = $request->get('location_type', 'CENTRAL_STORE');
-        $commandId = $request->get('command_id');
-        $search = $request->get('search');
-
+        
         $isCommandPharmacistOnly = $user->hasRole('Command Pharmacist') 
             && !$user->hasRole('OC Pharmacy') 
             && !$user->hasRole('Central Medical Store');
+
+        // Force command pharmacy location for command pharmacists
+        if ($isCommandPharmacistOnly) {
+            $locationType = 'COMMAND_PHARMACY';
+        }
+
+        $commandId = $request->get('command_id');
+        $search = $request->get('search');
 
         $userCommandId = null;
         if ($isCommandPharmacistOnly) {
@@ -117,12 +123,9 @@ class PharmacyStockController extends Controller
             ->with(['createdBy.officer', 'command'])
             ->latest();
 
-        // Command Pharmacist can only see movements related to Central Store or their command
+        // Command Pharmacist can only see movements related to their command
         if ($isCommandPharmacistOnly && $userCommandId) {
-            $movementsQuery->where(function ($q) use ($userCommandId) {
-                $q->where('location_type', 'CENTRAL_STORE')
-                    ->orWhere('command_id', $userCommandId);
-            });
+            $movementsQuery->where('command_id', $userCommandId);
         }
 
         $movements = $movementsQuery->take(50)->get();

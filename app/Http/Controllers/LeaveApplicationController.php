@@ -167,7 +167,7 @@ class LeaveApplicationController extends Controller
                 'officer_id' => $officer->id,
                 'leave_type_id' => $request->leave_type_id,
                 'start_date' => $request->start_date,
-                'end_date' => $request->end_date, // Original calendar end date
+                'end_date' => $calculatedEndDate, // Calculated end date including non-working days
                 'expiry_date' => $resumeDate,    // The date they actually return
                 'number_of_days' => $calendarDaysChosen, // Now we treat it as working days spent
                 'reason' => $request->reason,

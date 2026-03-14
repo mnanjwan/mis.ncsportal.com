@@ -56,28 +56,35 @@
                 </div>
                 <div class="kt-card-content">
                     <div class="flex flex-col gap-4">
+                        @if(!auth()->user()->hasRole('Command Pharmacist'))
                         <div class="p-4 rounded-lg bg-primary/10 border border-primary/20">
                             <div class="text-sm text-secondary-foreground">Central Store</div>
                             <div class="text-2xl font-semibold text-primary">
                                 {{ number_format($centralStock->sum('quantity')) }} {{ $drug->unit_of_measure }}
                             </div>
                         </div>
+                        @endif
                         <div class="p-4 rounded-lg bg-info/10 border border-info/20">
-                            <div class="text-sm text-secondary-foreground">Command Pharmacies</div>
+                            <div class="text-sm text-secondary-foreground">
+                                @if(auth()->user()->hasRole('Command Pharmacist')) Stock @else Command Pharmacies @endif
+                            </div>
                             <div class="text-2xl font-semibold text-info">
                                 {{ number_format($commandStocks->sum('quantity')) }} {{ $drug->unit_of_measure }}
                             </div>
                         </div>
+                        @if(!auth()->user()->hasRole('Command Pharmacist'))
                         <div class="p-4 rounded-lg bg-success/10 border border-success/20">
                             <div class="text-sm text-secondary-foreground">Total Stock</div>
                             <div class="text-2xl font-semibold text-success">
                                 {{ number_format($centralStock->sum('quantity') + $commandStocks->sum('quantity')) }} {{ $drug->unit_of_measure }}
                             </div>
                         </div>
+                        @endif
                     </div>
                 </div>
             </div>
 
+            @if(!auth()->user()->hasRole('Command Pharmacist'))
             <!-- Central Store Stock -->
             <div class="kt-card">
                 <div class="kt-card-header">
@@ -148,11 +155,14 @@
                     @endif
                 </div>
             </div>
+            @endif
 
             <!-- Command Pharmacies Stock -->
             <div class="kt-card">
                 <div class="kt-card-header">
-                    <h3 class="kt-card-title">Command Pharmacies Stock</h3>
+                    <h3 class="kt-card-title">
+                        @if(auth()->user()->hasRole('Command Pharmacist')) Stock @else Command Pharmacies @endif
+                    </h3>
                 </div>
                 <div class="kt-card-content">
                     @if($commandStocks->count() > 0)

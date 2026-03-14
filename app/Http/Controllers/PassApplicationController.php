@@ -149,7 +149,7 @@ class PassApplicationController extends Controller
             $application = PassApplication::create([
                 'officer_id' => $officer->id,
                 'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
+                'end_date' => $calculatedEndDate,
                 'expiry_date' => $resumeDate,
                 'number_of_days' => $calendarDaysChosen,
                 'reason' => $request->reason,

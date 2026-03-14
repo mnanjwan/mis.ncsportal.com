@@ -8,7 +8,8 @@
                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Name</th>
                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Email</th>
                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Email Status</th>
-                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Onboarding Status</th>
+                    <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Onboarding Status
+                    </th>
                     <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground">Initiated</th>
                     <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground">Actions</th>
                 </tr>
@@ -17,10 +18,10 @@
                 @forelse($onboardingOfficers as $officer)
                     @php
                         $emailDelivered = $officer->user->email_verified_at !== null;
-                        $onboardingCompleted = $officer->user && 
-                            $officer->date_of_birth && 
-                            $officer->date_of_first_appointment && 
-                            $officer->bank_name && 
+                        $onboardingCompleted = $officer->user &&
+                            $officer->date_of_birth &&
+                            $officer->date_of_first_appointment &&
+                            $officer->bank_name &&
                             $officer->pfa_name;
                     @endphp
                     <tr class="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
@@ -63,14 +64,14 @@
                         <td class="py-3 px-4 text-right">
                             <div class="flex items-center justify-end gap-2">
                                 @if(!$onboardingCompleted)
-                                    <button type="button" 
-                                            onclick="openEditEmailModal({{ $officer->id }}, '{{ $officer->user->email }}', '{{ addslashes(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}')"
-                                            class="kt-btn kt-btn-sm kt-btn-ghost" 
-                                            title="Edit Email">
+                                    <button type="button"
+                                        onclick="openEditEmailModal({{ $officer->id }}, '{{ $officer->user->email }}', '{{ addslashes(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}')"
+                                        class="kt-btn kt-btn-sm kt-btn-ghost" title="Edit Email">
                                         <i class="ki-filled ki-pencil"></i> Edit Email
                                     </button>
                                 @endif
-                                <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST" class="inline">
+                                <form action="{{ route('hrd.onboarding.resend-link', $officer->id) }}" method="POST"
+                                    class="inline">
                                     @csrf
                                     <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost" title="Resend Email">
                                         <i class="ki-filled ki-arrows-circle"></i> Resend
@@ -84,7 +85,8 @@
                         <td colspan="7" class="py-12 text-center">
                             @if(isset($searchTerm) && $searchTerm)
                                 <i class="ki-filled ki-magnifier text-4xl text-muted-foreground mb-4"></i>
-                                <p class="text-secondary-foreground">No officers found matching "<strong>{{ $searchTerm }}</strong>"</p>
+                                <p class="text-secondary-foreground">No officers found matching
+                                    "<strong>{{ $searchTerm }}</strong>"</p>
                             @else
                                 <i class="ki-filled ki-user text-4xl text-muted-foreground mb-4"></i>
                                 <p class="text-secondary-foreground">No onboarding initiated yet</p>
@@ -103,10 +105,10 @@
         @forelse($onboardingOfficers as $officer)
             @php
                 $emailDelivered = $officer->user->email_verified_at !== null;
-                $onboardingCompleted = $officer->user && 
-                    $officer->date_of_birth && 
-                    $officer->date_of_first_appointment && 
-                    $officer->bank_name && 
+                $onboardingCompleted = $officer->user &&
+                    $officer->date_of_birth &&
+                    $officer->date_of_first_appointment &&
+                    $officer->bank_name &&
                     $officer->pfa_name;
             @endphp
             <div class="flex flex-col gap-3 p-4 rounded-lg bg-muted/50 border border-input">
@@ -137,10 +139,9 @@
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-input">
                     @if(!$onboardingCompleted)
-                        <button type="button" 
-                                onclick="openEditEmailModal({{ $officer->id }}, '{{ $officer->user->email }}', '{{ addslashes(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}')"
-                                class="kt-btn kt-btn-sm kt-btn-ghost" 
-                                title="Edit Email">
+                        <button type="button"
+                            onclick="openEditEmailModal({{ $officer->id }}, '{{ $officer->user->email }}', '{{ addslashes(($officer->initials ?? '') . ' ' . ($officer->surname ?? '')) }}')"
+                            class="kt-btn kt-btn-sm kt-btn-ghost" title="Edit Email">
                             <i class="ki-filled ki-pencil"></i> Edit
                         </button>
                     @endif

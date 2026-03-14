@@ -1,4 +1,5 @@
-{{-- <!DOCTYPE html>
+{{--
+<!DOCTYPE html>
 <html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
 
 <head>
@@ -25,7 +26,7 @@
         .error-message:not(.hidden) {
             color: #dc3545 !important;
         }
-        
+
         /* Laravel validation errors */
         .kt-alert-danger,
         .kt-alert-danger strong,
@@ -68,8 +69,7 @@
             id="header">
             <div class="kt-container-fixed flex items-center justify-between flex-wrap gap-3">
                 <a href="{{ route('dashboard') }}">
-                    <img class="size-[34px]"
-                        src="{{ asset('logo.jpg') }}" />
+                    <img class="size-[34px]" src="{{ asset('logo.jpg') }}" />
                 </a>
                 <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white -me-2" data-kt-drawer-toggle="#sidebar">
                     <i class="ki-filled ki-menu"></i>
@@ -101,8 +101,8 @@
                                             Home
                                         </a>
                                         @hasSection('breadcrumbs')
-                                            <span>/</span>
-                                            @yield('breadcrumbs')
+                                        <span>/</span>
+                                        @yield('breadcrumbs')
                                         @endif
                                     </div>
                                 </div>
@@ -133,7 +133,7 @@
     <!-- End of Scripts -->
     <script>
         window.API_CONFIG = {
-            baseURL: '{{ url('/api/v1') }}',
+            baseURL: '{{ url(' / api / v1') }}',
             token: '{{ auth()->check() ? auth()->user()->createToken('web')->plainTextToken : '' }}'
         };
     </script>
@@ -142,8 +142,8 @@
     <script src="{{ asset('ncs-employee-portal/js/utils.js') }}"></script>
     <script>
         // Ensure modals with 'hidden' class stay hidden on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.kt-modal.hidden').forEach(function(modal) {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.kt-modal.hidden').forEach(function (modal) {
                 modal.style.display = 'none';
                 modal.classList.add('hidden');
             });
@@ -163,7 +163,7 @@
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
 
     @if(file_exists(public_path('favicon-animated.svg')))
-    <link href="{{ asset('favicon-animated.svg') }}" rel="icon" type="image/svg+xml" />
+        <link href="{{ asset('favicon-animated.svg') }}" rel="icon" type="image/svg+xml" />
     @endif
     <link href="{{ asset('logo.jpg') }}" rel="icon" />
 
@@ -193,8 +193,7 @@
     @stack('styles')
 </head>
 
-<body
-    class="antialiased flex h-full text-base text-foreground bg-background
+<body class="antialiased flex h-full text-base text-foreground bg-background
            [--header-height:60px] [--sidebar-width:270px]
            lg:overflow-hidden bg-mono dark:bg-background">
 
@@ -225,16 +224,13 @@
     <div class="flex grow">
 
         <!-- MOBILE HEADER -->
-        <header
-            class="flex lg:hidden items-center fixed z-10 top-0 start-0 end-0 shrink-0
-                   bg-mono dark:bg-background h-(--header-height)"
-            id="header">
+        <header class="flex lg:hidden items-center fixed z-10 top-0 start-0 end-0 shrink-0
+                   bg-mono dark:bg-background h-(--header-height)" id="header">
             <div class="kt-container-fixed flex items-center justify-between gap-3">
                 <a href="{{ route('dashboard') }}">
                     <img class="size-[34px]" src="{{ asset('logo.jpg') }}" />
                 </a>
-                <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white"
-                        data-kt-drawer-toggle="#sidebar">
+                <button class="kt-btn kt-btn-icon kt-btn-dim hover:text-white" data-kt-drawer-toggle="#sidebar">
                     <i class="ki-filled ki-menu"></i>
                 </button>
             </div>
@@ -249,15 +245,11 @@
             <!-- END SIDEBAR -->
 
             <!-- MAIN CONTAINER -->
-            <div
-                class="flex flex-col grow lg:rounded-l-xl bg-background
-                       border border-input lg:ms-(--sidebar-width)"
-                id="sidebar-container">
+            <div class="flex flex-col grow lg:rounded-l-xl bg-background
+                       border border-input lg:ms-(--sidebar-width)" id="sidebar-container">
 
                 <!-- SCROLLABLE CONTENT -->
-                <div
-                    id="scrollable_content"
-                    class="flex flex-col grow min-h-full kt-scrollable-y-auto
+                <div id="scrollable_content" class="flex flex-col grow min-h-full kt-scrollable-y-auto
                            lg:[--kt-scrollbar-width:auto] pt-5">
 
                     <!-- FLEX COLUMN: MAIN + FOOTER -->
@@ -275,7 +267,7 @@
                                         </h1>
                                         <div class="flex items-center gap-1 text-sm">
                                             <a class="text-secondary-foreground hover:text-primary"
-                                               href="{{ route('dashboard') }}">
+                                                href="{{ route('dashboard') }}">
                                                 Home
                                             </a>
                                             @hasSection('breadcrumbs')
@@ -300,9 +292,9 @@
                         @php
                             $user = auth()->user();
                             $role = $user?->roles->first()?->name ?? null;
-                            
+
                             // Set role-specific descriptions
-                            $description = match($role) {
+                            $description = match ($role) {
                                 'Area Controller' => 'As an Area Controller, you oversee critical administrative functions including emolument validation, manning request approvals, duty roster management, and leave/pass applications. This dashboard provides real-time visibility into pending items requiring your attention and decision-making.',
                                 'Admin' => 'As an Admin, you manage role assignments for officers within your assigned command. This dashboard provides oversight of all role assignments and allows you to assign Staff Officer, Area Controller, and DC Admin roles to qualified personnel.',
                                 default => null,
@@ -349,20 +341,21 @@
 
     <!-- Inactivity Timeout Handler -->
     @auth
-    @php
-        $timeoutFile = public_path('js/inactivity-timeout.js');
-        $version = file_exists($timeoutFile) ? filemtime($timeoutFile) : time();
-        $scriptContent = file_exists($timeoutFile) ? file_get_contents($timeoutFile) : null;
-    @endphp
-    @if($scriptContent)
-        {{-- Inline script as fallback to avoid 404 errors --}}
-        <script>
-            {!! $scriptContent !!}
-        </script>
-    @else
-        {{-- Fallback: Try to load external file --}}
-        <script src="{{ asset('js/inactivity-timeout.js') }}?v={{ $version }}" onerror="console.error('Failed to load inactivity-timeout.js. Please ensure the file is deployed to production.')"></script>
-    @endif
+        @php
+            $timeoutFile = public_path('js/inactivity-timeout.js');
+            $version = file_exists($timeoutFile) ? filemtime($timeoutFile) : time();
+            $scriptContent = file_exists($timeoutFile) ? file_get_contents($timeoutFile) : null;
+        @endphp
+        @if($scriptContent)
+            {{-- Inline script as fallback to avoid 404 errors --}}
+            <script>
+                {!! $scriptContent !!}
+            </script>
+        @else
+            {{-- Fallback: Try to load external file --}}
+            <script src="{{ asset('js/inactivity-timeout.js') }}?v={{ $version }}"
+                onerror="console.error('Failed to load inactivity-timeout.js. Please ensure the file is deployed to production.')"></script>
+        @endif
     @endauth
 
     <script>
@@ -377,4 +370,5 @@
     @stack('scripts')
 
 </body>
+
 </html>

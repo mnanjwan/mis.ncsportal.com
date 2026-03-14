@@ -287,7 +287,7 @@
 
     <div class="leave-details">
         <p><strong>LEAVE:</strong> you will proceed on <strong>{{ $leaveApplication->number_of_days ?? 'XX' }}</strong> Working days' vacation on <strong>{{ $leaveApplication->start_date ? \Carbon\Carbon::parse($leaveApplication->start_date)->format('d/m/Y') : 'DD/MM/YYYY' }}</strong></p>
-        <p>The leave expires on <strong>{{ $leaveApplication->end_date ? \Carbon\Carbon::parse($leaveApplication->end_date)->format('d/m/Y') : 'DD/MM/YYYY' }}</strong> ... and you will resume duty on <strong>{{ $leaveApplication->end_date ? \Carbon\Carbon::parse($leaveApplication->end_date)->addDays(3)->format('d/m/Y') : 'DD/MM/YYYY' }}</strong></p>
+        <p>The leave expires on <strong>{{ $leaveApplication->end_date ? \Carbon\Carbon::parse($leaveApplication->end_date)->format('d/m/Y') : 'DD/MM/YYYY' }}</strong> ... and you will resume duty on <strong>{{ $leaveApplication->expiry_date ? \Carbon\Carbon::parse($leaveApplication->expiry_date)->format('d/m/Y') : ($leaveApplication->end_date ? \Carbon\Carbon::parse($leaveApplication->end_date)->addDay()->format('d/m/Y') : 'DD/MM/YYYY') }}</strong></p>
     </div>
 
     <div class="instructions">

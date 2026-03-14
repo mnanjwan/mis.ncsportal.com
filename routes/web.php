@@ -1027,7 +1027,7 @@ Route::middleware('auth')->group(function () {
         });
 
         // Stock Management - All pharmacy roles can view stock
-        Route::prefix('stocks')->name('stocks.')->middleware('role:Controller Procurement|OC Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
+        Route::prefix('stocks')->name('stocks.')->middleware('role:OC Pharmacy|Central Medical Store|Command Pharmacist')->group(function () {
             Route::get('/', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'index'])->name('index');
             Route::get('/{drugId}', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'show'])->name('show');
             Route::post('/{stockId}/adjust', [\App\Http\Controllers\Pharmacy\PharmacyStockController::class, 'adjust'])

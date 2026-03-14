@@ -651,7 +651,6 @@
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('pharmacy.controller-procurement.dashboard')],
                 ['icon' => 'ki-filled ki-notepad-edit', 'title' => 'Procurements', 'href' => route('pharmacy.procurements.index')],
                 ['icon' => 'ki-filled ki-pill', 'title' => 'Drug / Item Catalog', 'href' => route('pharmacy.drugs.index')],
-                ['icon' => 'ki-filled ki-package', 'title' => 'Stock', 'href' => route('pharmacy.stocks.index')],
             ];
             break;
         case 'OC Pharmacy':
