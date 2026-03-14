@@ -152,6 +152,13 @@
                                     </a>
                                 </div>
                             @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-8">
+                            <i class="ki-filled ki-check-circle text-4xl text-success mb-4"></i>
+                            <p class="text-secondary-foreground">No requisitions pending issue.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
