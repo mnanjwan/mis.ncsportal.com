@@ -68,6 +68,9 @@
                                     Status
                                 </th>
                                 <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                    Resumption
+                                </th>
+                                <th class="text-left py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
                                     Submitted
                                 </th>
                                 <th class="text-right py-3 px-4 font-semibold text-sm text-secondary-foreground" style="white-space: nowrap;">
@@ -96,6 +99,9 @@
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         {{ $application->number_of_days ?? 'N/A' }} days
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
+                                        {{ $application->expiry_date ? \Carbon\Carbon::parse($application->expiry_date)->format('d/m/Y') : 'N/A' }}
                                     </td>
                                     <td class="py-3 px-4 text-sm text-secondary-foreground" style="white-space: nowrap;">
                                         @if($application->expiry_date)

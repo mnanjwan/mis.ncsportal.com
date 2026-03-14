@@ -120,7 +120,7 @@
                                 <ul class="text-xs text-secondary-foreground mt-2 list-disc list-inside space-y-1">
                                     <li>Maximum {{ $passMaxWorkingDays ?? 14 }} working days per application (weekends excluded)</li>
                                     <li>Only available after exhausting annual leave</li>
-                                    <li>Requires approval from Staff Officer and DC Admin</li>
+                                    <li>Requires approval from Staff Officer and 2iC Unit Head</li>
                                 </ul>
                             </div>
                         </div>

@@ -229,11 +229,11 @@ class RoleAccessTest extends TestCase
     }
 
     /**
-     * Test DC Admin Access
+     * Test 2iC Unit Head Access
      */
     public function test_dc_admin_can_access_dashboard_and_features()
     {
-        $user = $this->createUserWithRole('DC Admin');
+        $user = $this->createUserWithRole('2iC Unit Head');
 
         $response = $this->actingAs($user)->get(route('dc-admin.dashboard'));
         $response->assertStatus(200);

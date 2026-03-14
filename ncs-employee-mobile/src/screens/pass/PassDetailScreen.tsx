@@ -14,7 +14,7 @@ export function PassDetailScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const themeColors = useThemeColor();
   const roles = useAppSelector((s) => s.auth.user?.roles ?? []);
-  const isDcAdmin = roles.includes('DC Admin');
+  const isDcAdmin = roles.includes('2iC Unit Head');
   const [item, setItem] = useState<PassApplicationItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

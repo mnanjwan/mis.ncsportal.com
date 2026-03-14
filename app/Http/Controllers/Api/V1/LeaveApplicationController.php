@@ -252,7 +252,7 @@ class LeaveApplicationController extends BaseController
     }
 
     /**
-     * Approve/reject leave application (DC Admin)
+     * Approve/reject leave application (2iC Unit Head)
      */
     public function approve(Request $request, $id): JsonResponse
     {

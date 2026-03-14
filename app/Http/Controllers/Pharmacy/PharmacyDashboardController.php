@@ -71,7 +71,7 @@ class PharmacyDashboardController extends Controller
             ->get();
 
         // Stock alerts
-        $lowStock = PharmacyStock::where('quantity', '<', 10)
+        $lowStock = PharmacyStock::where('quantity', '<', 20)
             ->where('quantity', '>', 0)
             ->with('drug')
             ->take(10)

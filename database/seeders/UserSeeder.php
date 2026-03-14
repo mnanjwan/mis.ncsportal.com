@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
         $assessorRole = Role::where('name', 'Assessor')->first();
         $validatorRole = Role::where('name', 'Validator')->first();
         $areaControllerRole = Role::where('name', 'Area Controller')->first();
-        $dcAdminRole = Role::where('name', 'DC Admin')->first();
+        $dcAdminRole = Role::where('name', '2iC Unit Head')->first();
 
         // Get Commands (they should exist from ZoneAndCommandSeeder)
         $apapaCommand = Command::where('code', 'APAPA')->first();

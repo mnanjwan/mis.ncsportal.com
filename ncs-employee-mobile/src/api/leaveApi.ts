@@ -45,7 +45,7 @@ export const leaveApi = {
     return data;
   },
 
-  /** DC Admin: approve or reject leave (status must be MINUTED) */
+  /** 2iC Unit Head: approve or reject leave (status must be MINUTED) */
   async approve(id: number, body: { action: 'approve' | 'reject'; comments?: string }): Promise<ApiResponse<{ id: number; status: string }>> {
     const { data } = await apiClient.post<ApiResponse<{ id: number; status: string }>>(
       `/leave-applications/${id}/approve`,

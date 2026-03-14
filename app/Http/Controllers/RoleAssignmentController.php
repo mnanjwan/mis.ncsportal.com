@@ -173,7 +173,7 @@ class RoleAssignmentController extends Controller
             'Validator',
             'Staff Officer',
             'Area Controller',
-            'DC Admin',
+            '2iC Unit Head',
             'Building Unit',
             'Admin'
         ];
@@ -226,7 +226,7 @@ class RoleAssignmentController extends Controller
             'Validator',
             'Staff Officer',
             'Area Controller',
-            'DC Admin',
+            '2iC Unit Head',
             'Building Unit',
             'Admin'
         ];
@@ -429,7 +429,7 @@ class RoleAssignmentController extends Controller
                             'Validator',
                             'Staff Officer',
                             'Area Controller',
-                            'DC Admin',
+                            '2iC Unit Head',
                             'Building Unit',
                             'Admin'
                         ];
@@ -664,7 +664,7 @@ class RoleAssignmentController extends Controller
             'Validator',
             'Staff Officer',
             'Area Controller',
-            'DC Admin',
+            '2iC Unit Head',
             'Building Unit',
             'Admin'
         ];

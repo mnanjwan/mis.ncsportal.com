@@ -383,7 +383,7 @@ class CdInternalStaffOrderController extends Controller
                 $notificationService->notifyInternalStaffOrderSubmitted($order);
             }
             return redirect()->route('fleet.cd.internal-staff-orders.show', $order->id)
-                ->with('success', 'Internal Staff Order submitted for DC Admin approval.');
+                ->with('success', 'Internal Staff Order submitted for 2iC Unit Head approval.');
         } catch (\Exception $e) {
             Log::error('Failed to submit internal staff order: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to submit order: ' . $e->getMessage());

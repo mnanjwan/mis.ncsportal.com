@@ -628,8 +628,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/manning-deployments/published', [ManningRequestController::class, 'hrdPublishedIndex'])->name('manning-deployments.published');
     });
 
-    // DC Admin Routes
-    Route::prefix('dc-admin')->name('dc-admin.')->middleware('role:DC Admin')->group(function () {
+    // 2iC Unit Head Routes (formerly DC Admin)
+    Route::prefix('dc-admin')->name('dc-admin.')->middleware('role:2iC Unit Head')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'dcAdmin'])->name('dashboard');
         Route::get('/leave-pass', [DashboardController::class, 'dcAdminLeavePass'])->name('leave-pass');
         Route::get('/leave-applications/{id}', [LeaveApplicationController::class, 'show'])->name('leave-applications.show');

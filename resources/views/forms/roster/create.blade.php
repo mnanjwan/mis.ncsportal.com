@@ -82,7 +82,7 @@
                         <div class="flex flex-col gap-1">
                             <span class="text-sm font-semibold text-foreground">Duty Roster</span>
                             <span class="text-xs text-secondary-foreground">
-                                Create a duty roster for {{ $command->name }}. The roster will need to be approved by DC Admin.
+                                Create a duty roster for {{ $command->name }}. The roster will need to be approved by 2iC Unit Head.
                             </span>
                         </div>
                     </div>
@@ -290,7 +290,7 @@
                                     <li>Select the start and end dates for the roster period</li>
                                     <li>Create the roster (status: DRAFT)</li>
                                     <li>Edit the roster to add officer assignments</li>
-                                    <li>Submit for DC Admin approval</li>
+                                    <li>Submit for 2iC Unit Head approval</li>
                                 </ul>
                             </div>
                         </div>

@@ -47,13 +47,13 @@
                 @if($application->status === 'PENDING' && is_null($application->minuted_at))
                     <form action="{{ route('staff-officer.leave-applications.minute', $application->id) }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="kt-btn kt-btn-primary" onclick="return confirm('Minute this application to DC Admin for approval?')">
-                            <i class="ki-filled ki-file-edit"></i> Minute to DC Admin
+                        <button type="submit" class="kt-btn kt-btn-primary" onclick="return confirm('Minute this application to 2iC Unit Head for approval?')">
+                            <i class="ki-filled ki-file-edit"></i> Minute to 2iC Unit Head
                         </button>
                     </form>
                 @elseif($application->minuted_at)
                     <span class="kt-badge kt-badge-info kt-badge-sm flex items-center gap-2">
-                        <i class="ki-filled ki-check-circle"></i> Minuted to DC Admin
+                        <i class="ki-filled ki-check-circle"></i> Minuted to 2iC Unit Head
                     </span>
                 @endif
                 @if($application->status === 'APPROVED')

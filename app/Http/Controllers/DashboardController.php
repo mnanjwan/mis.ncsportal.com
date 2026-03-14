@@ -93,7 +93,7 @@ class DashboardController extends Controller
             'Central Medical Store',
             'Command Pharmacist',
             'Area Controller',
-            'DC Admin',
+            '2iC Unit Head',
             'Admin',
             'Zone Coordinator',
             'Validator',
@@ -1094,14 +1094,14 @@ class DashboardController extends Controller
         ));
     }
 
-    // DC Admin Dashboard
+    // 2iC Unit Head Dashboard
     public function dcAdmin()
     {
         $user = auth()->user();
 
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
 
@@ -1211,7 +1211,7 @@ class DashboardController extends Controller
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')
             ->where('user_roles.is_active', true)
             ->where('user_roles.command_id', $adminCommand->id ?? 0)
-            ->where('roles.name', 'DC Admin')
+            ->where('roles.name', '2iC Unit Head')
             ->count();
 
         return view('dashboards.admin.dashboard', compact(
@@ -1228,7 +1228,7 @@ class DashboardController extends Controller
         $type = $request->get('type', 'leave');
         $status = $request->get('status', '');
 
-        // Get minuted applications (only minuted applications should be visible to DC Admin)
+        // Get minuted applications (only minuted applications should be visible to 2iC Unit Head)
         if ($type === 'leave') {
             $query = LeaveApplication::with(['officer', 'leaveType'])
                 ->whereNotNull('minuted_at')
@@ -2309,7 +2309,7 @@ class DashboardController extends Controller
             'Assessor' => 'assessor.dashboard',
             'Validator' => 'validator.dashboard',
             'Area Controller' => 'area-controller.dashboard',
-            'DC Admin' => 'dc-admin.dashboard',
+            '2iC Unit Head' => 'dc-admin.dashboard',
             'Admin' => 'admin.dashboard',
             'Zone Coordinator' => 'zone-coordinator.dashboard',
             'Accounts' => 'accounts.dashboard',

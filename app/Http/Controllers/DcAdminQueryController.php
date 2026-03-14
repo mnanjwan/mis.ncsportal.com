@@ -12,26 +12,26 @@ class DcAdminQueryController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:DC Admin');
+        $this->middleware('role:2iC Unit Head');
     }
 
     /**
-     * Display list of accepted queries for officers in DC Admin's command
+     * Display list of accepted queries for officers in 2iC Unit Head's command
      */
     public function index(Request $request)
     {
         $user = auth()->user();
         
-        // Get DC Admin's command from their role
+        // Get 2iC Unit Head's command from their role
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
         
         $commandId = $dcAdminRole?->pivot->command_id ?? null;
         
         if (!$commandId) {
-            return redirect()->route('dashboard')->with('error', 'Command not found for DC Admin role.');
+            return redirect()->route('dashboard')->with('error', 'Command not found for 2iC Unit Head role.');
         }
 
         // Get officers in this command
@@ -70,9 +70,9 @@ class DcAdminQueryController extends Controller
     {
         $user = auth()->user();
         
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
         
@@ -86,7 +86,7 @@ class DcAdminQueryController extends Controller
             ->whereIn('status', ['ACCEPTED', 'DISAPPROVAL'])
             ->findOrFail($id);
 
-        // Verify query belongs to officer in DC Admin's command
+        // Verify query belongs to officer in 2iC Unit Head's command
         if ($query->officer->present_station != $commandId) {
             return redirect()->route('dc-admin.queries.index')
                 ->with('error', 'Query not found in your command.');

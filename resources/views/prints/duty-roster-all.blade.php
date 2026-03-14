@@ -247,7 +247,7 @@
         <div class="footer-line">
             <strong>Approved by:</strong> 
             @if($approver)
-                @if($approverRole === 'DC Admin')
+                @if($approverRole === '2iC Unit Head')
                     Comptroller ({{ strtoupper($approver->initials ?? '') }} {{ strtoupper($approver->surname ?? '') }} - 2iC Unit Head)
                 @else
                     Comptroller ({{ strtoupper($approver->initials ?? '') }} {{ strtoupper($approver->surname ?? '') }})

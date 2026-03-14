@@ -34,7 +34,7 @@
         'Command Pharmacist',
         'Area Controller',
         'OC Workshop',
-        'DC Admin',
+        '2iC Unit Head',
         // Fleet command-level roles
         'CD',
         'O/C T&L',
@@ -458,7 +458,7 @@
                 ],
             ];
             break;
-        case 'DC Admin':
+        case '2iC Unit Head':
             $menuItems = [
                 ['icon' => 'ki-filled ki-home-3', 'title' => 'Dashboard', 'href' => route('dc-admin.dashboard')],
                 [
@@ -708,7 +708,7 @@
     $roleDisplayNames = [
         'CGC' => 'CGC Office',
         'Controller Pharmacy' => 'Comptroller Pharmacy',
-        'DC Admin' => '2iC Unit Head',
+        '2iC Unit Head' => '2iC Unit Head',
     ];
     $primaryRoleDisplay = $roleDisplayNames[$primaryRole] ?? $primaryRole;
 @endphp

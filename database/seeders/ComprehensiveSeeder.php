@@ -370,7 +370,7 @@ class ComprehensiveSeeder extends Seeder
                         'minuted_at' => now()->subDays(rand(1, 5)),
                     ]);
                     
-                    // Some minuted applications are approved by DC Admin
+                    // Some minuted applications are approved by 2iC Unit Head
                     if ($index < 8) {
                         $leaveApproval->update([
                             'dc_admin_id' => $dcAdminUser->id,

@@ -56,9 +56,9 @@ class PassApplicationController extends BaseController
         $user = $request->user();
         $officer = $user->officer;
 
-        // Officers see only their own; Staff Officer / DC Admin see by command
+        // Officers see only their own; Staff Officer / 2iC Unit Head see by command
         if ($officer && $application->officer_id !== $officer->id) {
-            $canSee = $user->hasRole('Staff Officer') || $user->hasRole('DC Admin');
+            $canSee = $user->hasRole('Staff Officer') || $user->hasRole('2iC Unit Head');
             if ($canSee && $officer->present_station && $application->officer->present_station !== $officer->present_station) {
                 return $this->errorResponse('Pass application not found', null, 404);
             }
@@ -176,7 +176,7 @@ class PassApplicationController extends BaseController
     }
 
     /**
-     * Approve/reject pass (DC Admin)
+     * Approve/reject pass (2iC Unit Head)
      */
     public function approve(Request $request, $id, PassService $passService): JsonResponse
     {

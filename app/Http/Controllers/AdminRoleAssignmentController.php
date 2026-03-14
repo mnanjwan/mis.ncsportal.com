@@ -142,11 +142,11 @@ class AdminRoleAssignmentController extends Controller
             });
         }
 
-        // Get roles that Admin can assign (Staff Officer, Area Controller/Unit Head, DC Admin)
+        // Get roles that Admin can assign (Staff Officer, Area Controller/Unit Head, 2iC Unit Head)
         $assignableRoles = Role::whereIn('name', [
             'Staff Officer',
             'Area Controller',
-            'DC Admin'
+            '2iC Unit Head'
         ])->orderBy('name')->get();
 
         return view('dashboards.admin.role-assignments', compact(
@@ -167,7 +167,7 @@ class AdminRoleAssignmentController extends Controller
         $assignableRoles = Role::whereIn('name', [
             'Staff Officer',
             'Area Controller',
-            'DC Admin'
+            '2iC Unit Head'
         ])->orderBy('name')->get();
 
         // Get officers in Admin's command
@@ -314,9 +314,9 @@ class AdminRoleAssignmentController extends Controller
                     'exists:roles,id',
                     function ($attribute, $value, $fail) {
                         $role = Role::find($value);
-                        $assignableRoles = ['Staff Officer', 'Area Controller', 'DC Admin'];
+                        $assignableRoles = ['Staff Officer', 'Area Controller', '2iC Unit Head'];
                         if ($role && !in_array($role->name, $assignableRoles)) {
-                            $fail('You can only assign: Staff Officer, Area Controller, or DC Admin roles.');
+                            $fail('You can only assign: Staff Officer, Area Controller, or 2iC Unit Head roles.');
                         }
                     },
                 ],
@@ -568,9 +568,9 @@ class AdminRoleAssignmentController extends Controller
                 'exists:roles,id',
                 function ($attribute, $value, $fail) {
                     $role = Role::find($value);
-                    $assignableRoles = ['Staff Officer', 'Area Controller', 'DC Admin'];
+                    $assignableRoles = ['Staff Officer', 'Area Controller', '2iC Unit Head'];
                     if ($role && !in_array($role->name, $assignableRoles)) {
-                        $fail('You can only assign: Staff Officer, Area Controller, or DC Admin roles.');
+                        $fail('You can only assign: Staff Officer, Area Controller, or 2iC Unit Head roles.');
                     }
                 },
             ],

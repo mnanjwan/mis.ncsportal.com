@@ -206,7 +206,7 @@ try {
         // Check if notification method exists
         if (method_exists($notificationService, 'notifyCommandOfficerRelease')) {
             echo "✓ Release letter notification method exists\n";
-            echo "  This will notify Staff Officers, Area Controllers, and DC Admins\n";
+            echo "  This will notify Staff Officers, Area Controllers, and 2iC Unit Heads\n";
         } else {
             echo "⚠️  Release letter notification method not found\n";
         }

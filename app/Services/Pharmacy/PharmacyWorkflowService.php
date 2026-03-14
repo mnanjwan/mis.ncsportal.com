@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 class PharmacyWorkflowService
 {
+    const LOW_STOCK_THRESHOLD = 20;
+
     /**
      * Get the active command_id for a specific role assignment.
      */
@@ -651,6 +653,14 @@ class PharmacyWorkflowService
                 $this->notifyByRole('Controller Pharmacy', 'requisition', $requisition, 'Requisition dispensed at ' . ($requisition->command?->name ?? 'Command Pharmacy'));
             }
 
+            // Check low stock after dispensing
+            foreach ($dispensedItems as $itemData) {
+                $item = $requisition->items()->with('drug')->find($itemData['id']);
+                if ($item) {
+                    $this->checkAndNotifyLowStock($item->pharmacy_drug_id, $requisition->command_id);
+                }
+            }
+
             return $requisition->fresh(['steps', 'items.drug', 'createdBy', 'command']);
         });
     }
@@ -912,7 +922,7 @@ class PharmacyWorkflowService
             ]);
         }
 
-        DB::transaction(function () use ($return, $user, $comment) {
+        return DB::transaction(function () use ($return, $user, $comment) {
             foreach ($return->items as $item) {
                 // Find original movements from initiation
                 $movements = PharmacyStockMovement::where('reference_id', $return->id)
@@ -1077,5 +1087,43 @@ class PharmacyWorkflowService
             $entity->id,
             true
         );
+    }
+
+    /**
+     * Check if stock has dropped below the threshold and notify Controller Pharmacy.
+     */
+    private function checkAndNotifyLowStock(int $drugId, ?int $commandId): void
+    {
+        $totalStock = PharmacyStock::where('pharmacy_drug_id', $drugId)
+            ->where('location_type', 'COMMAND_PHARMACY')
+            ->when($commandId, fn ($q) => $q->where('command_id', $commandId))
+            ->sum('quantity');
+
+        if ($totalStock < self::LOW_STOCK_THRESHOLD && $totalStock >= 0) {
+            $drug = PharmacyDrug::find($drugId);
+            if (!$drug) return;
+
+            $notificationService = app(NotificationService::class);
+            $users = User::whereHas('roles', function ($q) {
+                $q->where('name', 'Controller Pharmacy')
+                  ->where('user_roles.is_active', true);
+            })->where('is_active', true)->get();
+
+            $title = '⚠️ Low Stock Alert';
+            $message = "{$drug->name} is running low — only {$totalStock} unit(s) remaining (threshold: " . self::LOW_STOCK_THRESHOLD . ").";
+
+            /** @var User $recipient */
+            foreach ($users as $recipient) {
+                $notificationService->notify(
+                    $recipient,
+                    'pharmacy_low_stock',
+                    $title,
+                    $message,
+                    'pharmacy_stock',
+                    $drugId,
+                    true
+                );
+            }
+        }
     }
 }

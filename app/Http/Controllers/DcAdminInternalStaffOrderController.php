@@ -17,18 +17,18 @@ class DcAdminInternalStaffOrderController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:DC Admin');
+        $this->middleware('role:2iC Unit Head');
     }
 
     /**
-     * Get the command ID for the current DC Admin
+     * Get the command ID for the current 2iC Unit Head
      */
     private function getDcAdminCommandId()
     {
         $user = Auth::user();
         
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
         
@@ -46,7 +46,7 @@ class DcAdminInternalStaffOrderController extends Controller
             ->where('status', 'PENDING_APPROVAL')
             ->orderBy('created_at', 'desc');
 
-        // Filter by command if DC Admin is assigned to a command
+        // Filter by command if 2iC Unit Head is assigned to a command
         if ($commandId) {
             $query->where('command_id', $commandId);
         }
@@ -86,7 +86,7 @@ class DcAdminInternalStaffOrderController extends Controller
             abort(403, 'This order is not pending approval');
         }
 
-        // Check command access if DC Admin is assigned to a command
+        // Check command access if 2iC Unit Head is assigned to a command
         $commandId = $this->getDcAdminCommandId();
         if ($commandId && $order->command_id != $commandId) {
             abort(403, 'You can only approve orders for your assigned command');
@@ -122,8 +122,8 @@ class DcAdminInternalStaffOrderController extends Controller
     {
         $user = Auth::user();
 
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can approve internal staff orders');
         }
 
@@ -135,7 +135,7 @@ class DcAdminInternalStaffOrderController extends Controller
                 ->with('error', 'Only PENDING_APPROVAL orders can be approved.');
         }
 
-        // Check command access if DC Admin is assigned to a command
+        // Check command access if 2iC Unit Head is assigned to a command
         $commandId = $this->getDcAdminCommandId();
         if ($commandId && $order->command_id != $commandId) {
             abort(403, 'You can only approve orders for your assigned command');
@@ -304,8 +304,8 @@ class DcAdminInternalStaffOrderController extends Controller
     {
         $user = Auth::user();
 
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can reject internal staff orders');
         }
 
@@ -317,7 +317,7 @@ class DcAdminInternalStaffOrderController extends Controller
                 ->with('error', 'Only PENDING_APPROVAL orders can be rejected.');
         }
 
-        // Check command access if DC Admin is assigned to a command
+        // Check command access if 2iC Unit Head is assigned to a command
         $commandId = $this->getDcAdminCommandId();
         if ($commandId && $order->command_id != $commandId) {
             abort(403, 'You can only reject orders for your assigned command');

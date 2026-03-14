@@ -41,7 +41,7 @@
                     <i class="ki-filled ki-information-2 text-info text-xl"></i>
                     <div>
                         <p class="text-sm font-medium text-info">Managing role assignments for: <strong>{{ $adminCommand->name }}</strong></p>
-                        <p class="text-xs text-secondary-foreground mt-1">You can assign: Staff Officer, Area Controller, and DC Admin roles</p>
+                        <p class="text-xs text-secondary-foreground mt-1">You can assign: Staff Officer, Area Controller, and 2iC Unit Head roles</p>
                     </div>
                 </div>
             </div>

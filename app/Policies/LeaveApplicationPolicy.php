@@ -12,7 +12,7 @@ class LeaveApplicationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['HRD', 'Staff Officer', 'DC Admin', 'Area Controller']);
+        return $user->hasAnyRole(['HRD', 'Staff Officer', '2iC Unit Head', 'Area Controller']);
     }
 
     /**
@@ -30,8 +30,8 @@ class LeaveApplicationPolicy
             return $user->officer?->present_station === $leaveApplication->officer->present_station;
         }
 
-        // DC Admin and Area Controller can view
-        if ($user->hasAnyRole(['DC Admin', 'Area Controller'])) {
+        // 2iC Unit Head and Area Controller can view
+        if ($user->hasAnyRole(['2iC Unit Head', 'Area Controller'])) {
             return $user->officer?->present_station === $leaveApplication->officer->present_station;
         }
 
@@ -64,7 +64,7 @@ class LeaveApplicationPolicy
      */
     public function approve(User $user, LeaveApplication $leaveApplication): bool
     {
-        if (!$user->hasRole('DC Admin')) {
+        if (!$user->hasRole('2iC Unit Head')) {
             return false;
         }
 

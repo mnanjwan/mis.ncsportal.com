@@ -3369,24 +3369,24 @@ class ManningRequestController extends Controller
         }
     }
 
-    // DC Admin Methods
+    // 2iC Unit Head Methods
     public function dcAdminIndex(Request $request)
     {
         $user = auth()->user();
 
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
 
         $commandId = $dcAdminRole?->pivot->command_id ?? null;
 
-        // Get submitted manning requests (status = SUBMITTED) for DC Admin's command
+        // Get submitted manning requests (status = SUBMITTED) for 2iC Unit Head's command
         $query = ManningRequest::with(['command.zone', 'requestedBy', 'items'])
             ->where('status', 'SUBMITTED');
 
-        // Filter by command if DC Admin is assigned to a command
+        // Filter by command if 2iC Unit Head is assigned to a command
         if ($commandId) {
             $query->where('command_id', $commandId);
         }
@@ -3403,9 +3403,9 @@ class ManningRequestController extends Controller
     {
         $user = auth()->user();
 
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
 
@@ -3418,7 +3418,7 @@ class ManningRequestController extends Controller
             abort(403, 'This request is not pending approval');
         }
 
-        // Check command access if DC Admin is assigned to a command
+        // Check command access if 2iC Unit Head is assigned to a command
         if ($commandId && $request->command_id != $commandId) {
             abort(403, 'You can only approve requests for your assigned command');
         }
@@ -3430,14 +3430,14 @@ class ManningRequestController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can approve manning requests');
         }
 
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
 
@@ -3445,7 +3445,7 @@ class ManningRequestController extends Controller
 
         $manningRequest = ManningRequest::findOrFail($id);
 
-        // Check command access if DC Admin is assigned to a command
+        // Check command access if 2iC Unit Head is assigned to a command
         if ($commandId && $manningRequest->command_id != $commandId) {
             abort(403, 'You can only approve requests for your assigned command');
         }
@@ -3457,7 +3457,7 @@ class ManningRequestController extends Controller
         }
 
         try {
-            // Get DC Admin's officer record for approved_by
+            // Get 2iC Unit Head's officer record for approved_by
             $officer = $user->officer;
 
             $manningRequest->status = 'APPROVED';
@@ -3496,14 +3496,14 @@ class ManningRequestController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can reject manning requests');
         }
 
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
 
@@ -3511,7 +3511,7 @@ class ManningRequestController extends Controller
 
         $manningRequest = ManningRequest::findOrFail($id);
 
-        // Check command access if DC Admin is assigned to a command
+        // Check command access if 2iC Unit Head is assigned to a command
         if ($commandId && $manningRequest->command_id != $commandId) {
             abort(403, 'You can only reject requests for your assigned command');
         }

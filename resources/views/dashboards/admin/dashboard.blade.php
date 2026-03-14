@@ -70,7 +70,7 @@
             <div class="kt-card-content flex flex-col gap-4 p-5 lg:p-7.5">
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col gap-1">
-                        <span class="text-sm font-normal text-secondary-foreground">DC Admins</span>
+                        <span class="text-sm font-normal text-secondary-foreground">2iC Unit Heads</span>
                         <span class="text-2xl font-semibold text-mono">{{ $dcAdminsCount }}</span>
                     </div>
                     <div class="flex items-center justify-center size-12 rounded-full bg-success/10">

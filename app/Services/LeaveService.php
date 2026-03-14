@@ -122,7 +122,7 @@ class LeaveService
             'approval_status' => 'MINUTED',
         ]);
 
-        // Notify DC Admin
+        // Notify 2iC Unit Head
         $this->notifyDcAdmin($application);
     }
 
@@ -193,12 +193,12 @@ class LeaveService
     }
 
     /**
-     * Notify DC Admin
+     * Notify 2iC Unit Head
      */
     private function notifyDcAdmin(LeaveApplication $application): void
     {
         $dcAdmins = \App\Models\User::whereHas('roles', function ($query) {
-            $query->where('name', 'DC Admin');
+            $query->where('name', '2iC Unit Head');
         })->whereHas('officer', function ($query) use ($application) {
             $query->where('present_station', $application->officer->present_station);
         })->get();

@@ -12,8 +12,8 @@ class DutyRosterController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        // Allow Staff Officer, Area Controller, and DC Admin access
-        $this->middleware('role:Staff Officer|Area Controller|DC Admin|CD');
+        // Allow Staff Officer, Area Controller, and 2iC Unit Head access
+        $this->middleware('role:Staff Officer|Area Controller|2iC Unit Head|CD');
     }
 
     public function index(Request $request)
@@ -898,7 +898,7 @@ class DutyRosterController extends Controller
             $roster->refresh();
             $roster->load(['command', 'preparedBy', 'assignments', 'oicOfficer', 'secondInCommandOfficer']);
 
-            // Notify DC Admins and Area Controllers
+            // Notify 2iC Unit Heads and Area Controllers
             $notificationService = app(NotificationService::class);
             $notificationService->notifyDutyRosterSubmitted($roster);
             $notificationService->notifyDutyRosterSubmittedToAreaController($roster);
@@ -909,7 +909,7 @@ class DutyRosterController extends Controller
             }
 
             return redirect()->route('staff-officer.roster.show', $roster->id)
-                ->with('success', 'Roster submitted successfully! It is now pending DC Admin and Area Controller approval.');
+                ->with('success', 'Roster submitted successfully! It is now pending 2iC Unit Head and Area Controller approval.');
 
         } catch (\Exception $e) {
             Log::error('Failed to submit roster: ' . $e->getMessage());
@@ -1055,25 +1055,25 @@ class DutyRosterController extends Controller
         }
     }
 
-    // DC Admin Methods
+    // 2iC Unit Head Methods
     public function dcAdminIndex(Request $request)
     {
         $user = auth()->user();
 
-        // Get DC Admin's command
+        // Get 2iC Unit Head's command
         $dcAdminRole = $user->roles()
-            ->where('name', 'DC Admin')
+            ->where('name', '2iC Unit Head')
             ->wherePivot('is_active', true)
             ->first();
 
         $commandId = $dcAdminRole?->pivot->command_id ?? null;
 
-        // Get submitted rosters for DC Admin's command
+        // Get submitted rosters for 2iC Unit Head's command
         $query = \App\Models\DutyRoster::with(['command', 'preparedBy', 'assignments', 'oicOfficer', 'secondInCommandOfficer'])
             ->where('status', 'SUBMITTED')
             ->orderBy('created_at', 'desc');
 
-        // Filter by command if DC Admin is assigned to a command
+        // Filter by command if 2iC Unit Head is assigned to a command
         if ($commandId) {
             $query->where('command_id', $commandId);
         }
@@ -1099,8 +1099,8 @@ class DutyRosterController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can approve rosters');
         }
 
@@ -1115,7 +1115,7 @@ class DutyRosterController extends Controller
         // Rosters with Transport officers require CD (Fleet CD) approval first
         if ($roster->hasTransportOfficers() && !$roster->cd_approved_at) {
             return redirect()->back()
-                ->with('error', 'This roster includes Transport officers. CD (Fleet CD) approval is required before DC Admin can approve.');
+                ->with('error', 'This roster includes Transport officers. CD (Fleet CD) approval is required before 2iC Unit Head can approve.');
         }
 
         try {
@@ -1124,7 +1124,7 @@ class DutyRosterController extends Controller
             // Check if this is a re-approval (roster was previously approved)
             $isReapproval = !is_null($roster->approved_at);
 
-            // Get the officer ID of the approving user (DC Admin)
+            // Get the officer ID of the approving user (2iC Unit Head)
             $approvingOfficer = $user->officer;
             
             $roster->status = 'APPROVED';
@@ -1163,8 +1163,8 @@ class DutyRosterController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can reject rosters');
         }
 
@@ -1295,7 +1295,7 @@ class DutyRosterController extends Controller
         $roster->save();
 
         return redirect()->route('fleet.roster.cd-index')
-            ->with('success', 'Roster approved. Area Controller or DC Admin can now give final approval.');
+            ->with('success', 'Roster approved. Area Controller or 2iC Unit Head can now give final approval.');
     }
 }
 

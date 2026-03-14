@@ -481,14 +481,14 @@ class InternalStaffOrderController extends Controller
         try {
             $order->update(['status' => 'PENDING_APPROVAL']);
 
-            // Notify DC Admins
+            // Notify 2iC Unit Heads
             $notificationService = app(NotificationService::class);
             if (method_exists($notificationService, 'notifyInternalStaffOrderSubmitted')) {
                 $notificationService->notifyInternalStaffOrderSubmitted($order);
             }
 
             return redirect()->route('staff-officer.internal-staff-orders.show', $order->id)
-                ->with('success', 'Internal Staff Order submitted for DC Admin approval.');
+                ->with('success', 'Internal Staff Order submitted for 2iC Unit Head approval.');
         } catch (\Exception $e) {
             Log::error('Failed to submit internal staff order: ' . $e->getMessage());
             return redirect()->back()

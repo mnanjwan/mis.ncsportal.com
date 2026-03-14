@@ -113,18 +113,18 @@ class LeaveApplicationController extends Controller
                 return redirect()->back()->with('error', 'Preretirement leave cannot be applied by officers. It is automatically placed 3 months before retirement and managed by CGC only.')->withInput();
             }
 
-            // Calculate working days within the selected range (for quota checking)
+            // Calculate working days within the selected range (for validation if needed)
             $workingDayService = app(WorkingDayService::class);
-            $numberOfDays = $workingDayService->workingDaysBetween($request->start_date, $request->end_date);
+            $workingDaysInRange = $workingDayService->workingDaysBetween($request->start_date, $request->end_date);
 
             // Calculate Expiry Date (Resume Duty Date)
-            // The logic: Ensure non-working days don't "eat" into the leave.
-            // If they picked a range of N calendar days, they should get N working days.
+            // The user's selection (calendar days) is treated as their working day entitlement.
+            // This ensures non-working days in the range are added back to the end.
             $startDate = \Carbon\Carbon::parse($request->start_date);
             $endDate = \Carbon\Carbon::parse($request->end_date);
             $calendarDaysChosen = $startDate->diffInDays($endDate) + 1;
-            
-            // The actual end date of the leave should be pushes forward to cover the full calendar days in working days
+
+            // The officer gets $calendarDaysChosen of actual working days starting from $start_date
             $calculatedEndDate = $workingDayService->calculateEndDate($request->start_date, $calendarDaysChosen);
             $resumeDate = $workingDayService->calculateResumeDate($calculatedEndDate);
 
@@ -167,9 +167,9 @@ class LeaveApplicationController extends Controller
                 'officer_id' => $officer->id,
                 'leave_type_id' => $request->leave_type_id,
                 'start_date' => $request->start_date,
-                'end_date' => $calculatedEndDate, // Calculated end date including non-working days
-                'expiry_date' => $resumeDate,    // The date they actually return
-                'number_of_days' => $calendarDaysChosen, // Now we treat it as working days spent
+                'end_date' => $request->end_date,  // Original user-selected end date (stays fixed)
+                'expiry_date' => $resumeDate,       // Actual resumption date (accounts for non-working days)
+                'number_of_days' => $calendarDaysChosen, // The full count of working days the officer gets
                 'reason' => $request->reason,
                 'expected_date_of_delivery' => $request->expected_date_of_delivery,
                 'status' => 'PENDING',
@@ -214,8 +214,8 @@ class LeaveApplicationController extends Controller
             return view('dashboards.area-controller.leave-show', compact('application'));
         }
         
-        // Check if user is DC Admin - they can view all minuted applications
-        if ($user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head - they can view all minuted applications
+        if ($user->hasRole('2iC Unit Head')) {
             $application->load(['officer.presentStation', 'leaveType']);
             $application->refresh();
             return view('dashboards.dc-admin.leave-show', compact('application'));
@@ -294,13 +294,13 @@ class LeaveApplicationController extends Controller
             // Refresh the model to ensure we have the latest data
             $application->refresh();
             
-            // Notify officer and DC Admins about minuting
+            // Notify officer and 2iC Unit Heads about minuting
             $notificationService = app(NotificationService::class);
             $notificationService->notifyLeaveApplicationMinuted($application);
             $notificationService->notifyLeaveApplicationMinutedToDcAdmin($application);
             
             return redirect()->route('staff-officer.leave-applications.show', $id)
-                ->with('success', 'Application has been minuted to DC Admin for approval.');
+                ->with('success', 'Application has been minuted to 2iC Unit Head for approval.');
         } catch (\Exception $e) {
             Log::error('Failed to minute leave application: ' . $e->getMessage());
             return redirect()->route('staff-officer.leave-applications.show', $id)
@@ -313,8 +313,8 @@ class LeaveApplicationController extends Controller
         $user = auth()->user();
         $application = LeaveApplication::with(['officer', 'leaveType'])->findOrFail($id);
         
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can approve applications');
         }
         
@@ -353,8 +353,8 @@ class LeaveApplicationController extends Controller
         $user = auth()->user();
         $application = LeaveApplication::with(['officer', 'leaveType'])->findOrFail($id);
         
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can reject applications');
         }
         

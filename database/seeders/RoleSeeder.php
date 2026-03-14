@@ -77,9 +77,9 @@ class RoleSeeder extends Seeder
                 'access_level' => 'command_level',
             ],
             [
-                'name' => 'DC Admin',
-                'code' => 'DC_ADMIN',
-                'description' => 'DC Admin - Operational Approver',
+                'name' => '2iC Unit Head',
+                'code' => '2IC_UNIT_HEAD',
+                'description' => '2iC Unit Head - Operational Approver',
                 'access_level' => 'command_level',
             ],
             // Transport & Logistics (Fleet)

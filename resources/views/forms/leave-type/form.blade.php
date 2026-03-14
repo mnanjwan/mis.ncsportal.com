@@ -174,8 +174,8 @@
                             id="requires_approval_level"
                             class="kt-input @error('requires_approval_level') kt-input-error @enderror">
                         <option value="">None (No specific approval level required)</option>
-                        <option value="DC Admin" {{ old('requires_approval_level', $leaveType->requires_approval_level ?? '') == 'DC Admin' ? 'selected' : '' }}>
-                            DC Admin (Deputy Comptroller Administration)
+                        <option value="2iC Unit Head" {{ old('requires_approval_level', $leaveType->requires_approval_level ?? '') == '2iC Unit Head' ? 'selected' : '' }}>
+                            2iC Unit Head
                         </option>
                         <option value="Area Controller" {{ old('requires_approval_level', $leaveType->requires_approval_level ?? '') == 'Area Controller' ? 'selected' : '' }}>
                             Area Controller (Comptroller)

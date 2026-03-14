@@ -865,8 +865,8 @@ class PrintController extends Controller
             }
         }
         
-        // Fallback: Try DC Admin role
-        $dcAdminRole = Role::where('name', 'DC Admin')->first();
+        // Fallback: Try 2iC Unit Head role
+        $dcAdminRole = Role::where('name', '2iC Unit Head')->first();
         if ($dcAdminRole) {
             $dcAdminUser = User::whereHas('roles', function($query) use ($dcAdminRole) {
                 $query->where('roles.id', $dcAdminRole->id)
@@ -956,9 +956,9 @@ class PrintController extends Controller
         $approverRole = null;
         if ($roster->approvedBy) {
             $approver = $roster->approvedBy;
-            // Check if approver's user has DC Admin role
-            if ($approver->user && $approver->user->hasRole('DC Admin')) {
-                $approverRole = 'DC Admin';
+            // Check if approver's user has 2iC Unit Head role
+            if ($approver->user && $approver->user->hasRole('2iC Unit Head')) {
+                $approverRole = '2iC Unit Head';
             } else {
                 $approverRole = 'Comptroller';
             }
@@ -1077,8 +1077,8 @@ class PrintController extends Controller
         $approverRole = null;
         if ($rosters->first() && $rosters->first()->approvedBy) {
             $approver = $rosters->first()->approvedBy;
-            if ($approver->user && $approver->user->hasRole('DC Admin')) {
-                $approverRole = 'DC Admin';
+            if ($approver->user && $approver->user->hasRole('2iC Unit Head')) {
+                $approverRole = '2iC Unit Head';
             } else {
                 $approverRole = 'Comptroller';
             }

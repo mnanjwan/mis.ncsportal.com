@@ -22,7 +22,7 @@ class OfficerController extends BaseController
         // Priority order: Most restrictive/specific roles should be checked relative to administrative roles.
         // The 'Officer' role is usually held by everyone, so it should be checked LAST to avoid restricting admins to self-only view.
 
-        if ($user->hasRole(['HRD', 'Area Controller', 'DC Admin', 'Admin', 'Zone Coordinator', 'Establishment', 'CGC'])) {
+        if ($user->hasRole(['HRD', 'Area Controller', '2iC Unit Head', 'Admin', 'Zone Coordinator', 'Establishment', 'CGC'])) {
             // High-level roles normally see all officers, but can filter by command if requested
             if ($request->has('command_id')) {
                 $query->where('present_station', $request->command_id);

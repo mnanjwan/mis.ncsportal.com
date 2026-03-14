@@ -100,7 +100,7 @@
                                     @if($app->status === 'PENDING' && is_null($app->minuted_at))
                                         <form action="{{ route('staff-officer.leave-applications.minute', $app->id) }}" method="POST" class="inline">
                                             @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Minute this application to DC Admin?')">
+                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Minute this application to 2iC Unit Head?')">
                                                 <i class="ki-filled ki-file-edit"></i> Minute
                                             </button>
                                         </form>
@@ -188,7 +188,7 @@
                                     @if($app->status === 'PENDING' && is_null($app->minuted_at))
                                         <form action="{{ route('staff-officer.pass-applications.minute', $app->id) }}" method="POST" class="inline">
                                             @csrf
-                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Minute this application to DC Admin?')">
+                                            <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary" onclick="return confirm('Minute this application to 2iC Unit Head?')">
                                                 <i class="ki-filled ki-file-edit"></i> Minute
                                             </button>
                                         </form>

@@ -236,13 +236,13 @@ class DutyRosterApprovalTest extends TestCase
     }
 
     /**
-     * Test DC Admin can approve a submitted roster
+     * Test 2iC Unit Head can approve a submitted roster
      */
     public function test_dc_admin_can_approve_roster()
     {
         $setup = $this->createCommandWithOfficers();
         $staffOfficer = $this->createUserWithRoleAndCommand('Staff Officer', $setup['command']->id);
-        $dcAdmin = $this->createUserWithRoleAndCommand('DC Admin', $setup['command']->id);
+        $dcAdmin = $this->createUserWithRoleAndCommand('2iC Unit Head', $setup['command']->id);
         
         $roster = $this->createSubmittedRoster(
             $setup['command']->id,
@@ -312,8 +312,8 @@ class DutyRosterApprovalTest extends TestCase
             'is_active' => true,
         ]);
         
-        // Try to assign DC Admin role to 2IC officer (should not work)
-        $dcAdminRole = Role::where('name', 'DC Admin')->first();
+        // Try to assign 2iC Unit Head role to 2IC officer (should not work)
+        $dcAdminRole = Role::where('name', '2iC Unit Head')->first();
         $secondInCommandUser->roles()->attach($dcAdminRole->id, [
             'command_id' => $setup['command']->id,
             'is_active' => true
@@ -326,14 +326,14 @@ class DutyRosterApprovalTest extends TestCase
             $setup['secondInCommand']->id
         );
         
-        // Even if 2IC has DC Admin role, they should not be able to approve rosters
+        // Even if 2IC has 2iC Unit Head role, they should not be able to approve rosters
         // where they are assigned as 2IC (this is a business rule check)
         // However, the current implementation doesn't prevent this, so we test the role check
         
         $response = $this->actingAs($secondInCommandUser)
             ->post(route('dc-admin.roster.approve', $roster->id));
         
-        // The system allows DC Admin to approve, but in practice, 
+        // The system allows 2iC Unit Head to approve, but in practice, 
         // a 2IC should not approve rosters where they are assigned
         // This test documents the current behavior
         $response->assertRedirect();
@@ -367,13 +367,13 @@ class DutyRosterApprovalTest extends TestCase
     }
 
     /**
-     * Test DC Admin cannot approve non-submitted roster
+     * Test 2iC Unit Head cannot approve non-submitted roster
      */
     public function test_dc_admin_cannot_approve_draft_roster()
     {
         $setup = $this->createCommandWithOfficers();
         $staffOfficer = $this->createUserWithRoleAndCommand('Staff Officer', $setup['command']->id);
-        $dcAdmin = $this->createUserWithRoleAndCommand('DC Admin', $setup['command']->id);
+        $dcAdmin = $this->createUserWithRoleAndCommand('2iC Unit Head', $setup['command']->id);
         
         $roster = DutyRoster::create([
             'command_id' => $setup['command']->id,
@@ -396,7 +396,7 @@ class DutyRosterApprovalTest extends TestCase
     }
 
     /**
-     * Test DC Admin can reject roster with reason
+     * Test 2iC Unit Head can reject roster with reason
      */
     public function test_dc_admin_can_reject_roster()
     {
@@ -405,7 +405,7 @@ class DutyRosterApprovalTest extends TestCase
 
         $setup = $this->createCommandWithOfficers();
         $staffOfficer = $this->createUserWithRoleAndCommand('Staff Officer', $setup['command']->id);
-        $dcAdmin = $this->createUserWithRoleAndCommand('DC Admin', $setup['command']->id);
+        $dcAdmin = $this->createUserWithRoleAndCommand('2iC Unit Head', $setup['command']->id);
         
         $roster = $this->createSubmittedRoster(
             $setup['command']->id,
@@ -466,7 +466,7 @@ class DutyRosterApprovalTest extends TestCase
     {
         $setup = $this->createCommandWithOfficers();
         $staffOfficer = $this->createUserWithRoleAndCommand('Staff Officer', $setup['command']->id);
-        $dcAdmin = $this->createUserWithRoleAndCommand('DC Admin', $setup['command']->id);
+        $dcAdmin = $this->createUserWithRoleAndCommand('2iC Unit Head', $setup['command']->id);
         
         $roster = $this->createSubmittedRoster(
             $setup['command']->id,
@@ -519,17 +519,17 @@ class DutyRosterApprovalTest extends TestCase
         $response->assertSee('submit-modal', false);
         $response->assertSee('data-kt-modal-toggle', false);
         // Verify no JavaScript alert is used
-        $response->assertDontSee("onclick=\"return confirm('Submit this roster for DC Admin approval?')\"");
+        $response->assertDontSee("onclick=\"return confirm('Submit this roster for 2iC Unit Head approval?')\"");
     }
 
     /**
-     * Test DC Admin can view roster details page with approval modal
+     * Test 2iC Unit Head can view roster details page with approval modal
      */
     public function test_dc_admin_can_view_roster_details_with_approval_modal()
     {
         $setup = $this->createCommandWithOfficers();
         $staffOfficer = $this->createUserWithRoleAndCommand('Staff Officer', $setup['command']->id);
-        $dcAdmin = $this->createUserWithRoleAndCommand('DC Admin', $setup['command']->id);
+        $dcAdmin = $this->createUserWithRoleAndCommand('2iC Unit Head', $setup['command']->id);
         
         $roster = $this->createSubmittedRoster(
             $setup['command']->id,

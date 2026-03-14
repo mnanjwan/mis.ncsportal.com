@@ -135,7 +135,7 @@ class RoleMiddleware
             'Establishment' => 'establishment.dashboard',
             'Building Unit' => 'building.dashboard',
             'Area Controller' => 'area-controller.dashboard',
-            'DC Admin' => 'dc-admin.dashboard',
+            '2iC Unit Head' => 'dc-admin.dashboard',
             'Zone Coordinator' => 'zone-coordinator.dashboard',
             'Validator' => 'validator.dashboard',
             'Assessor' => 'assessor.dashboard',

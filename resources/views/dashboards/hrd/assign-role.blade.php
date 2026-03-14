@@ -41,7 +41,7 @@
                                                 'Area Controller' => 'Head of Unit'
                                             ];
                                         @endphp
-                                        @foreach(($commandBasedRoles ?? ['Assessor', 'Validator', 'Staff Officer', 'Area Controller', 'DC Admin', 'Building Unit']) as $role)
+                                        @foreach(($commandBasedRoles ?? ['Assessor', 'Validator', 'Staff Officer', 'Area Controller', '2iC Unit Head', 'Building Unit']) as $role)
                                             <span class="font-medium">{{ $roleDisplayMap[$role] ?? $role }}</span>@if(!$loop->last), @endif
                                         @endforeach
                                     </li>

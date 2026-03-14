@@ -296,7 +296,7 @@
                             // Set role-specific descriptions
                             $description = match ($role) {
                                 'Area Controller' => 'As an Area Controller, you oversee critical administrative functions including emolument validation, manning request approvals, duty roster management, and leave/pass applications. This dashboard provides real-time visibility into pending items requiring your attention and decision-making.',
-                                'Admin' => 'As an Admin, you manage role assignments for officers within your assigned command. This dashboard provides oversight of all role assignments and allows you to assign Staff Officer, Area Controller, and DC Admin roles to qualified personnel.',
+                                'Admin' => 'As an Admin, you manage role assignments for officers within your assigned command. This dashboard provides oversight of all role assignments and allows you to assign Staff Officer, Area Controller, and 2iC Unit Head roles to qualified personnel.',
                                 default => null,
                             };
                         @endphp

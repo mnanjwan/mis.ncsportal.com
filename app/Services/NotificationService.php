@@ -329,14 +329,14 @@ class NotificationService
             $officer->user,
             'leave_application_minuted',
             'Leave Application Minuted',
-            "Your {$leaveType} application from {$startDate} to {$endDate} ({$application->number_of_days} working days, resuming {$expiryDate}) has been minuted and forwarded to DC Admin for approval.",
+            "Your {$leaveType} application from {$startDate} to {$endDate} ({$application->number_of_days} working days, resuming {$expiryDate}) has been minuted and forwarded to 2iC Unit Head for approval.",
             'leave_application',
             $application->id
         );
     }
 
     /**
-     * Notify DC Admins about minuted leave application ready for approval
+     * Notify 2iC Unit Heads about minuted leave application ready for approval
      */
     public function notifyLeaveApplicationMinutedToDcAdmin($application): array
     {
@@ -348,9 +348,9 @@ class NotificationService
         $command = $officer->presentStation;
         $officerName = "{$officer->initials} {$officer->surname}";
 
-        // Get DC Admins for the command
+        // Get 2iC Unit Heads for the command
         $dcAdmins = User::whereHas('roles', function ($q) {
-            $q->where('name', 'DC Admin')
+            $q->where('name', '2iC Unit Head')
                 ->where('user_roles.is_active', true);
         })->whereHas('officer', function ($q) use ($command) {
             $q->where('present_station', $command->id);
@@ -463,8 +463,8 @@ class NotificationService
     }
 
     /**
-     * Notify DC Admin and Area Controller about submitted manning request ready for approval
-     * Flow: Staff Officer -> DC Admin and Area Controller (for approval)
+     * Notify 2iC Unit Head and Area Controller about submitted manning request ready for approval
+     * Flow: Staff Officer -> 2iC Unit Head and Area Controller (for approval)
      */
     public function notifyManningRequestSubmitted($manningRequest): array
     {
@@ -485,9 +485,9 @@ class NotificationService
                 ->where('user_roles.is_active', true);
         })->where('is_active', true)->get();
 
-        // Get DC Admins for the command (they handle command-level approvals)
+        // Get 2iC Unit Heads for the command (they handle command-level approvals)
         $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
-            $q->where('name', 'DC Admin')
+            $q->where('name', '2iC Unit Head')
                 ->where('user_roles.is_active', true)
                 ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
@@ -1382,7 +1382,7 @@ class NotificationService
     /**
      * Notify command about officer release (Release Letter)
      * This is sent BEFORE documentation - the command is notified that officer is being released
-     * Authorized by Area Comptroller or DC Admin through Staff Officer
+     * Authorized by Area Comptroller or 2iC Unit Head through Staff Officer
      */
     public function notifyCommandOfficerRelease($officer, $fromCommand, $toCommand, $movementOrder): array
     {
@@ -1392,10 +1392,10 @@ class NotificationService
             return $notifications;
         }
 
-        // Get Staff Officers, Area Controllers, and DC Admins for the FROM command
+        // Get Staff Officers, Area Controllers, and 2iC Unit Heads for the FROM command
         // These are the authorized personnel who receive release letters
         $authorizedUsers = User::whereHas('roles', function ($q) use ($fromCommand) {
-            $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
+            $q->whereIn('name', ['Staff Officer', 'Area Controller', '2iC Unit Head'])
                 ->where('role_user.command_id', $fromCommand->id)
                 ->where('role_user.is_active', true);
         })
@@ -1488,10 +1488,10 @@ class NotificationService
             return $notifications;
         }
 
-        // Get Staff Officers, Area Controllers, and DC Admins for the TO command
+        // Get Staff Officers, Area Controllers, and 2iC Unit Heads for the TO command
         // These are the authorized personnel who need to accept incoming officers
         $authorizedUsers = User::whereHas('roles', function ($q) use ($toCommand) {
-            $q->whereIn('name', ['Staff Officer', 'Area Controller', 'DC Admin'])
+            $q->whereIn('name', ['Staff Officer', 'Area Controller', '2iC Unit Head'])
                 ->where('role_user.command_id', $toCommand->id)
                 ->where('role_user.is_active', true);
         })
@@ -2058,14 +2058,14 @@ class NotificationService
             }
         }
 
-        // Notify Area Controller, DC Admin, and HRD about accepted query
+        // Notify Area Controller, 2iC Unit Head, and HRD about accepted query
         $this->notifyAuthoritiesQueryAccepted($query);
 
         return $notification;
     }
 
     /**
-     * Notify Area Controller, DC Admin, and HRD when a query is accepted
+     * Notify Area Controller, 2iC Unit Head, and HRD when a query is accepted
      */
     private function notifyAuthoritiesQueryAccepted($query): void
     {
@@ -2085,9 +2085,9 @@ class NotificationService
                 ->where('user_roles.command_id', $commandId);
         })->get();
 
-        // Get DC Admin for this command
+        // Get 2iC Unit Head for this command
         $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
-            $q->where('name', 'DC Admin')
+            $q->where('name', '2iC Unit Head')
                 ->where('user_roles.is_active', true)
                 ->where('user_roles.command_id', $commandId);
         })->get();
@@ -2111,7 +2111,7 @@ class NotificationService
             );
         }
 
-        // Notify DC Admins (email + in-app)
+        // Notify 2iC Unit Heads (email + in-app)
         foreach ($dcAdmins as $user) {
             $this->notify(
                 $user,
@@ -2419,7 +2419,7 @@ class NotificationService
     }
 
     /**
-     * Notify DC Admins about submitted duty roster ready for approval
+     * Notify 2iC Unit Heads about submitted duty roster ready for approval
      */
     public function notifyDutyRosterSubmitted($roster): array
     {
@@ -2439,9 +2439,9 @@ class NotificationService
         $oicName = $roster->oicOfficer ? "{$roster->oicOfficer->initials} {$roster->oicOfficer->surname}" : null;
         $secondInCommandName = $roster->secondInCommandOfficer ? "{$roster->secondInCommandOfficer->initials} {$roster->secondInCommandOfficer->surname}" : null;
 
-        // Get DC Admins for the command
+        // Get 2iC Unit Heads for the command
         $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
-            $q->where('name', 'DC Admin')
+            $q->where('name', '2iC Unit Head')
                 ->where('user_roles.is_active', true)
                 ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
@@ -2478,12 +2478,12 @@ class NotificationService
                         $secondInCommandName,
                         'dc-admin/roster'
                     );
-                    Log::info('Duty roster submitted email job dispatched to DC Admin', [
+                    Log::info('Duty roster submitted email job dispatched to 2iC Unit Head', [
                         'user_id' => $dcAdmin->id,
                         'roster_id' => $roster->id,
                     ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to dispatch duty roster submitted email job to DC Admin', [
+                    Log::error('Failed to dispatch duty roster submitted email job to 2iC Unit Head', [
                         'user_id' => $dcAdmin->id,
                         'roster_id' => $roster->id,
                         'error' => $e->getMessage(),
@@ -2577,7 +2577,7 @@ class NotificationService
 
     /**
      * Notify CD (Fleet CD) when a duty roster with Transport officers is submitted.
-     * CD must approve before Area Controller or DC Admin can give final approval.
+     * CD must approve before Area Controller or 2iC Unit Head can give final approval.
      */
     public function notifyDutyRosterSubmittedToCd($roster): array
     {
@@ -2611,7 +2611,7 @@ class NotificationService
             return [];
         }
 
-        $message = "A duty roster for {$command->name} (includes Transport officers) has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Your approval is required before Area Controller or DC Admin can give final approval.";
+        $message = "A duty roster for {$command->name} (includes Transport officers) has been submitted by {$preparedByName}. Period: {$periodStart} to {$periodEnd}. Your approval is required before Area Controller or 2iC Unit Head can give final approval.";
 
         $notifications = [];
         foreach ($cdUsers as $cdUser) {
@@ -2904,7 +2904,7 @@ class NotificationService
     }
 
     /**
-     * Notify DC Admins about submitted internal staff order ready for approval
+     * Notify 2iC Unit Heads about submitted internal staff order ready for approval
      */
     public function notifyInternalStaffOrderSubmitted($order): array
     {
@@ -2922,9 +2922,9 @@ class NotificationService
         $targetUnit = $order->target_unit ?? 'N/A';
         $targetRole = $order->target_role ?? 'N/A';
 
-        // Get DC Admins for the command
+        // Get 2iC Unit Heads for the command
         $dcAdmins = User::whereHas('roles', function ($q) use ($commandId) {
-            $q->where('name', 'DC Admin')
+            $q->where('name', '2iC Unit Head')
                 ->where('user_roles.is_active', true)
                 ->where('user_roles.command_id', $commandId);
         })->where('is_active', true)->get();
@@ -2959,12 +2959,12 @@ class NotificationService
                         $targetUnit,
                         $targetRole
                     );
-                    Log::info('Internal staff order submitted email job dispatched to DC Admin', [
+                    Log::info('Internal staff order submitted email job dispatched to 2iC Unit Head', [
                         'user_id' => $dcAdmin->id,
                         'order_id' => $order->id,
                     ]);
                 } catch (\Exception $e) {
-                    Log::error('Failed to dispatch internal staff order submitted email job to DC Admin', [
+                    Log::error('Failed to dispatch internal staff order submitted email job to 2iC Unit Head', [
                         'user_id' => $dcAdmin->id,
                         'order_id' => $order->id,
                         'error' => $e->getMessage(),
@@ -3156,7 +3156,7 @@ class NotificationService
 
         $command = $order->command;
         $commandName = $command ? $command->name : 'Unknown Command';
-        $rejectedByName = $rejectedBy ? ($rejectedBy->name ?? $rejectedBy->email) : 'DC Admin';
+        $rejectedByName = $rejectedBy ? ($rejectedBy->name ?? $rejectedBy->email) : '2iC Unit Head';
         $staffOfficer = $order->preparedBy;
 
         $notifications = [];

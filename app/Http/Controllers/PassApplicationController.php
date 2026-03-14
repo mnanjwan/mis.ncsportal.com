@@ -112,6 +112,7 @@ class PassApplicationController extends Controller
             $endDate = \Carbon\Carbon::parse($request->end_date);
             $calendarDaysChosen = $startDate->diffInDays($endDate) + 1;
             
+            // The officer gets $calendarDaysChosen of actual working days starting from $start_date
             $calculatedEndDate = $workingDayService->calculateEndDate($request->start_date, $calendarDaysChosen);
             $resumeDate = $workingDayService->calculateResumeDate($calculatedEndDate);
 
@@ -149,9 +150,9 @@ class PassApplicationController extends Controller
             $application = PassApplication::create([
                 'officer_id' => $officer->id,
                 'start_date' => $request->start_date,
-                'end_date' => $calculatedEndDate,
-                'expiry_date' => $resumeDate,
-                'number_of_days' => $calendarDaysChosen,
+                'end_date' => $request->end_date,  // Original user-selected end date (stays fixed)
+                'expiry_date' => $resumeDate,       // Actual resumption date (accounts for non-working days)
+                'number_of_days' => $calendarDaysChosen, // The full count of working days the officer gets
                 'reason' => $request->reason,
                 'status' => 'PENDING',
                 'submitted_at' => now(),
@@ -188,8 +189,8 @@ class PassApplicationController extends Controller
             return view('dashboards.area-controller.pass-show', compact('application'));
         }
         
-        // Check if user is DC Admin - they can view all minuted applications
-        if ($user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head - they can view all minuted applications
+        if ($user->hasRole('2iC Unit Head')) {
             $application->load(['officer.presentStation']);
             $application->refresh();
             return view('dashboards.dc-admin.pass-show', compact('application'));
@@ -269,7 +270,7 @@ class PassApplicationController extends Controller
             $application->refresh();
             
             return redirect()->route('staff-officer.pass-applications.show', $id)
-                ->with('success', 'Application has been minuted to DC Admin for approval.');
+                ->with('success', 'Application has been minuted to 2iC Unit Head for approval.');
         } catch (\Exception $e) {
             \Log::error('Failed to minute pass application: ' . $e->getMessage());
             return redirect()->route('staff-officer.pass-applications.show', $id)
@@ -282,8 +283,8 @@ class PassApplicationController extends Controller
         $user = auth()->user();
         $application = PassApplication::with('officer')->findOrFail($id);
         
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can approve applications');
         }
         
@@ -322,8 +323,8 @@ class PassApplicationController extends Controller
         $user = auth()->user();
         $application = PassApplication::with('officer')->findOrFail($id);
         
-        // Check if user is DC Admin
-        if (!$user->hasRole('DC Admin')) {
+        // Check if user is 2iC Unit Head
+        if (!$user->hasRole('2iC Unit Head')) {
             abort(403, 'Only 2iC Unit Head can reject applications');
         }
         

@@ -15,7 +15,7 @@ export function LeaveDetailScreen({ route, navigation }: Props) {
   const themeColors = useThemeColor();
   const roles = useAppSelector((s) => s.auth.user?.roles ?? []);
   const isStaffOfficer = roles.includes('Staff Officer');
-  const isDcAdmin = roles.includes('DC Admin');
+  const isDcAdmin = roles.includes('2iC Unit Head');
   const [item, setItem] = useState<LeaveApplicationItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function LeaveDetailScreen({ route, navigation }: Props) {
   }, [id]);
 
   const handleMinute = () => {
-    Alert.alert('Minute leave', 'Send this leave application for DC Admin approval?', [
+    Alert.alert('Minute leave', 'Send this leave application for 2iC Unit Head approval?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Minute', onPress: async () => {
