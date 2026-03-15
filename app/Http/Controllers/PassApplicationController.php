@@ -6,8 +6,10 @@ use Illuminate\Http\Request;
 
 use App\Models\PassApplication;
 use App\Models\LeaveApplication;
+use App\Models\LeavePassCriterion;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\DB;
+use App\Services\LeavePassCriteriaService;
 use App\Services\NotificationService;
 use App\Services\PassService;
 use App\Services\WorkingDayService;
@@ -40,7 +42,7 @@ class PassApplicationController extends Controller
         $user = auth()->user();
         $officer = $user->officer;
         $passMaxWorkingDays = $officer
-            ? $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level)
+            ? $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level, $officer->substantive_rank)
             : 14;
 
         return view('forms.pass.apply', compact('passMaxWorkingDays'));
@@ -105,7 +107,12 @@ class PassApplicationController extends Controller
 
             $workingDayService = app(WorkingDayService::class);
             $workingDays = $workingDayService->workingDaysBetween($request->start_date, $request->end_date);
-            $passMax = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
+            $criteriaService = app(LeavePassCriteriaService::class);
+            $passCriteria = $criteriaService->getCriteriaForOfficer(
+                LeavePassCriterion::TYPE_PASS,
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            );
 
             // Calculate Expiry Date (Resume Duty Date)
             $startDate = \Carbon\Carbon::parse($request->start_date);
@@ -116,9 +123,21 @@ class PassApplicationController extends Controller
             $calculatedEndDate = $workingDayService->calculateEndDate($request->start_date, $calendarDaysChosen);
             $resumeDate = $workingDayService->calculateResumeDate($calculatedEndDate);
 
-            if ($calendarDaysChosen > $passMax) {
+            $passDurationType = $passCriteria?->duration_type ?? LeavePassCriterion::DURATION_WORKING_DAYS;
+            $requestedDays = $criteriaService->requestedDaysForCriteria($passDurationType, $workingDays, $calendarDaysChosen);
+            $passMax = $passCriteria?->max_duration_days ?? $passService->getPassMaxWorkingDaysForGradeLevel(
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            );
+
+            if ($requestedDays > $passMax) {
                 $gl = $officer->salary_grade_level ?? 'N/A';
-                return redirect()->back()->with('error', "Pass cannot exceed {$passMax} working days for your grade level ({$gl}). Your selection effectively requests {$calendarDaysChosen} working days.")->withInput();
+                $durationLabel = $passDurationType === LeavePassCriterion::DURATION_CALENDAR_DAYS ? 'calendar days' : 'working days';
+                return redirect()->back()->with('error', "Pass cannot exceed {$passMax} {$durationLabel} for your grade level ({$gl}). Your selection requests {$requestedDays} {$durationLabel}.")->withInput();
+            }
+
+            if ($passCriteria && !$criteriaService->hasQualifiedServiceMonths($officer, (int) $passCriteria->qualification_months, $request->start_date)) {
+                return redirect()->back()->with('error', "You need at least {$passCriteria->qualification_months} month(s) in service before applying for pass.")->withInput();
             }
 
             // Check if annual leave is exhausted
@@ -130,7 +149,12 @@ class PassApplicationController extends Controller
                     ->where('status', 'APPROVED')
                     ->count();
 
-                $maxAnnualLeaveApplications = $annualLeaveType->max_occurrences_per_year ?? 2;
+                $annualCriteria = $criteriaService->getCriteriaForOfficer(
+                    LeavePassCriterion::TYPE_ANNUAL_LEAVE,
+                    $officer->salary_grade_level,
+                    $officer->substantive_rank
+                );
+                $maxAnnualLeaveApplications = $annualCriteria?->max_times_per_year ?? $annualLeaveType->max_occurrences_per_year ?? 2;
                 
                 if ($annualLeaveCount < $maxAnnualLeaveApplications) {
                     return redirect()->back()->with('error', 'Annual leave must be exhausted before applying for pass. You must have at least ' . $maxAnnualLeaveApplications . ' approved annual leave application(s) for this year.')->withInput();
@@ -143,8 +167,9 @@ class PassApplicationController extends Controller
                 ->where('status', 'APPROVED')
                 ->count();
 
-            if ($passCount >= 2) {
-                return redirect()->back()->with('error', 'Maximum 2 passes per year allowed')->withInput();
+            $maxPassPerYear = $passCriteria?->max_times_per_year ?? 2;
+            if ($passCount >= $maxPassPerYear) {
+                return redirect()->back()->with('error', "Maximum {$maxPassPerYear} pass application(s) per year allowed")->withInput();
             }
 
             $application = PassApplication::create([
@@ -152,7 +177,7 @@ class PassApplicationController extends Controller
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,  // Original user-selected end date (stays fixed)
                 'expiry_date' => $resumeDate,       // Actual resumption date (accounts for non-working days)
-                'number_of_days' => $calendarDaysChosen, // The full count of working days the officer gets
+                'number_of_days' => $requestedDays,
                 'reason' => $request->reason,
                 'status' => 'PENDING',
                 'submitted_at' => now(),

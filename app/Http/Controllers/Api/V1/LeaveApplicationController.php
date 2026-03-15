@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\LeaveType;
 use App\Models\LeaveApplication;
+use App\Models\LeavePassCriterion;
+use App\Services\LeavePassCriteriaService;
 use App\Services\WorkingDayService;
 use App\Services\PassService;
 use Illuminate\Http\JsonResponse;
@@ -146,12 +148,36 @@ class LeaveApplicationController extends BaseController
 
         // Enforce Grade Level limits for Annual Leave
         if ($leaveType->code === 'ANNUAL_LEAVE') {
-            $passService = app(PassService::class);
-            $maxAllowed = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
-            
-            if ($calendarDaysChosen > $maxAllowed) {
+            $criteriaService = app(LeavePassCriteriaService::class);
+            $criteria = $criteriaService->getCriteriaForOfficer(
+                LeavePassCriterion::TYPE_ANNUAL_LEAVE,
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            );
+            $durationType = $criteria?->duration_type ?? LeavePassCriterion::DURATION_WORKING_DAYS;
+            $requestedDays = $criteriaService->requestedDaysForCriteria(
+                $durationType,
+                $numberOfDays,
+                $calendarDaysChosen
+            );
+            $maxAllowed = $criteria?->max_duration_days ?? app(PassService::class)->getPassMaxWorkingDaysForGradeLevel(
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            );
+
+            if ($requestedDays > $maxAllowed) {
+                $durationLabel = $durationType === LeavePassCriterion::DURATION_CALENDAR_DAYS ? 'calendar days' : 'working days';
                 return $this->errorResponse(
-                    "Your Annual Leave entitlement is {$maxAllowed} working days based on your Grade Level. Your current selection effectively requests {$calendarDaysChosen} working days.",
+                    "Your Annual Leave entitlement is {$maxAllowed} {$durationLabel} based on your Grade Level. Your current selection requests {$requestedDays} {$durationLabel}.",
+                    null,
+                    422,
+                    'VALIDATION_ERROR'
+                );
+            }
+
+            if ($criteria && !$criteriaService->hasQualifiedServiceMonths($officer, (int) $criteria->qualification_months, $request->start_date)) {
+                return $this->errorResponse(
+                    "You need at least {$criteria->qualification_months} month(s) in service before applying for Annual Leave.",
                     null,
                     422,
                     'VALIDATION_ERROR'
@@ -179,6 +205,22 @@ class LeaveApplicationController extends BaseController
                         'VALIDATION_ERROR'
                     );
                 }
+            }
+
+            $annualLeaveCount = LeaveApplication::where('officer_id', $officer->id)
+                ->where('leave_type_id', $leaveType->id)
+                ->whereYear('start_date', now()->year)
+                ->where('status', 'APPROVED')
+                ->count();
+
+            $maxAnnualTimes = $criteria?->max_times_per_year ?? $leaveType->max_occurrences_per_year ?? 2;
+            if ($annualLeaveCount >= $maxAnnualTimes) {
+                return $this->errorResponse(
+                    "Maximum {$maxAnnualTimes} annual leave application(s) reached for this year.",
+                    null,
+                    422,
+                    'VALIDATION_ERROR'
+                );
             }
         }
 

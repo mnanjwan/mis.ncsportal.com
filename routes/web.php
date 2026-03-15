@@ -15,6 +15,7 @@ use App\Http\Controllers\EmolumentController;
 use App\Http\Controllers\EmolumentTimelineController;
 use App\Http\Controllers\LeaveApplicationController;
 use App\Http\Controllers\LeavePassController;
+use App\Http\Controllers\LeavePassCriteriaController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\ManningRequestController;
 use App\Http\Controllers\CourseController;
@@ -297,6 +298,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/reports/generate', [DashboardController::class, 'generateReport'])->name('reports.generate');
 
         Route::get('/leave-types', [LeaveTypeController::class, 'index'])->name('leave-types');
+        Route::get('/leave-pass-criteria', [LeavePassCriteriaController::class, 'index'])->name('leave-pass-criteria');
+        Route::put('/leave-pass-criteria', [LeavePassCriteriaController::class, 'update'])->name('leave-pass-criteria.update');
 
         // Holiday Management
         Route::resource('holidays', HolidayController::class)->except(['show']);

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\LeaveApplication;
+use App\Models\LeavePassCriterion;
 use App\Models\PassApplication;
+use App\Services\LeavePassCriteriaService;
 use App\Services\PassService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -113,12 +115,37 @@ class PassApplicationController extends BaseController
         ]);
 
         $workingDays = $passService->workingDaysBetween($request->start_date, $request->end_date);
-        $passMax = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
+        $startDate = \Carbon\Carbon::parse($request->start_date);
+        $endDate = \Carbon\Carbon::parse($request->end_date);
+        $calendarDaysChosen = $startDate->diffInDays($endDate) + 1;
 
-        if ($workingDays > $passMax) {
+        $criteriaService = app(LeavePassCriteriaService::class);
+        $passCriteria = $criteriaService->getCriteriaForOfficer(
+            LeavePassCriterion::TYPE_PASS,
+            $officer->salary_grade_level,
+            $officer->substantive_rank
+        );
+        $passDurationType = $passCriteria?->duration_type ?? LeavePassCriterion::DURATION_WORKING_DAYS;
+        $requestedDays = $criteriaService->requestedDaysForCriteria($passDurationType, $workingDays, $calendarDaysChosen);
+        $passMax = $passCriteria?->max_duration_days ?? $passService->getPassMaxWorkingDaysForGradeLevel(
+            $officer->salary_grade_level,
+            $officer->substantive_rank
+        );
+
+        if ($requestedDays > $passMax) {
             $gl = $officer->salary_grade_level ?? 'N/A';
+            $durationLabel = $passDurationType === LeavePassCriterion::DURATION_CALENDAR_DAYS ? 'calendar days' : 'working days';
             return $this->errorResponse(
-                "Pass cannot exceed {$passMax} working days for your grade level ({$gl}). Saturdays and Sundays are not counted.",
+                "Pass cannot exceed {$passMax} {$durationLabel} for your grade level ({$gl}).",
+                null,
+                422,
+                'VALIDATION_ERROR'
+            );
+        }
+
+        if ($passCriteria && !$criteriaService->hasQualifiedServiceMonths($officer, (int) $passCriteria->qualification_months, $request->start_date)) {
+            return $this->errorResponse(
+                "You need at least {$passCriteria->qualification_months} month(s) in service before applying for pass.",
                 null,
                 422,
                 'VALIDATION_ERROR'
@@ -134,9 +161,16 @@ class PassApplicationController extends BaseController
                 ->where('status', 'APPROVED')
                 ->count();
 
-            if ($annualLeaveCount < 2) {
+            $annualCriteria = $criteriaService->getCriteriaForOfficer(
+                LeavePassCriterion::TYPE_ANNUAL_LEAVE,
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            );
+            $requiredAnnualLeaveCount = $annualCriteria?->max_times_per_year ?? 2;
+
+            if ($annualLeaveCount < $requiredAnnualLeaveCount) {
                 return $this->errorResponse(
-                    'Annual leave must be exhausted before applying for pass',
+                    "Annual leave must be exhausted before applying for pass. You need at least {$requiredAnnualLeaveCount} approved annual leave application(s) this year.",
                     null,
                     422,
                     'VALIDATION_ERROR'
@@ -144,15 +178,16 @@ class PassApplicationController extends BaseController
             }
         }
 
-        // Check maximum 2 passes per year
+        // Check max passes per year
         $passCount = PassApplication::where('officer_id', $officer->id)
             ->whereYear('start_date', now()->year)
             ->where('status', 'APPROVED')
             ->count();
 
-        if ($passCount >= 2) {
+        $maxPassPerYear = $passCriteria?->max_times_per_year ?? 2;
+        if ($passCount >= $maxPassPerYear) {
             return $this->errorResponse(
-                'Maximum 2 passes per year allowed',
+                "Maximum {$maxPassPerYear} pass application(s) per year allowed",
                 null,
                 422,
                 'VALIDATION_ERROR'
@@ -163,7 +198,7 @@ class PassApplicationController extends BaseController
             'officer_id' => $officer->id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'number_of_days' => $workingDays,
+            'number_of_days' => $requestedDays,
             'reason' => $request->reason,
             'status' => 'PENDING',
         ]);
@@ -197,11 +232,21 @@ class PassApplicationController extends BaseController
         ]);
 
         if ($request->action === 'approve') {
-            $passMax = $passService->getPassMaxWorkingDaysForGradeLevel($application->officer->salary_grade_level);
+            $criteria = app(LeavePassCriteriaService::class)
+                ->getCriteriaForOfficer(
+                    LeavePassCriterion::TYPE_PASS,
+                    $application->officer->salary_grade_level,
+                    $application->officer->substantive_rank
+                );
+            $passMax = $criteria?->max_duration_days ?? $passService->getPassMaxWorkingDaysForGradeLevel(
+                $application->officer->salary_grade_level,
+                $application->officer->substantive_rank
+            );
             if ($application->number_of_days > $passMax) {
                 $gl = $application->officer->salary_grade_level ?? 'N/A';
+                $durationLabel = $criteria?->duration_type === LeavePassCriterion::DURATION_CALENDAR_DAYS ? 'calendar days' : 'working days';
                 return $this->errorResponse(
-                    "Pass cannot exceed {$passMax} working days for this officer's grade level ({$gl}).",
+                    "Pass cannot exceed {$passMax} {$durationLabel} for this officer's grade level ({$gl}).",
                     null,
                     422,
                     'VALIDATION_ERROR'

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LeaveApplication;
+use App\Models\LeavePassCriterion;
 use App\Models\LeaveType;
 use App\Models\Notification;
 use App\Models\Officer;
@@ -23,18 +24,33 @@ class LeaveService
 
         // GL-based Annual Leave duration
         if ($leaveType->code === 'ANNUAL_LEAVE') {
-            $glNumeric = app(PassService::class)->parseGradeLevelNumeric($officer->salary_grade_level);
-            $maxDays = 14;
-            if ($glNumeric >= 7) {
-                $maxDays = 30;
-            } elseif ($glNumeric >= 4) {
-                $maxDays = 21;
-            }
+            $criteriaService = app(LeavePassCriteriaService::class);
+            $criteria = $criteriaService->getCriteriaForOfficer(
+                LeavePassCriterion::TYPE_ANNUAL_LEAVE,
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            );
+            $calendarDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
 
-            if ($numberOfDays > $maxDays) {
+            $durationType = $criteria?->duration_type ?? LeavePassCriterion::DURATION_WORKING_DAYS;
+            $maxDays = (int) ($criteria?->max_duration_days ?? app(PassService::class)->getPassMaxWorkingDaysForGradeLevel(
+                $officer->salary_grade_level,
+                $officer->substantive_rank
+            ));
+            $requestedDays = $criteriaService->requestedDaysForCriteria($durationType, $numberOfDays, $calendarDays);
+
+            if ($requestedDays > $maxDays) {
+                $durationLabel = $durationType === LeavePassCriterion::DURATION_CALENDAR_DAYS ? 'calendar days' : 'working days';
                 return [
                     'can_apply' => false,
-                    'reason' => "For your Grade Level, maximum Annual Leave duration is {$maxDays} working days.",
+                    'reason' => "For your Grade Level, maximum Annual Leave duration is {$maxDays} {$durationLabel}.",
+                ];
+            }
+
+            if ($criteria && !$criteriaService->hasQualifiedServiceMonths($officer, (int) $criteria->qualification_months, $startDate)) {
+                return [
+                    'can_apply' => false,
+                    'reason' => "You need at least {$criteria->qualification_months} month(s) in service before applying for Annual Leave.",
                 ];
             }
 
@@ -64,7 +80,8 @@ class LeaveService
                 ->where('status', 'APPROVED')
                 ->count();
 
-            if ($annualLeaveCount >= ($leaveType->max_occurrences_per_year ?? 2)) {
+            $maxOccurrences = $criteria?->max_times_per_year ?? $leaveType->max_occurrences_per_year ?? 2;
+            if ($annualLeaveCount >= $maxOccurrences) {
                 return [
                     'can_apply' => false,
                     'reason' => 'Maximum annual leave applications reached for this year',

@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\LeaveApplication;
+use App\Models\LeavePassCriterion;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Services\LeavePassCriteriaService;
 use App\Services\NotificationService;
-use App\Services\WorkingDayService;
 use App\Services\PassService;
+use App\Services\WorkingDayService;
 
 class LeaveApplicationController extends Controller
 {
@@ -130,14 +132,31 @@ class LeaveApplicationController extends Controller
 
             // Enforce Grade Level limits for Annual Leave
             if ($leaveType->code === 'ANNUAL_LEAVE') {
-                $passService = app(PassService::class);
-                $maxAllowed = $passService->getPassMaxWorkingDaysForGradeLevel($officer->salary_grade_level);
-                
-                // Note: We use $calendarDaysChosen here because that's what the user "intended" to take as a block
-                // OR we could use $numberOfDays. But the user said "days will not be short".
-                // Let's use $calendarDaysChosen as the "intended working days".
-                if ($calendarDaysChosen > $maxAllowed) {
-                    return redirect()->back()->with('error', "Your Annual Leave entitlement is {$maxAllowed} working days based on your Grade Level. Your current selection effectively requests {$calendarDaysChosen} working days.")->withInput();
+                $criteriaService = app(LeavePassCriteriaService::class);
+                $criteria = $criteriaService->getCriteriaForOfficer(
+                    LeavePassCriterion::TYPE_ANNUAL_LEAVE,
+                    $officer->salary_grade_level,
+                    $officer->substantive_rank
+                );
+
+                $durationType = $criteria?->duration_type ?? LeavePassCriterion::DURATION_WORKING_DAYS;
+                $requestedDays = $criteriaService->requestedDaysForCriteria(
+                    $durationType,
+                    $workingDaysInRange,
+                    $calendarDaysChosen
+                );
+                $maxAllowed = $criteria?->max_duration_days ?? app(PassService::class)->getPassMaxWorkingDaysForGradeLevel(
+                    $officer->salary_grade_level,
+                    $officer->substantive_rank
+                );
+
+                if ($requestedDays > $maxAllowed) {
+                    $durationLabel = $durationType === LeavePassCriterion::DURATION_CALENDAR_DAYS ? 'calendar days' : 'working days';
+                    return redirect()->back()->with('error', "Your Annual Leave entitlement is {$maxAllowed} {$durationLabel} based on your Grade Level. Your current selection requests {$requestedDays} {$durationLabel}.")->withInput();
+                }
+
+                if ($criteria && !$criteriaService->hasQualifiedServiceMonths($officer, (int) $criteria->qualification_months, $request->start_date)) {
+                    return redirect()->back()->with('error', "You need at least {$criteria->qualification_months} month(s) in service before applying for Annual Leave.")->withInput();
                 }
 
                 // Implement 6-Month Cooling Period
@@ -155,6 +174,17 @@ class LeaveApplicationController extends Controller
                     if ($monthsSinceLastLeave < 6) {
                         return redirect()->back()->with('error', "The 6-Month Cooling Period rule applies. It has only been {$monthsSinceLastLeave} month(s) since your last Annual Leave. You must wait at least 6 months.")->withInput();
                     }
+                }
+
+                $annualLeaveCount = LeaveApplication::where('officer_id', $officer->id)
+                    ->where('leave_type_id', $leaveType->id)
+                    ->whereYear('start_date', now()->year)
+                    ->where('status', 'APPROVED')
+                    ->count();
+
+                $maxAnnualTimes = $criteria?->max_times_per_year ?? $leaveType->max_occurrences_per_year ?? 2;
+                if ($annualLeaveCount >= $maxAnnualTimes) {
+                    return redirect()->back()->with('error', "Maximum {$maxAnnualTimes} annual leave application(s) reached for this year.")->withInput();
                 }
             }
 

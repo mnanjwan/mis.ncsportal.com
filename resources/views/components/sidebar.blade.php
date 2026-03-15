@@ -221,6 +221,7 @@
                     'group' => 'Leave & Pass',
                     'items' => [
                         ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
+                        ['icon' => 'ki-filled ki-setting-2', 'title' => 'Leave & Pass Criteria', 'href' => route('hrd.leave-pass-criteria')],
                     ]
                 ],
                 [
