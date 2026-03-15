@@ -1146,8 +1146,8 @@ let selectedFiles = [];
 let filePreviewUrls = []; // Store object URLs for cleanup
 let fileCategories = []; // Store category selections
 
-// Document categories from config
-const documentCategories = @json(config('document_categories'));
+// Document categories from backend (HRD-managed)
+const documentCategories = @json($documentCategories);
 
 // Load saved documents from session
 function loadSavedDocuments() {

@@ -21,6 +21,7 @@ use App\Http\Controllers\ManningRequestController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseManagementController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\OnboardingDocumentCategoryController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\MovementOrderController;
 use App\Http\Controllers\OfficerController;
@@ -360,6 +361,9 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/system-settings', [SystemSettingController::class, 'index'])->name('system-settings');
         Route::put('/system-settings', [SystemSettingController::class, 'update'])->name('system-settings.update');
+        Route::get('/settings/document-categories', [OnboardingDocumentCategoryController::class, 'index'])->name('document-categories.index');
+        Route::post('/settings/document-categories', [OnboardingDocumentCategoryController::class, 'store'])->name('document-categories.store');
+        Route::put('/settings/document-categories/{category}', [OnboardingDocumentCategoryController::class, 'update'])->name('document-categories.update');
 
         Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
         Route::post('/onboarding/initiate', [OnboardingController::class, 'initiate'])->name('onboarding.initiate');

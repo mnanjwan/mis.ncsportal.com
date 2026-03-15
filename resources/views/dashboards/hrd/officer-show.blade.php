@@ -403,6 +403,7 @@
                     @php
                         $documents = $officer->documents ?? collect();
                         $documentsCount = $documents->count();
+                        $documentCategoryMap = app(\App\Services\OnboardingDocumentCategoryService::class)->getCategoryMap(false);
                     @endphp
                     @if($documentsCount > 0)
                         <div class="mb-3">
@@ -441,7 +442,7 @@
                                         {{ $doc->file_name ?? 'Document' }}
                                     </div>
                                     <div class="text-xs text-secondary-foreground">
-                                        Type: {{ $doc->document_type ? (config('document_categories')[$doc->document_type] ?? ucfirst(str_replace('_', ' ', $doc->document_type))) : 'Other' }}
+                                        Type: {{ $doc->document_type ? ($documentCategoryMap[$doc->document_type] ?? ucfirst(str_replace('_', ' ', $doc->document_type))) : 'Other' }}
                                         @if($doc->document_type && in_array($doc->document_type, ['course_completed', 'training_certificate']) && $doc->officerCourse)
                                             <span class="block mt-0.5 font-medium text-foreground" title="{{ $doc->officerCourse->course_name }}">{{ \Illuminate\Support\Str::limit($doc->officerCourse->course_name, 28) }}</span>
                                         @endif

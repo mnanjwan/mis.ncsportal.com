@@ -17,6 +17,7 @@ use App\Models\Discipline;
 use App\Models\Qualification;
 use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
+use App\Services\OnboardingDocumentCategoryService;
 use App\Services\QuarterAddressFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1641,7 +1642,7 @@ class OfficerController extends Controller
             ->orderBy('surname')
             ->get();
 
-        $categories = config('document_categories');
+        $categories = app(OnboardingDocumentCategoryService::class)->getCategoryMap();
         $selectedOfficer = null;
         $documents = collect();
         $selectedCategory = $request->category ?? 'all';

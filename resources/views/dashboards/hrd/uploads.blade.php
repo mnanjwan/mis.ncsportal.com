@@ -74,6 +74,22 @@
                         </div>
                     </div>
                 </form>
+
+                <div class="mt-5 pt-5 border-t border-input">
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="text-sm font-semibold">Document Category Settings</h4>
+                        <a href="{{ route('hrd.document-categories.index') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                            <i class="ki-filled ki-setting-2"></i> Manage Categories
+                        </a>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach($categories as $label)
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-muted text-secondary-foreground border border-input">
+                                {{ $label }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
 

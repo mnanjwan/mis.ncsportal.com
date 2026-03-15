@@ -10,9 +10,11 @@ use App\Models\Zone;
 use App\Models\Command;
 use App\Models\Discipline;
 use App\Models\Institution;
+use App\Models\OnboardingDocumentCategory;
 use App\Models\Qualification;
 use App\Services\NotificationService;
 use App\Services\EducationMasterDataSync;
+use App\Services\OnboardingDocumentCategoryService;
 use App\Helpers\LocationFormData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -289,6 +291,8 @@ class RecruitOnboardingController extends Controller
             ->orderBy('name')
             ->pluck('name')
             ->values();
+        $documentCategories = app(OnboardingDocumentCategoryService::class)
+            ->getCategoryMap(true, OnboardingDocumentCategory::APPLIES_TO_RECRUIT);
         
         // Find TRADOC command and set defaults
         $tradocCommand = Command::where(function($query) {
@@ -325,7 +329,7 @@ class RecruitOnboardingController extends Controller
             $savedData['command_id'] = $tradocCommand->id;
         }
         
-        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'recruit', 'zones', 'commands', 'institutions', 'disciplines', 'qualifications'));
+        return view('forms.establishment.recruit-step2', compact('ranks', 'gradeLevels', 'rankToGradeMap', 'savedData', 'recruit', 'zones', 'commands', 'institutions', 'disciplines', 'qualifications', 'documentCategories'));
     }
 
     /**
@@ -333,6 +337,9 @@ class RecruitOnboardingController extends Controller
      */
     public function saveStep2(Request $request)
     {
+        $allowedDocumentCategoryKeys = app(OnboardingDocumentCategoryService::class)
+            ->getAllowedKeys(true, OnboardingDocumentCategory::APPLIES_TO_RECRUIT);
+
         $token = $request->input('token') ?? $request->query('token') ?? session('recruit_onboarding_token');
         $recruitId = session('recruit_onboarding_id');
         
@@ -367,7 +374,7 @@ class RecruitOnboardingController extends Controller
             'documents' => 'nullable|array',
             'documents.*' => 'file|mimes:jpeg,jpg,png|max:5120',
             'document_categories' => 'nullable|array',
-            'document_categories.*' => 'nullable|string|in:' . implode(',', array_keys(config('document_categories'))),
+            'document_categories.*' => ['nullable', 'string', Rule::in($allowedDocumentCategoryKeys)],
         ]);
         
         // Handle document uploads - store file info for preview (same as step4)

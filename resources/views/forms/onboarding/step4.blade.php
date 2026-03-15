@@ -76,7 +76,7 @@
                                 <label class="text-xs text-muted mb-1 block">Select Category First <span class="text-danger">*</span></label>
                                 <select id="global-document-category" class="kt-input kt-input-sm w-full">
                                     <option value="">-- Choose Category --</option>
-                                    @foreach(config('document_categories') as $key => $label)
+                                    @foreach($documentCategories as $key => $label)
                                         <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
                                 </select>
@@ -828,8 +828,8 @@ if (globalCategorySelect && uploadButtonLabel && documentsInput) {
     });
 }
 
-// Document categories from config
-const documentCategories = @json(config('document_categories'));
+// Document categories from backend (HRD-managed)
+const documentCategories = @json($documentCategories);
 
 // Load saved documents from session (stored as document_paths when returning from preview)
 function loadSavedDocuments() {

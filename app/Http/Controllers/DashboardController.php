@@ -37,7 +37,9 @@ use App\Models\EducationChangeRequest;
 use App\Models\FleetRequest;
 use App\Models\FleetVehicle;
 use App\Models\FleetVehicleAssignment;
+use App\Models\OnboardingDocumentCategory;
 use App\Services\EducationMasterDataSync;
+use App\Services\OnboardingDocumentCategoryService;
 use App\Helpers\LocationFormData;
 
 class DashboardController extends Controller
@@ -1929,8 +1931,10 @@ class DashboardController extends Controller
             return redirect()->route('onboarding.step1')->with('error', 'Please complete previous steps first.');
         }
         $savedData = session('onboarding_step4', []);
+        $documentCategories = app(OnboardingDocumentCategoryService::class)
+            ->getCategoryMap(true, OnboardingDocumentCategory::APPLIES_TO_OFFICER);
 
-        return view('forms.onboarding.step4', compact('savedData'));
+        return view('forms.onboarding.step4', compact('savedData', 'documentCategories'));
     }
 
     public function saveOnboardingStep4(Request $request)
@@ -1974,6 +1978,9 @@ class DashboardController extends Controller
 
     public function submitOnboarding(Request $request)
     {
+        $allowedDocumentCategoryKeys = app(OnboardingDocumentCategoryService::class)
+            ->getAllowedKeys(true, OnboardingDocumentCategory::APPLIES_TO_OFFICER);
+
         // First, save step 4 data to session (profile picture is in step 1)
         $validated = $request->validate([
             'next_of_kin' => 'required|array|min:1|max:5',
@@ -1985,7 +1992,7 @@ class DashboardController extends Controller
             'next_of_kin.*.is_primary' => 'nullable|in:0,1',
             'documents.*' => 'nullable|file|image|mimes:jpeg,jpg,png|max:5120',
             'document_categories' => 'nullable|array',
-            'document_categories.*' => 'nullable|string|in:' . implode(',', array_keys(config('document_categories'))),
+            'document_categories.*' => ['nullable', 'string', Rule::in($allowedDocumentCategoryKeys)],
             'document_paths_to_keep' => 'nullable|array',
             'document_paths_to_keep.*' => 'nullable|string',
         ], [

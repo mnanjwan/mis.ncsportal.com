@@ -221,7 +221,6 @@
                     'group' => 'Leave & Pass',
                     'items' => [
                         ['icon' => 'ki-filled ki-calendar', 'title' => 'Leave Types', 'href' => route('hrd.leave-types')],
-                        ['icon' => 'ki-filled ki-setting-2', 'title' => 'Leave & Pass Criteria', 'href' => route('hrd.leave-pass-criteria')],
                     ]
                 ],
                 [
@@ -283,6 +282,8 @@
                                 ['title' => 'Courses', 'href' => route('hrd.course-management.index')],
                                 ['title' => 'Holiday Settings', 'href' => route('hrd.holidays.index')],
                                 ['title' => 'System Settings', 'href' => route('hrd.system-settings')],
+                                ['title' => 'Document Categories', 'href' => route('hrd.document-categories.index')],
+                                ['title' => 'Leave & Pass Criteria', 'href' => route('hrd.leave-pass-criteria')],
                             ]
                         ],
                     ]
