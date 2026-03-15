@@ -16,8 +16,16 @@ class HolidayController extends Controller
 
     public function index()
     {
-        $holidays = Holiday::orderBy('date', 'desc')->paginate(20);
-        return view('dashboards.hrd.holidays.index', compact('holidays'));
+        $holidays = Holiday::orderBy('date', 'desc')->paginate(20)->withQueryString();
+
+        // If user is on an out-of-range page, bounce back to first page so existing data is visible.
+        if ($holidays->isEmpty() && $holidays->total() > 0 && $holidays->currentPage() > 1) {
+            return redirect()->route('hrd.holidays.index');
+        }
+
+        $holidayCount = Holiday::count();
+
+        return view('dashboards.hrd.holidays.index', compact('holidays', 'holidayCount'));
     }
 
     public function create()

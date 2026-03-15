@@ -36,6 +36,11 @@
             <p class="text-sm text-secondary-foreground mb-4">
                 Manage public holidays that affect leave and pass duration calculations. Skip dates configured here are automatically excluded from working days.
             </p>
+            <div class="mb-4">
+                <span class="kt-badge kt-badge-outline kt-badge-sm">
+                    Configured holidays: {{ $holidayCount ?? $holidays->total() }}
+                </span>
+            </div>
 
             <!-- Desktop Table View -->
             <div class="hidden lg:block">
