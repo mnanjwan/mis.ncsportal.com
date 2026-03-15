@@ -8,17 +8,6 @@ use Carbon\Carbon;
 class WorkingDayService
 {
     /**
-     * Fixed holidays (Day and Month)
-     */
-    protected array $fixedHolidays = [
-        '01-01', // Jan 1
-        '05-01', // May 1
-        '05-29', // May 29
-        '12-25', // Dec 25
-        '12-26', // Dec 26
-    ];
-
-    /**
      * Check if a date is a working day (excluding weekends and holidays).
      */
     public function isWorkingDay(Carbon $date): bool
@@ -28,14 +17,7 @@ class WorkingDayService
             return false;
         }
 
-        $formattedDate = $date->format('m-d');
-
-        // Check fixed holidays
-        if (in_array($formattedDate, $this->fixedHolidays)) {
-            return false;
-        }
-
-        // Check floating (database) holidays for the specific year
+        // Check holidays configured by HRD in Holiday Settings
         $isHoliday = Holiday::where('date', $date->toDateString())->exists();
         if ($isHoliday) {
             return false;

@@ -33,13 +33,14 @@ class WorkingDayServiceTest extends TestCase
     }
 
     /** @test */
-    public function it_identifies_fixed_holidays_as_non_working_days()
+    public function it_treats_former_fixed_holidays_as_working_days_unless_configured()
     {
         $newYear = Carbon::parse('2026-01-01');
         $christmas = Carbon::parse('2026-12-25');
 
-        $this->assertFalse($this->service->isWorkingDay($newYear));
-        $this->assertFalse($this->service->isWorkingDay($christmas));
+        // No hardcoded holidays: these dates are working days unless HRD adds them.
+        $this->assertTrue($this->service->isWorkingDay($newYear));
+        $this->assertTrue($this->service->isWorkingDay($christmas));
     }
 
     /** @test */
